@@ -71,7 +71,10 @@ def package_of(widget: QWidget) -> Any:
         current: Any = getattr(owner, "currentIndex", None)
         if current is not None:
             index: Any = current()
-            package: Any = index.data(PACKAGE_ROLE)
+            # A tab widget has a currentIndex too, and it is a number.
+            package: Any = (
+                index.data(PACKAGE_ROLE) if hasattr(index, "data") else None
+            )
             if package is not None:
                 return package
         owner = owner.parent()
