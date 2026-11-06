@@ -162,7 +162,7 @@ def member_from_data(item: object, kind: MemberKind) -> Member:
         raise MemberJsonError(
             f"The {kind.label} is not a JSON object, but {_describe(item)}"
         )
-    data = cast("dict[str, Any]", _without_null(item))
+    data = cast("dict[str, Any]", _without_null(cast("object", item)))
     _check_model_type(data, kind)
     _check_types(data, kind)
     holder = _holder(kind, data)

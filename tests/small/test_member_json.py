@@ -9,8 +9,8 @@ from tests.factories import make_external_reference
 from aas_editor.domain.clipboard_json import ClipboardError
 from aas_editor.domain.clipboard_json import dump_members
 from aas_editor.domain.clipboard_json import load_members
-from aas_editor.domain.member_json import MemberKind
 from aas_editor.domain.member_json import MemberJsonError
+from aas_editor.domain.member_json import MemberKind
 from aas_editor.domain.member_json import clone_member
 from aas_editor.domain.member_json import member_from_data
 

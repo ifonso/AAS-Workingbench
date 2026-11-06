@@ -277,6 +277,20 @@ def test_the_description_counts_what_is_added() -> None:
     assert single.description == "Add qualifier to A"
 
 
+def test_a_shell_gets_its_specific_asset_ids_in_its_asset_information() -> None:
+    information = make_asset_information()
+    shell = model.AssetAdministrationShell(information, "urn:s", id_short="S")
+
+    plan = _plan(
+        [shell], [{"name": "BPN", "value": "1"}], MemberKind.SPECIFIC_ASSET_ID
+    )
+    _push(CommandStack(), shell, plan)
+
+    assert can_hold(shell, MemberKind.SPECIFIC_ASSET_ID)
+    assert plan.entries[0].owner is information
+    assert [s.name for s in information.specific_asset_id] == ["BPN"]
+
+
 def test_collections_take_qualifiers_like_any_element() -> None:
     assert can_hold(make_collection("C"), MemberKind.QUALIFIER)
     assert can_hold(make_collection("C"), MemberKind.EXTENSION)

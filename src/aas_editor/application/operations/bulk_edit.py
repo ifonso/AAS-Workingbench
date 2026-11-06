@@ -558,3 +558,26 @@ def _key_of(extension: model.Extension, by: ExtensionKey) -> str:
     if reference is None:
         return ""
     return " > ".join(key.value for key in reference.key)
+
+
+def languages_in(
+    targets: Iterable[model.Referable], attribute: BulkAttribute
+) -> list[str]:
+    """Lists the languages that the selected objects have texts in.
+
+    Args:
+        targets: The selected objects.
+        attribute: A text attribute. The others have no languages.
+
+    Returns:
+        The language tags, the most common first.
+    """
+    counts: dict[str, int] = {}
+    if attribute.uses_language:
+        for target in targets:
+            texts = _texts_of(target, attribute)
+            if texts is None or isinstance(texts, str):
+                continue
+            for language in texts:
+                counts[language] = counts.get(language, 0) + 1
+    return sorted(counts, key=lambda language: (-counts[language], language))

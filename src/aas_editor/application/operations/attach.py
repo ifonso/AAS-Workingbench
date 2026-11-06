@@ -116,6 +116,19 @@ class AttachPlan:
         return f"Add {label} to {len(owners)} items"
 
 
+def resolve_owner(owner: object, kind: MemberKind) -> object:
+    """Returns the object that holds the members of the kind for an owner.
+
+    A shell has its specific asset ids in its AssetInformation, which the
+    package tree does not show as a row of its own.
+    """
+    if kind is MemberKind.SPECIFIC_ASSET_ID and isinstance(
+        owner, model.AssetAdministrationShell
+    ):
+        return owner.asset_information
+    return owner
+
+
 def refusal(owner: object, kind: MemberKind) -> str | None:
     """Tells why an owner cannot have the kind of member.
 
@@ -126,6 +139,7 @@ def refusal(owner: object, kind: MemberKind) -> str | None:
     Returns:
         A message for the user, or None if the owner can have it.
     """
+    owner = resolve_owner(owner, kind)
     if kind is MemberKind.SPECIFIC_ASSET_ID:
         if isinstance(owner, model.Entity):
             if owner.entity_type is model.EntityType.CO_MANAGED_ENTITY:
@@ -165,7 +179,8 @@ def plan_attach(
     """
     entries: list[AttachEntry] = []
     seen: set[int] = set()
-    for owner in owners:
+    for chosen in owners:
+        owner = resolve_owner(chosen, kind)
         if id(owner) in seen:
             continue
         seen.add(id(owner))

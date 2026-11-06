@@ -19,6 +19,7 @@ from aas_editor.application.operations.bulk_edit import EntryStatus
 from aas_editor.application.operations.bulk_edit import ExtensionKey
 from aas_editor.application.operations.bulk_edit import change_commands
 from aas_editor.application.operations.bulk_edit import group_extensions
+from aas_editor.application.operations.bulk_edit import languages_in
 from aas_editor.application.operations.bulk_edit import plan_change_attribute
 from aas_editor.application.operations.bulk_edit import (
     remove_extension_commands,
@@ -378,7 +379,21 @@ class TestTexts:
         )
         _apply(CommandStack(), submodel, plan)
 
-        assert props[0].description["en"] == "P0: alpha"
+        assert dict(props[0].description or {}) == {"en": "P0: alpha"}
+
+
+def test_the_languages_of_the_selection_are_listed_most_common_first() -> None:
+    props = [make_property(f"P{n}") for n in range(3)]
+    props[0].description = model.MultiLanguageTextType({"de": "a", "en": "a"})
+    props[1].description = model.MultiLanguageTextType({"de": "b"})
+    mlp = make_multi_language_property("M", {"fr": "x"})
+
+    assert languages_in([*props, mlp], BulkAttribute.DESCRIPTION) == [
+        "de",
+        "en",
+    ]
+    assert languages_in([mlp], BulkAttribute.VALUE) == ["fr"]
+    assert languages_in(props, BulkAttribute.ID_SHORT) == []
 
 
 class TestValues:
