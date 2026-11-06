@@ -122,18 +122,31 @@ FIRST_PART = "/aasx/main.xml"
 SECOND_PART = "/aasx/second.xml"
 
 
-def write_package_with_same_id_in_two_parts(path: Path) -> Path:
+def write_package_with_same_id_in_two_parts(
+    path: Path, identical: bool = False
+) -> Path:
     """Writes an AASX in which two parts hold a submodel with the same id.
 
     The part that the reader reads first has the submodel `First`. The second
-    part has `Second` with the same id. The SDK keeps the first, and it skips
-    the second without a log record, in strict mode as well.
+    part has `Second` with the same id, or an equal copy of `First`. The SDK
+    keeps the first, and it skips the second without a log record, in strict
+    mode as well.
+
+    Args:
+        path: Where to write the package.
+        identical: Whether the second submodel is a copy of the first.
     """
     first = make_submodel(
         id_=SHARED_ID, id_short="First", elements=[make_property("Kept")]
     )
-    second = make_submodel(
-        id_=SHARED_ID, id_short="Second", elements=[make_property("Lost")]
+    second = (
+        make_submodel(
+            id_=SHARED_ID, id_short="First", elements=[make_property("Kept")]
+        )
+        if identical
+        else make_submodel(
+            id_=SHARED_ID, id_short="Second", elements=[make_property("Lost")]
+        )
     )
     with AASXWriter(path.as_posix(), failsafe=False) as writer:
         writer.write_all_aas_objects(

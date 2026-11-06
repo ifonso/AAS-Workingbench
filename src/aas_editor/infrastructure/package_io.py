@@ -25,6 +25,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from dataclasses import field
 import io
+import json
 import logging
 import os
 from pathlib import Path
@@ -40,6 +41,7 @@ from basyx.aas.adapter.aasx import AASXReader
 from basyx.aas.adapter.aasx import AASXWriter
 from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
+from basyx.aas.adapter.json import AASToJsonEncoder
 
 # The SDK functions take **kwargs without annotations, which strict mode
 # reports as partially unknown types.
@@ -207,7 +209,7 @@ class _TolerantReader(AASXReader):
         super().__init__(file, failsafe=failsafe)  # pyright: ignore[reportUnknownMemberType]
         self.missing_files: list[MissingFile] = []
         self._capture = capture
-        self._parts: list[tuple[str, list[tuple[str, str]]]] = []
+        self._parts: list[tuple[str, list[model.Identifiable]]] = []
 
     def _parse_aas_part(
         self, part_name: str, **kwargs: Any
@@ -218,32 +220,32 @@ class _TolerantReader(AASXReader):
             "model.DictIdentifiableStore[model.Identifiable]",
             super()._parse_aas_part(part_name, **kwargs),  # pyright: ignore[reportUnknownMemberType]
         )
-        self._parts.append(
-            (part_name, [(type(obj).__name__, obj.id) for obj in parsed])
-        )
+        self._parts.append((part_name, list(parsed)))
         return parsed
 
     def silent_duplicates(self) -> list[LoadIssue]:
         """Finds the objects that the SDK skipped without a log record.
 
+        An object that equals the one kept, as the SDK writes it to JSON, is
+        not a loss and is not reported.
+
         Returns:
-            One issue for each object whose id an earlier part has.
+            One issue for each object whose id an earlier part has, and which
+            differs from that object.
         """
-        first_part: dict[str, str] = {}
+        first: dict[str, tuple[str, model.Identifiable]] = {}
         found: list[LoadIssue] = []
         for part_name, objects in self._parts:
-            for type_name, identifier in objects:
-                if identifier in first_part:
+            for obj in objects:
+                kept = first.get(obj.id)
+                if kept is None:
+                    first[obj.id] = (part_name, obj)
+                elif not _same_content(kept[1], obj):
                     found.append(
                         duplicate_in_other_part(
-                            type_name,
-                            identifier,
-                            part_name,
-                            first_part[identifier],
+                            type(obj).__name__, obj.id, part_name, kept[0]
                         )
                     )
-                else:
-                    first_part[identifier] = part_name
         return found
 
     def _add_supplementary_file(
@@ -315,6 +317,15 @@ class _ThumbnailLinkingWriter(AASXWriter):
                 f"{self._thumbnail_part}."
             )
         self._thumbnail_part = name
+
+
+def _same_content(
+    first: model.Identifiable, second: model.Identifiable
+) -> bool:
+    """Tells whether the SDK writes two objects to the same JSON."""
+    return type(first) is type(second) and json.dumps(
+        first, cls=AASToJsonEncoder, sort_keys=True
+    ) == json.dumps(second, cls=AASToJsonEncoder, sort_keys=True)
 
 
 def read_package(path: Path, failsafe: bool = False) -> PackageParts:

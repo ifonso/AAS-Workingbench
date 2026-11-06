@@ -213,6 +213,19 @@ def test_an_object_in_a_second_part_with_a_known_id_is_reported_in_strict_mode(
     assert parts.partial is True
 
 
+def test_an_equal_copy_in_a_second_part_is_no_loss_and_is_not_reported(
+    tmp_path: Path,
+) -> None:
+    path = write_package_with_same_id_in_two_parts(
+        tmp_path / "copy.aasx", identical=True
+    )
+
+    parts = read_package(path, failsafe=False)
+
+    assert not parts.load_report
+    assert parts.partial is False
+
+
 def test_an_object_in_a_second_part_is_reported_once_in_failsafe_mode(
     tmp_path: Path,
 ) -> None:
