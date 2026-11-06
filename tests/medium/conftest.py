@@ -21,6 +21,11 @@ from tests.medium.forms import Form
 from tests.serialization import snapshot
 
 
+@pytest.fixture(autouse=True)
+def settings_of_the_test(empty_settings: None) -> None:
+    """Keeps a test from writing the settings and recent files of the user."""
+
+
 class ModelSupport:
     """Builds the legacy item models over BaSyx objects.
 

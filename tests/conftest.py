@@ -102,3 +102,48 @@ def aasx_file() -> Path:
 @pytest.fixture(scope="session")
 def json_file() -> Path:
     return TEST_DATA_DIR / "IDTA 02002-1-0_Template_ContactInformation.json"
+
+
+@pytest.fixture(scope="session")
+def own_settings(
+    qapp: QApplication, tmp_path_factory: pytest.TempPathFactory
+) -> Iterator[None]:
+    """Points the program's settings at files of the test session.
+
+    The program keeps its settings in `settings.ini` next to the code, and the
+    recent files and recent commands of the user in the registry on Windows. A
+    test that opens a window or a package writes there, and what it writes then
+    shows up in the start panel of the person who ran the tests. Both stores
+    are replaced for the whole session, because a window of a module-scoped
+    fixture writes when it closes, after the test that made it.
+    """
+    from PyQt6.QtCore import QSettings
+
+    from aas_editor.settings import app_settings
+
+    folder = tmp_path_factory.mktemp("settings")
+    patches = pytest.MonkeyPatch()
+    patches.setattr(
+        app_settings,
+        "SETTINGS",
+        QSettings(str(folder / "settings.ini"), QSettings.Format.IniFormat),
+    )
+    patches.setattr(
+        app_settings,
+        "RECENT_SETTINGS",
+        QSettings(str(folder / "recent.ini"), QSettings.Format.IniFormat),
+    )
+    yield
+    patches.undo()
+
+
+@pytest.fixture
+def empty_settings(own_settings: None) -> Iterator[None]:
+    """Starts a test with nothing saved, and leaves nothing for the next."""
+    from aas_editor.settings import app_settings
+
+    app_settings.SETTINGS.clear()
+    app_settings.RECENT_SETTINGS.clear()
+    yield
+    app_settings.SETTINGS.clear()
+    app_settings.RECENT_SETTINGS.clear()

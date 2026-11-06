@@ -221,6 +221,15 @@ APP_LOGO = QIcon(str(ICONS_FOLDER / "logo.svg"))
 DEFAULT_THEME = "fluent-light"
 
 SETTINGS = QSettings(str(SETTINGS_FILE), QSettings.Format.IniFormat)
+# Where the recent files and the recent commands of a user are kept. It is the
+# store of earlier releases, so that a user keeps them (the registry, on
+# Windows). A test replaces this attribute with a file of its own.
+RECENT_SETTINGS = QSettings(IAT, SETTINGS_APPLICATION_NAME)
+
+
+def recent_settings() -> QSettings:
+    """Returns the store of the recent files and the recent commands."""
+    return RECENT_SETTINGS
 
 
 @dataclass(order=True)

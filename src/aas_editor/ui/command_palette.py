@@ -21,7 +21,6 @@ from PyQt6.QtCore import QObject
 from PyQt6.QtCore import QPoint
 from PyQt6.QtCore import QRect
 from PyQt6.QtCore import QSize
-from PyQt6.QtCore import QSettings
 from PyQt6.QtCore import Qt
 from PyQt6.QtCore import QTimer
 from PyQt6.QtCore import pyqtSignal
@@ -47,9 +46,8 @@ from aas_editor.application.command_palette import PaletteEntry
 from aas_editor.application.command_palette import RecentCommands
 from aas_editor.application.command_palette import rank
 from aas_editor.application.editing import edit_mode
-from aas_editor.settings.app_settings import IAT
 from aas_editor.settings.app_settings import OPENED_PACKS_ROLE
-from aas_editor.settings.app_settings import SETTINGS_APPLICATION_NAME
+from aas_editor.settings.app_settings import recent_settings
 from aas_editor.ui.palette_sources import element_entries
 from aas_editor.ui.palette_sources import menu_entries
 from aas_editor.ui.palette_sources import registered_entries
@@ -396,7 +394,7 @@ class CommandPalette(QDialog):
 
 
 def _stored_recent() -> list[str]:
-    settings = QSettings(IAT, SETTINGS_APPLICATION_NAME)
+    settings = recent_settings()
     keys: object = settings.value(_RECENT_KEY, [])
     if not isinstance(keys, list):
         return []
@@ -404,7 +402,7 @@ def _stored_recent() -> list[str]:
 
 
 def _store_recent(keys: list[str]) -> None:
-    QSettings(IAT, SETTINGS_APPLICATION_NAME).setValue(_RECENT_KEY, keys)
+    recent_settings().setValue(_RECENT_KEY, keys)
 
 
 class PaletteController(QObject):

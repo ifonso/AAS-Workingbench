@@ -69,6 +69,7 @@ from aas_editor.settings import (
     SUBMODELS,
 )
 from aas_editor.settings.app_settings import (
+    recent_settings,
     NAME_ROLE,
     OBJECT_ROLE,
     PACKAGE_ROLE,
@@ -367,6 +368,11 @@ class PackTreeView(TreeView):
         for i in range(MAX_RECENT_FILES):
             recentFileAct = QAction(
                 "", self, statusTip=f"Open recent file", visible=False
+            )
+            # Connected once. The file it opens is its data, which
+            # `updateRecentFileActs` sets, so a refresh adds no connection.
+            recentFileAct.triggered.connect(
+                partial(self.openRecentFile, recentFileAct)
             )
             self.recentFileActs.append(recentFileAct)
 
@@ -1271,14 +1277,14 @@ class PackTreeView(TreeView):
         if self.isRecoveryFile(file):
             return
         self.removeFromRecentFiles(file)
-        settings = QSettings(IAT, SETTINGS_APPLICATION_NAME)
+        settings = recent_settings()
         files = settings.value("recentFiles", [])
         files.insert(0, file)
         del files[MAX_RECENT_FILES:]
         settings.setValue("recentFiles", files)
 
     def removeFromRecentFiles(self, file: str):
-        settings = QSettings(IAT, SETTINGS_APPLICATION_NAME)
+        settings = recent_settings()
         files = settings.value("recentFiles", [])
         try:
             files.remove(file)
@@ -1288,8 +1294,14 @@ class PackTreeView(TreeView):
             files = []
         settings.setValue("recentFiles", files)
 
+    def openRecentFile(self, action: QAction, checked: bool = False) -> None:
+        """Opens the file that a recent file action shows now."""
+        file = action.data()
+        if file:
+            self.openPack(file=file)
+
     def updateRecentFileActs(self):
-        settings = QSettings(IAT, SETTINGS_APPLICATION_NAME)
+        settings = recent_settings()
         files = settings.value("recentFiles", [])
         try:
             files = files[:MAX_RECENT_FILES]
@@ -1300,10 +1312,11 @@ class PackTreeView(TreeView):
             recentFileAct = self.recentFileActs[i]
             display_text = file if len(file) < 30 else f"..{file[-30:]}"
             recentFileAct.setText(display_text)
+            recentFileAct.setData(file)
             recentFileAct.setVisible(True)
-            recentFileAct.triggered.connect(partial(self.openPack, file=file))
 
         for i in range(len(files), MAX_RECENT_FILES):
+            self.recentFileActs[i].setData(None)
             self.recentFileActs[i].setVisible(False)
 
         self.recentFilesSeparator.setVisible(bool(files))
