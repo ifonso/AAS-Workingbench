@@ -299,14 +299,8 @@ Nothing here was started in WP12, because each needs a design.
    49 of the 132 bundled templates open this way, and D6 makes them Save As only, so the source file is safe.
    Since WP13 the editor lists what the SDK left out (a dialog on open, a context menu action, and the text of the refused save), so the loss is no longer silent. Of the 49, 45 load fewer `idShort` entries than their file has, and the report names the places for all of them. The three Bill of Materials extension templates load 20 of 40, because the submodel is gone, and the Hierarchical Structures template 3 of 13, because one entity with its statements is gone.
    The content itself is not kept. The SDK refuses to construct it, and no reader option or flag changes that. A second object with an id that another has cannot be kept next to it, because the store holds one object for each id, and the others break constraints that the model enforces. Keeping them needs a repair that chooses a value, or a reader of our own, which D3 rules out.
-2. **The package tree still speaks Python.**
-   The tabs name attributes, types and entries as the metamodel does (WP17, [ADR 0022](../software/adr/0022-attribute-vocabulary.md)), but the tree of packages still shows `concept_descriptions`, `fileStore` and `input_variable` as nodes, and the class of the SDK in its type column.
-   The editor finds those nodes by that name, so the names need a separate display role first.
-3. **The context menu is still long.**
-   An element has 25 to 27 entries, down from 38 (WP17).
-   Move and paste, rename, and the sections of concept descriptions, qualifiers and files are in it, and a user who needs fewer has no way to choose.
-   The sizes of docks that a user changed are restored from the last session without a version, as the columns of the tabs were.
-4. **What is not verified.**
+2. **What is not verified.**
     The pictures of this audit came from an offscreen platform, so they show layout and text, and not the behavior of a real display: scaling on a high-resolution screen, the theme colors on real monitors, the preview of media (it was black offscreen), and keyboard focus.
     The large tests run only by hand, and not in CI.
     The keys of the shortcuts are not pressed in a test, because the offscreen platform sends no shortcut to a window that is not active (F-EDT-01 AC13).
+    WP19 changed the first window, the widths of the columns, the toolbars and the preview button, all seen offscreen only. The main toolbar of the tree still cuts two buttons into a "..." menu in a window of 1194 pixels.

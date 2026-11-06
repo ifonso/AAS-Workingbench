@@ -54,12 +54,16 @@ def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
 
 
 def _index(view, *names: str) -> QModelIndex:
+    from aas_editor.settings.app_settings import NAME_ROLE
+
+    # By the name that the editor finds a row by. The text of the tree is the
+    # AAS word, such as `Submodels`.
     proxy = view.model()
     index = proxy.index(0, 0)
     for name in names:
         for row in range(proxy.rowCount(index)):
             child = proxy.index(row, 0, index)
-            if child.data(Qt.ItemDataRole.DisplayRole) == name:
+            if child.data(NAME_ROLE) == name:
                 index = child
                 break
         else:

@@ -223,7 +223,7 @@ def test_the_menu_separates_the_sections_and_hides_what_does_not_apply(
     from PyQt6.QtWidgets import QMenu
 
     _register(registry, action_id="create.sample", order=1)
-    _register(registry, action_id="structure.sample", order=1)
+    _register(registry, action_id="conversion.sample", order=1)
     shown = views()
     shown.open_package(make_submodel(elements=[make_property("p")]))
     shown.select(shown.index("submodels", "Submodel"))
@@ -231,7 +231,7 @@ def test_the_menu_separates_the_sections_and_hides_what_does_not_apply(
     menu = QMenu()
     shown.view.registeredActions.add_to_menu(menu)
     separators = [a for a in menu.actions() if a.isSeparator()]
-    ids = ("create.sample", "structure.sample")
+    ids = ("create.sample", "conversion.sample")
     on_submodel = [
         shown.view.registeredActions.find(i).isVisible() for i in ids
     ]

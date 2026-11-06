@@ -65,20 +65,39 @@ WINDOW_TITLE = (
 )
 
 TOOLBARS_HEIGHT = 30
-# The default columns of the attributes of an object fit a tab of the default
-# window with its tree on the left, which is about 600 pixels wide. The longest
-# metamodel name, supplementalSemanticId, and the longest type, `list of
-# EmbeddedDataSpecification`, are cut with an ellipsis and read in the tooltip.
-ATTR_COLUMN_WIDTH = 180
+# The attribute and type columns of a tab are as wide as the names that nearly
+# every element shows need, measured with the font of the tab: the longest
+# attribute of the common classes, `embeddedDataSpecifications`, and the
+# longest type that an attribute declares there, `MultiLanguageNameType`. The
+# longer `list of EmbeddedDataSpecification` is cut with an ellipsis and read
+# in the tooltip. The padding is the branch, the cell margins and the sort mark.
+WIDEST_ATTRIBUTE_NAME = "embeddedDataSpecifications"
+WIDEST_TYPE_NAME = "MultiLanguageNameType"
+ATTR_COLUMN_PADDING = 64
+TYPE_COLUMN_PADDING = 28
+# A narrow view gives them no more than this share of its width, so that the
+# value keeps room to be read and edited.
+ATTR_MAX_SHARE = 0.42
+TYPE_MAX_SHARE = 0.30
+# What the column gets when the font cannot be measured.
+ATTR_COLUMN_WIDTH = 250
+TYPE_COLUMN_WIDTH = 190
 # What users edit is the value, so it gets the room that is left: it stretches
 # between the name and the type.
-VALUE_COLUMN_WIDTH = 260
-TYPE_COLUMN_WIDTH = 140
+VALUE_COLUMN_WIDTH = 200
 # Raise it when the default columns of the attribute tabs change. A saved
 # header state of another version is not restored, so the new default shows
 # once, and what the user changes later is kept (see application/header_state).
-TAB_HEADER_LAYOUT_VERSION = 2
-PACK_TREE_OBJECT_COLUMN_WIDTH = 480
+TAB_HEADER_LAYOUT_VERSION = 3
+# The same for the header of the package tree, and for the sizes of the two
+# zones of the window (the tree and the tabs). Raise each one when its default
+# changes, so that a session of an older release does not hide the new default.
+PACK_TREE_HEADER_LAYOUT_VERSION = 1
+ZONES_LAYOUT_VERSION = 1
+PACK_TREE_OBJECT_COLUMN_WIDTH = 340
+# What the toolbar of the tree needs beyond the width of its buttons: the
+# margin of the toolbar and the frame of the tree.
+TOOLBAR_ROOM = 24
 
 DEFAULT_MAINWINDOW_SIZE = QSize(1194, 624)
 MAX_FONT_SIZE = 60
@@ -172,6 +191,10 @@ class Setting:
     def setValue(self, value):
         return SETTINGS.setValue(self.name, value)
 
+    def isSaved(self) -> bool:
+        """Tell whether a session saved a value, and not only the default."""
+        return bool(SETTINGS.contains(self.name))
+
     def value(self):
         args = [self.name]
         if self.default != NOT_GIVEN:
@@ -195,6 +218,10 @@ class AppSettings:
         "fontSizeDetailedView", DEFAULT_FONT.pointSize(), int
     )
     PACKTREEVIEW_HEADER_STATE = Setting("packTreeViewHeaderState", None)
+    # The layout that the saved state of the header of the tree was made for.
+    PACKTREEVIEW_HEADER_LAYOUT = Setting("packTreeViewHeaderLayout", 0, int)
+    # The layout that the saved sizes of the two zones were made for.
+    ZONES_LAYOUT = Setting("zonesLayout", 0, int)
     PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE = CUSTOM_COLUMN_LISTS_FILE
     TABTREEVIEW_HEADER_STATE = Setting("tabTreeViewHeaderState", None)
     # The layout that the saved state of the tab header was made for.

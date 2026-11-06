@@ -18,9 +18,20 @@
 from types import GeneratorType
 
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
+from PyQt6.QtCore import QVariant
 
+from aas_editor.domain.readable_values import count_text
+from aas_editor.domain.tree_names import node_description
+from aas_editor.domain.tree_names import node_name
+from aas_editor.domain.tree_names import type_name
 from aas_editor.models import StandardItem
-from aas_editor.settings.app_settings import PACKAGE_ROLE, ATTRIBUTE_COLUMN
+from aas_editor.settings.app_settings import (
+    PACKAGE_ROLE,
+    ATTRIBUTE_COLUMN,
+    TYPE_COLUMN,
+    VALUE_COLUMN,
+)
+from aas_editor.utils.util import getLimitStr
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.utils.util_type import isIterable
 from aas_editor.package import Package, StoredFile
@@ -65,6 +76,55 @@ class PackTreeViewItem(StandardItem):
                 self._populateFileContainer(self.obj, **kwargs)
             else:
                 self._populateIterable(self.obj, **kwargs)
+
+    @property
+    def isNode(self) -> bool:
+        """Tell whether the row only groups objects of its parent.
+
+        The shells, submodels, concept descriptions and files of a package,
+        and the variables of an operation. They are found by `objName`, the
+        name of the attribute in the SDK, which `displayName` does not change.
+        """
+        owner = self.parentObj
+        return (
+            owner is not None
+            and bool(self.objName)
+            and self.objName in ClassesInfo.packViewAttrs(type(owner))
+        )
+
+    @property
+    def displayName(self) -> str:
+        """What the first column reads: the AAS words for a group of objects."""
+        if self.isNode:
+            return node_name(type(self.parentObj), self.objName)
+        return self.objectName
+
+    @property
+    def typeText(self) -> str:
+        """What the type column reads: the AAS class, or nothing for a group."""
+        return type_name(self.objTypeName, is_node=self.isNode)
+
+    def _getDisplayRoleData(self, column, column_name):
+        if column == ATTRIBUTE_COLUMN:
+            return getLimitStr(self.displayName)
+        if column == TYPE_COLUMN:
+            return getLimitStr(self.typeText)
+        if column == VALUE_COLUMN and self.isNode:
+            # The object of the row is the store that holds every kind of
+            # object of the package. The rows below tell what the group has.
+            return count_text([child.obj for child in self.children()])
+        return super()._getDisplayRoleData(column, column_name)
+
+    def _getTooltipRoleData(self, column, column_name):
+        if self.isNode:
+            description = node_description(type(self.parentObj), self.objName)
+            if column == ATTRIBUTE_COLUMN:
+                return f"{self.displayName}\n\n{description}".strip()
+            if column == TYPE_COLUMN:
+                return QVariant()
+        elif column == TYPE_COLUMN:
+            return self.typeText
+        return super()._getTooltipRoleData(column, column_name)
 
     def acceptsChild(self, obj) -> bool:
         # The shells, submodels and concept descriptions of a package share

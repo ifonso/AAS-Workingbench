@@ -27,6 +27,7 @@ from aas_editor.domain.attribute_vocabulary import LIST_INDEX
 from aas_editor.domain.attribute_vocabulary import AttributeInfo
 from aas_editor.domain.attribute_vocabulary import attribute_info
 from aas_editor.domain.containers import position_of
+from aas_editor.domain.readable_values import content_text
 from aas_editor.domain.samm import attribute_order
 from aas_editor.models import StandardItem
 from aas_editor import settings
@@ -138,6 +139,8 @@ class DetailedInfoItem(StandardItem):
         if column == settings.TYPE_COLUMN:
             return getLimitStr(self.typeText)
         if column == settings.VALUE_COLUMN:
+            if isinstance(self.obj, bytes):
+                return content_text(self.obj, self.parentObj)
             text = value_text(self.obj)
             if text is not None:
                 return text

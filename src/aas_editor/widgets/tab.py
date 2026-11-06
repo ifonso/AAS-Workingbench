@@ -64,6 +64,7 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QCompleter,
     QStyledItemDelegate,
+    QSizePolicy,
 )
 
 from basyx.aas.model import Identifiable, Referable
@@ -423,6 +424,15 @@ class TabWithTreeView(QWidget):
         self._staleCheckPending = False
         self._previewShare = PREVIEW_DEFAULT_SHARE
         self._previewPlaced = False
+        # A preview that is dragged shut has a button to open it, because a
+        # user who sees no preview has no sign that there is one.
+        self._previewCollapsed = False
+        self.showPreviewBtn = QPushButton("Show preview of the file", self)
+        self.showPreviewBtn.setToolTip(
+            "Open the preview of the file beside the attributes"
+        )
+        self.showPreviewBtn.clicked.connect(self.openPreview)
+        self.showPreviewBtn.hide()
         # Advice about the shown object, while hints mode is on (F-EDT-06)
         self.hintsBar = HintsBar(self)
         # The concept description of the semantic id, below the attributes
@@ -567,7 +577,19 @@ class TabWithTreeView(QWidget):
         )
 
     def windowTitle(self) -> str:
-        return self.packItem.data(NAME_ROLE)
+        # What the tree reads, so a group of objects is titled as it is named.
+        return self.packItem.data(Qt.ItemDataRole.DisplayRole)
+
+    def _typeText(self) -> str:
+        """Return the type of the item as the tree reads it, if it has one."""
+        text = (
+            QModelIndex(self.packItem)
+            .siblingAtColumn(TYPE_COLUMN)
+            .data(Qt.ItemDataRole.DisplayRole)
+        )
+        if isinstance(text, str):
+            return text
+        return getTypeName(type(self.packItemObj))
 
     def windowIcon(self) -> QIcon:
         return self.packItem.data(Qt.ItemDataRole.DecorationRole)
@@ -610,7 +632,7 @@ class TabWithTreeView(QWidget):
         self.embeddedConcept.set_target(self.package, self.packItemObj)
         self.updateMediaWidget()
         self.pathLine.setText(getTreeItemPath(self.packItem))
-        self.objTypeLine.setText(getTypeName(type(self.packItemObj)))
+        self.objTypeLine.setText(self._typeText())
 
         icon = self.packItem.data(Qt.ItemDataRole.DecorationRole)
         if icon:
@@ -690,6 +712,8 @@ class TabWithTreeView(QWidget):
             self.mediaWidget.setZoomFactor(1.0)
         else:
             self.mediaViewWidget.hide()
+            self._previewCollapsed = False
+            self._updatePreviewButton()
 
     def _showPreviewPane(self):
         """Open the preview of a stored file beside the attributes.
@@ -715,6 +739,25 @@ class TabWithTreeView(QWidget):
         share = self._previewShare if width >= PREVIEW_MIN_TAB_WIDTH else 0
         preview = round(total * share)
         self.splitter.setSizes([total - preview, preview])
+        self._previewCollapsed = preview == 0
+        self._updatePreviewButton()
+
+    def openPreview(self):
+        """Open a preview that was dragged shut, or never fitted in the tab.
+
+        The attributes keep their minimum width, so in a narrow tab the
+        preview gets what is left, which may be little.
+        """
+        total = 3000
+        preview = round(total * self._previewShare)
+        self.splitter.setSizes([total - preview, preview])
+        self._previewCollapsed = self.splitter.sizes()[1] == 0
+        self._updatePreviewButton()
+
+    def _updatePreviewButton(self):
+        self.showPreviewBtn.setVisible(
+            self._previewCollapsed and not self.mediaViewWidget.isHidden()
+        )
 
     def showEvent(self, a0):
         super().showEvent(a0)
@@ -727,6 +770,8 @@ class TabWithTreeView(QWidget):
         # A preview that was dragged shut opens again at the share before.
         if self.mediaViewWidget.isVisible() and sizes[1] > 0:
             self._previewShare = sizes[1] / sum(sizes)
+        self._previewCollapsed = sizes[1] == 0
+        self._updatePreviewButton()
 
     def saveMediaAsWithDialog(self, directory="") -> bool:
         mediaContent = self.packItem.data(MEDIA_CONTENT_ROLE)
@@ -763,9 +808,16 @@ class TabWithTreeView(QWidget):
         toolBarWidget = QWidget()
         toolBarLayout = QHBoxLayout(toolBarWidget)
         toolBarLayout.setContentsMargins(0, 0, 0, 0)
+        # The address takes what is left, and does not claim its own width.
+        # Shared out by their hints, the buttons were cut into a "..." menu
+        # while the address kept its width.
+        self.pathLine.setMinimumWidth(40)
+        self.pathLine.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed
+        )
         toolBarLayout.addWidget(self.toolBar)
         toolBarLayout.addWidget(self.pathToolBar)
-        toolBarLayout.addWidget(self.pathLine)
+        toolBarLayout.addWidget(self.pathLine, 1)
         toolBarLayout.addWidget(self.objTypeLine)
         toolBarWidget.setFixedHeight(TOOLBARS_HEIGHT)
 
@@ -797,6 +849,7 @@ class TabWithTreeView(QWidget):
         layout.setObjectName("tabLayout")
         layout.addWidget(toolBarWidget)
         layout.addWidget(self.searchBar)
+        layout.addWidget(self.showPreviewBtn, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(self.splitter)
         layout.setSpacing(2)
         layout.setContentsMargins(0, 2, 0, 2)

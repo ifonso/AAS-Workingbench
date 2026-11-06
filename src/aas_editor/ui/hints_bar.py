@@ -38,8 +38,26 @@ def hint_lines(findings: tuple[Finding, ...]) -> list[str]:
 
     Returns:
         One line for each of the first few findings, then a line that counts
-        the rest.
+        the rest. Two or more hints, which are the lowest severity, share one
+        line that names their rules, so that the notices that almost every
+        element has (no display name, no description) do not take the room of
+        the errors. `hint_details` has the full text.
     """
+    notices = [f for f in findings if f.severity is Severity.INFO]
+    if len(notices) < 2:
+        return _lines(findings)
+    others = [f for f in findings if f.severity is not Severity.INFO]
+    return [*_lines(tuple(others)), _grouped_line(notices)]
+
+
+def hint_details(findings: tuple[Finding, ...]) -> str:
+    """Words every finding in full, for the tooltip of the bar."""
+    return "\n".join(
+        f"{_LABELS[f.severity]}: {f.message} ({f.rule_id})" for f in findings
+    )
+
+
+def _lines(findings: tuple[Finding, ...] | list[Finding]) -> list[str]:
     lines = [
         f"{_LABELS[f.severity]}: {f.message} ({f.rule_id})"
         for f in findings[:MAX_SHOWN]
@@ -50,6 +68,11 @@ def hint_lines(findings: tuple[Finding, ...]) -> list[str]:
             "The Validation dock lists all of them"
         )
     return lines
+
+
+def _grouped_line(notices: list[Finding]) -> str:
+    rules = ", ".join(f.rule_id for f in notices)
+    return f"{len(notices)} hints: {rules}"
 
 
 class HintsBar(QFrame):
@@ -143,4 +166,5 @@ class HintsBar(QFrame):
             self.hide()
             return
         self.label.setText("\n".join(hint_lines(findings)))
+        self.setToolTip(hint_details(findings))
         self.show()
