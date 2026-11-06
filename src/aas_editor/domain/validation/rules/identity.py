@@ -1,10 +1,10 @@
 """Rules about names and ids: unique ids, the idShort pattern, versions."""
 
 from collections.abc import Iterator
-import re
 
 from aas_editor.domain.references import describe_object
 from aas_editor.domain.validation.context import ValidationContext
+from aas_editor.domain.validation.field_checks import id_short_problem
 from aas_editor.domain.validation.findings import Finding
 from aas_editor.domain.validation.findings import Severity
 from aas_editor.domain.validation.rule import Rule
@@ -12,13 +12,6 @@ from aas_editor.domain.validation.rule import Rule
 DUPLICATE_ID = "EDT-DUPLICATE-ID"
 ID_SHORT_PATTERN = "AASd-002"
 VERSION_FOR_REVISION = "AASd-005"
-
-# AASd-002 as the specification writes it. The SDK checks the characters and
-# the first and last one, but accepts an idShort of one letter, which the
-# pattern refuses because it needs a second character class at the end.
-_ID_SHORT = re.compile(r"[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9_]+")
-# The longest idShort the specification allows (NameType).
-_MAX_ID_SHORT_LENGTH = 128
 
 
 def duplicate_ids(context: ValidationContext) -> Iterator[Finding]:
@@ -46,14 +39,15 @@ def id_short_pattern(context: ValidationContext) -> Iterator[Finding]:
     """Finds an idShort that does not match the pattern of AASd-002."""
     for referable in context.referables:
         id_short = referable.id_short
-        if id_short is None or _is_valid(id_short):
+        if id_short is None:
+            continue
+        problem = id_short_problem(id_short)
+        if problem is None:
             continue
         yield Finding(
             ID_SHORT_PATTERN,
             Severity.ERROR,
-            f"The idShort '{id_short}' must have at least two characters, "
-            "start with a letter, use only letters, digits, hyphens and "
-            "underscores, and not end with a hyphen",
+            f"The idShort '{id_short}' {problem}",
             referable,
             referable,
             "id_short",
@@ -76,13 +70,6 @@ def revision_needs_version(context: ValidationContext) -> Iterator[Finding]:
                 obj,
                 "revision",
             )
-
-
-def _is_valid(id_short: str) -> bool:
-    return (
-        len(id_short) <= _MAX_ID_SHORT_LENGTH
-        and _ID_SHORT.fullmatch(id_short) is not None
-    )
 
 
 RULES = (

@@ -18,6 +18,7 @@
 
 from basyx.aas.model import SubmodelElementList
 
+from aas_editor.application.editing import edit_mode
 from aas_editor.domain.containers import position_of
 from aas_editor.models import StandardItem
 from aas_editor import settings
@@ -83,12 +84,18 @@ class DetailedInfoItem(StandardItem):
 
     @staticmethod
     def _populateUnknown(obj, **kwargs):
+        # Read mode shows what an object has, not what it could have (F-EDT-01
+        # AC1). A null attribute is a row to create it from, which Edit mode needs.
+        editing = edit_mode().is_editing
         for attr in getAttrs4detailInfo(obj):
             if attr == "id_short" and isListItem(obj):
                 # The item of a list has no idShort: its position names it.
                 ListIndexItem(obj, name=LIST_INDEX_NAME, **kwargs)
                 continue
-            DetailedInfoItem(getattr(obj, attr), name=attr, **kwargs)
+            value = getattr(obj, attr)
+            if value is None and not editing:
+                continue
+            DetailedInfoItem(value, name=attr, **kwargs)
 
 
 LIST_INDEX_NAME = "index"
@@ -113,8 +120,15 @@ class ListIndexItem(DetailedInfoItem):
         super().__init__(self.position(), name=name, typehint=int, **kwargs)
 
     def position(self) -> int:
-        """Return the position of the element in its list."""
-        position = position_of(self.element.parent.value, self.element)
+        """Return the position of the element in its list, -1 if it has left it.
+
+        A row can be asked for its data after its element was removed, for
+        example when the view repaints before the row itself is removed.
+        """
+        parent = self.element.parent
+        if parent is None:
+            return -1
+        position = position_of(parent.value, self.element)
         return -1 if position is None else position
 
     def data(self, role, column=settings.ATTRIBUTE_COLUMN, column_name=""):

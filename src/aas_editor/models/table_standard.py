@@ -30,10 +30,12 @@ from PyQt6.QtCore import (
     QItemSelection,
     QSize,
     QPersistentModelIndex,
+    QTimer,
     pyqtSignal,
 )
 from PyQt6.QtGui import QFont
 
+from aas_editor.application.change_marks import with_ancestors
 from aas_editor.application.changes import Change, ChangeKind, observer_for
 from aas_editor.application.commands import Command, ReadOnlyError
 from aas_editor.application.editing import edit_mode
@@ -132,8 +134,11 @@ class StandardTable(QAbstractItemModel):
         self._rootItem = rootItem
         self._columns = columns
         self.lastErrorMsg = ""
-        self.changedItems: List[QModelIndex] = []
         self._changeSubscriptions: dict[int, tuple[Subscription, ...]] = {}
+        # The rows to repaint after the marks of a package changed.
+        self._repaintPending = False
+        self._repaintAll = False
+        self._repaintObjects: set[int] = set()
 
     def index(
         self, row: int, column: int = 0, parent: QModelIndex = QModelIndex()
@@ -556,10 +561,33 @@ class StandardTable(QAbstractItemModel):
         if index.data(IS_LINK_ROLE):
             return LINK_BLUE
         elif column == ATTRIBUTE_COLUMN:
-            if self.objByIndex(index).new:
+            return self._markColor(self.objByIndex(index))
+        return QVariant()
+
+    @staticmethod
+    def _marksOf(item: StandardItem):
+        """Return the marks of the package that the item belongs to, or None"""
+        return getattr(getattr(item, "package", None), "changeMarks", None)
+
+    def _markColor(self, item: StandardItem):
+        """Return the colour for an item that was added or changed since the save.
+
+        The marks belong to the package and follow its command stack, so the
+        colour is gone after a save and after an undo to the saved state, in
+        every tab (F-EDT-01 AC3).
+        """
+        marks = self._marksOf(item)
+        if marks is None:
+            return QVariant()
+        if isinstance(item.obj, Package):
+            return QVariant() if marks.is_empty else CHANGED_BLUE
+        node = item
+        while isinstance(node, StandardItem):
+            if marks.is_new(node.obj):
                 return NEW_GREEN
-            elif self.objByIndex(index).changed:
-                return CHANGED_BLUE
+            node = node.parent()
+        if marks.is_changed(item.obj):
+            return CHANGED_BLUE
         return QVariant()
 
     def _getFont(self, index: QModelIndex):
@@ -639,7 +667,6 @@ class StandardTable(QAbstractItemModel):
                     # The command named this model as the origin of its first
                     # report, so the model shows the edit by itself.
                     self._syncAfterEdit(index, command)
-                    self.setChanged(index)
                     self.update(index)
                 return True
             except EditCancelled:
@@ -846,35 +873,6 @@ class StandardTable(QAbstractItemModel):
             return
         raise ValueError(f"'{name}' is mandatory and cannot be cleared")
 
-    def setChanged(self, topLeft: QModelIndex, bottomRight: QModelIndex = None):
-        """Set the item and all parents as changed"""
-        self._setChanged(True, topLeft, bottomRight)
-
-    def setUnchanged(
-        self, topLeft: QModelIndex, bottomRight: QModelIndex = None
-    ):
-        self._setChanged(False, topLeft, bottomRight)
-
-    def _setChanged(
-        self, changed: bool, topLeft: QModelIndex, bottomRight: QModelIndex
-    ):
-        bottomRight = topLeft if bottomRight is None else bottomRight
-        if topLeft.isValid() and bottomRight.isValid():
-            selection = QItemSelection(topLeft, bottomRight)
-            for index in selection.indexes():
-                self.objByIndex(index).changed = changed
-                if changed:
-                    self.changedItems.append(index)
-                else:
-                    self.changedItems.append(index)
-
-                if index.parent().isValid():
-                    self.setChanged(index.parent())
-                else:
-                    packItem: QModelIndex = index.data(PACK_ITEM_ROLE)
-                    if packItem and packItem.isValid():
-                        packItem.model().dataChanged.emit(packItem, packItem)
-
     def removeRows(
         self, row: int, count: int, parent: QModelIndex = ...
     ) -> bool:
@@ -965,10 +963,14 @@ class StandardTable(QAbstractItemModel):
         """
         if package is None or id(package) in self._changeSubscriptions:
             return
-        self._changeSubscriptions[id(package)] = (
+        subscriptions = (
             observer_for(package).subscribe(self.onModelChange),
             package.commandStack.subscribe(self._onHistoryChanged),
         )
+        marks = getattr(package, "changeMarks", None)
+        if marks is not None:
+            subscriptions += (marks.subscribe(self._onMarksChanged),)
+        self._changeSubscriptions[id(package)] = subscriptions
 
     def unwatchPackage(self, package: Package):
         """Stop following the changes of a package, for example once closed."""
@@ -984,12 +986,75 @@ class StandardTable(QAbstractItemModel):
         Changes are named by their AAS objects. This looks for the items that
         show these objects, and updates them without touching the others.
         """
+        # Own changes are marked too: the model that made one has updated
+        # itself, but the marks are for all tabs.
+        self._markChangedItems(change)
         if change.origin is self:
             return
         if change.kind is ChangeKind.CHANGED:
             self._onObjectChanged(change.target)
         else:
             self._onContainerChanged(change)
+
+    def _markChangedItems(self, change: Change):
+        """Mark the objects of the items above a change as changed.
+
+        The marks of the package know the objects above a changed object as
+        far as the model of the AAS does. A view knows more, such as the
+        element above a qualifier, which only the rows of a tab show.
+        """
+        where = (
+            change.target
+            if change.kind is ChangeKind.CHANGED
+            else change.parent
+        )
+        # The tree shows the element above a qualifier, not the qualifier.
+        wanted = {id(obj) for obj in with_ancestors(where)}
+        for item in self._allItems():
+            if (
+                id(item.obj) not in wanted
+                and id(item.containerObj) not in wanted
+            ):
+                continue
+            marks = self._marksOf(item)
+            if marks is None:
+                continue
+            above = []
+            node = item
+            while isinstance(node, StandardItem):
+                above.append(node.obj)
+                node = node.parent()
+            marks.mark_changed(*above)
+
+    def _onMarksChanged(self, update):
+        """Repaint the rows of marked objects, once per pass of the event loop"""
+        if update.cleared:
+            self._repaintAll = True
+        else:
+            self._repaintObjects.update(id(obj) for obj in update.objects)
+        if not self._repaintPending:
+            self._repaintPending = True
+            QTimer.singleShot(0, self._repaintMarked)
+
+    def _repaintMarked(self):
+        self._repaintPending = False
+        everything, wanted = self._repaintAll, self._repaintObjects
+        self._repaintAll, self._repaintObjects = False, set()
+        try:
+            for item in list(self._allItems()):
+                if item is self._rootItem:
+                    continue
+                if (
+                    everything
+                    or id(item.obj) in wanted
+                    or isinstance(item.obj, Package)
+                ):
+                    index = self._indexOf(item)
+                    if index is not None:
+                        self._emitRowChanged(index)
+        except RuntimeError:
+            # The model was deleted before the timer fired.
+            pass
 
     def _onObjectChanged(self, target):
         items = list(self._allItems())

@@ -43,6 +43,7 @@ from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
 from aas_editor.utils.util import toggleStylesheet
 from aas_editor.treeviews.base import HeaderView
+from aas_editor.ui.validation_window import install_validation
 
 
 class EditorApp(QMainWindow, design.Ui_MainWindow):
@@ -70,6 +71,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
 
         self.initPackageFiles()
+        # The validation dock and hints mode, before the menus that list them
+        self.validationController = install_validation(self)
         self.initActions()
         self.initMenu()
         self.initToolbars()
@@ -275,6 +278,10 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuView.addAction(self.menuAppearance.menuAction())
         self.menuView.addSection("Panels")
         self.menuView.addAction(self.filesDock.toggleViewAction())
+        self.menuView.addAction(
+            self.validationController.dock.toggleViewAction()
+        )
+        self.menuView.addAction(self.validationController.hints_action)
         self.menuView.addSection("AAS file view")
         self.menuView.addAction(self.mainTreeView.zoomInAct)
         self.menuView.addAction(self.mainTreeView.zoomOutAct)

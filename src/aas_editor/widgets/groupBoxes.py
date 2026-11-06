@@ -53,6 +53,7 @@ from aas_editor.utils.util_type import (
 )
 from aas_editor.utils.util import isValOk4Typehint
 from aas_editor.domain.language_tags import check_language_tags
+from aas_editor.ui.inline_hints import attach_inline_hint
 from aas_editor.domain.typed_values import check_new_object
 from aas_editor.widgets.editWidgets import (
     BytesEdit,
@@ -219,6 +220,10 @@ class ObjGroupBox(GroupBox):
             paramTypeHint, objVal=val, **kwargs
         )
         self.paramWidgets[param] = widget
+        # Advice under the fields that the rules know, while hints mode is on
+        attach_inline_hint(
+            getattr(self.objTypeHint, "__name__", ""), param, widget
+        )
 
         if widget.optional and isinstance(
             widget, (GroupBox, StandardInputWidget)

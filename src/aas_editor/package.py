@@ -30,12 +30,14 @@ from basyx.aas.model import (
     ModelReference,
 )
 
+from aas_editor.application.change_marks import ChangeMarks
 from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import CommandStack
 from aas_editor.application.commands import PACKAGE_HISTORY_LIMIT
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.edits import link_submodels
 from aas_editor.application.save import SaveOptions
+from aas_editor.application.validation import SaveGate
 from aas_editor.domain.file_references import file_references
 from aas_editor.domain.file_references import unreferenced_files
 from aas_editor.infrastructure.package_io import (
@@ -60,6 +62,10 @@ class Package:
         self.commandStack = CommandStack(
             PACKAGE_HISTORY_LIMIT, lambda: edit_mode().is_editing
         )
+        # What differs from the saved file, for the colours of the trees.
+        self.changeMarks = ChangeMarks(observer_for(self), self.commandStack)
+        # The questions of a save, and the errors the user confirmed (D5).
+        self.saveGate = SaveGate()
         self.objStore = SetIdentifiableStore()
         self.fileStore = DictSupplementaryFileContainer()
         # Parts of the file that the object store and file store do not hold.
