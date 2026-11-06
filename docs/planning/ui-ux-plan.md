@@ -518,6 +518,7 @@ Proposed only, none added now:
 
 - **C, `feat/form-vocabulary`: done.** Forms read in the words of ADR 0022, with the description as the tooltip, and the add dialog of a list starts with one entry and the focus in its first field. [ADR 0026](../software/adr/0026-forms-read-in-words-of-the-metamodel.md). Not built: the "More" line for optional attributes, a new shortcut, and a new text for the "Create" button.
 - **D, done** on `feat/design-tokens`: tokens, generated style sheet, palette, and theme manager, with Fusion, as `fluent-light`, `fluent-dark`, and `fluent-system` in the theme list. The light theme is the default of a first run. `ui/colors.py` reads the tokens. [ADR 0025](../software/adr/0025-design-tokens-and-theme-architecture.md).
+- **K, done** on `feat/dialog-layout`: one pattern for the dialogs in `ui/dialog_layout.py` (12 pixels of padding, 8 between parts, `QDialogButtonBox`, the main action in the accent, a safe default outlined), more than 30 dialogs on it, the leftovers of C fixed (a nested list no longer takes its owner's title, entries read `Text 1`, `language`, `text`), and the JSON editor and the colored text of open dialogs follow the theme. Not built: a title line at the top of each dialog, and the two tool windows with a web view. No ADR, because phase K has none in section 6.
 
 ## 7. Decisions for the owner
 
