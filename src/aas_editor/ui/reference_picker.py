@@ -74,6 +74,7 @@ class ReferencePickerDialog(QDialog):
         parent: QWidget | None = None,
         others: Sequence[PickerSource] = (),
         package_name: str = "",
+        initial_filter: str | None = None,
     ) -> None:
         """Builds the dialog.
 
@@ -91,6 +92,8 @@ class ReferencePickerDialog(QDialog):
                 reference to its id, or a model reference through its path.
             package_name: The name of the package that is edited, to tell it
                 from the others in the list.
+            initial_filter: The text of the filter to start on, such as
+                `Concept descriptions` for a semantic id (F-EDT-11 AC1).
         """
         super().__init__(parent)
         self.setWindowTitle(TITLE)
@@ -119,6 +122,12 @@ class ReferencePickerDialog(QDialog):
         if preferred is not None:
             self.filter_box.setCurrentIndex(
                 max(self.filter_box.findData(preferred), 0)
+            )
+        elif initial_filter is not None:
+            # A field that has no narrower filter of its own starts on the
+            # one that the caller asks for, if the field offers it.
+            self.filter_box.setCurrentIndex(
+                max(self.filter_box.findText(initial_filter), 0)
             )
 
         self.search_box = QLineEdit(self)

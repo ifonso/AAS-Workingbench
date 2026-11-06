@@ -42,7 +42,9 @@ from aas_editor.domain.references import ReferenceIndex
 from aas_editor.domain.reference_picker import PickerSource
 from aas_editor.settings.app_settings import OPENED_PACKS_ROLE
 from aas_editor.settings.app_settings import PACK_ITEM_ROLE
+from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.app_settings import PACKAGE_ROLE
+from aas_editor.settings.app_settings import PARENT_OBJ_ROLE
 from aas_editor.ui.reference_picker import ReferencePickerDialog
 from aas_editor.widgets.groupBoxes import ModelReferenceGroupBox
 from aas_editor.widgets.groupBoxes import ObjGroupBox
@@ -119,6 +121,55 @@ def open_packages_of(widget: QWidget) -> list[Any]:
                     return sorted(packages, key=lambda p: str(p.name))
         owner = owner.parent()
     return []
+
+
+_SEMANTIC_ID_NAMES = ("semantic_id", "supplemental_semantic_id")
+CONCEPTS_FILTER = "Concept descriptions"
+
+
+def is_semantic_id_of_element(widget: QWidget) -> bool:
+    """Tells whether a reference form is the semantic id of a submodel or element.
+
+    Package Explorer lists only concept descriptions there (F-EDT-11 AC1), so
+    the picker starts on that filter. Two forms exist: a part of the form of
+    the whole object, which knows the attribute that holds it, and the dialog
+    of one attribute, which a tab opens for the current row.
+
+    Args:
+        widget: A reference form.
+    """
+    child: QWidget = widget
+    parent: QObject | None = widget.parent()
+    while isinstance(parent, QWidget):
+        params: Any = getattr(parent, "paramWidgets", None)
+        if isinstance(params, dict):
+            for name, held in cast("dict[str, Any]", params).items():
+                if held is child:
+                    owner: Any = getattr(parent, "objTypeHint", None)
+                    return name in _SEMANTIC_ID_NAMES and (
+                        isinstance(owner, type)
+                        and issubclass(
+                            owner, (model.Submodel, model.SubmodelElement)
+                        )
+                    )
+        child, parent = parent, parent.parent()
+    window: QWidget | None = widget.window()
+    if window is None or window is widget:
+        return False
+    owner_view: QObject | None = window.parent()
+    while owner_view is not None:
+        current: Any = getattr(owner_view, "currentIndex", None)
+        if current is not None:
+            index: Any = current()
+            if hasattr(index, "data"):
+                return index.data(
+                    NAME_ROLE
+                ) in _SEMANTIC_ID_NAMES and isinstance(
+                    index.data(PARENT_OBJ_ROLE),
+                    (model.Submodel, model.SubmodelElement),
+                )
+        owner_view = owner_view.parent()
+    return False
 
 
 def _packages_in(shown: Any) -> set[Any]:
@@ -327,6 +378,11 @@ class ReferenceFieldMixin:
             parent=self,  # pyright: ignore[reportArgumentType]
             others=others,
             package_name=str(main.name) if main is not None else "",
+            initial_filter=(
+                CONCEPTS_FILTER
+                if is_semantic_id_of_element(self)  # pyright: ignore[reportArgumentType]
+                else None
+            ),
         )
         accepted = dialog.exec() == QDialog.DialogCode.Accepted
         reference = dialog.reference() if accepted else None

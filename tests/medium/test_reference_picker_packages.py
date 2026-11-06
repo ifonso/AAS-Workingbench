@@ -45,6 +45,37 @@ class TestDialog:
     def _others(self) -> list[PickerSource]:
         return [PickerSource("other.aasx", _objects("theirs"))]
 
+    def test_the_dialog_can_start_on_the_filter_of_concept_descriptions(
+        self, qtbot
+    ) -> None:
+        from aas_editor.ui.reference_picker import ReferencePickerDialog
+
+        mixed = (*_objects("mine"), make_submodel("urn:sm", "Sub"))
+        dialog = ReferencePickerDialog(
+            mixed,
+            ANYTHING,
+            initial_filter="Concept descriptions",
+        )
+        qtbot.addWidget(dialog)
+
+        assert dialog.visible_labels() == ["MINE"]
+        dialog.set_filter("Anything")
+        assert sorted(dialog.visible_labels()) == ["MINE", "Sub"]
+
+    def test_a_filter_that_the_field_does_not_offer_is_ignored(
+        self, qtbot
+    ) -> None:
+        from aas_editor.ui.reference_picker import ReferencePickerDialog
+
+        dialog = ReferencePickerDialog(
+            (*_objects("mine"), make_submodel("urn:sm", "Sub")),
+            ReferenceRule(True, False, (model.Submodel,)),
+            initial_filter="Concept descriptions",
+        )
+        qtbot.addWidget(dialog)
+
+        assert dialog.visible_labels() == ["Sub"]
+
     def test_without_other_packages_nothing_changes(self, qtbot) -> None:
         dialog = self._dialog(qtbot)
 
@@ -111,6 +142,68 @@ class TestDialog:
         assert dialog.visible_labels() == ["THEIRS"]
 
 
+class TestSemanticIdOfElement:
+    """The form of the whole object knows which attribute holds a form."""
+
+    def _form(self, qtbot, owner: type, name: str, depth: int = 0):
+        from PyQt6.QtWidgets import QWidget
+
+        group = QWidget()
+        qtbot.addWidget(group)
+        # The form is a child of the group, which would be deleted with it.
+        self.__dict__.setdefault("groups", []).append(group)
+        group.objTypeHint = owner  # type: ignore[attr-defined]
+        field = QWidget(group)
+        group.paramWidgets = {name: field}  # type: ignore[attr-defined]
+        inner = field
+        for _ in range(depth):
+            inner = QWidget(inner)
+        return inner
+
+    @pytest.mark.parametrize(
+        "owner",
+        [model.Property, model.Submodel, model.SubmodelElementCollection],
+    )
+    def test_the_semantic_id_of_a_submodel_or_element_is_one(
+        self, qtbot, owner: type
+    ) -> None:
+        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+
+        assert is_semantic_id_of_element(
+            self._form(qtbot, owner, "semantic_id")
+        )
+
+    def test_the_supplemental_semantic_id_is_one_too(self, qtbot) -> None:
+        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+
+        assert is_semantic_id_of_element(
+            self._form(qtbot, model.Property, "supplemental_semantic_id")
+        )
+
+    def test_a_form_deeper_in_the_field_is_found(self, qtbot) -> None:
+        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+
+        assert is_semantic_id_of_element(
+            self._form(qtbot, model.Property, "semantic_id", depth=1)
+        )
+
+    @pytest.mark.parametrize(
+        ("owner", "name"),
+        [
+            (model.Qualifier, "semantic_id"),
+            (model.Extension, "semantic_id"),
+            (model.Property, "value_id"),
+            (model.Qualifier, "value_id"),
+        ],
+    )
+    def test_other_reference_fields_are_not(
+        self, qtbot, owner: type, name: str
+    ) -> None:
+        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+
+        assert not is_semantic_id_of_element(self._form(qtbot, owner, name))
+
+
 @pytest.fixture
 def two_packages(lab_class, monkeypatch: pytest.MonkeyPatch):
     """A lab with an element, and a second open package with a description."""
@@ -151,9 +244,24 @@ def test_the_picker_of_a_form_offers_the_description_of_the_other_package(
 
     flow.lab.edit_in_dialog(attrs, "semantic_id", fill)
 
-    assert "Theirs" in flow.seen[0]
+    # Only concept descriptions are listed, from both packages (AC1).
+    assert flow.seen[0] == ["Theirs"]
     reference = flow.lab.element().semantic_id
     assert [k.value for k in reference.key] == ["urn:cd:theirs"]
     assert isinstance(reference, model.ExternalReference)
     flow.lab.stack.undo()
     assert flow.lab.element().semantic_id is None
+
+
+def test_the_picker_of_another_reference_field_lists_every_kind_of_target(
+    two_packages,
+) -> None:
+    flow = two_packages()
+    attrs = flow.lab.attrs()
+
+    def fill(dialog: Any) -> None:
+        flow.pick_theirs(dialog.inputWidget)
+
+    flow.lab.edit_in_dialog(attrs, "value_id", fill)
+
+    assert {"Theirs", "Two", "Submodel"} <= set(flow.seen[0])
