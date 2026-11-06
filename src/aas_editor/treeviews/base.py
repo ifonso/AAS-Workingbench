@@ -50,6 +50,8 @@ from PyQt6.QtWidgets import (
     QDialog,
 )
 
+from basyx.aas.model import SubmodelElementList
+
 import aas_editor.dialogs as dialogs
 import aas_editor.settings as settings
 import aas_editor.widgets as widgets
@@ -57,7 +59,9 @@ import aas_editor.widgets.messsageBoxes
 
 from aas_editor.application.commands import CommandStack, ReadOnlyError
 from aas_editor.application.editing import edit_mode
+from aas_editor.domain.list_children import child_defaults
 from aas_editor.models.search_proxy_model import SearchProxyModel
+from aas_editor.utils.util_type import getTypeName
 from aas_editor.ui.actions import ActionContext, ViewActions, ViewKind
 from aas_editor.settings.app_settings import *
 from aas_editor.additional.classes import DictItem
@@ -1072,6 +1076,17 @@ class TreeView(BasicTreeView):
         # Remove invalid indexes just in case
         valid_indexes = [idx for idx in indexes if idx.isValid()]
 
+        # A view that selects rows lists every cell of a row, but a row is one
+        # item: it must be deleted, copied, or cut once.
+        rows = set()
+        unique_indexes = []
+        for idx in valid_indexes:
+            row = (idx.parent(), idx.row())
+            if row not in rows:
+                rows.add(row)
+                unique_indexes.append(idx)
+        valid_indexes = unique_indexes
+
         # Remove indexes whose parent is also in the list
         top_level_candidates = []
         for idx in valid_indexes:
@@ -1208,6 +1223,10 @@ class TreeView(BasicTreeView):
         kwargs["title"] = (
             title if title else f"Add item to {parent.data(NAME_ROLE)}"
         )
+        if editDialogType is dialogs.EditObjDialog:
+            self._applyListChildDefaults(parent, objTypeHint, objVal, kwargs)
+            objTypeHint = kwargs.pop("objTypeHint", objTypeHint)
+            objVal = kwargs.pop("objVal", objVal)
         kwargs["parent"] = self
         kwargs["objTypeHint"] = objTypeHint
         kwargs["objVal"] = objVal
@@ -1236,6 +1255,42 @@ class TreeView(BasicTreeView):
         dialog.deleteLater()
         self.setFocus()
         return result
+
+    @staticmethod
+    def _applyListChildDefaults(
+        parent: QModelIndex, objTypeHint, objVal, kwargs
+    ):
+        """Make the dialog for a child of a list ask for what the list allows.
+
+        A SubmodelElementList fixes the type of its children, and may fix their
+        value type and semantic id. The SDK refuses any other child (AASd-107,
+        108, 109), so the dialog is made for the type of the list, with the
+        value type and the semantic id of the list already in.
+        """
+        submodelList = parent.data(OBJECT_ROLE)
+        if not isinstance(submodelList, SubmodelElementList):
+            return
+        defaults = child_defaults(submodelList)
+        if objVal is not None and not isinstance(objVal, defaults.element_type):
+            # Something of another type is meant to go in. The SDK refuses it,
+            # and the dialog shows what was given.
+            return
+        paramsToHide = dict(
+            ClassesInfo.defaultParamsToHide(defaults.element_type)
+        )
+        if defaults.value_type is not None:
+            paramsToHide["value_type"] = defaults.value_type
+        if kwargs.get("paramsToHide"):
+            paramsToHide.update(kwargs["paramsToHide"])
+        kwargs["paramsToHide"] = paramsToHide
+        kwargs["includeInheritedTyps"] = False
+        kwargs["objTypeHint"] = defaults.element_type
+        kwargs["objVal"] = objVal if objVal is not None else defaults.template
+        if kwargs["title"] == f"Add item to {parent.data(NAME_ROLE)}":
+            kwargs["title"] = (
+                f"Add {getTypeName(defaults.element_type)} to list "
+                f"{parent.data(NAME_ROLE)}"
+            )
 
     def replItemWithDialog(
         self,
@@ -1380,6 +1435,13 @@ class TreeView(BasicTreeView):
 
     def isEditableInsideCell(self, index: QModelIndex):
         if index.flags() & Qt.ItemFlag.ItemIsEditable:
+            # A value that follows a value type is typed in a line of text,
+            # also when it is missing or is a date.
+            delegate = self.itemDelegate()
+            if isinstance(delegate, EditDelegate) and delegate.isTypedValueCell(
+                index
+            ):
+                return True
             data = index.data(Qt.ItemDataRole.EditRole)
             if (
                 isoftype(data, self.itemDelegate().editableTypesInTable)

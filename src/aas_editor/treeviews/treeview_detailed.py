@@ -41,6 +41,7 @@ from aas_editor.settings.app_settings import (
     IS_LINK_ROLE,
     PARENT_OBJ_ROLE,
 )
+from aas_editor.ui.value_editor import ValueEditDialog, value_dialog_args
 from aas_editor.utils.util import getAttrTypeHint
 from aas_editor import dialogs
 from aas_editor.treeviews.base import TreeView
@@ -161,6 +162,17 @@ class AttrsTreeView(TreeView):
             )
             attribute = index.data(NAME_ROLE)
             parentObj = index.data(PARENT_OBJ_ROLE)
+            valueArgs = value_dialog_args(parentObj, attribute)
+            if valueArgs is not None:
+                # A value follows its value type, and bytes are not literals.
+                self.replItemWithDialog(
+                    index=index,
+                    title=f"Edit {attribute}",
+                    objVal=objVal,
+                    editDialogType=ValueEditDialog,
+                    **valueArgs,
+                )
+                return
             try:
                 attrTypeHint = getAttrTypeHint(type(parentObj), attribute)
             except KeyError as e:

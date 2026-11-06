@@ -15,7 +15,12 @@ from typing import Any, Callable, Iterable, Union, AbstractSet, List
 
 from collections.abc import MutableMapping
 
-from basyx.aas.model import NamespaceSet, Referable
+from basyx.aas.model import (
+    AASConstraintViolation,
+    LangStringSet,
+    NamespaceSet,
+    Referable,
+)
 from PyQt6.QtCore import (
     QAbstractItemModel,
     QVariant,
@@ -36,8 +41,17 @@ from aas_editor.application.edits import (
     RemoveMember,
     ReplaceMember,
     SetAttribute,
+    SetValueType,
 )
 from aas_editor.application.listeners import Subscription
+from aas_editor.domain.containers import is_list_like
+from aas_editor.domain.language_tags import check_language_tag
+from aas_editor.domain.typed_values import (
+    is_value_attr,
+    is_value_type_attr,
+    prepare_edit,
+)
+from aas_editor.domain.value_types import InvalidValueError
 from aas_editor.models import StandardItem
 from aas_editor.package import Package
 from aas_editor.settings.app_settings import (
@@ -60,6 +74,7 @@ from aas_editor.settings.app_settings import (
     COLUMN_NAME_ROLE,
     LINKED_ITEM_ROLE,
     COPY_ROLE,
+    EDIT_TARGET_ROLE,
 )
 from aas_editor.settings import NOT_GIVEN
 from aas_editor.settings.colors import LINK_BLUE, CHANGED_BLUE, NEW_GREEN
@@ -68,6 +83,20 @@ from aas_editor.utils.util import actualizeAASParents
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import getArgs, isIterable
+
+
+def isMemberContainer(obj) -> bool:
+    """Tell whether an object holds members that are edited as a whole.
+
+    That is a list, which includes the ConstrainedList of the supplemental
+    semantic ids, a set, or a mapping like a LangStringSet.
+    """
+    return is_list_like(obj) or isinstance(obj, (AbstractSet, MutableMapping))
+
+
+# Why a change is refused, in words the user can read. A view shows the message
+# of such an error as it is, without the traceback of an unexpected failure.
+REFUSALS = (ReadOnlyError, InvalidValueError, AASConstraintViolation)
 
 
 class StandardTable(QAbstractItemModel):
@@ -269,7 +298,7 @@ class StandardTable(QAbstractItemModel):
         parentObj = parent.data(OBJECT_ROLE)
         if isinstance(parentObj, MutableMapping):
             return self._addEntryCommand(parent, parentObj, obj)
-        if isinstance(parentObj, (AbstractSet, list)):
+        if isinstance(parentObj, AbstractSet) or is_list_like(parentObj):
             return AddMember(self._observerFor(parent), parentObj, obj, row)
         raise AttributeError(
             f"Object couldn't be added: parent obj type is not appendable: {type(parentObj)}"
@@ -448,6 +477,8 @@ class StandardTable(QAbstractItemModel):
             return self._columns[column]
         if role == LINKED_ITEM_ROLE:
             return self.getLinkedItem(index)
+        if role == EDIT_TARGET_ROLE:
+            return self.editTarget(index)
         if role == COPY_ROLE:
             try:
                 if index.column() in (ATTRIBUTE_COLUMN, VALUE_COLUMN):
@@ -535,7 +566,7 @@ class StandardTable(QAbstractItemModel):
             try:
                 self.addItem(value, index)
                 return True
-            except ReadOnlyError as e:
+            except REFUSALS as e:
                 self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
@@ -549,7 +580,7 @@ class StandardTable(QAbstractItemModel):
                 parent = index.parent()
                 self.clearRow(index.row(), parent, value)
                 return True
-            except ReadOnlyError as e:
+            except REFUSALS as e:
                 self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
@@ -568,7 +599,7 @@ class StandardTable(QAbstractItemModel):
                     self.setChanged(index)
                     self.update(index)
                 return True
-            except ReadOnlyError as e:
+            except REFUSALS as e:
                 self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
@@ -600,16 +631,83 @@ class StandardTable(QAbstractItemModel):
         self._checkClearable(item.objName, item.typehint, value)
 
         container = self._changedObject(index)
-        observer = self._observerFor(index)
-        if isinstance(container, (list, AbstractSet, MutableMapping)):
+        if isMemberContainer(container):
             # The edited item is a member of the container, not an attribute.
             return ReplaceMember(
-                observer, container, item.obj, value, origin=self
+                self._observerFor(index),
+                container,
+                item.obj,
+                self._checkedMember(container, item.obj, value),
+                origin=self,
             )
-        command = SetAttribute(
-            observer, container, item.objName, value, origin=self
-        )
+        return self.attributeCommand(index, container, item.objName, value)
+
+    def editTarget(self, index: QModelIndex):
+        """Return the object and the attribute that an edit of the cell sets.
+
+        :return: a tuple of the object and the name of its attribute, or None
+            if the cell shows an element of a container or no attribute
+        """
+        if not index.isValid() or index.column() != VALUE_COLUMN:
+            return None
+        owner = self._changedObject(index)
+        if isMemberContainer(owner):
+            return None
+        return owner, self.objByIndex(index).objName
+
+    def attributeCommand(
+        self, index: QModelIndex, owner, name: str, value
+    ) -> Command | None:
+        """Return the command that sets an attribute of an object.
+
+        The values of a Property, a Range, a Qualifier, and an Extension follow
+        their value type, so text is parsed for it, and a change of the type
+        converts the values with it.
+
+        :return: the command, or None if the attribute has the value already
+        :raise InvalidValueError: if the value does not fit the value type, or
+            the attribute is fixed once the object is made
+        """
+        fixed = getattr(type(owner), name, None)
+        if isinstance(fixed, property) and fixed.fset is None:
+            # The SDK sets these only in the constructor, like the type of the
+            # children of a SubmodelElementList.
+            raise InvalidValueError(
+                f"'{name}' cannot be changed after the "
+                f"{type(owner).__name__} is made. Make a new one"
+            )
+        observer = self._observerFor(index)
+        if is_value_type_attr(owner, name):
+            typeCommand = SetValueType(observer, owner, value, origin=self)
+            return None if typeCommand.is_noop else typeCommand
+        if is_value_attr(owner, name):
+            value = prepare_edit(owner, name, value)
+        command = SetAttribute(observer, owner, name, value, origin=self)
         return None if command.is_noop else command
+
+    @staticmethod
+    def _checkedMember(container, old, value):
+        """Return the member to put into a container instead of old, or refuse.
+
+        :raise InvalidValueError: if the language of a text is no language tag,
+            is used by another text, or the text is empty
+        """
+        if isinstance(container, LangStringSet) and isinstance(value, DictItem):
+            problem = check_language_tag(value.key)
+            if problem:
+                raise InvalidValueError(problem)
+            taken = value.key in container and (
+                not isinstance(old, DictItem) or old.key != value.key
+            )
+            if taken:
+                raise InvalidValueError(
+                    f"The language '{value.key}' is used by another text"
+                )
+            if not value.value:
+                raise InvalidValueError(
+                    f"The text for the language '{value.key}' cannot be empty"
+                )
+        return value
 
     def _syncAfterEdit(self, index: QModelIndex, command: Command):
         """Make the item show the object that the edit made of it"""
@@ -618,6 +716,16 @@ class StandardTable(QAbstractItemModel):
             item.obj = command.new
         elif isinstance(command, SetAttribute) and item.objName == command.name:
             item.obj = getattr(command.owner, command.name)
+        elif isinstance(command, SetValueType) and item.objName == "value_type":
+            item.obj = command.value_type
+            self._syncValueRows(item, command)
+
+    def _syncValueRows(self, item: StandardItem, command: SetValueType):
+        """Show the values that a change of the value type converted"""
+        for sibling in item.parent().children():
+            if sibling.objName in command.value_names:
+                sibling.obj = getattr(command.owner, sibling.objName)
+                self._emitRowChanged(self._indexOf(sibling))
 
     def _changedObject(self, index: QModelIndex):
         """Return the object that an edit of the item changes.
@@ -719,7 +827,7 @@ class StandardTable(QAbstractItemModel):
 
         for currRow in range(row + count - 1, row - 1, -1):
             child = parentItem.children()[currRow]
-            if isinstance(parentObj, (list, MutableMapping, AbstractSet)):
+            if isMemberContainer(parentObj):
                 # A mapping member is a pair, and the item shows it as such.
                 self._run(
                     parent,

@@ -2,7 +2,8 @@
 
 BaSyx keeps the members of an object in different kinds of containers, and
 each kind needs its own calls: a `NamespaceSet` (the elements of a submodel,
-extensions, qualifiers), a plain `list`, a plain `set` (the references of a
+extensions, qualifiers), a `list` or a `ConstrainedList` (the supplemental
+semantic ids), a plain `set` (the references of a
 shell), an object store (the shells and submodels of a package), and a mapping
 (a `LangStringSet`). The commands in `aas_editor.application.edits` work with
 the functions here, so that they treat every container the same way and can
@@ -15,6 +16,7 @@ key and value, and its position is the position of the key.
 
 from collections.abc import Iterable
 from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 from collections.abc import MutableSet
 from typing import Any
 from typing import cast
@@ -26,6 +28,23 @@ from aas_editor.domain import ordering
 
 def _is_mapping(container: object) -> bool:
     return isinstance(container, MutableMapping)
+
+
+def is_list_like(container: object) -> bool:
+    """Tells whether a container is an ordered list of members.
+
+    Args:
+        container: Any object.
+
+    Returns:
+        True for a `list` and for the SDK's `ConstrainedList`, which is a
+        mutable sequence but no `list`. A `NamespaceSet` is not list-like here
+        even though the SML's one is a sequence, because it has its own calls.
+        Byte arrays are values, not containers.
+    """
+    return isinstance(container, MutableSequence) and not isinstance(
+        container, (model.NamespaceSet, bytearray)
+    )
 
 
 def _members(container: object) -> list[Any]:
@@ -50,7 +69,7 @@ def position_of(container: object, member: object) -> int | None:
         key = cast("tuple[Any, Any]", member)[0]
         keys = _members(container)
         return keys.index(key) if key in keys else None
-    if isinstance(container, (model.NamespaceSet, list)):
+    if isinstance(container, model.NamespaceSet) or is_list_like(container):
         held_members = _members(cast("object", container))
         for position, held in enumerate(held_members):
             if held is member:
@@ -93,8 +112,8 @@ def add_member(
         else:
             ordering.insert_at(namespace_set, member, index)
         return position_of(cast("object", container), member)
-    if isinstance(container, list):
-        items = cast("list[Any]", container)
+    if is_list_like(container):
+        items = cast("MutableSequence[Any]", container)
         if index is None or index >= len(items):
             items.append(member)
             return len(items) - 1
@@ -132,10 +151,10 @@ def remove_member(container: object, member: object) -> int | None:
         del cast("MutableMapping[Any, Any]", container)[key]
     elif isinstance(container, model.NamespaceSet):
         cast("model.NamespaceSet[Any]", container).remove(member)
-    elif isinstance(container, list):
+    elif is_list_like(container):
         if position is None:
             raise KeyError(f"Not in the list: {member!r}")
-        del cast("list[Any]", container)[position]
+        del cast("MutableSequence[Any]", container)[position]
     elif isinstance(container, MutableSet):
         cast("MutableSet[Any]", container).remove(member)
     else:
@@ -164,11 +183,11 @@ def replace_member(container: object, old: object, new: object) -> None:
         ordering.replace_item(
             cast("model.NamespaceSet[Any]", container), old, new
         )
-    elif isinstance(container, list):
-        position = position_of(cast("object", container), old)
+    elif is_list_like(container):
+        position = position_of(container, old)
         if position is None:
             raise KeyError(f"Not in the list: {old!r}")
-        cast("list[Any]", container)[position] = new
+        cast("MutableSequence[Any]", container)[position] = new
     elif isinstance(container, MutableSet):
         members = cast("MutableSet[Any]", container)
         if old not in members:

@@ -2,6 +2,7 @@
 
 from basyx.aas import model
 import pytest
+from tests.factories import make_external_reference
 from tests.factories import make_property
 from tests.factories import make_reference_to
 from tests.factories import make_submodel
@@ -196,6 +197,96 @@ class TestMapping:
             )
 
         assert dict(texts) == {"en": "one", "de": "eins"}
+
+
+class TestConstrainedList:
+    """The SDK keeps supplemental semantic ids in a `ConstrainedList`.
+
+    It is no `list`, but a list in every way that matters here.
+    """
+
+    @staticmethod
+    def _element_with_ids(*values: str) -> model.Property:
+        element = make_property("a")
+        element.semantic_id = make_external_reference("urn:main")
+        for value in values:
+            element.supplemental_semantic_id.append(
+                make_external_reference(value)
+            )
+        return element
+
+    @staticmethod
+    def _values(element: model.Property) -> list[str]:
+        return [ref.key[0].value for ref in element.supplemental_semantic_id]
+
+    def test_add_appends_and_inserts(self) -> None:
+        element = self._element_with_ids("urn:1", "urn:3")
+
+        position = containers.add_member(
+            element.supplemental_semantic_id,
+            make_external_reference("urn:2"),
+            1,
+        )
+
+        assert position == 1
+        assert self._values(element) == ["urn:1", "urn:2", "urn:3"]
+
+    def test_remove_tells_the_position_and_keeps_the_semantic_id(self) -> None:
+        element = self._element_with_ids("urn:1", "urn:2")
+        entry = element.supplemental_semantic_id[1]
+
+        position = containers.remove_member(
+            element.supplemental_semantic_id, entry
+        )
+
+        assert position == 1
+        assert self._values(element) == ["urn:1"]
+        assert element.semantic_id is not None
+
+    def test_remove_the_last_entry_leaves_an_empty_list(self) -> None:
+        element = self._element_with_ids("urn:1")
+
+        containers.remove_member(
+            element.supplemental_semantic_id,
+            element.supplemental_semantic_id[0],
+        )
+
+        assert self._values(element) == []
+
+    def test_replace_swaps_in_place(self) -> None:
+        element = self._element_with_ids("urn:1", "urn:2")
+
+        containers.replace_member(
+            element.supplemental_semantic_id,
+            element.supplemental_semantic_id[0],
+            make_external_reference("urn:new"),
+        )
+
+        assert self._values(element) == ["urn:new", "urn:2"]
+
+    def test_position_of_finds_the_entry(self) -> None:
+        element = self._element_with_ids("urn:1", "urn:2")
+
+        assert (
+            containers.position_of(
+                element.supplemental_semantic_id,
+                element.supplemental_semantic_id[1],
+            )
+            == 1
+        )
+
+    def test_is_list_like_is_true_for_lists_and_false_for_other_containers(
+        self,
+    ) -> None:
+        element = self._element_with_ids()
+        submodel = make_submodel()
+
+        assert containers.is_list_like(element.supplemental_semantic_id)
+        assert containers.is_list_like([])
+        assert not containers.is_list_like(submodel.submodel_element)
+        assert not containers.is_list_like({"a"})
+        assert not containers.is_list_like(bytearray(b"ab"))
+        assert not containers.is_list_like("text")
 
 
 def test_position_of_is_none_for_a_set() -> None:

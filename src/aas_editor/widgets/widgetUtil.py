@@ -16,6 +16,7 @@ from basyx.aas.model import LangStringSet, ModelReference
 import aas_editor.widgets as widgets
 import aas_editor.widgets.editWidgets
 import aas_editor.widgets.groupBoxes
+from aas_editor.domain.typed_values import is_value_hint, is_value_type_hint
 from aas_editor.settings import DEFAULT_INHERITOR
 from aas_editor.utils.util import (
     getParamsAndTypehints4init,
@@ -127,7 +128,17 @@ class InputWidgetUtil:
 
     @classmethod
     def getWidget4typehint(cls, objTypeHint, includeInheritedTyps, **kwargs):
-        if isabstract(objTypeHint) and not isIterableType(objTypeHint):
+        if is_value_type_hint(objTypeHint):
+            # A list of the XSD types, not a list of Python classes.
+            widget = widgets.editWidgets.ValueTypeInputWidget(
+                objTypeHint, **kwargs
+            )
+        elif is_value_hint(objTypeHint):
+            # One line of text that follows the value type, not a list of types.
+            widget = widgets.editWidgets.TypedValueInputWidget(
+                objTypeHint, **kwargs
+            )
+        elif isabstract(objTypeHint) and not isIterableType(objTypeHint):
             objTypes = inheritors(objTypeHint)
             kwargs["defType"] = DEFAULT_INHERITOR.get(objTypeHint, None)
             widget = widgets.groupBoxes.TypeOptionObjGroupBox(
