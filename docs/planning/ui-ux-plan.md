@@ -518,6 +518,7 @@ Proposed only, none added now:
 
 - **C, `feat/form-vocabulary`: done.** Forms read in the words of ADR 0022, with the description as the tooltip, and the add dialog of a list starts with one entry and the focus in its first field. [ADR 0026](../software/adr/0026-forms-read-in-words-of-the-metamodel.md). Not built: the "More" line for optional attributes, a new shortcut, and a new text for the "Create" button.
 - **D, done** on `feat/design-tokens`: tokens, generated style sheet, palette, and theme manager, with Fusion, as `fluent-light`, `fluent-dark`, and `fluent-system` in the theme list. The light theme is the default of a first run. `ui/colors.py` reads the tokens. [ADR 0025](../software/adr/0025-design-tokens-and-theme-architecture.md).
+- **E, `feat/fonts-and-icons`: done.** Inter 4.1 (one variable file, OFL) and 53 Tabler 3.50.0 icons (MIT) are bundled, with their licenses and `NOTICE` entries. `ThemedIconEngine` colors an icon by token when it draws, at the pixel ratio of the screen, and the 38 action icons use it. The 38 old icon files are removed. The application font is Inter at 13 pixels, and the zoom of the trees is untouched. `aas_manager.spec` bundles the fonts and `NOTICE`, and a frozen build was run. [ADR 0027](../software/adr/0027-bundled-font-and-themed-icons.md). Differs from the plan: `MIME_IMAGE_ICON` is `photo`, not `file-type-jpg`, and the default font weight (40, thin in Qt 6) was fixed. Not done: kind icons (G), and the old theme lines of the spec (M).
 
 ## 7. Decisions for the owner
 
