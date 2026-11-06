@@ -109,6 +109,47 @@ Inter (src/aas_editor/fonts/)
     The OFL asks that each copy of the font carries its license. The folder
     does, and so does the stand-alone build, which also ships this NOTICE.
 
+Fluent 2 color values (src/aas_editor/domain/design_tokens.py)
+    The neutral colors of the light and dark themes (backgrounds, foregrounds
+    and strokes) are values of the alias tokens of Fluent 2, read from
+    https://github.com/microsoft/fluentui (packages/tokens/src/alias/
+    lightColor.ts, darkColor.ts and global/colors.ts) on 2026-11-06. Only
+    those hex values are used, and no file of that repository is copied. The
+    repository states the MIT License, "Copyright (c) Microsoft
+    Corporation". The accent and status colors are this project's own. The
+    MIT License asks that its copyright notice and permission notice go with
+    "all copies or substantial portions of the Software". A few color values
+    are hardly a substantial portion, and the notice is given here anyway:
+
+        Copyright (c) Microsoft Corporation.
+
+        Permission is hereby granted, free of charge, to any person obtaining
+        a copy of this software and associated documentation files (the
+        "Software"), to deal in the Software without restriction, including
+        without limitation the rights to use, copy, modify, merge, publish,
+        distribute, sublicense, and/or sell copies of the Software, and to
+        permit persons to whom the Software is furnished to do so, subject to
+        the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+        EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+        NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+        BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+        ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+        CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+
+    The same repository's LICENSE adds that the fonts and icons that Fluent
+    UI React references are under separate terms
+    (https://aka.ms/fluentui-assets-license). This project uses none of
+    those fonts or icons, and the color values are not among them. The name
+    Fluent is used only to say what the colors follow, and the project is not
+    affiliated with or endorsed by Microsoft.
+
 Logos (src/aas_editor/icons/logo.*, full_logo.*, full_logo3.svg)
     Part of the AAS Manager code base. Their origin and license are not
     recorded in the repository. They are the only files of icons.
