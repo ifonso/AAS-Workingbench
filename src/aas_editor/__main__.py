@@ -64,6 +64,10 @@ def main():
 
     register_create_actions()
 
+    from aas_editor.ui.shell_copy_actions import register_shell_copy_actions
+
+    register_shell_copy_actions()
+
     from aas_editor.ui.bulk_actions import register_bulk_actions
 
     register_bulk_actions()
