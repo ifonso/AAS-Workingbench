@@ -223,12 +223,47 @@ class TestAddingOneItem:
 
         assert seen == [0]
 
+    def test_a_list_in_an_entry_does_not_take_the_title_of_its_owner(
+        self, lab_class
+    ) -> None:
+        lab = lab_class(make_property(ELEMENT_ID))
+        titles: list[tuple[str, str]] = []
+
+        def fill(dialog: Any) -> None:
+            entry = dialog.inputWidget.inputWidgets[0]
+            titles.append(
+                (
+                    entry.title(),
+                    entry.paramWidgets["supplemental_semantic_id"].title(),
+                )
+            )
+            entry.paramWidgets["type_"].widget.setText("Handle")
+
+        self._add_qualifier(lab, fill)
+
+        assert titles == [("Qualifier 1", "")]
+
     def test_a_form_in_a_form_does_not_start_with_an_entry(self, qapp) -> None:
         form = _form_of(model.Qualifier)
 
         keys = form.widget("supplemental_semantic_id")
 
         assert keys.inputWidgets == []
+
+
+def test_a_language_entry_is_titled_text_and_has_a_language_and_a_text(
+    qapp,
+) -> None:
+    form = _form_of(model.MultiLanguageProperty)
+
+    texts = form.widget("value")
+    entry = texts.inputWidgets[0]
+
+    assert entry.title() == "Text 1"
+    assert [entry.labelOf(param).text() for param in entry.paramWidgets] == [
+        "language*",
+        "text*",
+    ]
 
 
 def test_the_dialog_is_titled_with_the_name_of_the_metamodel(
