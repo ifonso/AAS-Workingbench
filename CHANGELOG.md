@@ -60,6 +60,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 ### Fixed
 
 - Setting the semantic id of an element moved it to the end of its siblings, and undo did not put it back. The position is kept for every attribute now.
+- Deleting a row in a tab that selects whole rows ran the delete once for each column, and removed up to three more rows behind it.
 - Giving an item of a list a semantic id that differs from its siblings was refused, as AASd-114 demands, but the SDK had taken the item out of the list by then, and it was lost. The item stays now.
 - An id edited in an attribute or a cell could be the id of another object, and left every reference to the old id pointing at nothing. The edit is refused for a duplicate, and updates the references.
 - The add dialogs for shells and submodels proposed the fixed id `https://www.example.com/`, so the second new object failed. They propose a new `urn:uuid:` id, and so does the dialog for a concept description.

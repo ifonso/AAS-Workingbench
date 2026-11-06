@@ -1148,7 +1148,16 @@ class TreeView(BasicTreeView):
             idx for idx in top_level_candidates if idx.parent() == first_parent
         ]
 
-        return same_level_indexes
+        # A view that selects whole rows lists every column of a row. The row
+        # is one object, so it counts once, or a delete would run once for
+        # each column and remove the rows behind it.
+        rows = set()
+        one_for_each_row = []
+        for idx in same_level_indexes:
+            if idx.row() not in rows:
+                rows.add(idx.row())
+                one_for_each_row.append(idx)
+        return one_for_each_row
 
     def isPasteOk(self, index: QModelIndex) -> bool:
         if self.treeClipboard.isEmpty() or not index.isValid():

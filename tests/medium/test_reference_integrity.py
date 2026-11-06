@@ -463,6 +463,91 @@ class TestDelete:
         shown.view.onUndo()
         assert snapshot(package.objStore) == original
 
+    def test_deleting_a_shell_leaves_its_submodels_for_f_edt_02_criterion_6(
+        self, views, answers: Answers
+    ) -> None:
+        linked = make_linked()
+        shown = views()
+        package = shown.open_package(*linked.store)
+        shown.select(shown.index("shells", "Shell"))
+        answers.box_button = "Delete"
+
+        shown.view.onDelClear()
+
+        assert linked.shell not in package.objStore
+        assert linked.main in package.objStore
+        assert linked.other in package.objStore
+        assert len(answers.boxes) == 1
+
+    def test_deleting_a_reference_of_a_shell_keeps_the_submodel_for_f_edt_03_criterion_6(
+        self, views, answers: Answers
+    ) -> None:
+        linked = make_linked()
+        shown = views()
+        package = shown.open_package(*linked.store)
+        attrs = shown.attrs_view("shells", "Shell")
+        proxy = attrs.model()
+        row = next(
+            proxy.index(r, 0)
+            for r in range(proxy.rowCount())
+            if proxy.index(r, 0).data() == "submodel"
+        )
+        attrs.expand(row)
+        selection = attrs.selectionModel()
+        selection.setCurrentIndex(
+            proxy.index(0, 0, row),
+            selection.SelectionFlag.ClearAndSelect,
+        )
+
+        attrs.onDelClear()
+
+        assert len(linked.shell.submodel) == 1
+        assert linked.main in package.objStore
+        assert linked.other in package.objStore
+        assert answers.dialogs == []
+        assert answers.boxes == []
+
+    def test_shift_skips_the_question_but_not_the_usages(
+        self, views, answers: Answers, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from PyQt6.QtWidgets import QApplication
+
+        linked = make_linked()
+        linked.shell.submodel.clear()
+        shown = views()
+        package = shown.open_package(linked.shell, linked.other)
+        monkeypatch.setattr(
+            QApplication,
+            "keyboardModifiers",
+            staticmethod(lambda: Qt.KeyboardModifier.ShiftModifier),
+        )
+        shown.select(shown.index("submodels", "Other"))
+
+        shown.view.onDelClear()
+
+        assert linked.other not in package.objStore
+        assert answers.boxes == []
+        assert answers.dialogs == []
+
+    def test_shift_still_shows_the_usages(
+        self, views, answers: Answers, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from PyQt6.QtWidgets import QApplication
+
+        linked = make_linked()
+        shown = views()
+        shown.open_package(*linked.store)
+        monkeypatch.setattr(
+            QApplication,
+            "keyboardModifiers",
+            staticmethod(lambda: Qt.KeyboardModifier.ShiftModifier),
+        )
+        shown.select(shown.index("concept_descriptions", "Concept"))
+
+        shown.view.onDelClear()
+
+        assert len(answers.dialogs) == 1
+
     def test_delete_is_refused_in_read_mode(
         self, views, answers: Answers
     ) -> None:
