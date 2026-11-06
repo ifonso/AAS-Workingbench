@@ -509,7 +509,8 @@ class TreeView(BasicTreeView):
     def acting(self, intent: Optional[str]):
         """Mark the changes of rows as the result of an action of this view.
 
-        :param intent: "add" selects the new row, "delete" selects the parent
+        :param intent: "add" selects the new row, "delete" selects the sibling
+            above the deleted row, or the parent if there is none
         """
         previous = self._intent
         self._intent = intent
@@ -955,7 +956,12 @@ class TreeView(BasicTreeView):
 
     def onRowsRemoved(self, parent: QModelIndex, first: int, last: int):
         if self._intent == "delete" and self._stash is None:
-            self.setCurrentIndex(parent)
+            # Focus goes to the sibling above the deleted row (F-EDT-01 AC8),
+            # or to the parent if the row was the first.
+            if first > 0:
+                self.setCurrentIndex(self.model().index(first - 1, 0, parent))
+            else:
+                self.setCurrentIndex(parent)
 
     def updateActions(self, index: QModelIndex):
         if self.canEdit():
