@@ -7,20 +7,96 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
+from collections.abc import Callable
 from typing import Dict
 
 from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
+    QFormLayout,
+    QFrame,
+    QScrollArea,
+    QWidget,
     QVBoxLayout,
     QLabel,
     QHBoxLayout,
+    QLineEdit,
     QRadioButton,
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QGuiApplication
 
+from aas_editor.domain.default_languages import DefaultLanguagesError
+from aas_editor.domain.default_languages import parse_default_languages
+from aas_editor.domain.id_templates import check_id_template
 from aas_editor.settings import AppSettings, Setting
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.widgets.groupBoxes import OptionGroupBox
+
+
+def _languages_problem(text: str) -> str | None:
+    try:
+        parse_default_languages(text)
+    except DefaultLanguagesError as error:
+        return str(error)
+    return None
+
+
+class TextSettingsGroupBox(OptionGroupBox):
+    """Group box to type settings that are texts, one line for each.
+
+    Each text has a check that returns what is wrong with it. The box shows
+    the problem under the lines while the user types, and `problem` tells the
+    dialog not to close while there is one.
+    """
+
+    def __init__(
+        self,
+        parent,
+        title: str,
+        description: str,
+        settings: list[tuple[Setting, Callable[[str], str | None]]],
+    ):
+        super().__init__(parent)
+        self.setTitle(title)
+        self.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        layout = QVBoxLayout(self)
+        if description:
+            note = QLabel(description)
+            note.setWordWrap(True)
+            layout.addWidget(note)
+        form = QFormLayout()
+        layout.addLayout(form)
+        self.fields: dict[str, QLineEdit] = {}
+        self._settings = settings
+        for setting, _ in settings:
+            edit = QLineEdit(str(setting.value() or ""))
+            edit.textChanged.connect(self._showProblem)
+            self.fields[setting.name] = edit
+            form.addRow(setting.display_name or setting.name, edit)
+        self.problemLabel = QLabel()
+        self.problemLabel.setWordWrap(True)
+        self.problemLabel.setStyleSheet(PROBLEM_STYLE)
+        self.problemLabel.hide()
+        layout.addWidget(self.problemLabel)
+        self._showProblem()
+
+    def problem(self) -> str | None:
+        """Return what is wrong with the first text that is wrong, or None."""
+        for setting, check in self._settings:
+            problem = check(self.fields[setting.name].text().strip())
+            if problem is not None:
+                return f"{setting.display_name}: {problem}"
+        return None
+
+    def _showProblem(self) -> None:
+        problem = self.problem()
+        self.problemLabel.setText(problem or "")
+        self.problemLabel.setVisible(problem is not None)
+
+    def applyChosenOption(self):
+        for setting, _ in self._settings:
+            setting.setValue(self.fields[setting.name].text().strip())
 
 
 class RadioBtnsGroupBox(OptionGroupBox):
@@ -100,15 +176,66 @@ class SettingsDialog(QDialog):
             for setting in AppSettings.SETTINGS_TO_CHOOSE_BY_USER
         ]
 
+        # The texts: the languages that new multi-language texts start with,
+        # and the templates of generated ids (F-EDT-04 AC2, F-EDT-06 AC5).
+        self.optionGroupBoxes.append(
+            TextSettingsGroupBox(
+                self,
+                "Default languages",
+                AppSettings.DEFAULT_LANGUAGES.description,
+                [(AppSettings.DEFAULT_LANGUAGES, _languages_problem)],
+            )
+        )
+        self.optionGroupBoxes.append(
+            TextSettingsGroupBox(
+                self,
+                "Id templates",
+                AppSettings.ID_TEMPLATE_DESCRIPTION,
+                [
+                    (setting, check_id_template)
+                    for setting in (
+                        AppSettings.ID_TEMPLATE_AAS,
+                        AppSettings.ID_TEMPLATE_ASSET,
+                        AppSettings.ID_TEMPLATE_SUBMODEL_INSTANCE,
+                        AppSettings.ID_TEMPLATE_SUBMODEL_TEMPLATE,
+                        AppSettings.ID_TEMPLATE_CONCEPT_DESCRIPTION,
+                    )
+                ],
+            )
+        )
+
         self.layout = QVBoxLayout()
         message = QLabel("App settings")
         self.layout.addWidget(message)
+        # The boxes scroll, so that a small screen still reaches OK.
+        body = QWidget()
+        bodyLayout = QVBoxLayout(body)
+        bodyLayout.setContentsMargins(0, 0, 0, 0)
         for groupbox in self.optionGroupBoxes:
-            self.layout.addWidget(groupbox)
+            bodyLayout.addWidget(groupbox)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(body)
+        self.layout.addWidget(scroll)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
+        screen = QGuiApplication.primaryScreen()
+        limit = (
+            int(screen.availableGeometry().height() * 0.9) if screen else 700
+        )
+        wanted = body.sizeHint().height() + self.buttonBox.sizeHint().height()
+        self.resize(
+            max(body.sizeHint().width() + 40, 520), min(wanted + 60, limit)
+        )
 
     def accept(self) -> None:
+        # A text that cannot be used stays on screen with its reason.
+        if any(
+            isinstance(box, TextSettingsGroupBox) and box.problem() is not None
+            for box in self.optionGroupBoxes
+        ):
+            return
         self.applySettings()
         super(SettingsDialog, self).accept()
 

@@ -17,6 +17,7 @@ Example:
         add_submodel(stack, observer, store, submodel, shell)
 """
 
+from collections.abc import Callable
 from collections.abc import Collection
 from collections.abc import Iterable
 from typing import Any
@@ -258,10 +259,19 @@ def global_asset_id_command(
 
 
 def generate_global_asset_id_command(
-    observer: ModelChangeObserver, shell: model.AssetAdministrationShell
+    observer: ModelChangeObserver,
+    shell: model.AssetAdministrationShell,
+    generate: Callable[[], str] = new_global_asset_id,
 ) -> Command:
-    """Builds the command that gives the shell a new global asset id."""
-    return global_asset_id_command(observer, shell, new_global_asset_id())
+    """Builds the command that gives the shell a new global asset id.
+
+    Args:
+        observer: Where to report the change.
+        shell: The shell to change.
+        generate: Makes the id. The default is a `urn:uuid:`, and the editor
+            passes the generator of the template that the user set.
+    """
+    return global_asset_id_command(observer, shell, generate())
 
 
 def add_specific_asset_id_command(

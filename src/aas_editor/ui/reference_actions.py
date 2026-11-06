@@ -37,7 +37,6 @@ from aas_editor.application.operations.rename import ReplaceIdentifiable
 from aas_editor.application.operations.rename import plan_rename_id
 from aas_editor.application.operations.rename import plan_rename_id_short
 from aas_editor.application.operations.rename import suggest_id_short
-from aas_editor.domain.ids import new_identifier
 from aas_editor.domain.references import describe_object
 from aas_editor.domain.references import describe_reference
 from aas_editor.settings.app_settings import OBJECT_ROLE
@@ -46,6 +45,8 @@ from aas_editor.ui.actions import ActionContext
 from aas_editor.ui.actions import ActionSpec
 from aas_editor.ui.actions import ViewKind
 from aas_editor.ui.actions import register_action
+from aas_editor.ui.user_defaults import id_generator
+from aas_editor.ui.user_defaults import id_kind_of
 
 _registered = False
 
@@ -209,7 +210,7 @@ def _run_rename_id(context: ActionContext) -> None:
         target.id,
         lambda text: plan_rename_id(objects, target, text),
         None,
-        new_identifier,
+        id_generator(id_kind_of(target)),
     )
 
 

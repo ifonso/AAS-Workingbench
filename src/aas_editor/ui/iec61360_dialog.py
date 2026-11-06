@@ -43,6 +43,7 @@ from aas_editor.domain.data_specifications import check_draft
 from aas_editor.ui.concept_dialogs import accept_button
 from aas_editor.ui.concept_dialogs import answered_yes
 from aas_editor.ui.concept_dialogs import make_buttons
+from aas_editor.ui.user_defaults import default_languages
 
 
 class LanguageRows(QWidget):
@@ -69,8 +70,18 @@ class LanguageRows(QWidget):
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.add_button = QPushButton("Add language")
-        self.add_button.clicked.connect(lambda: self.add_row())
+        self.add_button.clicked.connect(
+            lambda: self.add_row(self._next_language())
+        )
         self._layout.addWidget(self.add_button)
+
+    def _next_language(self) -> str:
+        """Returns the first default language that no row has, or nothing."""
+        used = {language.text().lower() for language, _, _ in self._rows}
+        return next(
+            (tag for tag in default_languages() if tag.lower() not in used),
+            "",
+        )
 
     def add_row(self, language: str = "", text: str = "") -> None:
         """Adds a row. The signal fires once for the row."""

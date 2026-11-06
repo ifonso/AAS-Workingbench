@@ -20,7 +20,12 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QDialog,
 )
-from basyx.aas.model import LangStringSet, Referable, ModelReference
+from basyx.aas.model import (
+    LangStringSet,
+    ModelReference,
+    MultiLanguageProperty,
+    Referable,
+)
 
 import aas_editor.widgets as widgets
 import aas_editor.widgets.buttons
@@ -209,6 +214,11 @@ class ObjGroupBox(GroupBox):
 
     def getInitialInputWidget(self, param: str, val, **kwargs) -> QWidget:
         paramTypeHint = self.reqParamsDict[param]
+        if self._startsWithLanguages(param) and val is None:
+            # A new MultiLanguageProperty starts with a row for each default
+            # language, not with a button that makes the text (F-EDT-04 AC2).
+            kwargs["optional"] = True
+            return self.getInputWidget(param, val, **kwargs)
         if isOptional(paramTypeHint):
             if val is None or (
                 isinstance(val, PreObject)
@@ -218,8 +228,20 @@ class ObjGroupBox(GroupBox):
                 return self.getCreatePushBtn(param)
         return self.getInputWidget(param, val, **kwargs)
 
+    def _startsWithLanguages(self, param: str) -> bool:
+        """Tell whether a parameter is the text of a new MultiLanguageProperty."""
+        return (
+            self.objVal is None
+            and param == "value"
+            and self.objTypeHint is MultiLanguageProperty
+        )
+
     def getInputWidget(self, param: str, val, **kwargs) -> QWidget:
         paramTypeHint = self.reqParamsDict[param]
+        if self._startsWithLanguages(param):
+            from aas_editor.ui.user_defaults import default_languages
+
+            kwargs["startLanguages"] = default_languages()
         print(f"Getting widget for param: {param} of type: {paramTypeHint}")
         # A parameter named by the caller takes a text of several lines.
         kwargs["multiline"] = param in kwargs.get("multilineParams", ())
@@ -537,20 +559,64 @@ class IterableGroupBox(GroupBox):
 
 
 class LangStringSetGroupBox(IterableGroupBox):
+    """The rows of a multi-language text, a language and a text each.
+
+    A new row starts with the first default language that no row has yet, and
+    `startLanguages` gives a new box an empty row for each of them (F-EDT-04
+    AC2). A row whose text stays empty is left out of the text that is made,
+    because the SDK refuses an empty text, and so is the whole text when no
+    row has one.
+    """
+
     def __init__(self, objTypeHint, **kwargs):
         self.langStringTypeHint = objTypeHint
         objTypeHint = Dict[str, str]
         # The text of a language may have line breaks, its language may not.
         kwargs["multilineParams"] = {"value"}
+        # Only this box starts with rows, so its rows must not get the wish.
+        startLanguages = tuple(kwargs.pop("startLanguages", ()))
         super().__init__(objTypeHint, **kwargs)
+        if not self.inputWidgets:
+            for language in startLanguages:
+                self._addInputWidget(DictItem(language, ""))
+
+    def _addInputWidget(self, objVal=None):
+        # The button passes its `checked` state as the first argument.
+        if objVal is None or isinstance(objVal, bool):
+            objVal = DictItem(self._nextLanguage(), "")
+        super()._addInputWidget(objVal)
+
+    def _nextLanguage(self) -> str:
+        """Return the first default language that no row has, or nothing."""
+        from aas_editor.ui.user_defaults import default_languages
+
+        used = set()
+        for widget in self.inputWidgets:
+            row = getattr(widget, "inputWidget", widget)
+            key = getattr(row, "paramWidgets", {}).get("key")
+            if key is not None:
+                used.add(key.widget.text().lower())
+        return next(
+            (tag for tag in default_languages() if tag.lower() not in used),
+            "",
+        )
+
+    def _filledWidgets(self):
+        """Return the rows that have a text."""
+        return [
+            widget for widget in self.inputWidgets if widget.getObj2add().value
+        ]
 
     def getPreObj(self):
         problems = check_language_tags(
-            widget.getObj2add().key for widget in self.inputWidgets
+            widget.getObj2add().key for widget in self._filledWidgets()
         )
         if problems:
             raise ValueError("\n".join(problems))
-        preObjDict = super().getPreObj()
+        listObj = [widget.getPreObj() for widget in self._filledWidgets()]
+        if not listObj and self.optional:
+            return PreObject.useExistingObject(None)
+        preObjDict = PreObject(typeHintToType(Dict[str, str]), (listObj,), {})
         return PreObject(self.langStringTypeHint, (preObjDict,), {})
 
     def setVal(self, val):

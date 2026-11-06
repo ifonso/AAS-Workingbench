@@ -35,7 +35,7 @@ from basyx.aas.model.concept import ConceptDescription
 
 from aas_editor.additional.classes import DictItem
 from aas_editor.domain.language_tags import COMMON_LANGUAGE_TAGS
-from aas_editor.domain.ids import new_identifier
+from aas_editor.domain.id_templates import IdKind
 
 CATEGORIES = ["CONSTANT", "PARAMETER", "VARIABLE"]
 
@@ -92,13 +92,22 @@ DEFAULTS = {
     },
 }
 
+
+def _new_id(kind: IdKind) -> str:
+    # Read when a dialog opens, and imported here because the settings package
+    # is imported by the module that reads the settings.
+    from aas_editor.ui.user_defaults import new_id
+
+    return new_id(kind)
+
+
 # Parameters whose default is made when a dialog opens, so that every new
 # object gets its own value. A fixed id would be refused as a duplicate for the
 # second object (D14).
 GENERATED_DEFAULTS: dict[type, dict[str, Callable[[], str]]] = {
-    AssetAdministrationShell: {"id_": new_identifier},
-    Submodel: {"id_": new_identifier},
-    ConceptDescription: {"id_": new_identifier},
+    AssetAdministrationShell: {"id_": lambda: _new_id(IdKind.AAS)},
+    Submodel: {"id_": lambda: _new_id(IdKind.SUBMODEL_INSTANCE)},
+    ConceptDescription: {"id_": lambda: _new_id(IdKind.CONCEPT_DESCRIPTION)},
 }
 
 DEFAULT_COMPLETIONS = {
