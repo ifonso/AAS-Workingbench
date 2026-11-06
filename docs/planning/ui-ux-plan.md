@@ -514,6 +514,11 @@ Proposed only, none added now:
 
 [ADR 0024](../software/adr/0024-package-tree-vocabulary-and-layout.md) is kept: vocabulary, context menu sections, and one line for several hints. Its figure of 790 pixels for the toolbar stops mattering once the bar is global, and the versions go up as it foresaw.
 
+### Progress
+
+- [x] A, `fix/tree-search-results`, done on `fix/search-save-status`: U1 defect fixed, `Ctrl+F` in the tree, result count. Search of values, `F3` and `Shift+F3` are not done.
+- [x] B, `fix/save-and-status-clarity`, done on `fix/search-save-status`: status bar with mode and unsaved count, Save before Save All, `Ctrl+S` and `Ctrl+Shift+S` by decision 6. The explanation of hints against findings (U3) waits for J.
+
 ## 7. Decisions for the owner
 
 | # | Decision | Recommendation | Cost of the recommendation |

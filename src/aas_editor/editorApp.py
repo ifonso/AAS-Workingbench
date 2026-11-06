@@ -102,9 +102,17 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self._recoveryStatusLabel.setStyleSheet(PROBLEM_STYLE)
         self._recoveryStatusLabel.hide()
         self.statusBar().addPermanentWidget(self._recoveryStatusLabel)
+        # The mode and the unsaved packages are always on show, so the window
+        # tells the state of the work without a menu.
         self._modeStatusLabel = QLabel()
-        self._modeStatusLabel.hide()
+        self._modeStatusLabel.setObjectName("modeStatusLabel")
         self.statusBar().addPermanentWidget(self._modeStatusLabel)
+        self._unsavedStatusLabel = QLabel()
+        self._unsavedStatusLabel.setObjectName("unsavedStatusLabel")
+        self.statusBar().addPermanentWidget(self._unsavedStatusLabel)
+        self.onEditModeChanged(edit_mode().is_editing)
+        self.mainTreeView.unsavedPackagesChanged.connect(self.onUnsavedChanged)
+        self.mainTreeView.updateWindowModified()
         if fileToOpen:
             self.openAASFile(fileToOpen)
         else:
@@ -334,8 +342,10 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
 
         self.toolBar.addWidget(settingsBtn)
         self.toolBar.addSeparator()
-        self.toolBar.addAction(self.mainTreeView.saveAllAct)
+        # Save acts on one package and Save All on every one, so the plain
+        # Save comes first.
         self.toolBar.addAction(self.mainTreeView.saveAct)
+        self.toolBar.addAction(self.mainTreeView.saveAllAct)
         self.toolBar.addAction(self.mainTreeView.openPackAct)
         # self.toolBar.addAction(self.mainTreeView.openPackFromServerAct)
         self.toolBar.addAction(self.mainTreeView.newPackActs[0])
@@ -430,8 +440,25 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         """Show the mode in the menu and in the status bar"""
         self.editModeAct.setChecked(editing)
         self.readModeAct.setChecked(not editing)
-        self._modeStatusLabel.setText("" if editing else "Read mode")
-        self._modeStatusLabel.setVisible(not editing)
+        self._modeStatusLabel.setText("Edit mode" if editing else "Read mode")
+        self._modeStatusLabel.setToolTip(
+            "Packages can be changed"
+            if editing
+            else "Packages can only be looked at. Switch to Edit mode in the "
+            "View menu to change them"
+        )
+
+    def onUnsavedChanged(self, unsaved: int):
+        """Show how many open packages have changes that are not saved"""
+        if not self.packTreeModel.openedPacks():
+            text = ""
+        elif unsaved == 0:
+            text = "All changes saved"
+        elif unsaved == 1:
+            text = "1 package with unsaved changes"
+        else:
+            text = f"{unsaved} packages with unsaved changes"
+        self._unsavedStatusLabel.setText(text)
 
     def onCurrTabItemChanged(self, item: QModelIndex):
         if self.mainTreeView.autoScrollFromSrcAct.isChecked():

@@ -137,6 +137,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Changed
 
+- **Ctrl+S now saves the package of the selected row** (or the only open package), and **Ctrl+Shift+S is Save All**. Before, Ctrl+S was Save All, which saved another package than intended when two were open. Save As has no key, so nothing else uses Ctrl+Shift+S. The Save entry names its package, such as "Save plant.aasx", and the tooltips show the key. Save comes before Save All in the toolbar, and the tooltip of Save All says how many packages it saves.
+- The status bar always shows the mode ("Edit mode" or "Read mode"), and how many open packages have unsaved changes. Before, it was empty in Edit mode.
+- The Find key (Ctrl+F) works in each tab and in the package tree, whichever has the focus. Before, it was bound in the tab only.
 - Move up, down, to top, and to end now work on a selection across several collections, lists, or submodels. Each selected element moves within its own container, as one undo step, and references through moved list items follow once for all of them. Before, the actions were off for such a selection.
 - Concept descriptions in the tree are listed by name ignoring case, and descriptions with the same name, such as those without an idShort, by id. Before, the order of equal names followed the set of the SDK and changed between runs, and a lowercase name came after every capital.
 - The project is now managed only with uv, including CI and release builds, and `uv.lock` pins all dependencies.
@@ -187,6 +190,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- A search in the package tree counted the parents of a match as matches: searching `Speed` found 4 rows, the first being the package, so the selection did not move to the element. It finds the rows that match, selects the first, and the bar shows the position and the number of matches, such as "1 of 3".
 - Copying a qualifier, extension, specific asset id, or data specification row puts its JSON on the clipboard, so "Add ... from clipboard" and "Paste qualifier" can read it. It was the text of the cell.
 - The name that the SDK makes up for an item of a list (`generated_submodel_list_hack_...`) no longer shows in the idShort column. It reads that the item has none (D17).
 - On a first run, the package tree hid the names of nested elements, because its first column was too narrow for their indentation. The column now starts wide, and a width that the user chose stays.

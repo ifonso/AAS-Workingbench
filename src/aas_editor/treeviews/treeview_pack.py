@@ -28,6 +28,7 @@ from typing import Optional
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt, QModelIndex, QSettings, QPoint, pyqtSignal
 from PyQt6.QtGui import (
+    QKeySequence,
     QDropEvent,
     QDragEnterEvent,
     QKeyEvent,
@@ -86,7 +87,7 @@ from aas_editor.settings.app_settings import (
     UPDATE_ROLE,
     RECOVERY_DIR,
 )
-from aas_editor.settings.shortcuts import SC_OPEN, SC_SAVE_ALL
+from aas_editor.settings.shortcuts import SC_OPEN, SC_SAVE, SC_SAVE_ALL
 from aas_editor.settings.icons import (
     NEW_PACK_ICON,
     OPEN_ICON,
@@ -235,6 +236,9 @@ class PackTreeView(TreeView):
     viewKind = ViewKind.PACKAGES
     # A dialog asked to show the files of a package.
     packageFilesRequested = pyqtSignal(object)
+    # How many open packages hold changes that are not saved. The status bar
+    # of the window shows it.
+    unsavedPackagesChanged = pyqtSignal(int)
 
     def __init__(self, parent=None, **kwargs):
         self.copyBufferObjStores = dict()
@@ -379,7 +383,8 @@ class PackTreeView(TreeView):
             SAVE_ICON,
             "Save",
             self,
-            statusTip="Save current file",
+            shortcut=SC_SAVE,
+            statusTip="Save the package of the selected row",
             triggered=lambda: self.savePack(),
             enabled=False,
         )
@@ -414,7 +419,7 @@ class PackTreeView(TreeView):
             "&Save All",
             self,
             shortcut=SC_SAVE_ALL,
-            statusTip="Save all files",
+            statusTip="Save every package that has unsaved changes",
             triggered=lambda: self.saveAll(),
             enabled=True,
         )
@@ -710,8 +715,15 @@ class PackTreeView(TreeView):
 
     def updateSaveActs(self, index: QModelIndex):
         self.saveAct.setEnabled(self.isSaveOk())
-        self.saveAct.setText(f"Save {index.data(PACKAGE_ROLE)}")
-        self.saveAct.setToolTip(f"Save {index.data(PACKAGE_ROLE)}")
+        pack = self.activePackage()
+        # The key saves the package of the selected row, so the entry says
+        # which package that is.
+        name = f"Save {pack.name}" if pack is not None else "Save"
+        keys = self.saveAct.shortcut().toString(
+            QKeySequence.SequenceFormat.NativeText
+        )
+        self.saveAct.setText(name)
+        self.saveAct.setToolTip(f"{name} ({keys})")
         self.saveAsAct.setEnabled(self.isSaveOk())
         for act in self.saveInActs:
             act.setEnabled(self.isSaveOk())
@@ -749,8 +761,7 @@ class PackTreeView(TreeView):
         )
 
     def isSaveOk(self) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE)
-        return True if pack else False
+        return self.activePackage() is not None
 
     def isCloseOk(self) -> bool:
         pack = self.currentIndex().data(PACKAGE_ROLE)
@@ -977,10 +988,38 @@ class PackTreeView(TreeView):
         opened package still holds unsaved changes.
         """
         packs = self.model().data(QModelIndex(), OPENED_PACKS_ROLE)
-        self.setWindowModified(any(pack.changed for pack in packs))
+        unsaved = sum(1 for pack in packs if pack.changed)
+        self.setWindowModified(unsaved > 0)
+        self.updateSaveAllAct(unsaved)
+        self.unsavedPackagesChanged.emit(unsaved)
+
+    def updateSaveAllAct(self, unsaved: int) -> None:
+        """Tell in the tooltip of Save All what it would save.
+
+        :param unsaved: the number of packages with unsaved changes
+        """
+        keys = self.saveAllAct.shortcut().toString(
+            QKeySequence.SequenceFormat.NativeText
+        )
+        what = (
+            "No package has unsaved changes"
+            if unsaved == 0
+            else "Save the 1 package that has unsaved changes"
+            if unsaved == 1
+            else f"Save the {unsaved} packages that have unsaved changes"
+        )
+        self.saveAllAct.setToolTip(f"Save All: {what} ({keys})")
+
+    def onRowsInserted(self, parent: QModelIndex, first: int, last: int):
+        super().onRowsInserted(parent, first, last)
+        if not parent.isValid():
+            # A package that was restored after a crash is open and unsaved,
+            # and the only open package is the one that Save means.
+            self.updateWindowModified()
+            self.updateSaveActs(self.currentIndex())
 
     def savePack(self, pack: Package = None, file: str = None) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE) if pack is None else pack
+        pack = self.activePackage() if pack is None else pack
         originalFile = pack.file  # write(file) may change pack.file on Save-As
         try:
             target = Path(file).absolute() if file else pack.file
@@ -1042,7 +1081,7 @@ class PackTreeView(TreeView):
 
         :return: the number of references that were added
         """
-        pack = self.currentIndex().data(PACKAGE_ROLE)
+        pack = self.activePackage()
         try:
             # One undo step. The rows follow the change that it reports.
             return pack.all_submodels_to_aas()
@@ -1055,7 +1094,7 @@ class PackTreeView(TreeView):
     def savePackInTypeWithDialog(
         self, filetype=None, pack: Package = None
     ) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE) if pack is None else pack
+        pack = self.activePackage() if pack is None else pack
         file = (
             pack.file.as_posix()
             if filetype is None
@@ -1066,7 +1105,7 @@ class PackTreeView(TreeView):
     def savePackAsWithDialog(
         self, file=None, pack: Package = None, filter=FILTER_AAS_FILES
     ) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE) if pack is None else pack
+        pack = self.activePackage() if pack is None else pack
         saved = False
         file = pack.file.as_posix() if file is None else file
         while not saved:
