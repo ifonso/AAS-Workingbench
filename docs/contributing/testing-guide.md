@@ -23,7 +23,7 @@ Tests use Qt's `offscreen` platform by default, so they need no display.
 To watch a large test on screen, set `QT_QPA_PLATFORM=windows` (or `xcb` on Linux) first.
 
 Large tests stub the modal dialogs, because a dialog that opens blocks the event loop.
-The full large run takes about a quarter of an hour on a laptop, in one process: each test opens the main window with a real package, which takes 8 to 25 seconds, and the three walks of `test_main_window.py` take half a minute to a minute each.
+The full large run takes about a quarter of an hour on a laptop, in one process: each test opens the main window with a real package, which takes 8 to 25 seconds (a profile of one window shows 12 of 14 seconds in `PackTreeView.scanFolderForExistFiles`, which reads the 133 submodel templates again for every window), and the three walks of `test_main_window.py` take half a minute to a minute each.
 It is slow, not stuck, but `pytest -q | tail` prints nothing until the end, so run it with `-v` and a log file when you wait for it, and with `-o faulthandler_timeout=240` to get a traceback of a test that does stick.
 
 Several large files in one process share what the process keeps, so a test must leave it as it found it:
