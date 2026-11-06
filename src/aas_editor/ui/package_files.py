@@ -115,6 +115,9 @@ class PackageFilesPanel(QWidget):
         self.dangling_button = self._button(
             "Find dangling references...", self._dangling
         )
+        self.thumbnail_button = self._button(
+            "Package thumbnail...", self._thumbnail
+        )
         self._mutating = (
             self.add_button,
             self.new_button,
@@ -122,6 +125,7 @@ class PackageFilesPanel(QWidget):
             self.rename_button,
             self.move_button,
             self.remove_button,
+            self.thumbnail_button,
         )
 
         # Two rows, because eight buttons in one row need more than a dock is
@@ -139,8 +143,10 @@ class PackageFilesPanel(QWidget):
             )
         ):
             buttons.addWidget(button, *divmod(position, BUTTONS_PER_ROW))
-        # Its label is long, so it has a row of its own.
-        buttons.addWidget(self.dangling_button, 2, 0, 1, BUTTONS_PER_ROW)
+        # Their labels are long, so they have a row of their own.
+        half = BUTTONS_PER_ROW // 2
+        buttons.addWidget(self.dangling_button, 2, 0, 1, half)
+        buttons.addWidget(self.thumbnail_button, 2, half, 1, half)
         layout = QVBoxLayout(self)
         layout.addWidget(self.summary_label)
         layout.addWidget(self.table)
@@ -234,6 +240,12 @@ class PackageFilesPanel(QWidget):
                 )
         dangling = len(controller.dangling())
         text = f"{len(infos)} file(s) in the package."
+        thumbnail = package.thumbnail
+        text += (
+            f" Package thumbnail: {thumbnail.name}."
+            if thumbnail is not None
+            else " No package thumbnail."
+        )
         if dangling:
             text += (
                 f" {dangling} reference(s) point to a file that is not in the "
@@ -295,6 +307,7 @@ class PackageFilesPanel(QWidget):
         self.remove_button.setEnabled(bool(self.selected_names()) and editing)
         self.save_button.setEnabled(name is not None)
         self.dangling_button.setEnabled(has_package)
+        self.thumbnail_button.setEnabled(has_package and editing)
 
     # -- the buttons -------------------------------------------------------------
 
@@ -342,6 +355,11 @@ class PackageFilesPanel(QWidget):
         name = self.selected_name()
         if controller is not None and name is not None:
             controller.save_to_disk(name)
+
+    def _thumbnail(self) -> None:
+        controller = self._controller()
+        if controller is not None:
+            controller.change_package_thumbnail()
 
     def _dangling(self) -> None:
         controller = self._controller()

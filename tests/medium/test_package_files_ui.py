@@ -463,6 +463,224 @@ def test_choosing_a_default_thumbnail_and_adding_one(
     assert "/aasx/files/logo.png" not in world.package.fileStore
 
 
+def test_the_default_thumbnail_is_removed_after_a_question_and_the_file_stays(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.ui import file_dialogs
+
+    questions: list[str] = []
+    monkeypatch.setattr(
+        file_dialogs,
+        "confirm",
+        lambda parent, text: questions.append(text) or True,
+    )
+    asset = world.shell.asset_information
+
+    assert controller.remove_thumbnail(asset)
+
+    assert asset.default_thumbnail is None
+    assert THUMB in world.package.fileStore
+    assert THUMB in questions[0]
+    path = tmp_path / "no_thumb.aasx"
+    world.package.write(path)
+    assert (
+        Package(path)
+        .objStore.get_item(world.shell.id)
+        .asset_information.default_thumbnail
+        is None
+    )
+    world.package.commandStack.undo()
+    assert asset.default_thumbnail.path == THUMB
+
+
+def test_declining_the_question_keeps_the_default_thumbnail(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    monkeypatch.setattr(file_dialogs, "confirm", lambda parent, text: False)
+
+    assert not controller.remove_thumbnail(world.shell.asset_information)
+
+    assert world.shell.asset_information.default_thumbnail.path == THUMB
+    assert not world.package.commandStack.can_undo
+
+
+def test_without_a_default_thumbnail_there_is_nothing_to_remove(
+    world, controller
+) -> None:
+    world.shell.asset_information.default_thumbnail = None
+
+    assert not controller.remove_thumbnail(world.shell.asset_information)
+
+    assert world.answers.warnings == ["The AAS has no default thumbnail."]
+
+
+def test_a_removed_default_thumbnail_can_be_chosen_again(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    monkeypatch.setattr(file_dialogs, "confirm", lambda parent, text: True)
+    asset = world.shell.asset_information
+    controller.remove_thumbnail(asset)
+    world.answers.chosen = THUMB
+
+    assert controller.choose_thumbnail(asset)
+
+    assert asset.default_thumbnail.path == THUMB
+
+
+def test_remove_default_thumbnail_is_offered_on_a_shell_that_has_one(
+    views,
+) -> None:
+    from aas_editor.ui.file_actions import register_file_actions
+
+    register_file_actions()
+    shown = views()
+    shell = make_shell(
+        asset_information=make_asset_information(
+            default_thumbnail=model.Resource(THUMB, "image/png")
+        )
+    )
+    shown.open_package(shell, files=FILES)
+    shown.select(shown.index("shells", "Shell"))
+    view = shown.view
+    view.updateActions(view.currentIndex())
+    action = view.registeredActions.find("files.remove_thumbnail")
+
+    offered = action.isEnabled()
+    shell.asset_information.default_thumbnail = None
+    view.updateActions(view.currentIndex())
+
+    assert offered
+    assert not action.isEnabled()
+
+
+def test_the_package_thumbnail_is_changed_saved_and_read_back(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.ui import file_dialogs
+
+    image = tmp_path / "cover.png"
+    image.write_bytes(b"\x89PNG cover")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: image)
+
+    assert controller.change_package_thumbnail()
+
+    thumbnail = world.package.thumbnail
+    assert (thumbnail.name, thumbnail.content_type, thumbnail.data) == (
+        "/docProps/thumbnail.png",
+        "image/png",
+        b"\x89PNG cover",
+    )
+    assert "/docProps/thumbnail.png" not in world.package.fileStore
+    saved = tmp_path / "with_thumbnail.aasx"
+    world.package.write(saved)
+    reloaded = Package(saved).thumbnail
+    assert reloaded is not None and reloaded.data == b"\x89PNG cover"
+    world.package.commandStack.undo()
+    assert world.package.thumbnail is None
+
+
+def test_a_file_that_is_no_image_is_refused_with_a_message(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    text = tmp_path / "notes.txt"
+    text.write_bytes(b"hello")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: text)
+
+    assert not controller.change_package_thumbnail()
+
+    assert world.package.thumbnail is None
+    assert "not an image" in world.answers.warnings[0]
+    assert not world.package.commandStack.can_undo
+
+
+def test_cancelling_the_picker_keeps_the_package_thumbnail(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: None)
+
+    assert not controller.change_package_thumbnail()
+
+    assert not world.package.commandStack.can_undo
+
+
+def test_a_changed_package_thumbnail_survives_a_crash(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.ui import file_dialogs
+
+    source = tmp_path / "source.aasx"
+    world.package.write(source)
+    package = Package(source)
+    image = tmp_path / "new.jpg"
+    image.write_bytes(b"jpeg")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: image)
+    from aas_editor.ui.file_controller import FileController
+
+    assert FileController(package, None).change_package_thumbnail()
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert restored.thumbnail is not None
+    assert restored.thumbnail.data == b"jpeg"
+    assert restored.thumbnail_changed()
+
+
+def test_an_unchanged_package_thumbnail_keeps_the_cheap_recovery(
+    world, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+
+    source = tmp_path / "source.aasx"
+    world.package.write(source)
+    package = Package(source)
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    assert recovery.suffix == ".json"
+    assert not package.thumbnail_changed()
+
+
+def test_the_panel_says_which_package_thumbnail_there_is(
+    world, controller, panel, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    before = panel.summary_label.text()
+    image = tmp_path / "cover.png"
+    image.write_bytes(b"png")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: image)
+    controller.change_package_thumbnail()
+    panel.refresh()
+
+    assert "No package thumbnail" in before
+    assert "/docProps/thumbnail.png" in panel.summary_label.text()
+
+
+def test_the_package_thumbnail_button_is_off_in_read_mode(world, panel) -> None:
+    from aas_editor.application.editing import edit_mode
+
+    on = panel.thumbnail_button.isEnabled()
+    edit_mode().set_editing(False)
+    try:
+        off = not panel.thumbnail_button.isEnabled()
+    finally:
+        edit_mode().set_editing(True)
+
+    assert on and off
+
+
 def test_editing_the_text_file_of_a_file_element(world, controller) -> None:
     world.answers.edited = "edited"
 

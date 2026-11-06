@@ -144,6 +144,17 @@ def pick_file_to_add(parent: QWidget | None) -> Path | None:
     return Path(path) if path else None
 
 
+def pick_thumbnail_image(parent: QWidget | None) -> Path | None:
+    """Asks for the image file that becomes the package thumbnail."""
+    path, _ = QFileDialog.getOpenFileName(
+        parent,
+        "Choose package thumbnail",
+        "",
+        "Images (*.png *.jpg *.jpeg *.gif *.bmp *.svg);;All files (*)",
+    )
+    return Path(path) if path else None
+
+
 def pick_path_to_save(parent: QWidget | None, suggested: str) -> Path | None:
     """Asks where to write a file that is taken out of the package."""
     path, _ = QFileDialog.getSaveFileName(

@@ -127,9 +127,7 @@ def test_a_reference_between_two_copied_submodels_follows_the_copy() -> None:
     )
     holder = make_submodel(id_="urn:sm:h", id_short="Holder", elements=[point])
     outside = make_submodel(id_="urn:sm:o", id_short="Outside")
-    point_out = model.ReferenceElement(
-        "Out", make_reference_to(outside)
-    )
+    point_out = model.ReferenceElement("Out", make_reference_to(outside))
     holder.submodel_element.add(point_out)
     shell = make_shell(id_="urn:shell:2", submodels=[target, holder])
     store = make_store(shell, target, holder, outside)

@@ -27,6 +27,8 @@ from aas_editor.application.commands import ReadOnlyError
 from aas_editor.application.supplementary_files import ReferenceChoice
 from aas_editor.domain import part_names
 from aas_editor.domain.file_references import FileReference
+from aas_editor.domain.parts import Thumbnail
+from aas_editor.domain.parts import new_thumbnail
 from aas_editor.ui import file_dialogs
 from aas_editor.ui.delete_flow import DeleteCancelled
 from aas_editor.ui.delete_flow import PreparedDelete
@@ -57,6 +59,9 @@ class FilePackage(Protocol):
     def commandStack(self) -> CommandStack:
         """The undo history."""
         ...
+
+    thumbnail: Thumbnail | None
+    """The package thumbnail, or None."""
 
 
 class FileController:
@@ -477,6 +482,61 @@ class FileController:
             file_dialogs.show_warning(self._parent, str(error))
             return None
         return name
+
+    def change_package_thumbnail(self) -> bool:
+        """Asks for an image and makes it the thumbnail of the package.
+
+        The thumbnail is the image that a file browser shows for the AASX
+        file. It is not one of the stored files (F-EDT-10 AC5).
+
+        Returns:
+            True if the thumbnail changed.
+        """
+        picked = file_dialogs.pick_thumbnail_image(self._parent)
+        if picked is None:
+            return False
+        ok, data = self._attempt(picked.read_bytes)
+        if not ok or data is None:
+            return False
+        ok, thumbnail = self._attempt(
+            lambda: new_thumbnail(
+                picked.name, data, part_names.guess_content_type(picked.name)
+            )
+        )
+        if not ok or thumbnail is None:
+            return False
+        ok, changed = self._attempt(
+            lambda: files.change_package_thumbnail(
+                self.stack, self.observer, self._package, thumbnail
+            )
+        )
+        return bool(ok and changed)
+
+    def remove_thumbnail(self, asset: model.AssetInformation) -> bool:
+        """Takes the default thumbnail away after a question (F-EDT-02 AC14).
+
+        The stored file stays in the package. After this the asset has none,
+        and the choose and add actions set a new one.
+
+        Returns:
+            True if the thumbnail was removed.
+        """
+        current = asset.default_thumbnail
+        if current is None:
+            file_dialogs.show_warning(
+                self._parent, "The AAS has no default thumbnail."
+            )
+            return False
+        if not file_dialogs.confirm(
+            self._parent,
+            f"Remove the default thumbnail '{current.path}' of this AAS? "
+            "The file stays in the package.",
+        ):
+            return False
+        ok, _ = self._attempt(
+            lambda: files.remove_thumbnail(self.stack, self.observer, asset)
+        )
+        return ok
 
     # -- repair ------------------------------------------------------------
 

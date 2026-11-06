@@ -195,6 +195,30 @@ def _add_thumbnail(context: ActionContext) -> None:
         controller.add_thumbnail(asset)
 
 
+def _is_package_row(context: ActionContext) -> bool:
+    from aas_editor.package import Package
+
+    return isinstance(_object(context), Package)
+
+
+def _change_package_thumbnail(context: ActionContext) -> None:
+    controller = _controller(context)
+    if controller is not None:
+        controller.change_package_thumbnail()
+
+
+def _has_thumbnail(context: ActionContext) -> bool:
+    asset = _asset_information(context)
+    return asset is not None and asset.default_thumbnail is not None
+
+
+def _remove_thumbnail(context: ActionContext) -> None:
+    controller = _controller(context)
+    asset = _asset_information(context)
+    if controller is not None and asset is not None:
+        controller.remove_thumbnail(asset)
+
+
 # -- the package --------------------------------------------------------------
 
 
@@ -321,6 +345,26 @@ def _specs() -> list[ActionSpec]:
             _has_asset_information,
             views=anywhere,
             order=_ORDER + 11,
+        ),
+        ActionSpec(
+            f"{PREFIX}package_thumbnail",
+            "Change package thumbnail...",
+            _change_package_thumbnail,
+            _is_package_row,
+            views=packages,
+            status_tip=(
+                "Choose the image that a file browser shows for the AASX file"
+            ),
+            order=_ORDER + 15,
+        ),
+        ActionSpec(
+            f"{PREFIX}remove_thumbnail",
+            "Remove default thumbnail...",
+            _remove_thumbnail,
+            _has_thumbnail,
+            views=anywhere,
+            status_tip="Take the default thumbnail away. The file stays",
+            order=_ORDER + 14,
         ),
         ActionSpec(
             f"{PREFIX}show",
