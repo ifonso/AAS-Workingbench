@@ -30,5 +30,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0023](0023-actions-on-the-whole-selection.md) | Delete, cut and copy act on the whole selection, or refuse | Accepted |
 | [0024](0024-package-tree-vocabulary-and-layout.md) | The package tree and the cells read in words of the AAS, and a layout that fits the screen | Accepted |
 
+| [0026](0026-forms-read-in-words-of-the-metamodel.md) | Forms read in the words of the metamodel, and adding to a list starts with its entry | Accepted |
+
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.

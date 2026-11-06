@@ -137,6 +137,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Changed
 
+- The forms for adding and editing read in the words of the metamodel, as the tabs do: `valueType`, `semanticId`, `supplementalSemanticId`, not `value_type`, `semantic_id`, and `supplemental_semantic_id`. A hover on a label or a field shows what the attribute is, and a screen reader names each field. The dialog title uses the same name. Nothing is made differently: a form still fills the same attribute of the SDK. See [ADR 0026](docs/software/adr/0026-forms-read-in-words-of-the-metamodel.md).
+- Adding to a list, such as a qualifier, an extension, or a submodel reference of a shell, opens the form with one empty entry and the focus in its first field. The step "Add Item" is only needed for a second entry.
 - Move up, down, to top, and to end now work on a selection across several collections, lists, or submodels. Each selected element moves within its own container, as one undo step, and references through moved list items follow once for all of them. Before, the actions were off for such a selection.
 - Concept descriptions in the tree are listed by name ignoring case, and descriptions with the same name, such as those without an idShort, by id. Before, the order of equal names followed the set of the SDK and changed between runs, and a lowercase name came after every capital.
 - The project is now managed only with uv, including CI and release builds, and `uv.lock` pins all dependencies.

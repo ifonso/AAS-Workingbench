@@ -514,6 +514,10 @@ Proposed only, none added now:
 
 [ADR 0024](../software/adr/0024-package-tree-vocabulary-and-layout.md) is kept: vocabulary, context menu sections, and one line for several hints. Its figure of 790 pixels for the toolbar stops mattering once the bar is global, and the versions go up as it foresaw.
 
+### Progress
+
+- **C, `feat/form-vocabulary`: done.** Forms read in the words of ADR 0022, with the description as the tooltip, and the add dialog of a list starts with one entry and the focus in its first field. [ADR 0026](../software/adr/0026-forms-read-in-words-of-the-metamodel.md). Not built: the "More" line for optional attributes, a new shortcut, and a new text for the "Create" button.
+
 ## 7. Decisions for the owner
 
 | # | Decision | Recommendation | Cost of the recommendation |
