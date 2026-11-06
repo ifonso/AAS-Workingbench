@@ -3,9 +3,14 @@
 All AAS content goes through `basyx`. Three things need more than its public
 API, and all are isolated here and covered by tests:
 
-* `_TolerantReader` overrides two protected methods of `AASXReader`. The SDK
+* `_TolerantReader` overrides protected methods of `AASXReader`. The SDK
   raises `KeyError` when a File element points to a part that is not in the
-  package, even in failsafe mode, and it does not read files under annotations.
+  package, even in failsafe mode, and it does not read files under
+  annotations. The reader also notes which part it parses and which objects
+  each part holds, because the SDK skips an object whose id an earlier part
+  has without a log record.
+* `_SdkLogCapture` listens to the logger of the SDK during one read. Failsafe
+  mode logs every object it skips, and that is the only account of it.
 * `_read_thumbnail` reads the part name and the content type of the package
   thumbnail through `reader.reader`, because `get_thumbnail` returns only bytes.
 * `_ThumbnailLinkingWriter` marks a part that the SDK has written already as
@@ -24,6 +29,9 @@ import logging
 import os
 from pathlib import Path
 import tempfile
+import threading
+from types import TracebackType
+from typing import Any
 from typing import BinaryIO
 
 from basyx.aas import model
@@ -55,6 +63,12 @@ from aas_editor.application.save import SaveSource
 from aas_editor.application.save import package_format
 from aas_editor.domain.file_references import file_references
 from aas_editor.domain.file_references import is_package_path
+from aas_editor.domain.load_report import LoadIssue
+from aas_editor.domain.load_report import LoadReport
+from aas_editor.domain.load_report import RawRecord
+from aas_editor.domain.load_report import Severity
+from aas_editor.domain.load_report import build_report
+from aas_editor.domain.load_report import duplicate_in_other_part
 from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import MissingFile
 from aas_editor.domain.parts import Thumbnail
@@ -77,8 +91,11 @@ class PackageParts:
         core_properties: The OPC core properties of an AASX, if any.
         missing_files: The File elements that pointed to a part that is not in
             the package when it was read.
-        partial: True if the package was read in failsafe mode.
+        partial: True if the package was read in failsafe mode, or if the
+            reader found that it skipped an object without saying so.
         source_file: The file that was read, or None for a new package.
+        load_report: What the SDK reported while it read the package. Empty for
+            a package that was read strictly and a new one.
     """
 
     objects: model.SetIdentifiableStore[model.Identifiable] = field(
@@ -92,6 +109,76 @@ class PackageParts:
     missing_files: tuple[MissingFile, ...] = ()
     partial: bool = False
     source_file: Path | None = None
+    load_report: LoadReport = field(default_factory=LoadReport)
+
+
+class _SdkLogCapture:
+    """Collects what the SDK logs while one package is read.
+
+    Failsafe mode skips what it cannot construct and logs a record for each
+    thing at warning or error level. This is a context manager that adds a
+    handler to the `basyx` logger on entry and takes it off on exit, also when
+    the read raises. It lowers the level of that logger only if the level is
+    above warning, since the records would not exist otherwise, and puts it
+    back. It keeps only the records of the thread that entered, so that a
+    package read in the background does not take the records of another.
+
+    Attributes:
+        part: The OPC part being read now. The reader sets it, and the records
+            that follow carry it.
+        records: What was captured, in order.
+    """
+
+    def __init__(self) -> None:
+        self.part = ""
+        self.records: list[RawRecord] = []
+        self._logger = logging.getLogger("basyx")
+        self._handler = _CaptureHandler(self)
+        self._level: int | None = None
+        self._thread = threading.get_ident()
+
+    def __enter__(self) -> "_SdkLogCapture":
+        self._thread = threading.get_ident()
+        self._logger.addHandler(self._handler)
+        if self._logger.getEffectiveLevel() > logging.WARNING:
+            self._level = self._logger.level
+            self._logger.setLevel(logging.WARNING)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self._logger.removeHandler(self._handler)
+        if self._level is not None:
+            self._logger.setLevel(self._level)
+            self._level = None
+
+    def add(self, record: logging.LogRecord) -> None:
+        """Keeps a log record if it is of this thread and of interest."""
+        if record.thread != self._thread or record.levelno < logging.WARNING:
+            return
+        severity = (
+            Severity.ERROR
+            if record.levelno >= logging.ERROR
+            else Severity.WARNING
+        )
+        self.records.append(
+            RawRecord(severity, record.name, record.getMessage(), self.part)
+        )
+
+
+class _CaptureHandler(logging.Handler):
+    """Hands the records of the `basyx` logger to a capture."""
+
+    def __init__(self, capture: _SdkLogCapture) -> None:
+        super().__init__(level=logging.WARNING)
+        self._capture = capture
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self._capture.add(record)
 
 
 class _TolerantReader(AASXReader):
@@ -101,11 +188,57 @@ class _TolerantReader(AASXReader):
     strict and in failsafe mode. This reader keeps the File value as it is,
     records it, and goes on. It also reads the files under annotations, which
     the SDK skips.
+
+    It notes the part it parses and the objects each part holds. The SDK skips
+    an object whose id an earlier part has, in strict mode as well, and logs
+    nothing, so `silent_duplicates` finds those from the note.
+
+    Attributes:
+        missing_files: The File elements whose part is not in the package.
     """
 
-    def __init__(self, file: str, failsafe: bool) -> None:
+    def __init__(
+        self,
+        file: str,
+        failsafe: bool,
+        capture: _SdkLogCapture | None = None,
+    ) -> None:
         super().__init__(file, failsafe=failsafe)  # pyright: ignore[reportUnknownMemberType]
         self.missing_files: list[MissingFile] = []
+        self._capture = capture
+        self._parts: list[tuple[str, list[tuple[str, str]]]] = []
+
+    def _parse_aas_part(self, part_name: str, **kwargs: Any) -> Any:
+        if self._capture is not None:
+            self._capture.part = part_name
+        parsed = super()._parse_aas_part(part_name, **kwargs)
+        self._parts.append(
+            (part_name, [(type(obj).__name__, obj.id) for obj in parsed])
+        )
+        return parsed
+
+    def silent_duplicates(self) -> list[LoadIssue]:
+        """Finds the objects that the SDK skipped without a log record.
+
+        Returns:
+            One issue for each object whose id an earlier part has.
+        """
+        first_part: dict[str, str] = {}
+        found: list[LoadIssue] = []
+        for part_name, objects in self._parts:
+            for type_name, identifier in objects:
+                if identifier in first_part:
+                    found.append(
+                        duplicate_in_other_part(
+                            type_name,
+                            identifier,
+                            part_name,
+                            first_part[identifier],
+                        )
+                    )
+                else:
+                    first_part[identifier] = part_name
+        return found
 
     def _add_supplementary_file(
         self,
@@ -187,8 +320,8 @@ def read_package(path: Path, failsafe: bool = False) -> PackageParts:
     Args:
         path: The file to read.
         failsafe: Skip defective objects instead of raising. The package is
-            then marked as partial, because the SDK does not say what it
-            skipped.
+            then marked as partial, and `load_report` lists what the SDK
+            logged about the objects it skipped.
 
     Returns:
         The content of the file.
@@ -200,17 +333,32 @@ def read_package(path: Path, failsafe: bool = False) -> PackageParts:
     """
     parts = PackageParts(partial=failsafe, source_file=path)
     file_format = package_format(path)
-    if file_format is PackageFormat.XML:
-        read_aas_xml_file_into(parts.objects, path, failsafe=failsafe)
-    elif file_format is PackageFormat.JSON:
-        read_aas_json_file_into(parts.objects, path, failsafe=failsafe)
-    else:
-        reader = _TolerantReader(path.as_posix(), failsafe=failsafe)
-        with reader:
-            reader.read_into(parts.objects, parts.files)  # pyright: ignore[reportUnknownMemberType]
-            parts.thumbnail = _read_thumbnail(reader)
-            parts.core_properties = _non_empty(reader.get_core_properties())
-            parts.missing_files = tuple(reader.missing_files)
+    capture = _SdkLogCapture()
+    silent: list[LoadIssue] = []
+    with capture:
+        if file_format is PackageFormat.XML:
+            read_aas_xml_file_into(parts.objects, path, failsafe=failsafe)
+        elif file_format is PackageFormat.JSON:
+            read_aas_json_file_into(parts.objects, path, failsafe=failsafe)
+        else:
+            reader = _TolerantReader(
+                path.as_posix(), failsafe=failsafe, capture=capture
+            )
+            with reader:
+                reader.read_into(parts.objects, parts.files)  # pyright: ignore[reportUnknownMemberType]
+                parts.thumbnail = _read_thumbnail(reader)
+                parts.core_properties = _non_empty(reader.get_core_properties())
+                parts.missing_files = tuple(reader.missing_files)
+                silent = reader.silent_duplicates()
+    # A strict read raises where a failsafe read skips, so its records are
+    # remarks about content that was kept, and the editor does not show them.
+    report = build_report(capture.records if failsafe else [])
+    if silent:
+        # Not logged by the SDK, so also not logged in strict mode, where
+        # nothing else would say that the package lost an object.
+        report = LoadReport((*report.issues, *silent))
+        parts.partial = True
+    parts.load_report = report
     return parts
 
 
