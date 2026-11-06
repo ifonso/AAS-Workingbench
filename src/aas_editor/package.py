@@ -25,7 +25,6 @@ from basyx.aas.model import (
     AssetAdministrationShell,
     Submodel,
     ConceptDescription,
-    SetIdentifiableStore,
     Key,
     ModelReference,
 )
@@ -40,6 +39,7 @@ from aas_editor.application.save import SaveOptions
 from aas_editor.application.validation import SaveGate
 from aas_editor.domain.file_references import file_references
 from aas_editor.domain.file_references import unreferenced_files
+from aas_editor.domain.ordered_store import OrderedIdentifiableStore
 from aas_editor.infrastructure.package_io import (
     PackageParts,
     read_package,
@@ -66,7 +66,7 @@ class Package:
         self.changeMarks = ChangeMarks(observer_for(self), self.commandStack)
         # The questions of a save, and the errors the user confirmed (D5).
         self.saveGate = SaveGate()
-        self.objStore = SetIdentifiableStore()
+        self.objStore = OrderedIdentifiableStore()
         self.fileStore = DictSupplementaryFileContainer()
         # Parts of the file that the object store and file store do not hold.
         self.thumbnail = None

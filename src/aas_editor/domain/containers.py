@@ -24,6 +24,7 @@ from typing import cast
 from basyx.aas import model
 
 from aas_editor.domain import ordering
+from aas_editor.domain.ordered_store import OrderedIdentifiableStore
 
 
 def _is_mapping(container: object) -> bool:
@@ -70,6 +71,8 @@ def position_of(container: object, member: object) -> int | None:
         key = cast("tuple[Any, Any]", member)[0]
         keys = _members(container)
         return keys.index(key) if key in keys else None
+    if isinstance(container, OrderedIdentifiableStore):
+        return container.position_of(cast("model.Identifiable", member))
     if isinstance(container, model.NamespaceSet) or is_list_like(container):
         held_members = _members(cast("object", container))
         for position, held in enumerate(held_members):
@@ -122,6 +125,15 @@ def add_member(
         position = index if index >= 0 else max(0, len(items) + index)
         items.insert(position, member)
         return position
+    if isinstance(container, OrderedIdentifiableStore):
+        if member in container:
+            raise ValueError(f"Already in the store: {member!r}")
+        identifiable = cast("model.Identifiable", member)
+        if index is None or index >= len(container):
+            container.add(identifiable)
+        else:
+            container.insert(identifiable, index)
+        return container.position_of(identifiable)
     if isinstance(container, MutableSet):
         members = cast("MutableSet[Any]", container)
         if member in members:
@@ -213,7 +225,9 @@ def members_in_order(container: object) -> list[Any]:
     Raises:
         TypeError: If the container has no order that is saved.
     """
-    if isinstance(container, model.NamespaceSet) or is_list_like(container):
+    if isinstance(
+        container, (model.NamespaceSet, OrderedIdentifiableStore)
+    ) or is_list_like(container):
         return _members(cast("object", container))
     raise TypeError(f"A {type(container).__name__} has no order")
 
@@ -236,6 +250,9 @@ def reorder_members(container: object, order: list[Any]) -> None:
     """
     if isinstance(container, model.NamespaceSet):
         ordering.reorder(cast("model.NamespaceSet[Any]", container), order)
+        return
+    if isinstance(container, OrderedIdentifiableStore):
+        container.reorder(cast("list[model.Identifiable]", order))
         return
     if is_list_like(container):
         items = cast("MutableSequence[Any]", container)
