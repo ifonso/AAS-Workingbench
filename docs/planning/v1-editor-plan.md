@@ -272,6 +272,6 @@ All ─ WP12
 | WP8a | `feat/value-editors` | Done |
 | WP8b | `feat/element-conversion` | Done |
 | WP9 | `feat/supplementary-files` | Done |
-| WP10 | `feat/concept-descriptions` | Not started |
+| WP10 | `feat/concept-descriptions` | Done |
 | WP11 | `feat/bulk-editing-and-presets` | Not started |
 | WP12 | `docs/v1-editor-release` | Not started |
