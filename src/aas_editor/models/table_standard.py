@@ -44,6 +44,7 @@ from aas_editor.application.edits import (
     SetValueType,
 )
 from aas_editor.application.listeners import Subscription
+from aas_editor.domain.containers import is_list_like
 from aas_editor.domain.language_tags import check_language_tag
 from aas_editor.domain.typed_values import (
     is_value_attr,
@@ -82,6 +83,15 @@ from aas_editor.utils.util import actualizeAASParents
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import getArgs, isIterable
+
+
+def isMemberContainer(obj) -> bool:
+    """Tell whether an object holds members that are edited as a whole.
+
+    That is a list, which includes the ConstrainedList of the supplemental
+    semantic ids, a set, or a mapping like a LangStringSet.
+    """
+    return is_list_like(obj) or isinstance(obj, (AbstractSet, MutableMapping))
 
 
 # Why a change is refused, in words the user can read. A view shows the message
@@ -288,7 +298,7 @@ class StandardTable(QAbstractItemModel):
         parentObj = parent.data(OBJECT_ROLE)
         if isinstance(parentObj, MutableMapping):
             return self._addEntryCommand(parent, parentObj, obj)
-        if isinstance(parentObj, (AbstractSet, list)):
+        if isinstance(parentObj, AbstractSet) or is_list_like(parentObj):
             return AddMember(self._observerFor(parent), parentObj, obj, row)
         raise AttributeError(
             f"Object couldn't be added: parent obj type is not appendable: {type(parentObj)}"
@@ -621,7 +631,7 @@ class StandardTable(QAbstractItemModel):
         self._checkClearable(item.objName, item.typehint, value)
 
         container = self._changedObject(index)
-        if isinstance(container, (list, AbstractSet, MutableMapping)):
+        if isMemberContainer(container):
             # The edited item is a member of the container, not an attribute.
             return ReplaceMember(
                 self._observerFor(index),
@@ -641,7 +651,7 @@ class StandardTable(QAbstractItemModel):
         if not index.isValid() or index.column() != VALUE_COLUMN:
             return None
         owner = self._changedObject(index)
-        if isinstance(owner, (list, AbstractSet, MutableMapping)):
+        if isMemberContainer(owner):
             return None
         return owner, self.objByIndex(index).objName
 
@@ -808,7 +818,7 @@ class StandardTable(QAbstractItemModel):
 
         for currRow in range(row + count - 1, row - 1, -1):
             child = parentItem.children()[currRow]
-            if isinstance(parentObj, (list, MutableMapping, AbstractSet)):
+            if isMemberContainer(parentObj):
                 # A mapping member is a pair, and the item shows it as such.
                 self._run(
                     parent,

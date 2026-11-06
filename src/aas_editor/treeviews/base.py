@@ -1076,6 +1076,17 @@ class TreeView(BasicTreeView):
         # Remove invalid indexes just in case
         valid_indexes = [idx for idx in indexes if idx.isValid()]
 
+        # A view that selects rows lists every cell of a row, but a row is one
+        # item: it must be deleted, copied, or cut once.
+        rows = set()
+        unique_indexes = []
+        for idx in valid_indexes:
+            row = (idx.parent(), idx.row())
+            if row not in rows:
+                rows.add(row)
+                unique_indexes.append(idx)
+        valid_indexes = unique_indexes
+
         # Remove indexes whose parent is also in the list
         top_level_candidates = []
         for idx in valid_indexes:
