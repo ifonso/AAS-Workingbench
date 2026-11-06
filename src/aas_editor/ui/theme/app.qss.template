@@ -386,14 +386,35 @@ QAbstractItemView {
     selection-color: $fg_primary;
 }
 
+/* The trees and tables of the window sit in a pane and need no box. On dark
+   surfaces the line of a frame stands out against both neighbors, and a frame
+   inside a frame reads as a grid. The frame keeps its width and takes the color
+   of the surface, so the room of the view does not change with the style
+   sheet. A dialog keeps the line: its lists have the dialog around them, not a
+   pane. */
+
+QMainWindow QTreeView,
+QMainWindow QTableView {
+    border: 1px solid $bg_content;
+}
+
+QDialog QTreeView,
+QDialog QTableView {
+    border: 1px solid $stroke_subtle;
+}
+
 QTreeView::item:hover,
 QTableView::item:hover,
 QListView::item:hover {
     background-color: $bg_hover;
 }
 
+/* A header is an item view too, so it would take the box of the rule above.
+   Its sections draw the lines that it needs. */
+
 QHeaderView {
     background-color: $bg_chrome;
+    border: none;
 }
 
 QHeaderView::section {
@@ -403,6 +424,12 @@ QHeaderView::section {
     border-right: 1px solid $stroke_subtle;
     border-bottom: 1px solid $stroke_subtle;
     padding: 3px 8px;
+}
+
+/* The last section reaches the edge of the view, and a line there is a box. */
+
+QHeaderView::section:last {
+    border-right: none;
 }
 
 QTableCornerButton::section {
