@@ -52,8 +52,10 @@ def importRowValueFromExcel(sourcefile, sheetname=None, row=2):
 def _mapping4referableIntoDict(obj, mapDict):
     mapping = getattr(obj, import_settings.MAPPING_ATTR, {})
     if mapping:
-        ref = ModelReference.from_referable(obj) # FIXME V30RC02
-        keys = ','.join([f"Key(type_={i.type}, value='{i.value}')" for i in ref.key])
+        ref = ModelReference.from_referable(obj)  # FIXME V30RC02
+        keys = ",".join(
+            [f"Key(type_={i.type}, value='{i.value}')" for i in ref.key]
+        )
         target_type = repr(ref.type).lstrip("<class '").rstrip("'>")
         mapDict[f"ModelReference(type_={target_type}, key=({keys},))"] = mapping
 
@@ -75,7 +77,7 @@ def getMapping(pack: "Package"):
 
 def saveMapping(pack: "Package", file: str) -> bool:
     mapDict = getMapping(pack)
-    with open(file, 'w') as jsonFile:
+    with open(file, "w") as jsonFile:
         json.dump(mapDict, jsonFile)
         jsonFile.close()
     return True
@@ -90,7 +92,9 @@ def usedColumnsInMapping(mapDict) -> List[str]:
     return columns
 
 
-def unusedColumnsInMapping(mapDict, sourcefile, sheetname: Worksheet) -> List[str]:
+def unusedColumnsInMapping(
+    mapDict, sourcefile, sheetname: Worksheet
+) -> List[str]:
     excel_file = openpyxl.load_workbook(sourcefile, data_only=True)
     if not sheetname:
         sheetname = excel_file.sheetnames[0]
@@ -105,16 +109,19 @@ def unusedColumnsInMapping(mapDict, sourcefile, sheetname: Worksheet) -> List[st
 
 
 def setMappingFromFile(pack: "Package", mappingFile: str):
-    with open(mappingFile, 'r') as jsonFile:
+    with open(mappingFile, "r") as jsonFile:
         mapDict = json.load(jsonFile)
 
     for refRepr in mapDict:
-        aasref: ModelReference = eval(refRepr, {
-            "Key": Key,
-            "KeyTypes": KeyTypes,
-            "ModelReference": ModelReference,
-            "basyx": basyx,
-        })
+        aasref: ModelReference = eval(
+            refRepr,
+            {
+                "Key": Key,
+                "KeyTypes": KeyTypes,
+                "ModelReference": ModelReference,
+                "basyx": basyx,
+            },
+        )
         refObj = aasref.resolve(pack.objStore)
         mapping = mapDict[refRepr]
         setattr(refObj, import_settings.MAPPING_ATTR, mapping)
@@ -139,7 +146,9 @@ def importValueFromExampleRow(value: str, row: Dict):
     return value
 
 
-def importValueFromExcelWB(value: str, workbook: openpyxl.Workbook, sheetname, row=2):
+def importValueFromExcelWB(
+    value: str, workbook: openpyxl.Workbook, sheetname, row=2
+):
     """
     Import value from an Excel workbook based on a given value string.
 

@@ -25,32 +25,86 @@ class ImportTreeView(PackTreeView):
     def _getObjFromDialog(self, dialog):
         return PreObjectImport.fromPreObject(dialog.getPreObj())
 
-    def addItemWithDialog(self, parent: QModelIndex, objTypeHint, objVal=None,
-                          title="", rmDefParams=False, **kwargs):
+    def addItemWithDialog(
+        self,
+        parent: QModelIndex,
+        objTypeHint,
+        objVal=None,
+        title="",
+        rmDefParams=False,
+        **kwargs,
+    ):
         kwargs["useValidators"] = False
-        return super().addItemWithDialog(parent=parent, objTypeHint=objTypeHint, objVal=objVal, title=title,
-                                         rmDefParams=rmDefParams, **kwargs)
+        return super().addItemWithDialog(
+            parent=parent,
+            objTypeHint=objTypeHint,
+            objVal=objVal,
+            title=title,
+            rmDefParams=rmDefParams,
+            **kwargs,
+        )
 
-    def replItemWithDialog(self, index, objTypeHint, objVal=None, title="", rmDefParams=False, **kwargs):
+    def replItemWithDialog(
+        self,
+        index,
+        objTypeHint,
+        objVal=None,
+        title="",
+        rmDefParams=False,
+        **kwargs,
+    ):
         kwargs["useValidators"] = False
-        return super().replItemWithDialog(index=index, objTypeHint=objTypeHint, objVal=objVal,
-                                          title=title, rmDefParams=rmDefParams, **kwargs)
+        return super().replItemWithDialog(
+            index=index,
+            objTypeHint=objTypeHint,
+            objVal=objVal,
+            title=title,
+            rmDefParams=rmDefParams,
+            **kwargs,
+        )
 
 
 class DetailImportTreeView(AttrsTreeView):
     def _getObjFromDialog(self, dialog):
         return PreObjectImport.fromPreObject(dialog.getPreObj())
 
-    def addItemWithDialog(self, parent: QModelIndex, objTypeHint, objVal=None,
-                          title="", rmDefParams=False, **kwargs):
+    def addItemWithDialog(
+        self,
+        parent: QModelIndex,
+        objTypeHint,
+        objVal=None,
+        title="",
+        rmDefParams=False,
+        **kwargs,
+    ):
         kwargs["useValidators"] = False
-        return super().addItemWithDialog(parent=parent, objTypeHint=objTypeHint, objVal=objVal, title=title,
-                                         rmDefParams=rmDefParams, **kwargs)
+        return super().addItemWithDialog(
+            parent=parent,
+            objTypeHint=objTypeHint,
+            objVal=objVal,
+            title=title,
+            rmDefParams=rmDefParams,
+            **kwargs,
+        )
 
-    def replItemWithDialog(self, index, objTypeHint, objVal=None, title="", rmDefParams=False, **kwargs):
+    def replItemWithDialog(
+        self,
+        index,
+        objTypeHint,
+        objVal=None,
+        title="",
+        rmDefParams=False,
+        **kwargs,
+    ):
         kwargs["useValidators"] = False
-        return super().replItemWithDialog(index=index, objTypeHint=objTypeHint, objVal=objVal,
-                                          title=title, rmDefParams=rmDefParams, **kwargs)
+        return super().replItemWithDialog(
+            index=index,
+            objTypeHint=objTypeHint,
+            objVal=objVal,
+            title=title,
+            rmDefParams=rmDefParams,
+            **kwargs,
+        )
 
     def isEditableInsideCell(self, index: QModelIndex):
         return False

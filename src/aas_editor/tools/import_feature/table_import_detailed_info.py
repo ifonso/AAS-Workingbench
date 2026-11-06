@@ -25,8 +25,17 @@ from basyx.aas.model import Referable
 from aas_editor.tools.import_feature.import_settings import MAPPING_ATTR
 from aas_editor.tools.import_feature.import_util_classes import PreObjectImport
 from aas_editor.models import DetailedInfoItem, DetailedInfoTable, SetDataItem
-from aas_editor.settings.app_settings import PACKAGE_ROLE, NAME_ROLE, OBJECT_ROLE, DEFAULT_COLUMNS_IN_DETAILED_INFO, \
-    DEFAULT_FONT, COLUMN_NAME_ROLE, ADD_ITEM_ROLE, CLEAR_ROW_ROLE, PARENT_OBJ_ROLE
+from aas_editor.settings.app_settings import (
+    PACKAGE_ROLE,
+    NAME_ROLE,
+    OBJECT_ROLE,
+    DEFAULT_COLUMNS_IN_DETAILED_INFO,
+    DEFAULT_FONT,
+    COLUMN_NAME_ROLE,
+    ADD_ITEM_ROLE,
+    CLEAR_ROW_ROLE,
+    PARENT_OBJ_ROLE,
+)
 
 MAPPING_COLUMN_NAME = "mapping"
 
@@ -38,8 +47,12 @@ class DetailedInfoImportTable(DetailedInfoTable):
         self.packItem = QPersistentModelIndex(packItem)
         self.mainObj = packItem.data(OBJECT_ROLE)
         self.package = packItem.data(PACKAGE_ROLE)
-        root = DetailedInfoItem(self.mainObj, name=packItem.data(NAME_ROLE),
-                                package=self.package, new=False)
+        root = DetailedInfoItem(
+            self.mainObj,
+            name=packItem.data(NAME_ROLE),
+            package=self.package,
+            new=False,
+        )
         columns = (*DEFAULT_COLUMNS_IN_DETAILED_INFO, MAPPING_COLUMN_NAME)
         super(DetailedInfoTable, self).__init__(columns, root)
 
@@ -70,11 +83,16 @@ class DetailedInfoImportTable(DetailedInfoTable):
         return mapping
 
     def data(self, index: QModelIndex, role: int = ...) -> Any:
-        if role == Qt.ItemDataRole.DisplayRole and super().data(index, COLUMN_NAME_ROLE) == MAPPING_COLUMN_NAME:
+        if (
+            role == Qt.ItemDataRole.DisplayRole
+            and super().data(index, COLUMN_NAME_ROLE) == MAPPING_COLUMN_NAME
+        ):
             objPath = self.getChildPath(index)
             mapping = self.getMapping4ChildPath(objPath)
             return mapping
-        elif role == Qt.ItemDataRole.EditRole and isinstance(self.mainObj, Referable):
+        elif role == Qt.ItemDataRole.EditRole and isinstance(
+            self.mainObj, Referable
+        ):
             objVal = super().data(index, OBJECT_ROLE)
             preObj = PreObjectImport.fromObject(objVal)
             objPath = self.getChildPath(index)
@@ -91,7 +109,12 @@ class DetailedInfoImportTable(DetailedInfoTable):
 
         result = super().setData(index, value, role)
 
-        if preObject and result and role in (Qt.ItemDataRole.EditRole, ADD_ITEM_ROLE) and isinstance(self.mainObj, Referable):
+        if (
+            preObject
+            and result
+            and role in (Qt.ItemDataRole.EditRole, ADD_ITEM_ROLE)
+            and isinstance(self.mainObj, Referable)
+        ):
             mapping = getattr(self.mainObj, MAPPING_ATTR)
             childPath = self.getChildPath(index)
             for attr in childPath:
@@ -102,9 +125,21 @@ class DetailedInfoImportTable(DetailedInfoTable):
         if preObject and result:
             if role == Qt.ItemDataRole.EditRole:
                 self.undo.pop()
-                self.undo.append(SetDataItem(index=QPersistentModelIndex(index), value=preObject, role=role))
+                self.undo.append(
+                    SetDataItem(
+                        index=QPersistentModelIndex(index),
+                        value=preObject,
+                        role=role,
+                    )
+                )
             elif role == CLEAR_ROW_ROLE:
                 self.undo.pop()
-                self.undo.append(SetDataItem(index=QPersistentModelIndex(index), value=preObject, role=ADD_ITEM_ROLE))
+                self.undo.append(
+                    SetDataItem(
+                        index=QPersistentModelIndex(index),
+                        value=preObject,
+                        role=ADD_ITEM_ROLE,
+                    )
+                )
 
         return result

@@ -28,9 +28,21 @@ from basyx.aas.model import ModelReference
 from basyx.aas import model
 
 import aas_editor.additional.classes
-TYPING_TYPES = {typing.AbstractSet, typing.Callable, typing.Dict, typing.List, typing.NamedTuple,
-                typing.NoReturn, typing.Set, typing.Sequence, typing.Tuple, typing.Type,
-                typing.TypeVar, typing.Union}
+
+TYPING_TYPES = {
+    typing.AbstractSet,
+    typing.Callable,
+    typing.Dict,
+    typing.List,
+    typing.NamedTuple,
+    typing.NoReturn,
+    typing.Set,
+    typing.Sequence,
+    typing.Tuple,
+    typing.Type,
+    typing.TypeVar,
+    typing.Union,
+}
 
 TYPE_NAMES_DICT = {
     model.datatypes.String: "String",
@@ -143,7 +155,10 @@ def checkTypeModelRef(aasref, typehint):
             try:
                 return issubclass(aasref.type, args)
             except TypeError as e:
-                logging.exception(f"Error occurred while checking: {aasref.type} and {args}", e)
+                logging.exception(
+                    f"Error occurred while checking: {aasref.type} and {args}",
+                    e,
+                )
                 return False
         else:
             return True
@@ -217,7 +232,10 @@ def issubtype(typ, types: Union[type, Tuple[Union[type, tuple], ...]]) -> bool:
 
     for tp in types:
         if not isTypehint(tp):
-            raise TypeError("Arg 2 must be type, typehint or tuple of types/typehints:", types)
+            raise TypeError(
+                "Arg 2 must be type, typehint or tuple of types/typehints:",
+                types,
+            )
 
     for tp in types:
         if type(tp) == typing.TypeVar:
@@ -246,9 +264,19 @@ def _issubtype(typ1, typ2: type) -> bool:
         else:
             return isUnion(typ1)
 
-    if getTypeName(typ2) == "Type" and hasattr(typ2, "__args__") and typ2.__args__:
-        args = typ2.__args__ if not isUnion(typ2.__args__[0]) else typ2.__args__[0].__args__
-        if str(args[0]) == "+CT_co":  # type2 is just Type without args TODO fix later
+    if (
+        getTypeName(typ2) == "Type"
+        and hasattr(typ2, "__args__")
+        and typ2.__args__
+    ):
+        args = (
+            typ2.__args__
+            if not isUnion(typ2.__args__[0])
+            else typ2.__args__[0].__args__
+        )
+        if (
+            str(args[0]) == "+CT_co"
+        ):  # type2 is just Type without args TODO fix later
             return getTypeName(typ1) == "Type"
         return issubtype(typ1, args)
 
@@ -270,10 +298,16 @@ def isoftype(obj, types: Union[type, Tuple[Union[type, tuple], ...]]) -> bool:
     try:
         for tp in types:
             if not isTypehint(tp):
-                raise TypeError("Arg 2 must be type, typehint or tuple of types/typehints:", types)
+                raise TypeError(
+                    "Arg 2 must be type, typehint or tuple of types/typehints:",
+                    types,
+                )
     except TypeError:
         if not isTypehint(types):
-            raise TypeError("Arg 2 must be type, typehint or tuple of types/typehints:", types)
+            raise TypeError(
+                "Arg 2 must be type, typehint or tuple of types/typehints:",
+                types,
+            )
 
     try:
         if issubclass(types, Enum):
@@ -297,7 +331,11 @@ def _isoftype(obj, typ) -> bool:
         return isoftype(obj, types)
 
     if getTypeName(typ) == "Type" and hasattr(typ, "__args__") and typ.__args__:
-        args = typ.__args__ if not isUnion(typ.__args__[0]) else typ.__args__[0].__args__
+        args = (
+            typ.__args__
+            if not isUnion(typ.__args__[0])
+            else typ.__args__[0].__args__
+        )
         if type(obj) in (type, ABCMeta):
             return issubtype(obj, args)
         else:
@@ -315,8 +353,9 @@ def _isoftype(obj, typ) -> bool:
 
 
 def isIterableType(objType):
-    return issubtype(objType, Iterable) \
-           and not issubtype(objType, (str, bytes, bytearray, aas_editor.additional.classes.DictItem))
+    return issubtype(objType, Iterable) and not issubtype(
+        objType, (str, bytes, bytearray, aas_editor.additional.classes.DictItem)
+    )
 
 
 def isIterable(obj):
@@ -347,5 +386,3 @@ def typecast(val, typ):
         return None
     else:
         return typ(val)
-
-

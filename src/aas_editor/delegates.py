@@ -16,15 +16,26 @@ from enum import Enum
 from typing import Dict
 
 from PyQt6.QtGui import QPainter, QBrush, QIntValidator
-from PyQt6.QtWidgets import QWidget, QStyledItemDelegate, QStyleOptionViewItem, QStyle, \
-    QCompleter, QCheckBox
+from PyQt6.QtWidgets import (
+    QWidget,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
+    QStyle,
+    QCompleter,
+    QCheckBox,
+)
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt, QModelIndex
 
 from aas_editor.settings import DEFAULT_COMPLETIONS
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import issubtype, isoftype
-from aas_editor.widgets.editWidgets import ComboBox, CompleterComboBox, DictItemEdit, LineEdit
+from aas_editor.widgets.editWidgets import (
+    ComboBox,
+    CompleterComboBox,
+    DictItemEdit,
+    LineEdit,
+)
 
 
 class ColorDelegate(QStyledItemDelegate):
@@ -33,14 +44,24 @@ class ColorDelegate(QStyledItemDelegate):
         self.indexColors: Dict[QModelIndex, QBrush] = {}
         self.hoverIndex = QModelIndex()
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+    def paint(
+        self,
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex,
+    ):
         opt = QStyleOptionViewItem(option)
         # paint row of the tree with MouseOver style if one cell of the row is chosen
-        if not opt.state & QStyle.StateFlag.State_HasFocus \
-                and not opt.state & QStyle.StateFlag.State_Selected:
+        if (
+            not opt.state & QStyle.StateFlag.State_HasFocus
+            and not opt.state & QStyle.StateFlag.State_Selected
+        ):
             view = opt.styleObject
             hoverIndex: QModelIndex = view.currentIndex()
-            if not opt.state & QStyle.StateFlag.State_MouseOver and index.siblingAtColumn(0) == hoverIndex.siblingAtColumn(0):
+            if (
+                not opt.state & QStyle.StateFlag.State_MouseOver
+                and index.siblingAtColumn(0) == hoverIndex.siblingAtColumn(0)
+            ):
                 opt.state |= QStyle.StateFlag.State_MouseOver
                 model = view.model()
                 model.dataChanged.emit(index, index)
@@ -50,7 +71,9 @@ class ColorDelegate(QStyledItemDelegate):
             opt.backgroundBrush = self.indexColors[index]
             widget = opt.widget
             style = widget.style()
-            style.drawControl(QStyle.ControlElement.CE_ItemViewItem, opt, painter, widget)
+            style.drawControl(
+                QStyle.ControlElement.CE_ItemViewItem, opt, painter, widget
+            )
         else:
             super(ColorDelegate, self).paint(painter, opt, index)
 
@@ -70,8 +93,12 @@ class ColorDelegate(QStyledItemDelegate):
 class EditDelegate(ColorDelegate):
     editableTypesInTable = (bool, int, str, Enum)
 
-    def createEditor(self, parent: QWidget, option: 'QStyleOptionViewItem',
-                     index: QtCore.QModelIndex) -> QWidget:
+    def createEditor(
+        self,
+        parent: QWidget,
+        option: "QStyleOptionViewItem",
+        index: QtCore.QModelIndex,
+    ) -> QWidget:
         objType = type(index.data(Qt.ItemDataRole.EditRole))
         attr = index.data(Qt.ItemDataRole.DisplayRole)
         if issubtype(objType, bool):
@@ -114,8 +141,12 @@ class EditDelegate(ColorDelegate):
         else:
             super().setEditorData(editor, index)
 
-    def setModelData(self, editor: QWidget, model: QtCore.QAbstractItemModel,
-                     index: QtCore.QModelIndex) -> None:
+    def setModelData(
+        self,
+        editor: QWidget,
+        model: QtCore.QAbstractItemModel,
+        index: QtCore.QModelIndex,
+    ) -> None:
         if isoftype(index.data(Qt.ItemDataRole.EditRole), (Enum, DictItem)):
             obj = editor.currentData()
             model.setData(index, obj, Qt.ItemDataRole.EditRole)
@@ -125,6 +156,10 @@ class EditDelegate(ColorDelegate):
         else:
             super().setModelData(editor, model, index)
 
-    def updateEditorGeometry(self, editor: QWidget, option: 'QStyleOptionViewItem',
-                             index: QtCore.QModelIndex) -> None:
+    def updateEditorGeometry(
+        self,
+        editor: QWidget,
+        option: "QStyleOptionViewItem",
+        index: QtCore.QModelIndex,
+    ) -> None:
         editor.setGeometry(option.rect)

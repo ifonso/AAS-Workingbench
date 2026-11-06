@@ -24,7 +24,9 @@ class PreObject:
         self.args: List = list(args)
         self.objType: Type = objType
 
-        self.existingObjUsed: bool = False if objType is not type(None) else True
+        self.existingObjUsed: bool = (
+            False if objType is not type(None) else True
+        )
         self.existingObj = None
 
     def __getattr__(self, item):
@@ -71,7 +73,9 @@ class PreObject:
         try:
             return self.objType(*args, **kwargs)
         except TypeError as e:
-            positional_arg_defaults = ClassesInfo.positionalArgDefaults(self.objType)
+            positional_arg_defaults = ClassesInfo.positionalArgDefaults(
+                self.objType
+            )
             for arg in positional_arg_defaults:
                 kwargs[arg] = positional_arg_defaults[arg]
             # for key in ClassesInfo.defaultParamsToHide(object):
@@ -103,10 +107,13 @@ class PreObject:
             kwargs[key] = value
         return kwargs
 
+
 class ClassesInfo:
     @staticmethod
     def hasPackViewAttrs(cls) -> bool:
-        hasAttrs = ClassesInfo.findSpecificInfoForClass(cls, PACKVIEW_ATTRS_INFO)
+        hasAttrs = ClassesInfo.findSpecificInfoForClass(
+            cls, PACKVIEW_ATTRS_INFO
+        )
         if hasAttrs is not None:
             return True
         return False

@@ -13,8 +13,19 @@ import webbrowser
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QMessageBox
 
-from aas_editor.settings import APPLICATION_NAME, APPLICATION_INFO, DEVELOPER_WEB, APPLICATION_LINK, VERSION, \
-    AAS_METAMODEL_VERSION, CONTRIBUTORS, CONTACT, LICENSE, COPYRIGHT_YEAR, REPORT_ERROR_LINK
+from aas_editor.settings import (
+    APPLICATION_NAME,
+    APPLICATION_INFO,
+    DEVELOPER_WEB,
+    APPLICATION_LINK,
+    VERSION,
+    AAS_METAMODEL_VERSION,
+    CONTRIBUTORS,
+    CONTACT,
+    LICENSE,
+    COPYRIGHT_YEAR,
+    REPORT_ERROR_LINK,
+)
 
 
 class AboutMessageBox(QMessageBox):
@@ -34,7 +45,9 @@ class AboutMessageBox(QMessageBox):
             f"License: {LICENSE}<br>"
             f"Copyright (C) {COPYRIGHT_YEAR}"
         )
-        self.setIconPixmap(self.parentWidget().windowIcon().pixmap(QSize(64, 64)))
+        self.setIconPixmap(
+            self.parentWidget().windowIcon().pixmap(QSize(64, 64))
+        )
 
 
 class ErrorMessageBox(QMessageBox):
@@ -46,7 +59,9 @@ class ErrorMessageBox(QMessageBox):
 
         # Each Error message box will have "Report Button" for opening an url
         self.setStandardButtons(QMessageBox.StandardButton.Ok)
-        reportButton = self.addButton("Report Bug", QMessageBox.ButtonRole.HelpRole)
+        reportButton = self.addButton(
+            "Report Bug", QMessageBox.ButtonRole.HelpRole
+        )
         reportButton.clicked.disconnect()
         reportButton.clicked.connect(self.reportButtonClicked)
 

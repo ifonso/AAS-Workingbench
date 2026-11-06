@@ -17,8 +17,23 @@ from typing import List
 
 from jsonschema import validate, ValidationError
 
-from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QFileDialog, QLineEdit, QComboBox, \
-    QHBoxLayout, QLabel, QMessageBox, QListWidgetItem, QListWidget, QGroupBox, QFormLayout, QWidget, QCheckBox
+from PyQt6.QtWidgets import (
+    QDialog,
+    QPushButton,
+    QVBoxLayout,
+    QFileDialog,
+    QLineEdit,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QListWidgetItem,
+    QListWidget,
+    QGroupBox,
+    QFormLayout,
+    QWidget,
+    QCheckBox,
+)
 from PyQt6.QtCore import pyqtSignal, QThread, QUrl
 from PyQt6.QtGui import QIntValidator, QDesktopServices
 from basyx.aas.adapter.json import AASToJsonEncoder, AASFromJsonDecoder
@@ -29,15 +44,26 @@ from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
 from aas_editor.widgets import messsageBoxes
-from aas_editor.tools.handover_doc_llm.documentation_generator import json2document, documents2handover_documentation
+from aas_editor.tools.handover_doc_llm.documentation_generator import (
+    json2document,
+    documents2handover_documentation,
+)
 from aas_editor.settings.icons import INFO_ICON
 
-from aas_editor.tools.handover_doc_llm.config import PROMPT, LLM_PROVIDERS, EMBEDDING_PROVIDERS, TOOL_DESCRIPTION, RESPONSE_SCHEMA
+from aas_editor.tools.handover_doc_llm.config import (
+    PROMPT,
+    LLM_PROVIDERS,
+    EMBEDDING_PROVIDERS,
+    TOOL_DESCRIPTION,
+    RESPONSE_SCHEMA,
+)
 from aas_editor.widgets.dropfilebox import DropFileQWebEngineView
 from aas_editor.widgets.jsonEditor import JSONEditor
 
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+from langchain_classic.chains.combine_documents import (
+    create_stuff_documents_chain,
+)
 from langchain_core.prompts import ChatPromptTemplate
 
 DOCUMENT_ROLE = 1000
@@ -45,6 +71,7 @@ DOCUMENT_ROLE = 1000
 
 class SimpleRetriever(BaseRetriever):
     """A simple retriever that returns all documents regardless of the query."""
+
     docs: List[Document]
 
     def _get_relevant_documents(self, query: str, **kwargs) -> List[Document]:
@@ -56,9 +83,18 @@ class PdfProcessingThread(QThread):
     processing_error = pyqtSignal(str)
     show_answer_dialog = pyqtSignal(str)
 
-    def __init__(self, file_path: str, llm_provider: str, llm_model: str, api_key: str,
-                 pages_front: str, pages_end: str, embedding_provider: str = "HuggingFace",
-                 embedding_api_key: str = "", embedding_model: str = ""):
+    def __init__(
+        self,
+        file_path: str,
+        llm_provider: str,
+        llm_model: str,
+        api_key: str,
+        pages_front: str,
+        pages_end: str,
+        embedding_provider: str = "HuggingFace",
+        embedding_api_key: str = "",
+        embedding_model: str = "",
+    ):
         super().__init__()
         self.file_path = file_path
         self.llm_provider = llm_provider
@@ -70,36 +106,60 @@ class PdfProcessingThread(QThread):
         self.embedding_api_key = embedding_api_key
         self.embedding_model = embedding_model
 
-    def init_embeddings(self, provider: str = "HuggingFace", api_key: str = None, model: str = ""):
+    def init_embeddings(
+        self,
+        provider: str = "HuggingFace",
+        api_key: str = None,
+        model: str = "",
+    ):
         if provider not in EMBEDDING_PROVIDERS:
             provider = "HuggingFace"
         return EMBEDDING_PROVIDERS[provider]["init"](api_key, model)
 
-    def init_llm(self, provider: str, chat_model: str, api_key: str, schema: dict = None):
+    def init_llm(
+        self, provider: str, chat_model: str, api_key: str, schema: dict = None
+    ):
         if provider in LLM_PROVIDERS:
             if provider == "Ollama" and schema is not None:
-                return LLM_PROVIDERS[provider]["init"](chat_model, api_key, schema=schema)
+                return LLM_PROVIDERS[provider]["init"](
+                    chat_model, api_key, schema=schema
+                )
             return LLM_PROVIDERS[provider]["init"](chat_model, api_key)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
 
-    def _fix_json_with_llm(self, llm, raw_answer: str, schema: dict, error_msg: str) -> str:
+    def _fix_json_with_llm(
+        self, llm, raw_answer: str, schema: dict, error_msg: str
+    ) -> str:
         from langchain_core.prompts import ChatPromptTemplate
-        fix_prompt = ChatPromptTemplate.from_messages([
-            ("system",
-             "You are a JSON correction assistant. "
-             "Return ONLY a valid JSON object. "
-             "Do not include markdown, code fences, comments, or any extra text. "
-             "The JSON MUST validate against the provided JSON Schema."),
-            ("human",
-             "JSON Schema:\n{schema}\n\n"
-             "Validation / parsing error:\n{error}\n\n"
-             "Original model output:\n{raw}\n\n"
-             "Task: Produce corrected JSON that matches the schema exactly.")
-        ])
+
+        fix_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are a JSON correction assistant. "
+                    "Return ONLY a valid JSON object. "
+                    "Do not include markdown, code fences, comments, or any extra text. "
+                    "The JSON MUST validate against the provided JSON Schema.",
+                ),
+                (
+                    "human",
+                    "JSON Schema:\n{schema}\n\n"
+                    "Validation / parsing error:\n{error}\n\n"
+                    "Original model output:\n{raw}\n\n"
+                    "Task: Produce corrected JSON that matches the schema exactly.",
+                ),
+            ]
+        )
 
         fix_chain = fix_prompt | llm
-        fixed = fix_chain.invoke({"schema": json.dumps(schema), "error": error_msg, "raw": raw_answer})
+        fixed = fix_chain.invoke(
+            {
+                "schema": json.dumps(schema),
+                "error": error_msg,
+                "raw": raw_answer,
+            }
+        )
 
         fixed_text = fixed.content if hasattr(fixed, "content") else str(fixed)
         return fixed_text.strip()
@@ -110,7 +170,9 @@ class PdfProcessingThread(QThread):
             # 1. Load PDF via pypdf directly (avoids langchain_community import chain
             #    which triggers a C-stack overflow on Python 3.14 via transformers/numpy)
             suffix = ".pdf"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_pdf:
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=suffix
+            ) as tmp_pdf:
                 tmp_path = tmp_pdf.name
             shutil.copy2(self.file_path, tmp_path)
 
@@ -128,7 +190,11 @@ class PdfProcessingThread(QThread):
             else:
                 pages_end = 3
 
-            if pages_front != -1 and pages_end != -1 and (pages_front + pages_end) < len(docs):
+            if (
+                pages_front != -1
+                and pages_end != -1
+                and (pages_front + pages_end) < len(docs)
+            ):
                 docs = docs[:pages_front] + docs[-pages_end:]
 
             # 3. Basic heuristics to decide whether to use RAG or to feed the whole document directly.
@@ -139,16 +205,27 @@ class PdfProcessingThread(QThread):
             total_pages = len(docs)
             total_chars = sum(len(getattr(d, "page_content", "")) for d in docs)
             # Use RAG if the document is large in EITHER pages or characters
-            use_rag = total_pages > SMALL_PAGES_THRESHOLD or total_chars > SMALL_CHARS_THRESHOLD
+            use_rag = (
+                total_pages > SMALL_PAGES_THRESHOLD
+                or total_chars > SMALL_CHARS_THRESHOLD
+            )
 
             if use_rag:
-                from langchain_text_splitters import RecursiveCharacterTextSplitter
+                from langchain_text_splitters import (
+                    RecursiveCharacterTextSplitter,
+                )
                 from langchain_community.vectorstores import FAISS
 
                 logging.info("Using RAG approach for document processing.")
                 print("Using RAG approach for document processing.")
-                embeddings = self.init_embeddings(self.embedding_provider, self.embedding_api_key, self.embedding_model)
-                splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+                embeddings = self.init_embeddings(
+                    self.embedding_provider,
+                    self.embedding_api_key,
+                    self.embedding_model,
+                )
+                splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000, chunk_overlap=100
+                )
                 splits = splitter.split_documents(docs)
                 vector_store = FAISS.from_documents(splits, embeddings)
                 retriever = vector_store.as_retriever()
@@ -160,13 +237,21 @@ class PdfProcessingThread(QThread):
 
             # 4. Chain Execution
             schema = json.loads(RESPONSE_SCHEMA)
-            llm = self.init_llm(self.llm_provider, self.llm_model, self.api_key, schema=schema)
+            llm = self.init_llm(
+                self.llm_provider, self.llm_model, self.api_key, schema=schema
+            )
             prompt = ChatPromptTemplate.from_template(PROMPT)
             document_chain = create_stuff_documents_chain(llm, prompt)
             docs_for_context = retriever.invoke("")
 
-            llm_response = document_chain.invoke({"input": "", "context": docs_for_context})
-            answer = llm_response if isinstance(llm_response, str) else llm_response.get('answer', '')
+            llm_response = document_chain.invoke(
+                {"input": "", "context": docs_for_context}
+            )
+            answer = (
+                llm_response
+                if isinstance(llm_response, str)
+                else llm_response.get("answer", "")
+            )
 
             # 5. JSON Validation
             max_fix_attempts = 2
@@ -195,10 +280,12 @@ class PdfProcessingThread(QThread):
                         llm=llm,
                         raw_answer=answer,
                         schema=schema,
-                        error_msg=last_error
+                        error_msg=last_error,
                     )
 
-            self.processing_error.emit(f"LLM response is not valid. Last error: {last_error}")
+            self.processing_error.emit(
+                f"LLM response is not valid. Last error: {last_error}"
+            )
 
         except Exception:
             self.processing_error.emit(f"Error: {traceback.format_exc()}")
@@ -224,7 +311,6 @@ class AnswerDialog(QDialog):
 // "04-01" - Contract documents
 
 """
-
 
     def __init__(self, answer, parent=None):
         super().__init__(parent)
@@ -254,22 +340,29 @@ class HandoverDocumentationToolDialog(QDialog):
         self.documentList.setMinimumHeight(50)
         self.documentList.setToolTip("List of processed documents")
 
-
-        self.html_renderer = DropFileQWebEngineView(self, emptyViewMsg="Drop PDF file here",
-                             description="Drop a PDF file to extract Handover Documentation (VDI 2770).")
+        self.html_renderer = DropFileQWebEngineView(
+            self,
+            emptyViewMsg="Drop PDF file here",
+            description="Drop a PDF file to extract Handover Documentation (VDI 2770).",
+        )
         self.html_renderer.fileDropped.connect(self.processPdf)
         self.html_renderer.setMinimumHeight(200)
 
-        self.apiKeyLineEdit = QLineEdit(self, toolTip="API Key for LLM service",
-                                        placeholderText="Enter API Key here",
-                                        echoMode=QLineEdit.EchoMode.Password)
+        self.apiKeyLineEdit = QLineEdit(
+            self,
+            toolTip="API Key for LLM service",
+            placeholderText="Enter API Key here",
+            echoMode=QLineEdit.EchoMode.Password,
+        )
         self.apiKeyLabel = QLabel("API Key:", self)
         self.modelLineEdit = QLineEdit(self, toolTip="Choose model to use")
         self.embeddingApiKeyLabel = QLabel("Embedding API Key:", self)
         self.embeddingApiKeyLineEdit = QLineEdit(self)
         self.embeddingApiKeyLineEdit.setPlaceholderText("Enter API Key here")
         self.embeddingApiKeyLineEdit.setEchoMode(QLineEdit.EchoMode.Password)
-        self.embeddingApiKeyLineEdit.setToolTip("API Key for the embedding provider")
+        self.embeddingApiKeyLineEdit.setToolTip(
+            "API Key for the embedding provider"
+        )
         self.embeddingApiKeyLabel.hide()
         self.embeddingApiKeyLineEdit.hide()
 
@@ -277,50 +370,80 @@ class HandoverDocumentationToolDialog(QDialog):
         self.embeddingModelLineEdit = QLineEdit(self)
         self.embeddingModelLineEdit.setToolTip(
             "Ollama embedding model to use for RAG. Leave empty for default (nomic-embed-text).\n"
-            "Pull the model first, e.g.: ollama pull nomic-embed-text")
+            "Pull the model first, e.g.: ollama pull nomic-embed-text"
+        )
         self.embeddingModelLabel.hide()
         self.embeddingModelLineEdit.hide()
 
-        self.embeddingProviderComboBox = QComboBox(self, toolTip="Embedding provider used for RAG on large documents")
-        self.embeddingProviderComboBox.addItems([k for k in EMBEDDING_PROVIDERS.keys()])
-        self.embeddingProviderComboBox.currentIndexChanged.connect(self.embedding_provider_changed)
+        self.embeddingProviderComboBox = QComboBox(
+            self, toolTip="Embedding provider used for RAG on large documents"
+        )
+        self.embeddingProviderComboBox.addItems(
+            [k for k in EMBEDDING_PROVIDERS.keys()]
+        )
+        self.embeddingProviderComboBox.currentIndexChanged.connect(
+            self.embedding_provider_changed
+        )
 
-        self.providerLineEdit = QComboBox(self, toolTip="LLM Provider",
-                                          currentIndexChanged=self.provider_changed)
+        self.providerLineEdit = QComboBox(
+            self,
+            toolTip="LLM Provider",
+            currentIndexChanged=self.provider_changed,
+        )
         self.providerLineEdit.addItems([k for k in LLM_PROVIDERS.keys()])
 
         self.model_info_label = QLabel(self)
         self.model_info_label.setPixmap(INFO_ICON.pixmap(24, 24))
         self.model_info_label.setFixedSize(24, 24)
         self.model_info_label.setToolTip(
-            "A custom model can be used, else the default model is being used.\nFor more information about models see \"https://js.langchain.com/docs/integrations/chat/\"")
+            'A custom model can be used, else the default model is being used.\nFor more information about models see "https://js.langchain.com/docs/integrations/chat/"'
+        )
 
-        self.idLineEdit = QLineEdit(self, toolTip="ID of the generated Handover Documentation Submodel (mandatory)",
-                                    placeholderText="Enter Submodel ID")
-        self.idLineEdit.textChanged.connect(lambda txt: self.finishButton.setEnabled(bool(txt.strip())))
+        self.idLineEdit = QLineEdit(
+            self,
+            toolTip="ID of the generated Handover Documentation Submodel (mandatory)",
+            placeholderText="Enter Submodel ID",
+        )
+        self.idLineEdit.textChanged.connect(
+            lambda txt: self.finishButton.setEnabled(bool(txt.strip()))
+        )
 
-        self.chooseButton = QPushButton("Choose && Process PDF", self,
-                                        toolTip="The selected PDF file will be processed and the extracted Handover Documentation will be shown.",
-                                        clicked=self.chooseAndProcessPdf)
+        self.chooseButton = QPushButton(
+            "Choose && Process PDF",
+            self,
+            toolTip="The selected PDF file will be processed and the extracted Handover Documentation will be shown.",
+            clicked=self.chooseAndProcessPdf,
+        )
 
-        self.pagesFrontLineEdit = QLineEdit(self,
-                                            toolTip="Number of pages to use from the front of the document",
-                                            placeholderText="default: 3; all pages = -1")
+        self.pagesFrontLineEdit = QLineEdit(
+            self,
+            toolTip="Number of pages to use from the front of the document",
+            placeholderText="default: 3; all pages = -1",
+        )
         self.pagesFrontLineEdit.setValidator(QIntValidator())
-        self.pagesEndLineEdit = QLineEdit(self, toolTip="Number of pages to use from the end of the document",
-                                          placeholderText="default: 3")
+        self.pagesEndLineEdit = QLineEdit(
+            self,
+            toolTip="Number of pages to use from the end of the document",
+            placeholderText="default: 3",
+        )
         self.pagesEndLineEdit.setValidator(QIntValidator())
 
         # Add option box widget to choose if to open PDF automatically when processing is done
-        self.openPdfCheckbox = QCheckBox("Open Document when processing is done", self)
+        self.openPdfCheckbox = QCheckBox(
+            "Open Document when processing is done", self
+        )
         self.openPdfCheckbox.setChecked(True)
-        self.openPdfCheckbox.setToolTip("If checked, the document will be opened with the system default viewer "
-                                        "after processing.")
+        self.openPdfCheckbox.setToolTip(
+            "If checked, the document will be opened with the system default viewer "
+            "after processing."
+        )
 
         self.processingThread = None
 
         self.finishButton = QPushButton("Finish handover documentation", self)
-        self.finishButton.setToolTip("Generate the handover documentation from the extracted documents.")
+        self.finishButton.setToolTip(
+            "Generate the handover documentation from the extracted documents."
+        )
         self.finishButton.setEnabled(False)
         self.finishButton.clicked.connect(self.finish_handover_documentation)
 
@@ -328,7 +451,9 @@ class HandoverDocumentationToolDialog(QDialog):
 
     @property
     def documents(self):
-        document_items = [self.documentList.item(i) for i in range(self.documentList.count())]
+        document_items = [
+            self.documentList.item(i) for i in range(self.documentList.count())
+        ]
         return [item.data(DOCUMENT_ROLE) for item in document_items]
 
     def _initLayout(self):
@@ -359,8 +484,12 @@ class HandoverDocumentationToolDialog(QDialog):
         # Pages selection group
         gb_pages = QGroupBox("Processing Settings")
         pages_layout = QFormLayout()
-        pages_layout.addRow(QLabel("Front X pages to analyze:", self), self.pagesFrontLineEdit)
-        pages_layout.addRow(QLabel("End Y pages to analyze:", self), self.pagesEndLineEdit)
+        pages_layout.addRow(
+            QLabel("Front X pages to analyze:", self), self.pagesFrontLineEdit
+        )
+        pages_layout.addRow(
+            QLabel("End Y pages to analyze:", self), self.pagesEndLineEdit
+        )
         pages_layout.addWidget(self.openPdfCheckbox)
         gb_pages.setLayout(pages_layout)
         layout.addWidget(gb_pages)
@@ -379,7 +508,9 @@ class HandoverDocumentationToolDialog(QDialog):
         self.setLayout(layout)
 
     def chooseAndProcessPdf(self):
-        file, _ = QFileDialog.getOpenFileName(self, "Open PDF file", filter="PDF Files (*.pdf)")
+        file, _ = QFileDialog.getOpenFileName(
+            self, "Open PDF file", filter="PDF Files (*.pdf)"
+        )
         if file:
             self.processPdf(file)
 
@@ -408,7 +539,11 @@ class HandoverDocumentationToolDialog(QDialog):
             </style>
         """)
 
-        model_text = self.modelLineEdit.text() if self.modelLineEdit.text() else self.modelLineEdit.placeholderText()
+        model_text = (
+            self.modelLineEdit.text()
+            if self.modelLineEdit.text()
+            else self.modelLineEdit.placeholderText()
+        )
         self.processingThread = PdfProcessingThread(
             file,
             self.providerLineEdit.currentText(),
@@ -422,7 +557,9 @@ class HandoverDocumentationToolDialog(QDialog):
         )
 
         self.processingThread.processing_error.connect(self.on_processing_error)
-        self.processingThread.show_answer_dialog.connect(self.show_answer_dialog)
+        self.processingThread.show_answer_dialog.connect(
+            self.show_answer_dialog
+        )
 
         self.processingThread.start()
 
@@ -434,17 +571,25 @@ class HandoverDocumentationToolDialog(QDialog):
             self.processingThread = None
 
     def on_processing_error(self, error_message):
-        self.html_renderer.setHtml(f"<div style='color:red;'>{error_message}</div>")
+        self.html_renderer.setHtml(
+            f"<div style='color:red;'>{error_message}</div>"
+        )
         self.cleanup_thread()
 
     def provider_changed(self):
         provider = self.providerLineEdit.currentText()
-        self.modelLineEdit.setPlaceholderText(LLM_PROVIDERS[provider]["default_model"])
+        self.modelLineEdit.setPlaceholderText(
+            LLM_PROVIDERS[provider]["default_model"]
+        )
         if provider == "Ollama":
             self.apiKeyLabel.setText("Base URL:")
-            self.apiKeyLineEdit.setPlaceholderText("http://localhost:11434 (leave empty for default)")
+            self.apiKeyLineEdit.setPlaceholderText(
+                "http://localhost:11434 (leave empty for default)"
+            )
             self.apiKeyLineEdit.setEchoMode(QLineEdit.EchoMode.Normal)
-            self.apiKeyLineEdit.setToolTip("Base URL of the Ollama server (leave empty for default)")
+            self.apiKeyLineEdit.setToolTip(
+                "Base URL of the Ollama server (leave empty for default)"
+            )
             self.embeddingProviderComboBox.setCurrentText("Ollama")
         else:
             self.apiKeyLabel.setText("API Key:")
@@ -460,24 +605,35 @@ class HandoverDocumentationToolDialog(QDialog):
         provider = self.embeddingProviderComboBox.currentText()
         if provider == "OpenAI":
             self.embeddingApiKeyLabel.setText("Embedding API Key:")
-            self.embeddingApiKeyLineEdit.setPlaceholderText("Enter OpenAI API Key")
-            self.embeddingApiKeyLineEdit.setEchoMode(QLineEdit.EchoMode.Password)
-            self.embeddingApiKeyLineEdit.setToolTip("OpenAI API Key for embeddings")
+            self.embeddingApiKeyLineEdit.setPlaceholderText(
+                "Enter OpenAI API Key"
+            )
+            self.embeddingApiKeyLineEdit.setEchoMode(
+                QLineEdit.EchoMode.Password
+            )
+            self.embeddingApiKeyLineEdit.setToolTip(
+                "OpenAI API Key for embeddings"
+            )
             self.embeddingApiKeyLabel.show()
             self.embeddingApiKeyLineEdit.show()
             self.embeddingModelLabel.hide()
             self.embeddingModelLineEdit.hide()
         elif provider == "Ollama":
             self.embeddingApiKeyLabel.setText("Embedding Base URL:")
-            self.embeddingApiKeyLineEdit.setPlaceholderText("http://localhost:11434 (leave empty for default)")
+            self.embeddingApiKeyLineEdit.setPlaceholderText(
+                "http://localhost:11434 (leave empty for default)"
+            )
             self.embeddingApiKeyLineEdit.setEchoMode(QLineEdit.EchoMode.Normal)
-            self.embeddingApiKeyLineEdit.setToolTip("Base URL of the Ollama server for embeddings")
+            self.embeddingApiKeyLineEdit.setToolTip(
+                "Base URL of the Ollama server for embeddings"
+            )
             self.embeddingApiKeyLabel.show()
             self.embeddingApiKeyLineEdit.show()
             self.embeddingModelLabel.show()
             self.embeddingModelLineEdit.show()
             self.embeddingModelLineEdit.setPlaceholderText(
-                EMBEDDING_PROVIDERS["Ollama"]["default_model"])
+                EMBEDDING_PROVIDERS["Ollama"]["default_model"]
+            )
         else:
             self.embeddingApiKeyLabel.hide()
             self.embeddingApiKeyLineEdit.hide()
@@ -493,7 +649,9 @@ class HandoverDocumentationToolDialog(QDialog):
     def _update_document_list_height(self):
         count = self.documentList.count()
         item_height = self.documentList.sizeHintForRow(0) if count > 0 else 20
-        new_height = min(150, item_height * count + 2 * self.documentList.frameWidth())
+        new_height = min(
+            150, item_height * count + 2 * self.documentList.frameWidth()
+        )
         self.documentList.setFixedHeight(new_height)
 
     def show_answer_dialog(self, answer):
@@ -528,7 +686,11 @@ class HandoverDocumentationToolDialog(QDialog):
                     </div>
                     """)
 
-                QMessageBox.information(self, "Extraction Successful", "Document extracted successfully!")
+                QMessageBox.information(
+                    self,
+                    "Extraction Successful",
+                    "Document extracted successfully!",
+                )
                 return
             except Exception as e:
                 messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
@@ -538,20 +700,25 @@ class HandoverDocumentationToolDialog(QDialog):
     def finish_handover_documentation(self):
         try:
             if not self.documents:
-                messsageBoxes.ErrorMessageBox(self, "No documents extracted!").exec()
+                messsageBoxes.ErrorMessageBox(
+                    self, "No documents extracted!"
+                ).exec()
                 return
             id_ = self.idLineEdit.text() if self.idLineEdit.text() else "None"
-            handover_sm = documents2handover_documentation(self.documents, id_=id_)
+            handover_sm = documents2handover_documentation(
+                self.documents, id_=id_
+            )
             normalized_json = json.dumps(handover_sm, cls=AASToJsonEncoder)
-            normalized_json = normalized_json.replace('\\', '\\\\')
+            normalized_json = normalized_json.replace("\\", "\\\\")
             # Save the json under temp file for debugging purposes
             with open("handover_sm.json", "w", encoding="utf-8") as f:
                 f.write(normalized_json)
-            normalized_handover_sm = json.loads(normalized_json, cls=AASFromJsonDecoder)
+            normalized_handover_sm = json.loads(
+                normalized_json, cls=AASFromJsonDecoder
+            )
         except Exception as e:
             messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
             return
-
 
         self.handoverExtracted.emit(normalized_handover_sm)
         self.accept()

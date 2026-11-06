@@ -15,8 +15,16 @@ from PyQt6.QtGui import QFont
 
 from aas_editor.models import StandardTable, PackTreeViewItem
 from aas_editor.package import Package
-from aas_editor.settings.app_settings import PACKAGE_ROLE, DEFAULT_FONT, OPENED_PACKS_ROLE, OPENED_FILES_ROLE, \
-    DEFAULT_COLUMNS_IN_PACKS_TABLE, OBJECT_ROLE, COLUMN_NAME_ROLE, NAME_ROLE
+from aas_editor.settings.app_settings import (
+    PACKAGE_ROLE,
+    DEFAULT_FONT,
+    OPENED_PACKS_ROLE,
+    OPENED_FILES_ROLE,
+    DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    OBJECT_ROLE,
+    COLUMN_NAME_ROLE,
+    NAME_ROLE,
+)
 from aas_editor.utils.util_classes import ClassesInfo
 
 
@@ -61,7 +69,11 @@ class PacksTable(StandardTable):
         else:
             return super().editItem(index, value)
 
-    def _addItemObjToParentObj(self, obj: Union[Package, 'SubmodelElement', Iterable], parent: QModelIndex):
+    def _addItemObjToParentObj(
+        self,
+        obj: Union[Package, "SubmodelElement", Iterable],
+        parent: QModelIndex,
+    ):
         parentObj = parent.data(OBJECT_ROLE)
         parentObjCls = type(parentObj)
         parentName = parent.data(NAME_ROLE)
@@ -70,13 +82,17 @@ class PacksTable(StandardTable):
         elif parentName in ClassesInfo.packViewAttrs(Package):
             package: Package = parent.data(PACKAGE_ROLE)
             package.add(obj)
-        elif ClassesInfo.changedParentObject(parentObjCls): #FIXME: Refactor
-            parentObj = getattr(parentObj, ClassesInfo.changedParentObject(parentObjCls))
+        elif ClassesInfo.changedParentObject(parentObjCls):  # FIXME: Refactor
+            parentObj = getattr(
+                parentObj, ClassesInfo.changedParentObject(parentObjCls)
+            )
             parentObj.add(obj)
         else:
             return super()._addItemObjToParentObj(obj, parent)
 
-    def _getKwargsForItemInit(self, obj: Union[Package, 'SubmodelElement', Iterable], parent):
+    def _getKwargsForItemInit(
+        self, obj: Union[Package, "SubmodelElement", Iterable], parent
+    ):
         kwargs = super()._getKwargsForItemInit(obj, parent)
         if isinstance(obj, Package):
             kwargs["parent"] = self._rootItem

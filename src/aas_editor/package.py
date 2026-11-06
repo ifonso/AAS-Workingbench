@@ -18,11 +18,21 @@ from pathlib import Path
 from typing import Union, Iterable, Optional
 import mimetypes
 
-from basyx.aas.adapter.aasx import DictSupplementaryFileContainer, AASXReader, AASXWriter
+from basyx.aas.adapter.aasx import (
+    DictSupplementaryFileContainer,
+    AASXReader,
+    AASXWriter,
+)
 from basyx.aas.adapter.json import write_aas_json_file, read_aas_json_file_into
 from basyx.aas.adapter.xml import write_aas_xml_file, read_aas_xml_file_into
-from basyx.aas.model import AssetAdministrationShell, Submodel, ConceptDescription, \
-    SetObjectStore, Key, ModelReference
+from basyx.aas.model import (
+    AssetAdministrationShell,
+    Submodel,
+    ConceptDescription,
+    SetObjectStore,
+    Key,
+    ModelReference,
+)
 
 from aas_editor.settings.defaults import DEFAULT_COMPLETIONS
 from aas_editor.settings.app_settings import AppSettings
@@ -101,18 +111,26 @@ class Package:
         if fileType == ".xml":
             # The file must be opened in binary mode! The XML writer will handle
             # character encoding internally.
-            with open(self.file.as_posix(), 'wb') as xml_file:
+            with open(self.file.as_posix(), "wb") as xml_file:
                 write_aas_xml_file(xml_file, self.objStore)
         elif fileType == ".json":
-            with open(self.file.as_posix(), "w", encoding='utf-8') as fileIO:
+            with open(self.file.as_posix(), "w", encoding="utf-8") as fileIO:
                 indent = 2 if self.writePrettyJson else None
                 sort_keys = True if self.sortKeysInJson else False
-                write_aas_json_file(fileIO, self.objStore, indent=indent, sort_keys=sort_keys)
+                write_aas_json_file(
+                    fileIO, self.objStore, indent=indent, sort_keys=sort_keys
+                )
 
         elif fileType == ".aasx":
             with AASXWriter(self.file.as_posix()) as writer:
-                writer.write_all_aas_objects("/aasx/data.{}".format("json" if self.writeJsonInAasx else "xml"),
-                                             self.objStore, self.fileStore, self.writeJsonInAasx)
+                writer.write_all_aas_objects(
+                    "/aasx/data.{}".format(
+                        "json" if self.writeJsonInAasx else "xml"
+                    ),
+                    self.objStore,
+                    self.fileStore,
+                    self.writeJsonInAasx,
+                )
         else:
             raise TypeError("Wrong file type:", self.file.suffix)
 
@@ -152,13 +170,18 @@ class Package:
         # Meta is written last: find_recovery_files() only offers entries with a
         # meta file, so an incomplete recovery is never presented for restoring.
         with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "original_path": original_file.as_posix(),
-                "recovery_filename": rec_path.name,
-            }, f)
+            json.dump(
+                {
+                    "original_path": original_file.as_posix(),
+                    "recovery_filename": rec_path.name,
+                },
+                f,
+            )
         return rec_path
 
-    def delete_recovery(self, recovery_dir: Path, for_file: Path = None) -> None:
+    def delete_recovery(
+        self, recovery_dir: Path, for_file: Path = None
+    ) -> None:
         # for_file lets callers target a previous path (e.g. after Save-As mutated self.file)
         file = self.file if for_file is None else Path(for_file)
         stem = self._recovery_stem(file)
@@ -167,7 +190,9 @@ class Package:
             candidate.unlink(missing_ok=True)
 
     @classmethod
-    def restore_from_recovery(cls, recovery_json: Path, original_path: Path) -> "Package":
+    def restore_from_recovery(
+        cls, recovery_json: Path, original_path: Path
+    ) -> "Package":
         """Build a package from a JSON recovery file, targeting its original file.
 
         The recovered object store is paired with the supplementary files of the
@@ -181,12 +206,15 @@ class Package:
                 reader = AASXReader(pack.file.as_posix())
                 reader.read_into(SetObjectStore(), pack.fileStore)
             else:
-                logging.warning("Original AASX missing, supplementary files not recovered: %s", pack.file)
+                logging.warning(
+                    "Original AASX missing, supplementary files not recovered: %s",
+                    pack.file,
+                )
         return pack
 
     def all_submodels_to_aas(self):
         """Add references of all existing submodels to submodel attribute of existing AAS."""
-        #TODO: fix if pyi40aas changes
+        # TODO: fix if pyi40aas changes
         for shell in self.shells:
             for submodel in self.submodels:
                 reference = ModelReference.from_referable(submodel)
@@ -234,7 +262,9 @@ class Package:
 
     def add(self, obj):
         if isinstance(obj, StoredFile):
-            newName = self.fileStore.add_file(name=obj.name, file=obj.file(), content_type=obj.mime_type)
+            newName = self.fileStore.add_file(
+                name=obj.name, file=obj.file(), content_type=obj.mime_type
+            )
             obj.setFileStore(newName, self.fileStore)
         else:
             self.objStore.add(obj)
@@ -256,8 +286,12 @@ class Package:
 
 
 class StoredFile:
-    def __init__(self, name: Optional[str] = None, fileStore: Optional[DictSupplementaryFileContainer] = None,
-                 filePath: Optional[str] = None):
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        fileStore: Optional[DictSupplementaryFileContainer] = None,
+        filePath: Optional[str] = None,
+    ):
         if filePath:
             self._filePath = Path(filePath).absolute()
         else:
@@ -266,7 +300,11 @@ class StoredFile:
         self.setFileStore(name, fileStore)
 
     def savedInStore(self) -> bool:
-        return True if isinstance(self._fileStore, DictSupplementaryFileContainer) else False
+        return (
+            True
+            if isinstance(self._fileStore, DictSupplementaryFileContainer)
+            else False
+        )
 
     @property
     def name(self):
@@ -316,16 +354,22 @@ class StoredFile:
                 file_content = io.BytesIO(f.read())
         return file_content
 
-    def setFileStore(self, name: str, fileStore: DictSupplementaryFileContainer):
+    def setFileStore(
+        self, name: str, fileStore: DictSupplementaryFileContainer
+    ):
         if name is None or isinstance(name, str):
             self._name = name
         else:
             raise TypeError("arg 1 must be of type str or None")
 
-        if fileStore is None or isinstance(fileStore, DictSupplementaryFileContainer):
+        if fileStore is None or isinstance(
+            fileStore, DictSupplementaryFileContainer
+        ):
             self._fileStore = fileStore
         else:
-            raise TypeError("arg 2 must be of type DictSupplementaryFileContainer or None")
+            raise TypeError(
+                "arg 2 must be of type DictSupplementaryFileContainer or None"
+            )
 
 
 # Register Package and StoredFile into aas_settings after both classes are fully defined.

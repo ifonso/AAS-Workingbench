@@ -14,9 +14,11 @@ CHANGED_PARENT_OBJ = "changed_parent_obj"
 CONTENT_TYPE_ATTR = "media_content_type_attr"
 CONTENT_VALUE_ATTR = "media_content_value_attr"
 DEFAULT_PARAMS_TO_HIDE = "default_params_to_hide"  # params, which will be hide from user and will have default values
-HIDDEN_ATTRS = "attrs_not_in_detailed_info"  # params, which will be hide from user
+HIDDEN_ATTRS = (
+    "attrs_not_in_detailed_info"  # params, which will be hide from user
+)
 ITERABLE_ATTRS = "iter_attrs"
-IS_EDITABLE_IN_GUI= "is_editable"
+IS_EDITABLE_IN_GUI = "is_editable"
 NOT_GIVEN = "NotGivenValueAASEditor"
 PACKVIEW_ATTRS_INFO = "attrs_info"
 PARAMS_TO_ATTRS = "params_attrs"

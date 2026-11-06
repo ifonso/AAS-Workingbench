@@ -1,30 +1,36 @@
 def _init_openai_chat(model, key):
     from langchain_openai import ChatOpenAI
+
     return ChatOpenAI(model=model, api_key=key)
 
 
 def _init_anthropic_chat(model, key):
     from langchain_anthropic import ChatAnthropic
+
     return ChatAnthropic(model=model, api_key=key)
 
 
 def _init_vertex_chat(model, key):
     from langchain_google_vertexai import ChatVertexAI
+
     return ChatVertexAI(model=model, api_key=key)
 
 
 def _init_groq_chat(model, key):
     from langchain_groq import ChatGroq
+
     return ChatGroq(model=model, api_key=key)
 
 
 def _init_mistral_chat(model, key):
     from langchain_mistralai import ChatMistralAI
+
     return ChatMistralAI(model=model, api_key=key)
 
 
 def _init_ollama_chat(model, key, schema=None):
     from langchain_ollama import ChatOllama
+
     base_url = key if key else "http://localhost:11434"
     kwargs = {"model": model, "base_url": base_url}
     if schema is not None:
@@ -34,21 +40,28 @@ def _init_ollama_chat(model, key, schema=None):
 
 def _init_ollama_embeddings(key, model="nomic-embed-text"):
     from langchain_ollama import OllamaEmbeddings
+
     base_url = key if key else "http://localhost:11434"
-    return OllamaEmbeddings(model=model or "nomic-embed-text", base_url=base_url)
+    return OllamaEmbeddings(
+        model=model or "nomic-embed-text", base_url=base_url
+    )
 
 
 def _init_hf_embeddings(_key, _model=None):
     from langchain_huggingface import HuggingFaceEmbeddings
-    return HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+
+    return HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-mpnet-base-v2"
+    )
 
 
 def _init_openai_embeddings(key, _model=None):
     from langchain_openai import OpenAIEmbeddings
+
     return OpenAIEmbeddings(api_key=key)
 
-TOOL_DESCRIPTION = \
-"""The Tool allows users to generate a Handover Documentation Submodel from a given PDF file with the usage of LLMs.
+
+TOOL_DESCRIPTION = """The Tool allows users to generate a Handover Documentation Submodel from a given PDF file with the usage of LLMs.
 
 Usage:
 - Select the LLM provider and model you want to use.

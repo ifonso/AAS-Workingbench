@@ -15,11 +15,20 @@ from PyQt6.QtCore import QModelIndex, Qt, QPersistentModelIndex
 from basyx.aas.model import Referable
 
 from aas_editor.tools.import_feature.import_settings import MAPPING_ATTR
-from aas_editor.tools.import_feature.item_import_treeview import ImportTreeViewItem
+from aas_editor.tools.import_feature.item_import_treeview import (
+    ImportTreeViewItem,
+)
 from aas_editor.tools.import_feature.import_util_classes import PreObjectImport
 from aas_editor.models import PacksTable, SetDataItem
-from aas_editor.settings import ATTRIBUTE_COLUMN, OBJECT_ROLE, COLUMN_NAME_ROLE, EXTENDED_COLUMNS_IN_PACK_TABLE, \
-    ADD_ITEM_ROLE, CLEAR_ROW_ROLE, DATA_CHANGE_FAILED_ROLE
+from aas_editor.settings import (
+    ATTRIBUTE_COLUMN,
+    OBJECT_ROLE,
+    COLUMN_NAME_ROLE,
+    EXTENDED_COLUMNS_IN_PACK_TABLE,
+    ADD_ITEM_ROLE,
+    CLEAR_ROW_ROLE,
+    DATA_CHANGE_FAILED_ROLE,
+)
 
 
 class ImportTable(PacksTable):
@@ -29,15 +38,22 @@ class ImportTable(PacksTable):
         if role == Qt.ItemDataRole.EditRole:
             parentObj = super(ImportTable, self).data(index, OBJECT_ROLE)
             if isinstance(parentObj, Referable):
-                objVal = super(ImportTable, self).data(index, Qt.ItemDataRole.EditRole)
+                objVal = super(ImportTable, self).data(
+                    index, Qt.ItemDataRole.EditRole
+                )
 
                 if index.column() == ATTRIBUTE_COLUMN:
-                    objVal = copy.deepcopy(objVal)  # important to handle NamespaceSets in basyx-python
+                    objVal = copy.deepcopy(
+                        objVal
+                    )  # important to handle NamespaceSets in basyx-python
                     preObj = PreObjectImport.fromObject(objVal)
                     mapping = getattr(objVal, MAPPING_ATTR, {})
                     preObj.setMapping(mapping)
                     return preObj
-                elif index.data(COLUMN_NAME_ROLE) in EXTENDED_COLUMNS_IN_PACK_TABLE:
+                elif (
+                    index.data(COLUMN_NAME_ROLE)
+                    in EXTENDED_COLUMNS_IN_PACK_TABLE
+                ):
                     preObj = PreObjectImport.fromObject(objVal)
                     attr = index.data(COLUMN_NAME_ROLE)
                     mapping = getattr(parentObj, MAPPING_ATTR, {})
@@ -67,10 +83,22 @@ class ImportTable(PacksTable):
 
                 if role == Qt.ItemDataRole.EditRole:
                     self.undo.pop()
-                    self.undo.append(SetDataItem(index=QPersistentModelIndex(index), value=preObject, role=role))
+                    self.undo.append(
+                        SetDataItem(
+                            index=QPersistentModelIndex(index),
+                            value=preObject,
+                            role=role,
+                        )
+                    )
                 elif role == CLEAR_ROW_ROLE:
                     self.undo.pop()
-                    self.undo.append(SetDataItem(index=QPersistentModelIndex(index), value=preObject, role=ADD_ITEM_ROLE))
+                    self.undo.append(
+                        SetDataItem(
+                            index=QPersistentModelIndex(index),
+                            value=preObject,
+                            role=ADD_ITEM_ROLE,
+                        )
+                    )
 
             return result
         except Exception as e:

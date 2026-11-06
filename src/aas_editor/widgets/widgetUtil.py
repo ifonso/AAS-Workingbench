@@ -17,14 +17,24 @@ import aas_editor.widgets as widgets
 import aas_editor.widgets.editWidgets
 import aas_editor.widgets.groupBoxes
 from aas_editor.settings import DEFAULT_INHERITOR
-from aas_editor.utils.util import getParamsAndTypehints4init, getReqParams4init, inheritors
+from aas_editor.utils.util import (
+    getParamsAndTypehints4init,
+    getReqParams4init,
+    inheritors,
+)
 from aas_editor.utils.util_classes import ClassesInfo
-from aas_editor.utils.util_type import removeOptional, isOptional, isIterableType, issubtype, isUnion, getArgs
+from aas_editor.utils.util_type import (
+    removeOptional,
+    isOptional,
+    isIterableType,
+    issubtype,
+    isUnion,
+    getArgs,
+)
 from aas_editor.utils.util import isSimpleIterableType, isValOk4Typehint
 
 
 class InputWidgetUtil:
-
     @classmethod
     def handleTypeHint(cls, objTypeHint, parent):
         return cls._handleTypeHint(objTypeHint, parent)
@@ -35,17 +45,37 @@ class InputWidgetUtil:
         return objTypeHint
 
     @classmethod
-    def getInputWidget(cls, objTypeHint, rmDefParams=True, title="", paramsToHide: dict = None, parent=None,
-                       objVal=None, paramsToAttrs=None, includeInheritedTyps=True, **kwargs) -> QWidget:
+    def getInputWidget(
+        cls,
+        objTypeHint,
+        rmDefParams=True,
+        title="",
+        paramsToHide: dict = None,
+        parent=None,
+        objVal=None,
+        paramsToAttrs=None,
+        includeInheritedTyps=True,
+        **kwargs,
+    ) -> QWidget:
         optional = True if isOptional(objTypeHint) else False
         objTypeHint = cls.handleTypeHint(objTypeHint, parent)
 
         if objVal and not isValOk4Typehint(objVal, objTypeHint):
-            print("Given object type does not match to real object type:", objTypeHint, objVal)
+            print(
+                "Given object type does not match to real object type:",
+                objTypeHint,
+                objVal,
+            )
             objVal = None
 
-        paramsToAttrs = paramsToAttrs if paramsToAttrs else ClassesInfo.paramsToAttrs(objTypeHint)
-        paramsToHide = cls.handleParamsToHide(objTypeHint, objVal, rmDefParams, paramsToHide, paramsToAttrs)
+        paramsToAttrs = (
+            paramsToAttrs
+            if paramsToAttrs
+            else ClassesInfo.paramsToAttrs(objTypeHint)
+        )
+        paramsToHide = cls.handleParamsToHide(
+            objTypeHint, objVal, rmDefParams, paramsToHide, paramsToAttrs
+        )
 
         kwargs = {
             **kwargs,
@@ -55,18 +85,26 @@ class InputWidgetUtil:
             "paramsToAttrs": paramsToAttrs,
             "parent": parent,
             "objVal": objVal,
-            "optional": optional
+            "optional": optional,
         }
-        widget = cls.getWidget4typehint(objTypeHint, includeInheritedTyps, **kwargs)
+        widget = cls.getWidget4typehint(
+            objTypeHint, includeInheritedTyps, **kwargs
+        )
         return widget
 
     @classmethod
-    def handleParamsToHide(cls, objTypeHint, objVal, rmDefParams, paramsToHide, paramsToAttrs):
+    def handleParamsToHide(
+        cls, objTypeHint, objVal, rmDefParams, paramsToHide, paramsToAttrs
+    ):
         # if obj is given and rmDefParams = True, save all not mandatory init params of obj with val in paramsToHide
         # if obj is given and rmDefParams = False, save all hidden init params of obj with val in paramsToHide
         # and show user only required params to set
 
-        paramsToHide = paramsToHide if paramsToHide else ClassesInfo.defaultParamsToHide(objTypeHint)
+        paramsToHide = (
+            paramsToHide
+            if paramsToHide
+            else ClassesInfo.defaultParamsToHide(objTypeHint)
+        )
 
         params, paramsDefaults = getParamsAndTypehints4init(objTypeHint)
         reqParams = getReqParams4init(objTypeHint, rmDefParams=True)
@@ -92,25 +130,43 @@ class InputWidgetUtil:
         if isabstract(objTypeHint) and not isIterableType(objTypeHint):
             objTypes = inheritors(objTypeHint)
             kwargs["defType"] = DEFAULT_INHERITOR.get(objTypeHint, None)
-            widget = widgets.groupBoxes.TypeOptionObjGroupBox(objTypes, **kwargs)
+            widget = widgets.groupBoxes.TypeOptionObjGroupBox(
+                objTypes, **kwargs
+            )
         elif issubtype(objTypeHint, LangStringSet):
-            widget = widgets.groupBoxes.LangStringSetGroupBox(objTypeHint, **kwargs)
+            widget = widgets.groupBoxes.LangStringSetGroupBox(
+                objTypeHint, **kwargs
+            )
         elif isSimpleIterableType(objTypeHint):
             widget = widgets.groupBoxes.IterableGroupBox(objTypeHint, **kwargs)
         elif isUnion(objTypeHint):
             objTypes = getArgs(objTypeHint)
-            widget = widgets.groupBoxes.TypeOptionObjGroupBox(objTypes, **kwargs)
+            widget = widgets.groupBoxes.TypeOptionObjGroupBox(
+                objTypes, **kwargs
+            )
         elif issubtype(objTypeHint, ModelReference):
-            widget = widgets.groupBoxes.ModelReferenceGroupBox(objTypeHint, **kwargs)
-        elif issubtype(objTypeHint, widgets.editWidgets.SpecialInputWidget.types):
-            widget = widgets.editWidgets.SpecialInputWidget(objTypeHint, **kwargs)
-        elif issubtype(objTypeHint, widgets.editWidgets.StandardInputWidget.types):
-            widget = widgets.editWidgets.StandardInputWidget(objTypeHint, **kwargs)
+            widget = widgets.groupBoxes.ModelReferenceGroupBox(
+                objTypeHint, **kwargs
+            )
+        elif issubtype(
+            objTypeHint, widgets.editWidgets.SpecialInputWidget.types
+        ):
+            widget = widgets.editWidgets.SpecialInputWidget(
+                objTypeHint, **kwargs
+            )
+        elif issubtype(
+            objTypeHint, widgets.editWidgets.StandardInputWidget.types
+        ):
+            widget = widgets.editWidgets.StandardInputWidget(
+                objTypeHint, **kwargs
+            )
         elif includeInheritedTyps and inheritors(objTypeHint):
             objTypes = list(inheritors(objTypeHint))
             objTypes.append(objTypeHint)
             kwargs["defType"] = DEFAULT_INHERITOR.get(objTypeHint, None)
-            widget = widgets.groupBoxes.TypeOptionObjGroupBox(objTypes, **kwargs)
+            widget = widgets.groupBoxes.TypeOptionObjGroupBox(
+                objTypes, **kwargs
+            )
         else:
             widget = widgets.groupBoxes.ObjGroupBox(objTypeHint, **kwargs)
         return widget

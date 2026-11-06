@@ -12,13 +12,23 @@ from PyQt6.QtSvg import QSvgRenderer
 
 from aas_editor.settings.colors import LIGHT_BLUE
 
-ICON_COLOR = QColor(LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 225)
-ICON_COLOR_ACTIVE = QColor(LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 255)
-ICON_COLOR_DISABLED = QColor(LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 50)
+ICON_COLOR = QColor(
+    LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 225
+)
+ICON_COLOR_ACTIVE = QColor(
+    LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 255
+)
+ICON_COLOR_DISABLED = QColor(
+    LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 50
+)
 
 
-def getCharsIcon(chars: str, font_size: int = 24, color: QColor = LIGHT_BLUE,
-                 background_color: QColor = QColor("transparent")):
+def getCharsIcon(
+    chars: str,
+    font_size: int = 24,
+    color: QColor = LIGHT_BLUE,
+    background_color: QColor = QColor("transparent"),
+):
     """
     Generate a QIcon from a string of characters.
 
@@ -69,10 +79,13 @@ def getCharsIcon(chars: str, font_size: int = 24, color: QColor = LIGHT_BLUE,
     return QIcon(pixmap)
 
 
-def transform_svg_to_icon(target_icon: QIcon, file_path,
-                          color_normal=ICON_COLOR,
-                          color_active=ICON_COLOR_ACTIVE,
-                          color_disabled=ICON_COLOR_DISABLED):
+def transform_svg_to_icon(
+    target_icon: QIcon,
+    file_path,
+    color_normal=ICON_COLOR,
+    color_active=ICON_COLOR_ACTIVE,
+    color_disabled=ICON_COLOR_DISABLED,
+):
     """
     Create a QIcon from an SVG file with customizable colors for normal, active, and disabled states.
 
@@ -93,7 +106,9 @@ def transform_svg_to_icon(target_icon: QIcon, file_path,
         pixmap.fill(QColor("transparent"))  # Transparent background
         painter = QPainter(pixmap)
         renderer.render(painter)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)  # Apply color
+        painter.setCompositionMode(
+            QPainter.CompositionMode.CompositionMode_SourceIn
+        )  # Apply color
         painter.fillRect(pixmap.rect(), color)
         painter.end()
         return pixmap
@@ -106,9 +121,12 @@ def transform_svg_to_icon(target_icon: QIcon, file_path,
     # Create a QIcon and add the pixmaps for each state
     target_icon.addPixmap(pixmap_normal, QIcon.Mode.Normal)  # Normal state
     target_icon.addPixmap(pixmap_active, QIcon.Mode.Active)  # Active state
-    target_icon.addPixmap(pixmap_disabled, QIcon.Mode.Disabled)  # Disabled state
+    target_icon.addPixmap(
+        pixmap_disabled, QIcon.Mode.Disabled
+    )  # Disabled state
 
     return target_icon
+
 
 EXIT_ICON = QIcon()
 NEW_PACK_ICON = QIcon()
@@ -196,7 +214,9 @@ ICONS_SVG = {
     INFO_ICON: "info.svg",
 }
 
+
 def initialize_all_icons():
     from aas_editor.settings.app_settings import ICONS_FOLDER
+
     for icon, svg_file in ICONS_SVG.items():
         transform_svg_to_icon(icon, str(ICONS_FOLDER / svg_file))

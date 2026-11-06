@@ -16,8 +16,14 @@ from basyx.aas.adapter.json import AASFromJsonDecoder
 from typing import Optional
 
 from PyQt6.QtCore import Qt, QSize, QTimer
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, \
-    QWidget, QVBoxLayout, QScrollArea, QFrame
+from PyQt6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QWidget,
+    QVBoxLayout,
+    QScrollArea,
+    QFrame,
+)
 
 import aas_editor.widgets.buttons
 import aas_editor.widgets.editWidgets
@@ -28,6 +34,7 @@ from aas_editor.utils.util_classes import PreObject
 from aas_editor import widgets
 from aas_editor.widgets.jsonEditor import JSONEditor
 from aas_editor.widgets.widgetUtil import InputWidgetUtil
+
 
 def checkIfAccepted(func):
     """Decorator for checking if user clicked ok"""
@@ -40,8 +47,10 @@ def checkIfAccepted(func):
 
     return wrap
 
+
 class EditDialog(QDialog):
     """Base abstract class for custom dialogs for adding or editing data"""
+
     REC = QGuiApplication.primaryScreen().geometry()
     MAX_HEIGHT = int(REC.height() * 0.9)
     MIN_WIDTH = 450
@@ -51,11 +60,18 @@ class EditDialog(QDialog):
     def __init__(self, parent=None, title=""):
         QDialog.__init__(self, parent)
         self.setWindowTitle(title)
-        self.buttonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | 
-                                          QDialogButtonBox.StandardButton.Cancel, self)
-        self.buttonCancel = self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel)
+        self.buttonBox = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel,
+            self,
+        )
+        self.buttonCancel = self.buttonBox.button(
+            QDialogButtonBox.StandardButton.Cancel
+        )
         self.buttonCancel.released.connect(self.reject)
-        self.buttonOk = self.buttonBox.button(QDialogButtonBox.StandardButton.Ok)
+        self.buttonOk = self.buttonBox.button(
+            QDialogButtonBox.StandardButton.Ok
+        )
         self.buttonOk.released.connect(self.accept)
         self.buttonOk.setDisabled(True)
         self.buttonOk.setDefault(True)
@@ -63,8 +79,12 @@ class EditDialog(QDialog):
 
         self.scrollArea = QScrollArea(self)
         self.scrollArea.setFrameShape(QFrame.Shape.NoFrame)
-        self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scrollArea.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.scrollArea.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget(self.scrollArea)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
@@ -72,7 +92,9 @@ class EditDialog(QDialog):
         self.setMaximumHeight(self.MAX_HEIGHT)
 
         self.verticalLayout = QVBoxLayout(self)
-        self.buttonBox.setContentsMargins(*self.verticalLayout.getContentsMargins())
+        self.buttonBox.setContentsMargins(
+            *self.verticalLayout.getContentsMargins()
+        )
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.addWidget(self.scrollArea)
         self.verticalLayout.addWidget(self.buttonBox)
@@ -85,11 +107,13 @@ class EditDialog(QDialog):
     def adjustSize(self) -> None:
         layoutSize = self.layout().sizeHint()
         buttonsSize = self.buttonBox.sizeHint()
-        result = QSize(max(layoutSize.width(), buttonsSize.width(), self.width()),
-                       max(layoutSize.height(), self.height()))
+        result = QSize(
+            max(layoutSize.width(), buttonsSize.width(), self.width()),
+            max(layoutSize.height(), self.height()),
+        )
         self.resize(result)
 
-    def layout(self) -> 'QLayout':
+    def layout(self) -> "QLayout":
         return self.verticalLayoutScroll
 
     def getObj2add(self):
@@ -102,13 +126,13 @@ class EditDialog(QDialog):
     def reject(self):
         self.savePositionAndSize(self)
         super().reject()
-        
+
     def accept(self):
         self.savePositionAndSize(self)
         super().accept()
 
     @classmethod
-    def savePositionAndSize(cls, dialog: 'EditDialog' = None):
+    def savePositionAndSize(cls, dialog: "EditDialog" = None):
         cls.SAVED_POSITION = dialog.pos()
         cls.SAVED_SIZE = dialog.size()
 
@@ -125,7 +149,15 @@ class EditObjDialog(EditDialog):
     SAVED_SIZE = None
     SAVED_POSITION = None
 
-    def __init__(self, objTypeHint, parent: 'TreeView', title="", rmDefParams=True, objVal=None, **kwargs):
+    def __init__(
+        self,
+        objTypeHint,
+        parent: "TreeView",
+        title="",
+        rmDefParams=True,
+        objVal=None,
+        **kwargs,
+    ):
         title = title if title else f"Add {getTypeName(objTypeHint)}"
         EditDialog.__init__(self, parent, title=title)
         self.buttonOk.setEnabled(True)
@@ -163,7 +195,7 @@ class EditObjJsonDialog(EditDialog):
     SAVED_SIZE = None
     SAVED_POSITION = None
 
-    def __init__(self, parent: 'TreeView', title="", objVal=None, **kwargs):
+    def __init__(self, parent: "TreeView", title="", objVal=None, **kwargs):
         title = title if title else f"Add object from JSON"
         EditDialog.__init__(self, parent, title=title)
         self.buttonOk.setEnabled(True)
@@ -183,9 +215,14 @@ class EditObjJsonDialog(EditDialog):
 
 
 class ChooseItemDialog(EditDialog):
-    def __init__(self, view: 'TreeView', columnsToShow=(ATTRIBUTE_COLUMN,),
-                 validator=lambda chosenIndex: chosenIndex.isValid(),
-                 parent: Optional[QWidget] = None, title: str = ""):
+    def __init__(
+        self,
+        view: "TreeView",
+        columnsToShow=(ATTRIBUTE_COLUMN,),
+        validator=lambda chosenIndex: chosenIndex.isValid(),
+        parent: Optional[QWidget] = None,
+        title: str = "",
+    ):
         super(ChooseItemDialog, self).__init__(parent, title)
         self.setFixedHeight(500)
         self.validator = validator
@@ -199,7 +236,9 @@ class ChooseItemDialog(EditDialog):
             if column not in columnsToShow:
                 self.view.hideColumn(column)
 
-        self.searchBar = widgets.SearchBar(self.view, parent=self, filterColumns=columnsToShow)
+        self.searchBar = widgets.SearchBar(
+            self.view, parent=self, filterColumns=columnsToShow
+        )
         self.toolBar = widgets.ToolBar(self)
         self.toolBar.addAction(self.view.collapseAllAct)
         self.toolBar.addAction(self.view.expandAllAct)

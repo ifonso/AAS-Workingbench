@@ -21,5 +21,6 @@ class CreateOptionalParamBtn(QPushButton):
 class CloseButton(QToolButton):
     """Close button for optional params.
     A separate class is needed for the stylesheet to work properly"""
+
     def __init__(self, parent=None):
         super(CloseButton, self).__init__(parent)

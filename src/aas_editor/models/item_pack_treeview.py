@@ -71,4 +71,6 @@ class PackTreeViewItem(StandardItem):
     def _getEditRoleData(self, column, column_name):
         if column == ATTRIBUTE_COLUMN:
             return self.obj
-        return super(PackTreeViewItem, self)._getEditRoleData(column, column_name)
+        return super(PackTreeViewItem, self)._getEditRoleData(
+            column, column_name
+        )

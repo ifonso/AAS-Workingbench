@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
-from basyx.aas.model import AssetAdministrationShell, ConceptDescription, Submodel
+from basyx.aas.model import (
+    AssetAdministrationShell,
+    ConceptDescription,
+    Submodel,
+)
 
 from aas_editor.package import Package, StoredFile
 
@@ -11,6 +15,7 @@ from aas_editor.package import Package, StoredFile
 # ---------------------------------------------------------------------------
 # Loading
 # ---------------------------------------------------------------------------
+
 
 class TestPackageLoad:
     def test_load_aasx(self, qapp: object, aasx_file: Path) -> None:
@@ -33,7 +38,9 @@ class TestPackageLoad:
         with pytest.raises(TypeError):
             Package(dummy)
 
-    def test_nonexistent_file_raises(self, qapp: object, tmp_path: Path) -> None:
+    def test_nonexistent_file_raises(
+        self, qapp: object, tmp_path: Path
+    ) -> None:
         with pytest.raises(Exception):
             Package(tmp_path / "does_not_exist.aasx")
 
@@ -42,27 +49,36 @@ class TestPackageLoad:
 # Object-store access
 # ---------------------------------------------------------------------------
 
+
 class TestPackageContent:
     def test_shells_are_aas_type(self, qapp: object, aasx_file: Path) -> None:
         pkg = Package(aasx_file)
         for shell in pkg.shells:
             assert isinstance(shell, AssetAdministrationShell)
 
-    def test_submodels_are_submodel_type(self, qapp: object, aasx_file: Path) -> None:
+    def test_submodels_are_submodel_type(
+        self, qapp: object, aasx_file: Path
+    ) -> None:
         pkg = Package(aasx_file)
         for submodel in pkg.submodels:
             assert isinstance(submodel, Submodel)
 
-    def test_concept_descriptions_type(self, qapp: object, aasx_file: Path) -> None:
+    def test_concept_descriptions_type(
+        self, qapp: object, aasx_file: Path
+    ) -> None:
         pkg = Package(aasx_file)
         for cd in pkg.concept_descriptions:
             assert isinstance(cd, ConceptDescription)
 
-    def test_count_properties_match_iteration(self, qapp: object, aasx_file: Path) -> None:
+    def test_count_properties_match_iteration(
+        self, qapp: object, aasx_file: Path
+    ) -> None:
         pkg = Package(aasx_file)
         assert pkg.numOfShells == len(list(pkg.shells))
         assert pkg.numOfSubmodels == len(list(pkg.submodels))
-        assert pkg.numOfConceptDescriptions == len(list(pkg.concept_descriptions))
+        assert pkg.numOfConceptDescriptions == len(
+            list(pkg.concept_descriptions)
+        )
 
     def test_name_matches_filename(self, qapp: object, aasx_file: Path) -> None:
         pkg = Package(aasx_file)
@@ -72,6 +88,7 @@ class TestPackageContent:
 # ---------------------------------------------------------------------------
 # Modify (add / discard)
 # ---------------------------------------------------------------------------
+
 
 class TestPackageModify:
     def test_add_submodel(self, qapp: object) -> None:
@@ -94,8 +111,11 @@ class TestPackageModify:
 # Write round-trips
 # ---------------------------------------------------------------------------
 
+
 class TestPackageWrite:
-    def _roundtrip(self, qapp: object, aasx_file: Path, tmp_path: Path, ext: str) -> None:
+    def _roundtrip(
+        self, qapp: object, aasx_file: Path, tmp_path: Path, ext: str
+    ) -> None:
         src = Package(aasx_file)
         shells_count = src.numOfShells
         submodels_count = src.numOfSubmodels
@@ -109,16 +129,24 @@ class TestPackageWrite:
         assert reloaded.numOfSubmodels == submodels_count
         assert reloaded.numOfConceptDescriptions == cds_count
 
-    def test_write_json_roundtrip(self, qapp: object, aasx_file: Path, tmp_path: Path) -> None:
+    def test_write_json_roundtrip(
+        self, qapp: object, aasx_file: Path, tmp_path: Path
+    ) -> None:
         self._roundtrip(qapp, aasx_file, tmp_path, "json")
 
-    def test_write_xml_roundtrip(self, qapp: object, aasx_file: Path, tmp_path: Path) -> None:
+    def test_write_xml_roundtrip(
+        self, qapp: object, aasx_file: Path, tmp_path: Path
+    ) -> None:
         self._roundtrip(qapp, aasx_file, tmp_path, "xml")
 
-    def test_write_aasx_roundtrip(self, qapp: object, aasx_file: Path, tmp_path: Path) -> None:
+    def test_write_aasx_roundtrip(
+        self, qapp: object, aasx_file: Path, tmp_path: Path
+    ) -> None:
         self._roundtrip(qapp, aasx_file, tmp_path, "aasx")
 
-    def test_write_wrong_extension_raises(self, qapp: object, aasx_file: Path, tmp_path: Path) -> None:
+    def test_write_wrong_extension_raises(
+        self, qapp: object, aasx_file: Path, tmp_path: Path
+    ) -> None:
         pkg = Package(aasx_file)
         with pytest.raises(TypeError):
             pkg.write(tmp_path / "out.txt")
@@ -127,6 +155,7 @@ class TestPackageWrite:
 # ---------------------------------------------------------------------------
 # StoredFile
 # ---------------------------------------------------------------------------
+
 
 class TestStoredFile:
     def test_not_saved_in_store_by_default(self, tmp_path: Path) -> None:
@@ -137,7 +166,9 @@ class TestStoredFile:
 
     def test_saved_in_store_with_filestore(self) -> None:
         store = DictSupplementaryFileContainer()
-        store.add_file("/image.png", file=io.BytesIO(b"\x89PNG"), content_type="image/png")
+        store.add_file(
+            "/image.png", file=io.BytesIO(b"\x89PNG"), content_type="image/png"
+        )
         sf = StoredFile(name="/image.png", fileStore=store)
         assert sf.savedInStore() is True
 

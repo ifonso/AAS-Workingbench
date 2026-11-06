@@ -10,18 +10,34 @@
 from typing import Union
 
 from aas_editor.widgets import widgetUtil
-from aas_editor.tools.import_feature.import_util_classes import TYPS_TO_SPECIAL_IMPORT_OBJ_CLASSES
+from aas_editor.tools.import_feature.import_util_classes import (
+    TYPS_TO_SPECIAL_IMPORT_OBJ_CLASSES,
+)
 from aas_editor.settings.app_settings import *
 from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
 from aas_editor.models import StandardTable
 from aas_editor.tools.import_feature.table_import import ImportTable
-from aas_editor.tools.import_feature.treeview_import import ImportTreeView, DetailImportTreeView
+from aas_editor.tools.import_feature.treeview_import import (
+    ImportTreeView,
+    DetailImportTreeView,
+)
 from aas_editor.editorApp import EditorApp
-from aas_editor.tools.import_feature.import_file_widget import ImportManageWidget
-from aas_editor.utils.util_type import issubtype, removeOptional, isUnion, getArgs
+from aas_editor.tools.import_feature.import_file_widget import (
+    ImportManageWidget,
+)
+from aas_editor.utils.util_type import (
+    issubtype,
+    removeOptional,
+    isUnion,
+    getArgs,
+)
 from aas_editor.widgets import TabWidget
-from aas_editor.tools.import_feature.table_import_detailed_info import DetailedInfoImportTable
-from aas_editor.tools.import_feature.item_import_treeview import ImportTreeViewItem
+from aas_editor.tools.import_feature.table_import_detailed_info import (
+    DetailedInfoImportTable,
+)
+from aas_editor.tools.import_feature.item_import_treeview import (
+    ImportTreeViewItem,
+)
 
 
 def handleTypeHint4import(objTypeHint, parent):
@@ -30,7 +46,9 @@ def handleTypeHint4import(objTypeHint, parent):
             return False
         if not parent.objTypes:
             return False
-        for special_import_obj_cls in TYPS_TO_SPECIAL_IMPORT_OBJ_CLASSES.values():
+        for (
+            special_import_obj_cls
+        ) in TYPS_TO_SPECIAL_IMPORT_OBJ_CLASSES.values():
             if special_import_obj_cls in parent.objTypes:
                 return True
         return False
@@ -50,32 +68,47 @@ def handleTypeHint4import(objTypeHint, parent):
         for typehint in unionTypehints:
             newtyp = addSpecialImportObjClsTypeHint(typehint)
             objTypeHint = Union[newtyp, objTypeHint]
-    elif issubtype(objTypeHint, tuple(TYPS_TO_SPECIAL_IMPORT_OBJ_CLASSES.keys())) and not importClsInParentTypehints():
+    elif (
+        issubtype(objTypeHint, tuple(TYPS_TO_SPECIAL_IMPORT_OBJ_CLASSES.keys()))
+        and not importClsInParentTypehints()
+    ):
         objTypeHint = addSpecialImportObjClsTypeHint(objTypeHint)
 
     return objTypeHint
 
 
 class ImportApp(EditorApp):
-
     def show(self):
         if not self.importWidget.execImportSettingsDialog():
             self.close()
             return
-        setattr(widgetUtil.InputWidgetUtil, "handleTypeHint", handleTypeHint4import)
+        setattr(
+            widgetUtil.InputWidgetUtil, "handleTypeHint", handleTypeHint4import
+        )
         super().show()
 
     def __del__(self):
-        setattr(widgetUtil.InputWidgetUtil, "handleTypeHint", widgetUtil.InputWidgetUtil._handleTypeHint)
+        setattr(
+            widgetUtil.InputWidgetUtil,
+            "handleTypeHint",
+            widgetUtil.InputWidgetUtil._handleTypeHint,
+        )
         del self
 
-
     def setupMainTreeView(self, parent, model: StandardTable) -> ImportTreeView:
-        mainTreeView = ImportTreeView(parent, importManageWidget=self.importWidget)
+        mainTreeView = ImportTreeView(
+            parent, importManageWidget=self.importWidget
+        )
         mainTreeView.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        mainTreeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        mainTreeView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        mainTreeView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        mainTreeView.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        mainTreeView.setVerticalScrollBarPolicy(
+            QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        mainTreeView.setHorizontalScrollBarPolicy(
+            QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
 
         mainTreeView.setModelWithProxy(model)
         for column in range(model.columnCount(), 2, -1):
@@ -85,19 +118,28 @@ class ImportApp(EditorApp):
     def setupMainTreeModel(self) -> StandardTable:
         columns_in_packs_table = list(DEFAULT_COLUMNS_IN_PACKS_TABLE)
         columns_in_packs_table.extend(EXTENDED_COLUMNS_IN_PACK_TABLE)
-        return ImportTable(columns_in_packs_table, ImportTreeViewItem(None, None))
+        return ImportTable(
+            columns_in_packs_table, ImportTreeViewItem(None, None)
+        )
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(f"{_translate('MainWindow', WINDOW_TITLE)} Import Mode")
+        MainWindow.setWindowTitle(
+            f"{_translate('MainWindow', WINDOW_TITLE)} Import Mode"
+        )
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
 
     def setupUi(self, MainWindow):
         self.importWidget = ImportManageWidget(self)
         super(ImportApp, self).setupUi(MainWindow)
         self.mainTabWidget.deleteLater()
-        self.mainTabWidget = TabWidget(self.splitterTabWidgets, unclosable=True,
-                                       tabClsKwargs={"treeViewCls": DetailImportTreeView,
-                                                     "treeViewClsKwargs": {"treeModel": DetailedInfoImportTable}})
+        self.mainTabWidget = TabWidget(
+            self.splitterTabWidgets,
+            unclosable=True,
+            tabClsKwargs={
+                "treeViewCls": DetailImportTreeView,
+                "treeViewClsKwargs": {"treeModel": DetailedInfoImportTable},
+            },
+        )
         self.importWidget.setTreeView(self.mainTreeView)
         self.mainVerticalLayout.insertWidget(1, self.importWidget)

@@ -18,25 +18,46 @@
 
 from typing import List, Any, Optional
 
-from PyQt6.QtCore import QSortFilterProxyModel, QModelIndex, Qt, \
-    QPersistentModelIndex, QObject, QAbstractItemModel, QRegularExpression
+from PyQt6.QtCore import (
+    QSortFilterProxyModel,
+    QModelIndex,
+    Qt,
+    QPersistentModelIndex,
+    QObject,
+    QAbstractItemModel,
+    QRegularExpression,
+)
 
 
 class SearchProxyModel(QSortFilterProxyModel):
-    def __init__(self, sourceModel: QAbstractItemModel = None, parent: Optional[QObject] = None):
+    def __init__(
+        self,
+        sourceModel: QAbstractItemModel = None,
+        parent: Optional[QObject] = None,
+    ):
         super(SearchProxyModel, self).__init__(parent)
         if sourceModel:
             self.setSourceModel(sourceModel)
 
-    def match(self, start: QModelIndex, role: int, value: Any, hits: int = ..., flags: Qt.MatchFlag = ...) -> List[QModelIndex]:
+    def match(
+        self,
+        start: QModelIndex,
+        role: int,
+        value: Any,
+        hits: int = ...,
+        flags: Qt.MatchFlag = ...,
+    ) -> List[QModelIndex]:
         items = self.sourceModel().match(start, role, value, hits, flags)
         return [self.mapFromSource(item) for item in items]
 
-    def search(self, pattern: str,
-               filterColumns: List[int],
-               regExp: bool = True,
-               filter: bool = False,
-               matchCase: bool = False) -> List[QPersistentModelIndex]:
+    def search(
+        self,
+        pattern: str,
+        filterColumns: List[int],
+        regExp: bool = True,
+        filter: bool = False,
+        matchCase: bool = False,
+    ) -> List[QPersistentModelIndex]:
         foundItems = []
         if not pattern:
             self.show_all_items()
@@ -63,7 +84,10 @@ class SearchProxyModel(QSortFilterProxyModel):
         if not filter:
             self.show_all_items()
 
-        foundItems = [QPersistentModelIndex(self.mapFromSource(QModelIndex(i))) for i in foundItems]
+        foundItems = [
+            QPersistentModelIndex(self.mapFromSource(QModelIndex(i)))
+            for i in foundItems
+        ]
         return foundItems
 
     def show_all_items(self):
@@ -76,4 +100,5 @@ class SearchProxyModel(QSortFilterProxyModel):
                 yield childIndex
                 if self.rowCount(childIndex):
                     yield from recurse(childIndex)
+
         yield from recurse(parent)

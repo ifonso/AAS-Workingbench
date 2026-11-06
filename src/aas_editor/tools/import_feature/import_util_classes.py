@@ -37,8 +37,12 @@ class PreObjectImport(PreObject):
     def __init__(self, objType, args, kwargs: Dict[str, object]):
         super(PreObjectImport, self).__init__(objType, args, kwargs)
         self._fromPreObjs2KwargObjs()
-        paramsToAttrs: Dict[str, str] = util_classes.ClassesInfo.paramsToAttrs(objType)
-        self.attrsToParams: Dict[str, str] = dict((v, k) for k, v in paramsToAttrs.items())
+        paramsToAttrs: Dict[str, str] = util_classes.ClassesInfo.paramsToAttrs(
+            objType
+        )
+        self.attrsToParams: Dict[str, str] = dict(
+            (v, k) for k, v in paramsToAttrs.items()
+        )
 
     @staticmethod
     def fromObject(obj, withIterParams=True):
@@ -51,7 +55,9 @@ class PreObjectImport(PreObject):
 
         if obj is None:
             return PreObjectImport.useExistingObject(obj)
-        elif util_type.isoftype(objType, (bool, datetime.date, datetime.datetime, datetime.time)):
+        elif util_type.isoftype(
+            objType, (bool, datetime.date, datetime.datetime, datetime.time)
+        ):
             return PreObjectImport(objType, (obj,), {})
         elif util_type.issubtype(objType, relativedelta):
             kwargs = {
@@ -81,7 +87,9 @@ class PreObjectImport(PreObject):
             items = PreObjectImport.fromObject(obj._dict)
             return PreObjectImport(objType, (items,), {})
         elif util.isSimpleIterableType(objType):
-            objType = tuple if util_type.issubtype(objType, NamespaceSet) else objType
+            objType = (
+                tuple if util_type.issubtype(objType, NamespaceSet) else objType
+            )
             items = []
             for item in obj:
                 item = PreObjectImport.fromObject(item)
@@ -89,7 +97,11 @@ class PreObjectImport(PreObject):
             return PreObjectImport(objType, (items,), {})
         else:
             kwargs = {}
-            params = list(util.getReqParams4init(objType, rmDefParams=False, delOptional=False).keys())
+            params = list(
+                util.getReqParams4init(
+                    objType, rmDefParams=False, delOptional=False
+                ).keys()
+            )
             iterParams = util_classes.ClassesInfo.iterAttrs(objType)
             [params.remove(i) for i in iterParams]
             paramsToAttrs = util_classes.ClassesInfo.paramsToAttrs(objType)
@@ -103,7 +115,9 @@ class PreObjectImport(PreObject):
                     iterAttr = paramsToAttrs.get(iterParam, iterParam)
                     kwargs[iterParam] = getattr(obj, iterAttr)
 
-            defaultParams2hide = dict(util_classes.ClassesInfo.defaultParamsToHide(objType))
+            defaultParams2hide = dict(
+                util_classes.ClassesInfo.defaultParamsToHide(objType)
+            )
             kwargs.update(defaultParams2hide)
             return PreObjectImport(objType, [], kwargs)
 
@@ -119,7 +133,11 @@ class PreObjectImport(PreObject):
         for arg in self.args:
             if isinstance(arg, PreObject):
                 arg = PreObjectImport.fromPreObject(arg)
-            elif arg and type(arg) in (list, tuple) and isinstance(arg[0], PreObject):
+            elif (
+                arg
+                and type(arg) in (list, tuple)
+                and isinstance(arg[0], PreObject)
+            ):
                 arg = [PreObjectImport.fromPreObject(i) for i in arg]
             args.append(arg)
 
@@ -135,43 +153,63 @@ class PreObjectImport(PreObject):
         self.args = args
         self.kwargs = kwargs
 
-    def initWithImport(self, rowNum, sourceWB, sheetname, fromSavedExampleRow=False):
+    def initWithImport(
+        self, rowNum, sourceWB, sheetname, fromSavedExampleRow=False
+    ):
         funcKwargs = {
             "rowNum": rowNum,
             "sourceWB": sourceWB,
             "sheetname": sheetname,
-            "fromSavedExampleRow": fromSavedExampleRow
+            "fromSavedExampleRow": fromSavedExampleRow,
         }
         if self.existingObjUsed:
-            return PreObjectImport._initObjWithImport(self.existingObj, objtype=self.objType, **funcKwargs)
+            return PreObjectImport._initObjWithImport(
+                self.existingObj, objtype=self.objType, **funcKwargs
+            )
         args = self._initWithImportArgs(**funcKwargs)
         kwargs = self._initWithImportKwargs(**funcKwargs)
         return self.objType(*args, **kwargs)
 
     @classmethod
-    def _initObjWithImport(cls, obj, rowNum, sourceWB, sheetname, fromSavedExampleRow, objtype=None):
+    def _initObjWithImport(
+        cls, obj, rowNum, sourceWB, sheetname, fromSavedExampleRow, objtype=None
+    ):
         if isinstance(obj, PreObjectImport):
-            return obj.initWithImport(rowNum, sourceWB, sheetname, fromSavedExampleRow)
+            return obj.initWithImport(
+                rowNum, sourceWB, sheetname, fromSavedExampleRow
+            )
         elif isinstance(obj, str) and import_util.isValueToImport(obj):
             if fromSavedExampleRow:
-                value = import_util.importValueFromExampleRow(obj, row=PreObjectImport.EXAMPLE_ROW_VALUE)
+                value = import_util.importValueFromExampleRow(
+                    obj, row=PreObjectImport.EXAMPLE_ROW_VALUE
+                )
             else:
-                value = import_util.importValueFromExcelWB(obj, workbook=sourceWB, row=rowNum, sheetname=sheetname)
+                value = import_util.importValueFromExcelWB(
+                    obj, workbook=sourceWB, row=rowNum, sheetname=sheetname
+                )
             try:
                 value = util_type.typecast(value, objtype)
             except Exception as e:
-                print(f"Could not typecast value '{value}' to type '{objtype}': {e}")
+                print(
+                    f"Could not typecast value '{value}' to type '{objtype}': {e}"
+                )
             return value
         elif util_type.isSimpleIterable(obj):
-            value = [PreObjectImport._initObjWithImport(i, rowNum, sourceWB, sheetname, fromSavedExampleRow) for i in
-                     obj]
+            value = [
+                PreObjectImport._initObjWithImport(
+                    i, rowNum, sourceWB, sheetname, fromSavedExampleRow
+                )
+                for i in obj
+            ]
             return value
         elif objtype:
             try:
                 value = util_type.typecast(obj, objtype)
                 return value
             except Exception as e:
-                print(f"Could not typecast value '{obj}' to type '{objtype}': {e}")
+                print(
+                    f"Could not typecast value '{obj}' to type '{objtype}': {e}"
+                )
                 return obj
         else:
             return obj
@@ -183,7 +221,9 @@ class PreObjectImport(PreObject):
             dictArgs = []
             dictItems = self.args[0]
             for dictItemPreObj in dictItems:
-                dictItem = PreObjectImport._initObjWithImport(dictItemPreObj, **funcKwargs)
+                dictItem = PreObjectImport._initObjWithImport(
+                    dictItemPreObj, **funcKwargs
+                )
                 if isinstance(dictItem, DictItem):
                     dictArgs.append((dictItem.key, dictItem.value))
                 else:
@@ -204,7 +244,9 @@ class PreObjectImport(PreObject):
         return kwargs
 
     def initWithExampleRowImport(self):
-        return self.initWithImport(rowNum=None, sourceWB=None, sheetname=None, fromSavedExampleRow=True)
+        return self.initWithImport(
+            rowNum=None, sourceWB=None, sheetname=None, fromSavedExampleRow=True
+        )
 
     def __str__(self):
         if self.existingObjUsed:
@@ -219,7 +261,9 @@ class PreObjectImport(PreObject):
             elif kwargs and not args:
                 return f"{util_type.getTypeName(self.objType)}({kwargs})"
             else:
-                return f"{util_type.getTypeName(self.objType)}({args}, {kwargs})"
+                return (
+                    f"{util_type.getTypeName(self.objType)}({args}, {kwargs})"
+                )
 
     def __getattr__(self, item):
         param = self.attrsToParams.get(item, item)
@@ -240,7 +284,11 @@ class PreObjectImport(PreObject):
 
     def getMapping(self) -> Dict[str, str]:
         mapping = {}
-        if self.existingObjUsed and isinstance(self.existingObj, str) and import_util.isValueToImport(self.existingObj):
+        if (
+            self.existingObjUsed
+            and isinstance(self.existingObj, str)
+            and import_util.isValueToImport(self.existingObj)
+        ):
             return str(self.existingObj)
         elif self.args:
             if len(self.args) > 1:
@@ -249,9 +297,15 @@ class PreObjectImport(PreObject):
             for i, value in enumerate(self.args):
                 if isinstance(value, PreObjectImport):
                     return value.getMapping()
-                elif isinstance(value, str) and import_util.isValueToImport(value):
+                elif isinstance(value, str) and import_util.isValueToImport(
+                    value
+                ):
                     return str(value)
-                elif value and type(value) == list and isinstance(value[0], PreObjectImport):
+                elif (
+                    value
+                    and type(value) == list
+                    and isinstance(value[0], PreObjectImport)
+                ):
                     for i, obj in enumerate(value):
                         if obj.getMapping():
                             mapping[i] = obj.getMapping()
@@ -261,7 +315,9 @@ class PreObjectImport(PreObject):
                     map = value.getMapping()
                     if map:
                         mapping[key] = map
-                elif isinstance(value, str) and import_util.isValueToImport(value):
+                elif isinstance(value, str) and import_util.isValueToImport(
+                    value
+                ):
                     mapping[key] = str(value)
         return mapping
 
@@ -273,8 +329,13 @@ class PreObjectImport(PreObject):
 
             if isinstance(mapping, dict):
                 for attr in mapping:
-                    if isinstance(attr, int) or (isinstance(attr, str) and attr.isdecimal()):
-                        if self.args[0].objType is dict and "value" in mapping[attr]:
+                    if isinstance(attr, int) or (
+                        isinstance(attr, str) and attr.isdecimal()
+                    ):
+                        if (
+                            self.args[0].objType is dict
+                            and "value" in mapping[attr]
+                        ):
                             preObj = self.args[0].args[0][int(attr)][1]
                             preObj.setMapping(mapping[attr]["value"])
                         else:
@@ -297,9 +358,16 @@ class DateImport(str):
             return Date(year=date.year, month=date.month, day=date.day)
         elif len(args) == 1 and isinstance(args[0], str):
             datetime_obj = datetime.datetime.fromisoformat(args[0])
-            return Date(year=datetime_obj.year, month=datetime_obj.month, day=datetime_obj.day)
+            return Date(
+                year=datetime_obj.year,
+                month=datetime_obj.month,
+                day=datetime_obj.day,
+            )
         else:
-            raise TypeError("Value must be of type datetime.datetime or datetime.date or str in isoformat", args)
+            raise TypeError(
+                "Value must be of type datetime.datetime or datetime.date or str in isoformat",
+                args,
+            )
 
 
 class TimeImport(str):
@@ -312,7 +380,10 @@ class TimeImport(str):
             datetime_obj = datetime.datetime.fromisoformat(args[0])
             return datetime_obj.time()
         else:
-            raise TypeError("Value must be of type datetime.datetime or datetime.time or str in isoformat", args)
+            raise TypeError(
+                "Value must be of type datetime.datetime or datetime.time or str in isoformat",
+                args,
+            )
 
 
 class DateTimeImport(str):
@@ -323,7 +394,10 @@ class DateTimeImport(str):
             datetime_obj = datetime.datetime.fromisoformat(args[0])
             return datetime_obj
         else:
-            raise TypeError("Value must be of type datetime.datetime or str in isoformat", args)
+            raise TypeError(
+                "Value must be of type datetime.datetime or str in isoformat",
+                args,
+            )
 
 
 class BooleanImport(str):
@@ -342,8 +416,10 @@ class BooleanImport(str):
                 elif value in BooleanImport.FALSE:
                     return False
                 else:
-                    raise ValueError(f"Value must be one of the following values: "
-                                     f"{BooleanImport.TRUE}, {BooleanImport.FALSE}")
+                    raise ValueError(
+                        f"Value must be one of the following values: "
+                        f"{BooleanImport.TRUE}, {BooleanImport.FALSE}"
+                    )
 
         raise TypeError("Value must be of type Bool or Int or Str", args)
 
@@ -358,4 +434,5 @@ TYPS_TO_SPECIAL_IMPORT_OBJ_CLASSES = {
 # Register PreObjectImport as a complex iterable type after the class is fully defined.
 # Kept here to avoid coupling aas_settings to import_feature tools.
 import aas_editor.settings as _settings  # noqa: E402
+
 _settings.COMPLEX_ITERABLE_TYPES += (PreObjectImport,)

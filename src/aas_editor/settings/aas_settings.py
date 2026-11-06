@@ -16,17 +16,54 @@ from pathlib import Path
 
 import basyx.aas.model
 from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
-from basyx.aas.model import AssetAdministrationShell, ConceptDescription, Submodel, Property, \
-    Entity, Capability, Operation, RelationshipElement, AnnotatedRelationshipElement, Range, Blob, File, \
-    ReferenceElement, DataElement, AdministrativeInformation, AbstractObjectStore, \
-    Namespace, SubmodelElementCollection, SubmodelElement, ModelReference, Referable, Identifiable, \
-    Key, Qualifier, BasicEventElement, SubmodelElementList, datatypes, LangStringSet, \
-    AbstractObjectProvider, NamespaceSet
+from basyx.aas.model import (
+    AssetAdministrationShell,
+    ConceptDescription,
+    Submodel,
+    Property,
+    Entity,
+    Capability,
+    Operation,
+    RelationshipElement,
+    AnnotatedRelationshipElement,
+    Range,
+    Blob,
+    File,
+    ReferenceElement,
+    DataElement,
+    AdministrativeInformation,
+    AbstractObjectStore,
+    Namespace,
+    SubmodelElementCollection,
+    SubmodelElement,
+    ModelReference,
+    Referable,
+    Identifiable,
+    Key,
+    Qualifier,
+    BasicEventElement,
+    SubmodelElementList,
+    datatypes,
+    LangStringSet,
+    AbstractObjectProvider,
+    NamespaceSet,
+)
 
 import aas_editor.additional.classes
-from aas_editor.settings.util_constants import HIDDEN_ATTRS, CHANGED_PARENT_OBJ, ADD_ACT_AAS_TXT, \
-    ADD_TYPE, PACKVIEW_ATTRS_INFO, PARAMS_TO_ATTRS, DEFAULT_PARAMS_TO_HIDE, ITERABLE_ATTRS, POSITIONAL_ARG_DEFAULTS, \
-    CONTENT_TYPE_ATTR, CONTENT_VALUE_ATTR, IS_EDITABLE_IN_GUI
+from aas_editor.settings.util_constants import (
+    HIDDEN_ATTRS,
+    CHANGED_PARENT_OBJ,
+    ADD_ACT_AAS_TXT,
+    ADD_TYPE,
+    PACKVIEW_ATTRS_INFO,
+    PARAMS_TO_ATTRS,
+    DEFAULT_PARAMS_TO_HIDE,
+    ITERABLE_ATTRS,
+    POSITIONAL_ARG_DEFAULTS,
+    CONTENT_TYPE_ATTR,
+    CONTENT_VALUE_ATTR,
+    IS_EDITABLE_IN_GUI,
+)
 from aas_editor.utils import util_type
 import aas_editor.utils.util as util
 
@@ -90,7 +127,12 @@ FILESTORE = "fileStore"
 
 CLASSES_INFO = {
     object: {
-        HIDDEN_ATTRS: ("namespace_element_sets", "parent", "security", "source"),
+        HIDDEN_ATTRS: (
+            "namespace_element_sets",
+            "parent",
+            "security",
+            "source",
+        ),
     },
     datetime.datetime: {
         HIDDEN_ATTRS: ("min", "max", "resolution"),
@@ -109,12 +151,9 @@ CLASSES_INFO = {
         POSITIONAL_ARG_DEFAULTS: {"id_short": None},
     },
     Identifiable: {
-        PARAMS_TO_ATTRS: {
-            "id_": "id"
-        },
+        PARAMS_TO_ATTRS: {"id_": "id"},
     },
-    AssetAdministrationShell: {
-    },
+    AssetAdministrationShell: {},
     Submodel: {
         HIDDEN_ATTRS: ("submodel_element",),
         ITERABLE_ATTRS: ("submodel_element",),
@@ -151,8 +190,16 @@ CLASSES_INFO = {
         ADD_TYPE: SubmodelElement,
     },
     Operation: {
-        HIDDEN_ATTRS: ("input_variable", "output_variable", "in_output_variable"),
-        ITERABLE_ATTRS: ("input_variable", "output_variable", "in_output_variable"),
+        HIDDEN_ATTRS: (
+            "input_variable",
+            "output_variable",
+            "in_output_variable",
+        ),
+        ITERABLE_ATTRS: (
+            "input_variable",
+            "output_variable",
+            "in_output_variable",
+        ),
         PACKVIEW_ATTRS_INFO: {
             "input_variable": {
                 ADD_ACT_AAS_TXT: "Add input variable",
@@ -166,41 +213,53 @@ CLASSES_INFO = {
                 ADD_ACT_AAS_TXT: "Add in_output variable",
                 ADD_TYPE: SubmodelElement,
             },
-        }
+        },
     },
     ModelReference: {
-        PARAMS_TO_ATTRS: {
-            "type_": "type"
-        },
+        PARAMS_TO_ATTRS: {"type_": "type"},
     },
     Key: {
-        PARAMS_TO_ATTRS: {
-            "type_": "type"
-        },
+        PARAMS_TO_ATTRS: {"type_": "type"},
     },
     Qualifier: {
-        PARAMS_TO_ATTRS: {
-            "type_": "type"
-        },
+        PARAMS_TO_ATTRS: {"type_": "type"},
     },
 }
 
-AAS_CLASSES = {name:obj for name, obj in inspect.getmembers(basyx.aas.model) if inspect.isclass(obj)}
+AAS_CLASSES = {
+    name: obj
+    for name, obj in inspect.getmembers(basyx.aas.model)
+    if inspect.isclass(obj)
+}
 EXTENDED_COLUMNS_IN_PACK_TABLE = list(util.getAttrs4inheritors(Referable))
 EXTENDED_COLUMNS_IN_PACK_TABLE.sort()
-REFERABLE_INHERITORS = sorted(list(util.inheritors(Referable)), key=util_type.getTypeName)
+REFERABLE_INHERITORS = sorted(
+    list(util.inheritors(Referable)), key=util_type.getTypeName
+)
 
 REFERABLE_INHERITORS_ATTRS = {}
 for inheritor in REFERABLE_INHERITORS:
-    REFERABLE_INHERITORS_ATTRS.update({inheritor: util.getAttrsOfCls(inheritor)})
+    REFERABLE_INHERITORS_ATTRS.update(
+        {inheritor: util.getAttrsOfCls(inheritor)}
+    )
 
 ATTR_INFOS_TO_SIMPLIFY = (AdministrativeInformation, LangStringSet)
 
 DICT_TYPES = (dict, LangStringSet)
 TYPES_NOT_TO_POPULATE = (type, ABCMeta)
 TYPES_WITH_INSTANCES_NOT_TO_POPULATE = (
-    AbstractObjectStore, str, int, float, bool, Enum, Path, aas_editor.additional.classes.DictItem, datatypes.Decimal, type,
-    datetime.date)  # '+ TYPES_IN_ONE_ROW
+    AbstractObjectStore,
+    str,
+    int,
+    float,
+    bool,
+    Enum,
+    Path,
+    aas_editor.additional.classes.DictItem,
+    datatypes.Decimal,
+    type,
+    datetime.date,
+)  # '+ TYPES_IN_ONE_ROW
 COMPLEX_ITERABLE_TYPES = (Namespace,)
 
 TYPE_SHORTS_DICT = {

@@ -11,12 +11,22 @@ import copy
 from pathlib import Path
 from typing import Dict, Type, Union, List, Iterable
 
-from basyx.aas.model import AssetAdministrationShell, Submodel, ConceptDescription
+from basyx.aas.model import (
+    AssetAdministrationShell,
+    Submodel,
+    ConceptDescription,
+)
 
 from aas_editor.package import Package, StoredFile
 from aas_editor.utils.util import getParamsAndTypehints4init, getAttrTypeHint
 from aas_editor.utils.util_classes import ClassesInfo, PreObject
-from aas_editor.utils.util_type import isIterableType, isIterable, checkType, isOptional, getTypeName
+from aas_editor.utils.util_type import (
+    isIterableType,
+    isIterable,
+    checkType,
+    isOptional,
+    getTypeName,
+)
 
 
 class KwargPackage(Package):
@@ -37,10 +47,11 @@ class KwargPackage(Package):
     def concept_descriptions(self) -> Iterable[ConceptDescription]:
         return self._iter_objects(ConceptDescription)
 
-
     def add(self, obj):
         if isinstance(obj, StoredFile):
-            newName = self.fileStore.add_file(name=obj.name, file=obj.file(), content_type=obj.content_type)
+            newName = self.fileStore.add_file(
+                name=obj.name, file=obj.file(), content_type=obj.content_type
+            )
             obj.setFileStore(newName, self.fileStore)
         else:
             self._objStore.append(obj)
@@ -62,11 +73,11 @@ class KwargObject:
         else:
             raise TypeError("obj must be of Type: KwargObject!")
 
-    def __init__(self, objtype, args, kwargs:Dict[str, object]):
+    def __init__(self, objtype, args, kwargs: Dict[str, object]):
         object.__setattr__(self, "args", args)
         object.__setattr__(self, "kwargs", kwargs)
-        #self.args = args
-        #self.kwargs = kwargs
+        # self.args = args
+        # self.kwargs = kwargs
         self.objtype = objtype
         self._updateKwargsWithDefaults()
         self._updateKwargsOptional()
@@ -79,7 +90,7 @@ class KwargObject:
 
         self._checkIterability()
         self._fromPreObjs2KwargObjs()
-        #self.__class__ = self.objtype
+        # self.__class__ = self.objtype
 
     def _checkIterability(self):
         if isIterableType(self.objtype):
@@ -91,7 +102,9 @@ class KwargObject:
                 elif checkType(list(), self.kwargsTypehints[iterAttr]):
                     self.kwargs[iterAttr] = list()
                 else:
-                    raise TypeError("Unknown iterable type:", self.kwargsTypehints[iterAttr])
+                    raise TypeError(
+                        "Unknown iterable type:", self.kwargsTypehints[iterAttr]
+                    )
             self.setIterable(iterAttr)
 
     def _fromPreObjs2KwargObjs(self):
@@ -113,14 +126,13 @@ class KwargObject:
         object.__setattr__(self, "args", args)
         object.__setattr__(self, "kwargs", kwargs)
 
-
     @property
     def __class__(self):
         return self.objtype
 
     def setIterable(self, iterAttr: str):
-        #self.iterAttr = iterAttr
-        self.__iter__ = lambda : iter(self.kwargs[iterAttr])
+        # self.iterAttr = iterAttr
+        self.__iter__ = lambda: iter(self.kwargs[iterAttr])
 
     # def __iter__(self):
     #     if self.iterAttr:
@@ -165,7 +177,7 @@ class KwargObject:
             return self.kwargs[item]
         else:
             raise AttributeError()
-            #return object.__getattr__(self.objtype, item)
+            # return object.__getattr__(self.objtype, item)
 
     def __setattr__(self, key, value):
         if key in ("args", "kwargs"):
@@ -190,7 +202,7 @@ class KwargObject:
 
     def __str__(self):
         typename = getTypeName(self.objtype)
-        args = str(self.args if self.args else '')
+        args = str(self.args if self.args else "")
         kwargs = ""
         for key in self.kwargs:
             kwargs = f"{kwargs}{key}={self.kwargs[key]}, "

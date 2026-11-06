@@ -26,7 +26,9 @@ from aas_editor.package import Package
 
 
 class DetailedInfoItem(StandardItem):
-    def __init__(self, obj, name="", parent=None, package: Package = None, **kwargs):
+    def __init__(
+        self, obj, name="", parent=None, package: Package = None, **kwargs
+    ):
         super().__init__(obj, name, parent, **kwargs)
         if parent and not package:
             self.package = parent.data(settings.PACKAGE_ROLE)
@@ -35,8 +37,10 @@ class DetailedInfoItem(StandardItem):
         self.populate()
 
     def populate(self):
-        if isinstance(self.obj, settings.TYPES_WITH_INSTANCES_NOT_TO_POPULATE) \
-                or type(self.obj) in settings.TYPES_NOT_TO_POPULATE:
+        if (
+            isinstance(self.obj, settings.TYPES_WITH_INSTANCES_NOT_TO_POPULATE)
+            or type(self.obj) in settings.TYPES_NOT_TO_POPULATE
+        ):
             return
 
         kwargs = {
@@ -55,14 +59,20 @@ class DetailedInfoItem(StandardItem):
     @staticmethod
     def _populateDict(obj, **kwargs):
         for i, key in enumerate(obj):
-            DetailedInfoItem(DictItem(key, obj[key]),
-                             name=f"{getTypeName(DictItem)} {i}", **kwargs)
+            DetailedInfoItem(
+                DictItem(key, obj[key]),
+                name=f"{getTypeName(DictItem)} {i}",
+                **kwargs,
+            )
 
     @staticmethod
     def _populateIterable(obj, **kwargs):
         for i, sub_item_obj in enumerate(obj):
-            DetailedInfoItem(sub_item_obj,
-                             name=f"{getTypeName(sub_item_obj.__class__)} {i}", **kwargs)
+            DetailedInfoItem(
+                sub_item_obj,
+                name=f"{getTypeName(sub_item_obj.__class__)} {i}",
+                **kwargs,
+            )
 
     @staticmethod
     def _populateUnknown(obj, **kwargs):

@@ -18,10 +18,35 @@
 import logging
 from typing import Optional, List, Any
 
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QPoint, QAbstractItemModel, QModelIndex, QTimer
-from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QWheelEvent, QAction, QPalette, QColor, QClipboard, \
-    QKeyEvent
-from PyQt6.QtWidgets import QTreeView, QHeaderView, QWidget, QMenu, QAbstractItemView, QApplication, QDialog
+from PyQt6.QtCore import (
+    Qt,
+    pyqtSignal,
+    QRect,
+    QPoint,
+    QAbstractItemModel,
+    QModelIndex,
+    QTimer,
+)
+from PyQt6.QtGui import (
+    QMouseEvent,
+    QPaintEvent,
+    QPainter,
+    QWheelEvent,
+    QAction,
+    QPalette,
+    QColor,
+    QClipboard,
+    QKeyEvent,
+)
+from PyQt6.QtWidgets import (
+    QTreeView,
+    QHeaderView,
+    QWidget,
+    QMenu,
+    QAbstractItemView,
+    QApplication,
+    QDialog,
+)
 
 import aas_editor.dialogs as dialogs
 import aas_editor.settings as settings
@@ -33,18 +58,65 @@ from aas_editor.settings.app_settings import *
 from aas_editor.additional.classes import DictItem
 from aas_editor.delegates import EditDelegate
 from aas_editor.models import StandardTable
-from aas_editor.settings import TOOLBARS_HEIGHT, COPY_ICON, SC_COPY, PASTE_ICON, SC_PASTE, CUT_ICON, SC_CUT, ADD_ICON, SC_NEW, \
-    EDIT_ICON, SC_EDIT_IN_DIALOG, DEL_ICON, SC_DELETE, UPDATE_ICON, UNDO_ICON, SC_UNDO, REDO_ICON, SC_REDO, SC_COLLAPSE, \
-    SC_COLLAPSE_RECURS, COLLAPSE_ALL_ICON, SC_COLLAPSE_ALL, SC_EXPAND, SC_EXPAND_RECURS, EXPAND_ALL_ICON, SC_EXPAND_ALL, \
-    ZOOM_IN_ICON, SC_ZOOM_IN, ZOOM_OUT_ICON, SC_ZOOM_OUT, OBJECT_ROLE, NAME_ROLE, UNDO_ROLE, REDO_ROLE, DEFAULT_FONT, \
-    MAX_FONT_SIZE, MIN_FONT_SIZE, NOT_GIVEN, UPDATE_ROLE, PARENT_OBJ_ROLE, CLEAR_ROW_ROLE, COPY_ROLE, TYPE_HINT_ROLE, \
-    ADD_ITEM_ROLE, DATA_CHANGE_FAILED_ROLE
-from aas_editor.utils.util import getDefaultVal, getReqParams4init, getIterItemTypeHint, isSimpleIterable
+from aas_editor.settings import (
+    TOOLBARS_HEIGHT,
+    COPY_ICON,
+    SC_COPY,
+    PASTE_ICON,
+    SC_PASTE,
+    CUT_ICON,
+    SC_CUT,
+    ADD_ICON,
+    SC_NEW,
+    EDIT_ICON,
+    SC_EDIT_IN_DIALOG,
+    DEL_ICON,
+    SC_DELETE,
+    UPDATE_ICON,
+    UNDO_ICON,
+    SC_UNDO,
+    REDO_ICON,
+    SC_REDO,
+    SC_COLLAPSE,
+    SC_COLLAPSE_RECURS,
+    COLLAPSE_ALL_ICON,
+    SC_COLLAPSE_ALL,
+    SC_EXPAND,
+    SC_EXPAND_RECURS,
+    EXPAND_ALL_ICON,
+    SC_EXPAND_ALL,
+    ZOOM_IN_ICON,
+    SC_ZOOM_IN,
+    ZOOM_OUT_ICON,
+    SC_ZOOM_OUT,
+    OBJECT_ROLE,
+    NAME_ROLE,
+    UNDO_ROLE,
+    REDO_ROLE,
+    DEFAULT_FONT,
+    MAX_FONT_SIZE,
+    MIN_FONT_SIZE,
+    NOT_GIVEN,
+    UPDATE_ROLE,
+    PARENT_OBJ_ROLE,
+    CLEAR_ROW_ROLE,
+    COPY_ROLE,
+    TYPE_HINT_ROLE,
+    ADD_ITEM_ROLE,
+    DATA_CHANGE_FAILED_ROLE,
+)
+from aas_editor.utils.util import (
+    getDefaultVal,
+    getReqParams4init,
+    getIterItemTypeHint,
+    isSimpleIterable,
+)
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.utils.util_type import isIterable, checkType, isoftype
 
 EMPTY_VIEW_MSG = "There are no elements in this view"
 EMPTY_VIEW_ICON = None
+
 
 class HeaderView(QHeaderView):
     def __init__(self, orientation, parent: Optional[QWidget] = ...) -> None:
@@ -73,7 +145,9 @@ class HeaderView(QHeaderView):
         for i in self.actions():
             self.menu.addAction(i)
 
-    def restoreState(self, state: typing.Union[QtCore.QByteArray, bytes, bytearray]) -> bool:
+    def restoreState(
+        self, state: typing.Union[QtCore.QByteArray, bytes, bytearray]
+    ) -> bool:
         super(HeaderView, self).restoreState(state)
         self.updateMenu()
 
@@ -91,10 +165,13 @@ class HeaderView(QHeaderView):
         for section in range(sections):
             sectionName = self.text(section)
             sectionShown = not self.isSectionHidden(section)
-            act = QAction(sectionName, self,
-                          toolTip=f"Show/Hide section {sectionName}",
-                          statusTip=f"Show/Hide section {sectionName}",
-                          checkable=True)
+            act = QAction(
+                sectionName,
+                self,
+                toolTip=f"Show/Hide section {sectionName}",
+                statusTip=f"Show/Hide section {sectionName}",
+                checkable=True,
+            )
             act.setData(section)
             act.setChecked(sectionShown)
             act.toggled.connect(self.onToggleShowSection)
@@ -216,11 +293,17 @@ class TreeClipboard:
 
 
 class BasicTreeView(QTreeView):
-    wheelClicked = pyqtSignal(['QModelIndex'])
+    wheelClicked = pyqtSignal(["QModelIndex"])
     ctrlWheelScrolled = pyqtSignal(int)
-    modelChanged = pyqtSignal(['QAbstractItemModel'])
+    modelChanged = pyqtSignal(["QAbstractItemModel"])
 
-    def __init__(self, parent=None, *, emptyViewMsg=EMPTY_VIEW_MSG, emptyViewIcon=EMPTY_VIEW_ICON):
+    def __init__(
+        self,
+        parent=None,
+        *,
+        emptyViewMsg=EMPTY_VIEW_MSG,
+        emptyViewIcon=EMPTY_VIEW_ICON,
+    ):
         super(BasicTreeView, self).__init__(parent)
         self.emptyViewMsg = emptyViewMsg
         self.emptyViewIcon = emptyViewIcon
@@ -265,8 +348,9 @@ class BasicTreeView(QTreeView):
             super(BasicTreeView, self).wheelEvent(a0)
 
     def paintEvent(self, e: QPaintEvent) -> None:
-        if (self.model() and self.model().rowCount()) \
-                or not (self.emptyViewMsg or self.emptyViewIcon):
+        if (self.model() and self.model().rowCount()) or not (
+            self.emptyViewMsg or self.emptyViewIcon
+        ):
             super(BasicTreeView, self).paintEvent(e)
         else:
             # If no items draw a text in the center of the viewport.
@@ -276,14 +360,18 @@ class BasicTreeView(QTreeView):
                 painter = QPainter(self.viewport())
                 textRect = painter.fontMetrics().boundingRect(self.emptyViewMsg)
                 textRect.moveCenter(position)
-                painter.drawText(textRect, Qt.AlignmentFlag.AlignCenter, self.emptyViewMsg)
+                painter.drawText(
+                    textRect, Qt.AlignmentFlag.AlignCenter, self.emptyViewMsg
+                )
                 # set position for icon
-                position.setY(position.y()+textRect.height()+25)
+                position.setY(position.y() + textRect.height() + 25)
 
             if self.emptyViewIcon:
                 iconRect = QRect(0, 0, 50, 50)
                 iconRect.moveCenter(position)
-                painter.drawPixmap(iconRect, self.emptyViewIcon.pixmap(QSize(50, 50)))
+                painter.drawPixmap(
+                    iconRect, self.emptyViewIcon.pixmap(QSize(50, 50))
+                )
 
     def setWindowModified(self, a0: bool) -> None:
         window = self.window()
@@ -320,11 +408,16 @@ class TreeView(BasicTreeView):
         self.initMenu()
         self.setUniformRowHeights(True)
         self.buildHandlers()
-        self.setItemDelegate(EditDelegate(self))  # set ColorDelegate as standard delegate
+        self.setItemDelegate(
+            EditDelegate(self)
+        )  # set ColorDelegate as standard delegate
         self.setSortingEnabled(True)
         self.setHeader(HeaderView(Qt.Orientation.Horizontal, self))
         p = self.palette()
-        p.setColor(QPalette.ColorRole.AlternateBase, QColor(settings.LIGHT_BLUE_ALTERNATE))
+        p.setColor(
+            QPalette.ColorRole.AlternateBase,
+            QColor(settings.LIGHT_BLUE_ALTERNATE),
+        )
         self.setPalette(p)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
@@ -334,157 +427,239 @@ class TreeView(BasicTreeView):
 
     # noinspection PyArgumentList
     def initActions(self):
-        self.copyAct = QAction(COPY_ICON, "Copy", self,
-                               statusTip="Copy selected item",
-                               shortcut=SC_COPY,
-                               shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                               triggered=lambda: self.onCopy(),
-                               enabled=False)
+        self.copyAct = QAction(
+            COPY_ICON,
+            "Copy",
+            self,
+            statusTip="Copy selected item",
+            shortcut=SC_COPY,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onCopy(),
+            enabled=False,
+        )
         self.addAction(self.copyAct)
 
-        self.pasteAct = QAction(PASTE_ICON, "Paste", self,
-                                statusTip="Paste from clipboard",
-                                shortcut=SC_PASTE,
-                                shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                triggered=lambda: self.onPaste(),
-                                enabled=False)
+        self.pasteAct = QAction(
+            PASTE_ICON,
+            "Paste",
+            self,
+            statusTip="Paste from clipboard",
+            shortcut=SC_PASTE,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onPaste(),
+            enabled=False,
+        )
         self.addEditingAction(self.pasteAct)
 
-        self.cutAct = QAction(CUT_ICON, "Cut", self,
-                              statusTip="Cut selected item",
-                              shortcut=SC_CUT,
-                              shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                              triggered=lambda: self.onCut(),
-                              enabled=False)
+        self.cutAct = QAction(
+            CUT_ICON,
+            "Cut",
+            self,
+            statusTip="Cut selected item",
+            shortcut=SC_CUT,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onCut(),
+            enabled=False,
+        )
         self.addEditingAction(self.cutAct)
 
-        self.addAct = QAction(ADD_ICON, "&Add", self,
-                              statusTip="Add item to selected",
-                              shortcut=SC_NEW,
-                              shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                              triggered=lambda: self.onAddAct(),
-                              enabled=False)
+        self.addAct = QAction(
+            ADD_ICON,
+            "&Add",
+            self,
+            statusTip="Add item to selected",
+            shortcut=SC_NEW,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onAddAct(),
+            enabled=False,
+        )
         self.addEditingAction(self.addAct)
 
-        self.editCreateInDialogAct = QAction("E&dit/create in dialog", self,
-                                             icon=EDIT_ICON,
-                                             statusTip="Edit/create selected item in dialog",
-                                             shortcut=SC_EDIT_IN_DIALOG,
-                                             shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                             triggered=lambda: self.editCreateInDialog(),
-                                             enabled=False)
+        self.editCreateInDialogAct = QAction(
+            "E&dit/create in dialog",
+            self,
+            icon=EDIT_ICON,
+            statusTip="Edit/create selected item in dialog",
+            shortcut=SC_EDIT_IN_DIALOG,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.editCreateInDialog(),
+            enabled=False,
+        )
         self.addEditingAction(self.editCreateInDialogAct)
 
-        self.editAct = QAction("&Edit", self,
-                               statusTip="Edit selected item",
-                               triggered=lambda: self.edit(self.currentIndex()),
-                               enabled=False)
+        self.editAct = QAction(
+            "&Edit",
+            self,
+            statusTip="Edit selected item",
+            triggered=lambda: self.edit(self.currentIndex()),
+            enabled=False,
+        )
         self.addEditingAction(self.editAct)
 
-        self.delClearAct = QAction(DEL_ICON, "Delete/clear", self,
-                                   statusTip="Delete/clear selected item",
-                                   shortcut=SC_DELETE,
-                                   shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                   triggered=lambda: self.onDelClear(),
-                                   enabled=False)
+        self.delClearAct = QAction(
+            DEL_ICON,
+            "Delete/clear",
+            self,
+            statusTip="Delete/clear selected item",
+            shortcut=SC_DELETE,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onDelClear(),
+            enabled=False,
+        )
         self.addEditingAction(self.delClearAct)
 
-        self.updateAct = QAction(UPDATE_ICON, "Update/reload", self,
-                                 statusTip="Update/reload selected item",
-                                 shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                 triggered=lambda: self.onUpdate(),
-                                 enabled=True)
+        self.updateAct = QAction(
+            UPDATE_ICON,
+            "Update/reload",
+            self,
+            statusTip="Update/reload selected item",
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onUpdate(),
+            enabled=True,
+        )
         self.addAction(self.updateAct)
 
-        self.undoAct = QAction(UNDO_ICON, "Undo", self,
-                               statusTip="Undo last edit action",
-                               shortcut=SC_UNDO,
-                               shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                               triggered=lambda: self.onUndo(),
-                               enabled=False)
+        self.undoAct = QAction(
+            UNDO_ICON,
+            "Undo",
+            self,
+            statusTip="Undo last edit action",
+            shortcut=SC_UNDO,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onUndo(),
+            enabled=False,
+        )
         self.addEditingAction(self.undoAct)
 
-        self.redoAct = QAction(REDO_ICON, "Redo", self,
-                               statusTip="Redo last edit action",
-                               shortcut=SC_REDO,
-                               shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                               triggered=lambda: self.onRedo(),
-                               enabled=False)
+        self.redoAct = QAction(
+            REDO_ICON,
+            "Redo",
+            self,
+            statusTip="Redo last edit action",
+            shortcut=SC_REDO,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.onRedo(),
+            enabled=False,
+        )
         self.addEditingAction(self.redoAct)
 
-        self.collapseAct = QAction("Collapse", self,
-                                   shortcut=SC_COLLAPSE,
-                                   statusTip="Collapse selected item",
-                                   shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                   triggered=lambda: self.collapse(self.currentIndex()))
+        self.collapseAct = QAction(
+            "Collapse",
+            self,
+            shortcut=SC_COLLAPSE,
+            statusTip="Collapse selected item",
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.collapse(self.currentIndex()),
+        )
         self.addAction(self.collapseAct)
 
-        self.collapseRecAct = QAction("Collapse recursively", self,
-                                      shortcut=SC_COLLAPSE_RECURS,
-                                      shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                      statusTip="Collapse recursively selected item",
-                                      triggered=lambda: self.collapse(self.currentIndex()))
+        self.collapseRecAct = QAction(
+            "Collapse recursively",
+            self,
+            shortcut=SC_COLLAPSE_RECURS,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            statusTip="Collapse recursively selected item",
+            triggered=lambda: self.collapse(self.currentIndex()),
+        )
         self.addAction(self.collapseRecAct)
 
-        self.collapseAllAct = QAction(COLLAPSE_ALL_ICON, "Collapse all", self,
-                                      shortcut=SC_COLLAPSE_ALL,
-                                      shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                      statusTip="Collapse all items",
-                                      triggered=lambda: self.collapseAll())
+        self.collapseAllAct = QAction(
+            COLLAPSE_ALL_ICON,
+            "Collapse all",
+            self,
+            shortcut=SC_COLLAPSE_ALL,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            statusTip="Collapse all items",
+            triggered=lambda: self.collapseAll(),
+        )
         self.addAction(self.collapseAllAct)
 
-        self.expandAct = QAction("Expand", self,
-                                 shortcut=SC_EXPAND,
-                                 statusTip="Expand selected item",
-                                 shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                 triggered=lambda: self.expand(self.currentIndex()))
+        self.expandAct = QAction(
+            "Expand",
+            self,
+            shortcut=SC_EXPAND,
+            statusTip="Expand selected item",
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            triggered=lambda: self.expand(self.currentIndex()),
+        )
         self.addAction(self.expandAct)
 
-        self.expandRecAct = QAction("Expand recursively", self,
-                                    shortcut=SC_EXPAND_RECURS,
-                                    shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                    statusTip="Expand recursively selected item",
-                                    triggered=lambda: self.expandRecursively(self.currentIndex()))
+        self.expandRecAct = QAction(
+            "Expand recursively",
+            self,
+            shortcut=SC_EXPAND_RECURS,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            statusTip="Expand recursively selected item",
+            triggered=lambda: self.expandRecursively(self.currentIndex()),
+        )
         self.addAction(self.expandRecAct)
 
-        self.expandAllAct = QAction(EXPAND_ALL_ICON, "Expand all", self,
-                                    shortcut=SC_EXPAND_ALL,
-                                    shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
-                                    statusTip="Expand all items",
-                                    triggered=lambda: self.expandAll())
+        self.expandAllAct = QAction(
+            EXPAND_ALL_ICON,
+            "Expand all",
+            self,
+            shortcut=SC_EXPAND_ALL,
+            shortcutContext=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            statusTip="Expand all items",
+            triggered=lambda: self.expandAll(),
+        )
         self.addAction(self.expandAllAct)
 
-        self.openInCurrTabAct = QAction("Open in current ta&b", self,
-                                        statusTip="Open selected item in current tab",
-                                        enabled=False)
+        self.openInCurrTabAct = QAction(
+            "Open in current ta&b",
+            self,
+            statusTip="Open selected item in current tab",
+            enabled=False,
+        )
 
-        self.openInNewTabAct = QAction("Open in new &tab", self,
-                                       statusTip="Open selected item in new tab",
-                                       enabled=False)
+        self.openInNewTabAct = QAction(
+            "Open in new &tab",
+            self,
+            statusTip="Open selected item in new tab",
+            enabled=False,
+        )
 
-        self.openInBackgroundAct = QAction("Open in &background tab", self,
-                                           statusTip="Open selected item in background tab",
-                                           enabled=False)
+        self.openInBackgroundAct = QAction(
+            "Open in &background tab",
+            self,
+            statusTip="Open selected item in background tab",
+            enabled=False,
+        )
 
-        self.openInNewWindowAct = QAction("Open in new window", self,
-                                          statusTip="Open selected item in new window",
-                                          enabled=False)
+        self.openInNewWindowAct = QAction(
+            "Open in new window",
+            self,
+            statusTip="Open selected item in new window",
+            enabled=False,
+        )
 
-        self.openInActs = [self.openInCurrTabAct, self.openInNewTabAct, self.openInBackgroundAct,
-                           self.openInNewWindowAct]
+        self.openInActs = [
+            self.openInCurrTabAct,
+            self.openInNewTabAct,
+            self.openInBackgroundAct,
+            self.openInNewWindowAct,
+        ]
 
-        self.zoomInAct = QAction(ZOOM_IN_ICON, "Zoom in", self,
-                                 shortcut=SC_ZOOM_IN,
-                                 shortcutContext=Qt.ShortcutContext.WidgetShortcut,
-                                 statusTip="Zoom in",
-                                 triggered=lambda: self.zoomIn())
+        self.zoomInAct = QAction(
+            ZOOM_IN_ICON,
+            "Zoom in",
+            self,
+            shortcut=SC_ZOOM_IN,
+            shortcutContext=Qt.ShortcutContext.WidgetShortcut,
+            statusTip="Zoom in",
+            triggered=lambda: self.zoomIn(),
+        )
         self.addAction(self.zoomInAct)
 
-        self.zoomOutAct = QAction(ZOOM_OUT_ICON, "Zoom out", self,
-                                  shortcut=SC_ZOOM_OUT,
-                                  shortcutContext=Qt.ShortcutContext.WidgetShortcut,
-                                  statusTip="Zoom out",
-                                  triggered=lambda: self.zoomOut())
+        self.zoomOutAct = QAction(
+            ZOOM_OUT_ICON,
+            "Zoom out",
+            self,
+            shortcut=SC_ZOOM_OUT,
+            shortcutContext=Qt.ShortcutContext.WidgetShortcut,
+            statusTip="Zoom out",
+            triggered=lambda: self.zoomOut(),
+        )
         self.addAction(self.zoomOutAct)
 
     def initMenu(self) -> None:
@@ -545,7 +720,9 @@ class TreeView(BasicTreeView):
     def onCurrentChanged(self, current: QModelIndex, previous: QModelIndex):
         self.updateActions(current)
 
-    def onDataChanged(self, topLeft: QModelIndex, bottomRight: QModelIndex, roles):
+    def onDataChanged(
+        self, topLeft: QModelIndex, bottomRight: QModelIndex, roles
+    ):
         self.itemDataChangeFailed(topLeft, bottomRight, roles)
         # completion list will be hidden now; we will show it again after a delay
         QTimer.singleShot(100, self.updateUndoRedoActs)
@@ -580,7 +757,9 @@ class TreeView(BasicTreeView):
         self.delClearAct.setEnabled(indexValid)
 
     def updateEditActs(self, index: QModelIndex):
-        self.editCreateInDialogAct.setEnabled(bool(index.flags() & Qt.ItemFlag.ItemIsEditable))
+        self.editCreateInDialogAct.setEnabled(
+            bool(index.flags() & Qt.ItemFlag.ItemIsEditable)
+        )
         self.editAct.setEnabled(self.isEditableInsideCell(index))
 
     def updateAddActs(self, index: QModelIndex):
@@ -616,7 +795,9 @@ class TreeView(BasicTreeView):
 
     def zoom(self, pointSize: int = DEFAULT_FONT.pointSize(), delta: int = 0):
         if self.model():
-            font = QFont(self.model().data(QModelIndex(), Qt.ItemDataRole.FontRole))
+            font = QFont(
+                self.model().data(QModelIndex(), Qt.ItemDataRole.FontRole)
+            )
             if delta > 0:
                 fontSize = min(font.pointSize() + 2, MAX_FONT_SIZE)
             elif delta < 0:
@@ -659,7 +840,9 @@ class TreeView(BasicTreeView):
             self._setItemData(index, NOT_GIVEN, CLEAR_ROW_ROLE)
 
     def onMultipleDelClear(self, indexes: List[QModelIndex]):
-        for index in sorted(indexes, key=lambda x: x.row(), reverse=True):  # reverse to avoid shifting rows
+        for index in sorted(
+            indexes, key=lambda x: x.row(), reverse=True
+        ):  # reverse to avoid shifting rows
             self.onOneItemDelClear(index)
 
     def onCopy(self):
@@ -681,12 +864,24 @@ class TreeView(BasicTreeView):
     def onMultipleItemsCopy(self, indexes: List[QModelIndex]):
         # Get top level indexes
         top_same_level_indexes = self.getTopLevelSameLevelIndexes(indexes)
-        data2copy = [i.data(COPY_ROLE) for i in top_same_level_indexes if i.data(COPY_ROLE) is not None]
-        text2copy = "\n".join([i.data(Qt.ItemDataRole.DisplayRole) for i in indexes if i.isValid()])
+        data2copy = [
+            i.data(COPY_ROLE)
+            for i in top_same_level_indexes
+            if i.data(COPY_ROLE) is not None
+        ]
+        text2copy = "\n".join(
+            [
+                i.data(Qt.ItemDataRole.DisplayRole)
+                for i in indexes
+                if i.isValid()
+            ]
+        )
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
         clipboard = QApplication.clipboard()
-        clipboard.setText(self.treeClipboard.objStrings[-1], QClipboard.Mode.Clipboard)
+        clipboard.setText(
+            self.treeClipboard.objStrings[-1], QClipboard.Mode.Clipboard
+        )
 
     def getTopLevelSameLevelIndexes(self, indexes):
         # Remove invalid indexes just in case
@@ -703,7 +898,9 @@ class TreeView(BasicTreeView):
 
         # Determine the common parent among remaining top-level candidates
         first_parent = top_level_candidates[0].parent()
-        same_level_indexes = [idx for idx in top_level_candidates if idx.parent() == first_parent]
+        same_level_indexes = [
+            idx for idx in top_level_candidates if idx.parent() == first_parent
+        ]
 
         return same_level_indexes
 
@@ -717,9 +914,14 @@ class TreeView(BasicTreeView):
                 return True
             targetObj = index.data(OBJECT_ROLE)
             if isIterable(targetObj):
-                if checkType(self.treeClipboard.objForPasteCheck, getIterItemTypeHint(targetTypeHint)):
+                if checkType(
+                    self.treeClipboard.objForPasteCheck,
+                    getIterItemTypeHint(targetTypeHint),
+                ):
                     return True
-            if checkType(self.treeClipboard.objStrForPasteCheck, targetTypeHint):
+            if checkType(
+                self.treeClipboard.objStrForPasteCheck, targetTypeHint
+            ):
                 return True
         except (AttributeError, TypeError) as e:
             logging.exception(e)
@@ -762,27 +964,43 @@ class TreeView(BasicTreeView):
             paste_was_done = False
             for obj2paste in objs2paste:
                 if checkType(obj2paste, iterItemTypehint):
-                    self._onPasteAdd(index, obj2paste, withDialog=pasteWithDialog)
+                    self._onPasteAdd(
+                        index, obj2paste, withDialog=pasteWithDialog
+                    )
                     paste_was_done = True
             if paste_was_done:
                 return
         if isIterable(targetParentObj):
             for obj2paste in objs2paste:
-                self._onPasteAdd(index.parent(), obj2paste, withDialog=pasteWithDialog)
+                self._onPasteAdd(
+                    index.parent(), obj2paste, withDialog=pasteWithDialog
+                )
         else:
-            self._onPasteReplace(index, objs2paste[0], withDialog=pasteWithDialog)
+            self._onPasteReplace(
+                index, objs2paste[0], withDialog=pasteWithDialog
+            )
 
     def _onPasteAdd(self, index, obj2paste, withDialog, **kwargs):
         if withDialog:
-            self.addItemWithDialog(parent=index, objTypeHint=type(obj2paste), objVal=obj2paste,
-                                   title=f"Paste element", **kwargs)
+            self.addItemWithDialog(
+                parent=index,
+                objTypeHint=type(obj2paste),
+                objVal=obj2paste,
+                title=f"Paste element",
+                **kwargs,
+            )
         else:
             self._setItemData(index, obj2paste, ADD_ITEM_ROLE)
 
     def _onPasteReplace(self, index, obj2paste, withDialog, **kwargs):
         if withDialog:
-            self.replItemWithDialog(index=index, objTypeHint=type(obj2paste), objVal=obj2paste,
-                                    title=f"Paste element", **kwargs)
+            self.replItemWithDialog(
+                index=index,
+                objTypeHint=type(obj2paste),
+                objVal=obj2paste,
+                title=f"Paste element",
+                **kwargs,
+            )
         else:
             self._setItemData(index, obj2paste, Qt.ItemDataRole.EditRole)
 
@@ -790,9 +1008,19 @@ class TreeView(BasicTreeView):
         self.onCopy()
         self.onDelClear()
 
-    def addItemWithDialog(self, parent: QModelIndex, objTypeHint, objVal=None,
-                          title="", rmDefParams=False, editDialogType=dialogs.EditObjDialog, **kwargs):
-        kwargs["title"] = title if title else f"Add item to {parent.data(NAME_ROLE)}"
+    def addItemWithDialog(
+        self,
+        parent: QModelIndex,
+        objTypeHint,
+        objVal=None,
+        title="",
+        rmDefParams=False,
+        editDialogType=dialogs.EditObjDialog,
+        **kwargs,
+    ):
+        kwargs["title"] = (
+            title if title else f"Add item to {parent.data(NAME_ROLE)}"
+        )
         kwargs["parent"] = self
         kwargs["objTypeHint"] = objTypeHint
         kwargs["objVal"] = objVal
@@ -801,7 +1029,9 @@ class TreeView(BasicTreeView):
         try:
             dialog = editDialogType(**kwargs)
         except Exception as e:
-            widgets.messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
+            widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                self, str(e)
+            ).exec()
             return False
 
         result = False
@@ -809,7 +1039,9 @@ class TreeView(BasicTreeView):
             try:
                 obj = self._getObjFromDialog(dialog)
             except Exception as e:
-                widgets.messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
+                widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                    self, str(e)
+                ).exec()
                 continue
             result = self._setItemData(parent, obj, ADD_ITEM_ROLE)
         if dialog.result() == QDialog.DialogCode.Rejected:
@@ -818,8 +1050,17 @@ class TreeView(BasicTreeView):
         self.setFocus()
         return result
 
-    def replItemWithDialog(self, *, index, objTypeHint=None, objVal=None, title="", rmDefParams=False,
-                           editDialogType=dialogs.EditObjDialog, **kwargs):
+    def replItemWithDialog(
+        self,
+        *,
+        index,
+        objTypeHint=None,
+        objVal=None,
+        title="",
+        rmDefParams=False,
+        editDialogType=dialogs.EditObjDialog,
+        **kwargs,
+    ):
         kwargs["title"] = title if title else f"Edit {index.data(NAME_ROLE)}"
         kwargs["parent"] = self
         kwargs["objTypeHint"] = objTypeHint
@@ -828,14 +1069,18 @@ class TreeView(BasicTreeView):
         try:
             dialog = editDialogType(**kwargs)
         except Exception as e:
-            widgets.messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
+            widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                self, str(e)
+            ).exec()
             return False
         result = False
         while not result and dialog.exec() == QDialog.DialogCode.Accepted:
             try:
                 obj = self._getObjFromDialog(dialog)
             except Exception as e:
-                widgets.messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
+                widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                    self, str(e)
+                ).exec()
                 continue
             result = self._setItemData(index, obj, Qt.ItemDataRole.EditRole)
         if dialog.result() == QDialog.DialogCode.Rejected:
@@ -848,13 +1093,19 @@ class TreeView(BasicTreeView):
     def _getObjFromDialog(self, dialog):
         return dialog.getObj2add()
 
-    def _setItemData(self, index: QModelIndex, value: Any, role: int = ...) -> bool:
+    def _setItemData(
+        self, index: QModelIndex, value: Any, role: int = ...
+    ) -> bool:
         if role == Qt.ItemDataRole.EditRole:
-            result = self.model().setData(index, value, Qt.ItemDataRole.EditRole)
+            result = self.model().setData(
+                index, value, Qt.ItemDataRole.EditRole
+            )
         elif role == ADD_ITEM_ROLE:
             if isinstance(value, dict):
                 for key, value in value.items():
-                    result = self.model().setData(index, DictItem(key, value), ADD_ITEM_ROLE)
+                    result = self.model().setData(
+                        index, DictItem(key, value), ADD_ITEM_ROLE
+                    )
             elif isSimpleIterable(value):
                 for i in value:
                     result = self.model().setData(index, i, ADD_ITEM_ROLE)
@@ -867,8 +1118,10 @@ class TreeView(BasicTreeView):
         elif role == REDO_ROLE:
             result = self.model().setData(index, value, REDO_ROLE)
         else:
-            raise ValueError("Role can be only of Item Edit type: "
-                             "EditRole, AddItemRole, CLEAR_ROLE, UNDO_ROLE, REDO_ROLE")
+            raise ValueError(
+                "Role can be only of Item Edit type: "
+                "EditRole, AddItemRole, CLEAR_ROLE, UNDO_ROLE, REDO_ROLE"
+            )
         self.setWindowModified(True)
         self.markPackChanged(index)
         return result
@@ -881,7 +1134,9 @@ class TreeView(BasicTreeView):
     def itemDataChangeFailed(self, topLeft, bottomRight, roles):
         """Check dataChanged signal if data change failed and show Error dialog if failed"""
         if DATA_CHANGE_FAILED_ROLE in roles:
-            widgets.messsageBoxes.ErrorMessageBox.withDetailedText(self, self.model().data(topLeft, DATA_CHANGE_FAILED_ROLE)).exec()
+            widgets.messsageBoxes.ErrorMessageBox.withDetailedText(
+                self, self.model().data(topLeft, DATA_CHANGE_FAILED_ROLE)
+            ).exec()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
@@ -937,7 +1192,10 @@ class TreeView(BasicTreeView):
     def isEditableInsideCell(self, index: QModelIndex):
         if index.flags() & Qt.ItemFlag.ItemIsEditable:
             data = index.data(Qt.ItemDataRole.EditRole)
-            if isoftype(data, self.itemDelegate().editableTypesInTable) and data not in settings.EMPTY_VALUES:
+            if (
+                isoftype(data, self.itemDelegate().editableTypesInTable)
+                and data not in settings.EMPTY_VALUES
+            ):
                 return True
         return False
 
@@ -945,7 +1203,9 @@ class TreeView(BasicTreeView):
         try:
             self.onEditCreate(objVal, index)
         except Exception as e:
-            widgets.messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
+            widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                self, str(e)
+            ).exec()
 
     def toggleFold(self, index: QModelIndex):
         index = index.siblingAtColumn(0)

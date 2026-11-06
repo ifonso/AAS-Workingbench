@@ -32,15 +32,22 @@ import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 from aas_editor.models import DetailedInfoTable
 from aas_editor.delegates import EditDelegate
-from aas_editor.settings.app_settings import ATTR_COLUMN_WIDTH, NAME_ROLE, ATTRIBUTE_COLUMN, \
-    VALUE_COLUMN, LINKED_ITEM_ROLE, IS_LINK_ROLE, PARENT_OBJ_ROLE
+from aas_editor.settings.app_settings import (
+    ATTR_COLUMN_WIDTH,
+    NAME_ROLE,
+    ATTRIBUTE_COLUMN,
+    VALUE_COLUMN,
+    LINKED_ITEM_ROLE,
+    IS_LINK_ROLE,
+    PARENT_OBJ_ROLE,
+)
 from aas_editor.utils.util import getAttrTypeHint
 from aas_editor import dialogs
 from aas_editor.treeviews.base import TreeView
 
 
 class AttrsTreeView(TreeView):
-    def __init__(self, parent=None, treeModel = DetailedInfoTable, **kwargs):
+    def __init__(self, parent=None, treeModel=DetailedInfoTable, **kwargs):
         super(AttrsTreeView, self).__init__(parent, **kwargs)
         self.treeModel = treeModel
 
@@ -52,7 +59,9 @@ class AttrsTreeView(TreeView):
         self.setExpandsOnDoubleClick(False)
         self.setBaseSize(QtCore.QSize(429, 555))
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.setSizeAdjustPolicy(
+            QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents
+        )
         self.setObjectName("attrsTreeView")
         self.setModelWithProxy(self.treeModel(packItem))
         self.setColumnWidth(ATTRIBUTE_COLUMN, ATTR_COLUMN_WIDTH)
@@ -62,19 +71,35 @@ class AttrsTreeView(TreeView):
         super(AttrsTreeView, self).buildHandlers()
         self.setItemDelegate(EditDelegate(self))
         self.clicked.connect(self.openRef)
-        self.wheelClicked.connect(lambda refItem: self.openRef(refItem, setCurrent=False))
+        self.wheelClicked.connect(
+            lambda refItem: self.openRef(refItem, setCurrent=False)
+        )
 
     # noinspection PyArgumentList
     def initMenu(self):
         super(AttrsTreeView, self).initMenu()
         self.openInCurrTabAct.triggered.connect(
-            lambda: self.openRef(self.currentIndex().siblingAtColumn(VALUE_COLUMN), newTab=False))
+            lambda: self.openRef(
+                self.currentIndex().siblingAtColumn(VALUE_COLUMN), newTab=False
+            )
+        )
         self.openInNewTabAct.triggered.connect(
-            lambda: self.openRef(self.currentIndex().siblingAtColumn(VALUE_COLUMN)))
+            lambda: self.openRef(
+                self.currentIndex().siblingAtColumn(VALUE_COLUMN)
+            )
+        )
         self.openInBackgroundAct.triggered.connect(
-            lambda: self.openRef(self.currentIndex().siblingAtColumn(VALUE_COLUMN), setCurrent=False))
+            lambda: self.openRef(
+                self.currentIndex().siblingAtColumn(VALUE_COLUMN),
+                setCurrent=False,
+            )
+        )
         self.openInNewWindowAct.triggered.connect(
-            lambda: self.openRef(self.currentIndex().siblingAtColumn(VALUE_COLUMN), newWindow=True))
+            lambda: self.openRef(
+                self.currentIndex().siblingAtColumn(VALUE_COLUMN),
+                newWindow=True,
+            )
+        )
 
     def updateActions(self, index: QModelIndex):
         super().updateActions(index)
@@ -105,10 +130,18 @@ class AttrsTreeView(TreeView):
         try:
             parent = parent if parent else self.currentIndex()
             attribute = parent.data(NAME_ROLE)
-            attrTypeHint = getAttrTypeHint(type(parent.data(PARENT_OBJ_ROLE)), attribute) #FIXME
-            self.addItemWithDialog(parent=parent, objTypeHint=attrTypeHint, title=f"Add {attribute} element")
+            attrTypeHint = getAttrTypeHint(
+                type(parent.data(PARENT_OBJ_ROLE)), attribute
+            )  # FIXME
+            self.addItemWithDialog(
+                parent=parent,
+                objTypeHint=attrTypeHint,
+                title=f"Add {attribute} element",
+            )
         except Exception as e:
-            widgets.messsageBoxes.ErrorMessageBox.withTraceback(self, str(e)).exec()
+            widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                self, str(e)
+            ).exec()
 
     def onEditCreate(self, objVal, index=QModelIndex()):
         """
@@ -119,7 +152,13 @@ class AttrsTreeView(TreeView):
         if not index.isValid():
             index = self.currentIndex()
         if index.isValid():
-            objVal = objVal if objVal else index.siblingAtColumn(VALUE_COLUMN).data(Qt.ItemDataRole.EditRole)
+            objVal = (
+                objVal
+                if objVal
+                else index.siblingAtColumn(VALUE_COLUMN).data(
+                    Qt.ItemDataRole.EditRole
+                )
+            )
             attribute = index.data(NAME_ROLE)
             parentObj = index.data(PARENT_OBJ_ROLE)
             try:
@@ -128,20 +167,38 @@ class AttrsTreeView(TreeView):
                 if objVal:
                     attrTypeHint = type(objVal)
                 else:
-                    raise KeyError("No typehint found for the given item", attribute)
-            self.replItemWithDialog(index=index, objTypeHint=attrTypeHint, title=f"Edit/Create {attribute}",
-                                    objVal=objVal)
+                    raise KeyError(
+                        "No typehint found for the given item", attribute
+                    )
+            self.replItemWithDialog(
+                index=index,
+                objTypeHint=attrTypeHint,
+                title=f"Edit/Create {attribute}",
+                objVal=objVal,
+            )
 
     def currentIndex(self) -> QtCore.QModelIndex:
-        return super(AttrsTreeView, self).currentIndex().siblingAtColumn(VALUE_COLUMN)
+        return (
+            super(AttrsTreeView, self)
+            .currentIndex()
+            .siblingAtColumn(VALUE_COLUMN)
+        )
 
     def isEditableInsideCell(self, index: QModelIndex):
         index = index.siblingAtColumn(VALUE_COLUMN)
         return super().isEditableInsideCell(index)
 
-    def openRef(self, detailInfoItem: QModelIndex, newTab=True, setCurrent=True, newWindow=False):
+    def openRef(
+        self,
+        detailInfoItem: QModelIndex,
+        newTab=True,
+        setCurrent=True,
+        newWindow=False,
+    ):
         """Open referenced item if clicked on Reference and item is saved locally"""
-        if detailInfoItem.column() == VALUE_COLUMN and detailInfoItem.data(IS_LINK_ROLE):
+        if detailInfoItem.column() == VALUE_COLUMN and detailInfoItem.data(
+            IS_LINK_ROLE
+        ):
             linkedPackItem = detailInfoItem.data(LINKED_ITEM_ROLE)
             if newWindow:
                 self.openInNewWindowClicked.emit(linkedPackItem)
@@ -151,5 +208,3 @@ class AttrsTreeView(TreeView):
                 self.openInBgTabClicked.emit(linkedPackItem)
             else:
                 self.openInCurrTabClicked.emit(linkedPackItem)
-
-

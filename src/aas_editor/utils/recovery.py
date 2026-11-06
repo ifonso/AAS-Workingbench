@@ -22,7 +22,11 @@ def find_recovery_files(recovery_dir: Path) -> dict:
         except Exception:
             # Corrupt/unreadable meta: skip it, but log so a user who lost
             # recovery has a diagnostic instead of silence.
-            logging.warning("Skipping unreadable recovery meta file: %s", meta_file, exc_info=True)
+            logging.warning(
+                "Skipping unreadable recovery meta file: %s",
+                meta_file,
+                exc_info=True,
+            )
             continue
     return result
 
@@ -30,7 +34,9 @@ def find_recovery_files(recovery_dir: Path) -> dict:
 def delete_recovery_file(recovery_path: Path) -> None:
     """Delete a recovery data file and its sidecar .meta.json."""
     recovery_path.unlink(missing_ok=True)
-    (recovery_path.parent / f"{recovery_path.stem}.meta.json").unlink(missing_ok=True)
+    (recovery_path.parent / f"{recovery_path.stem}.meta.json").unlink(
+        missing_ok=True
+    )
 
 
 def cleanup_recovery_dir(recovery_dir: Path, keep: Iterable[Path] = ()) -> None:

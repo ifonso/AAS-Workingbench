@@ -17,13 +17,13 @@ class JSONEditor(QsciScintilla):
         # 1. Set the Lexer (Syntax Highlighting)
         # QScintilla has a built-in JSON lexer
         self.lexer = QsciLexerJSON()
-        #self.lexer.setDefaultFont(QFont("Consolas", 10))
+        # self.lexer.setDefaultFont(QFont("Consolas", 10))
         self.setLexer(self.lexer)
 
         # 2. Line Numbers (Margin 0)
         # We tell it to display numbers in the first margin
         self.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
-        self.setMarginWidth(0, "0000") # Initial width for 4 digits
+        self.setMarginWidth(0, "0000")  # Initial width for 4 digits
         self.setMarginsForegroundColor(QColor("#888888"))
 
         # 3. Indentation & Tabs
@@ -36,13 +36,12 @@ class JSONEditor(QsciScintilla):
 
         # 5. Folding (Optional - allows collapsing objects)
         self.setFolding(QsciScintilla.FoldStyle.PlainFoldStyle)
-        #self.setMarginWidth(1, 0)  # Hide marker margin if you don't want it
+        # self.setMarginWidth(1, 0)  # Hide marker margin if you don't want it
 
         # 6. Caret (Cursor) Color
         self.setCaretForegroundColor(QColor("white"))
 
         self.apply_dark_theme()
-
 
     def apply_dark_theme(self):
         # 1. Set Main Editor Colors
@@ -71,7 +70,9 @@ class JSONEditor(QsciScintilla):
         def set_style(style_id, color_hex, bold=False):
             color = QColor(color_hex)
             lexer.setColor(color, style_id)
-            lexer.setPaper(QColor("#282c34"), style_id)  # Ensure background matches
+            lexer.setPaper(
+                QColor("#282c34"), style_id
+            )  # Ensure background matches
             if bold:
                 font = lexer.font(style_id)
                 font.setBold(True)

@@ -26,14 +26,27 @@ from PyQt6.QtWidgets import QWidget, QHBoxLayout, QToolButton, QTreeView
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.colors import HIGHLIGHT_YELLOW
-from aas_editor.settings.icons import NEXT_ICON, PREV_ICON, FILTER_ICON, REGEX_ICON, CASE_ICON, CLOSE_ICON
+from aas_editor.settings.icons import (
+    NEXT_ICON,
+    PREV_ICON,
+    FILTER_ICON,
+    REGEX_ICON,
+    CASE_ICON,
+    CLOSE_ICON,
+)
 from aas_editor.utils.util import absRow
 from aas_editor.widgets.toolbar import ToolBar
 from aas_editor.widgets.editWidgets import LineEdit
 
 
 class SearchBar(ToolBar):
-    def __init__(self, view: QTreeView, filterColumns: List[int], parent: QWidget, closable=False):
+    def __init__(
+        self,
+        view: QTreeView,
+        filterColumns: List[int],
+        parent: QWidget,
+        closable=False,
+    ):
         super(SearchBar, self).__init__(parent)
         self.view = view
         self.setModel(view.model())
@@ -42,23 +55,47 @@ class SearchBar(ToolBar):
         self.searchLine = LineEdit(self)
         self.searchLine.setClearButtonEnabled(True)
         self.searchLine.setPlaceholderText("Search")
-        self.filterBtn = QToolButton(self, icon=FILTER_ICON, toolTip="Filter",
-                                    statusTip="Leave only matching items", checkable=True)
+        self.filterBtn = QToolButton(
+            self,
+            icon=FILTER_ICON,
+            toolTip="Filter",
+            statusTip="Leave only matching items",
+            checkable=True,
+        )
         self.filterBtn.setAutoRaise(True)
-        self.regexBtn = QToolButton(self, icon=REGEX_ICON, toolTip="Regex",
-                                    statusTip="Use regular expression", checkable=True)
+        self.regexBtn = QToolButton(
+            self,
+            icon=REGEX_ICON,
+            toolTip="Regex",
+            statusTip="Use regular expression",
+            checkable=True,
+        )
         self.regexBtn.setAutoRaise(True)
-        self.caseBtn = QToolButton(self, icon=CASE_ICON, toolTip="Match case",
-                                   statusTip="Match upper/under case", checkable=True)
+        self.caseBtn = QToolButton(
+            self,
+            icon=CASE_ICON,
+            toolTip="Match case",
+            statusTip="Match upper/under case",
+            checkable=True,
+        )
         self.caseBtn.setAutoRaise(True)
-        self.nextBtn = QToolButton(self, icon=NEXT_ICON, toolTip="Next",
-                                   statusTip="Navigate to the next occurrence")
+        self.nextBtn = QToolButton(
+            self,
+            icon=NEXT_ICON,
+            toolTip="Next",
+            statusTip="Navigate to the next occurrence",
+        )
         self.nextBtn.setAutoRaise(True)
-        self.prevBtn = QToolButton(self, icon=PREV_ICON, toolTip="Previous",
-                                   statusTip="Navigate to the previous occurrence")
+        self.prevBtn = QToolButton(
+            self,
+            icon=PREV_ICON,
+            toolTip="Previous",
+            statusTip="Navigate to the previous occurrence",
+        )
         self.prevBtn.setAutoRaise(True)
-        self.closeBtn = QToolButton(self, icon=CLOSE_ICON, toolTip="Close",
-                                    statusTip="Close search bar")
+        self.closeBtn = QToolButton(
+            self, icon=CLOSE_ICON, toolTip="Close", statusTip="Close search bar"
+        )
         if not closable:
             self.closeBtn.hide()
         self.closeBtn.setAutoRaise(True)
@@ -92,15 +129,19 @@ class SearchBar(ToolBar):
 
     def search(self):
         self.view.itemDelegate().clearBgColors()
-        self.foundItems = self.model.search(self.searchLine.text(),
-                                            filterColumns=self.filterColumns,
-                                            regExp=self.regexBtn.isChecked(),
-                                            filter=self.filterBtn.isChecked(),
-                                            matchCase=self.caseBtn.isChecked())
+        self.foundItems = self.model.search(
+            self.searchLine.text(),
+            filterColumns=self.filterColumns,
+            regExp=self.regexBtn.isChecked(),
+            filter=self.filterBtn.isChecked(),
+            matchCase=self.caseBtn.isChecked(),
+        )
         if self.foundItems:
             self.view.setCurrentIndex(QModelIndex(self.foundItems[0]))
             for item in self.foundItems:
-                self.view.itemDelegate().setBgColor(QModelIndex(item), QBrush(HIGHLIGHT_YELLOW))
+                self.view.itemDelegate().setBgColor(
+                    QModelIndex(item), QBrush(HIGHLIGHT_YELLOW)
+                )
         self.model.dataChanged.emit(QModelIndex(), QModelIndex())
 
     def next(self):
@@ -125,11 +166,14 @@ class SearchBar(ToolBar):
                 return
 
     def toggleViewAction(self):
-        return QAction("SearchBar", self,
-                       statusTip="Show/hide search bar",
-                       toggled=self.toggleView,
-                       checkable=True,
-                       checked=self.isVisible())
+        return QAction(
+            "SearchBar",
+            self,
+            statusTip="Show/hide search bar",
+            toggled=self.toggleView,
+            checkable=True,
+            checked=self.isVisible(),
+        )
 
     def toggleView(self, toggled: bool):
         if toggled:

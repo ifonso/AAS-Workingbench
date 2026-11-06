@@ -20,13 +20,19 @@ import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 import aas_editor.widgets.groupBoxes
 from aas_editor.settings.app_settings import *
-from aas_editor.utils.recovery import find_recovery_files, delete_recovery_file, cleanup_recovery_dir
+from aas_editor.utils.recovery import (
+    find_recovery_files,
+    delete_recovery_file,
+    cleanup_recovery_dir,
+)
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
 from aas_editor.settings.icons import EXIT_ICON, SETTINGS_ICON, NEW_PACK_ICON
 from aas_editor.settings import APPLICATION_NAME, REPORT_ERROR_LINK
 from aas_editor.widgets.settingWidgets import SettingsDialog
-from aas_editor.tools.aas_test.aas_test_engines_tool import AasTestEnginesToolDialog
+from aas_editor.tools.aas_test.aas_test_engines_tool import (
+    AasTestEnginesToolDialog,
+)
 from aas_editor.widgets import AddressLine
 from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
@@ -42,11 +48,21 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.setupUi(self)
         self.loadThemes()
 
-        widgets.groupBoxes.ModelReferenceGroupBox.CHOOSE_FRM_VIEW = self.mainTreeView
+        widgets.groupBoxes.ModelReferenceGroupBox.CHOOSE_FRM_VIEW = (
+            self.mainTreeView
+        )
         AddressLine.setModel(self.mainTreeView.model())
-        welcomeTabKwargs = self.mainTabWidget.tabClsKwargs if self.mainTabWidget.tabClsKwargs else {}
-        welcomeTab = self.mainTabWidget.addTab(self.mainTabWidget.tabCls(parent=self.mainTabWidget, **welcomeTabKwargs),
-                                               "Welcome")
+        welcomeTabKwargs = (
+            self.mainTabWidget.tabClsKwargs
+            if self.mainTabWidget.tabClsKwargs
+            else {}
+        )
+        welcomeTab = self.mainTabWidget.addTab(
+            self.mainTabWidget.tabCls(
+                parent=self.mainTabWidget, **welcomeTabKwargs
+            ),
+            "Welcome",
+        )
 
         self.initActions()
         self.initMenu()
@@ -85,51 +101,92 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
 
     # noinspection PyArgumentList
     def initActions(self):
-        self.exitAct = QAction(EXIT_ICON, "E&xit", self,
-                               statusTip="Exit the application",
-                               triggered=lambda: self.close())
+        self.exitAct = QAction(
+            EXIT_ICON,
+            "E&xit",
+            self,
+            statusTip="Exit the application",
+            triggered=lambda: self.close(),
+        )
 
-        self.aboutDialogAct = QAction("About", self,
-                                      statusTip=f"Show information about {APPLICATION_NAME}",
-                                      triggered=lambda: widgets.messsageBoxes.AboutMessageBox(self).exec())
+        self.aboutDialogAct = QAction(
+            "About",
+            self,
+            statusTip=f"Show information about {APPLICATION_NAME}",
+            triggered=lambda: widgets.messsageBoxes.AboutMessageBox(
+                self
+            ).exec(),
+        )
 
-        self.testEnginesToolDialogAct = QAction("AAS Test tool", self,
-                                          statusTip="Open AAS Test Engines tool",
-                                          triggered=lambda: AasTestEnginesToolDialog(self).exec())
+        self.testEnginesToolDialogAct = QAction(
+            "AAS Test tool",
+            self,
+            statusTip="Open AAS Test Engines tool",
+            triggered=lambda: AasTestEnginesToolDialog(self).exec(),
+        )
 
-        self.handoverDocumentationToolDialogAct = QAction("Handover Documentation tool", self,
-                                          statusTip="Open Handover Documentation tool",
-                                          triggered=self.openHandoverDocumentationTool)
+        self.handoverDocumentationToolDialogAct = QAction(
+            "Handover Documentation tool",
+            self,
+            statusTip="Open Handover Documentation tool",
+            triggered=self.openHandoverDocumentationTool,
+        )
 
-        self.importToolAct = QAction("Excel AAS Generator tool", self,
-                                     statusTip="Open Excel AAS Generator tool",
-                                     triggered=lambda: self.showImportApp())
+        self.importToolAct = QAction(
+            "Excel AAS Generator tool",
+            self,
+            statusTip="Open Excel AAS Generator tool",
+            triggered=lambda: self.showImportApp(),
+        )
 
-        self.settingsDialogAct = QAction(SETTINGS_ICON, "Settings", self,
-                                         statusTip=f"Edit application settings",
-                                         triggered=lambda: SettingsDialog(self).exec())
+        self.settingsDialogAct = QAction(
+            SETTINGS_ICON,
+            "Settings",
+            self,
+            statusTip=f"Edit application settings",
+            triggered=lambda: SettingsDialog(self).exec(),
+        )
 
-        self.reportBugAct = QAction("Report Bug", self,
-                                    statusTip="Report an error found",
-                                    triggered=lambda: webbrowser.open(REPORT_ERROR_LINK))
+        self.reportBugAct = QAction(
+            "Report Bug",
+            self,
+            statusTip="Report an error found",
+            triggered=lambda: webbrowser.open(REPORT_ERROR_LINK),
+        )
 
         # Theme actions
         self.themeActs = []
         for theme in self.themes:
-            self.themeActs.append(QAction(theme, self,
-                                          statusTip=f"Choose {theme} theme",
-                                          triggered=lambda: self.toggleThemeSlot()))
+            self.themeActs.append(
+                QAction(
+                    theme,
+                    self,
+                    statusTip=f"Choose {theme} theme",
+                    triggered=lambda: self.toggleThemeSlot(),
+                )
+            )
 
-        self.setHOrientationAct = QAction("Horizontal", self,
-                                          statusTip=f"Set horizontal orientation",
-                                          triggered=lambda: self.setOrientation(QtCore.Qt.Orientation.Horizontal))
-        self.setVOrientationAct = QAction("Vertical", self,
-                                          statusTip=f"Set vertical orientation",
-                                          triggered=lambda: self.setOrientation(QtCore.Qt.Orientation.Vertical))
+        self.setHOrientationAct = QAction(
+            "Horizontal",
+            self,
+            statusTip=f"Set horizontal orientation",
+            triggered=lambda: self.setOrientation(
+                QtCore.Qt.Orientation.Horizontal
+            ),
+        )
+        self.setVOrientationAct = QAction(
+            "Vertical",
+            self,
+            statusTip=f"Set vertical orientation",
+            triggered=lambda: self.setOrientation(
+                QtCore.Qt.Orientation.Vertical
+            ),
+        )
 
     def showImportApp(self):
         self.writeSettings()
         from aas_editor.tools.import_feature.import_app import ImportApp
+
         self.hide()
         importApp = ImportApp()
         importApp.closed.connect(self.show)
@@ -248,20 +305,34 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
 
     def buildHandlers(self):
         self.mainTabWidget.currItemChanged.connect(self.onCurrTabItemChanged)
-        self.mainTreeView.selectionModel().currentChanged.connect(self.onSelectedPackItemChanged)
+        self.mainTreeView.selectionModel().currentChanged.connect(
+            self.onSelectedPackItemChanged
+        )
         self.mainTreeView.doubleClicked.connect(self.onDoubleClicked)
 
-        self.mainTreeView.wheelClicked.connect(self.mainTabWidget.openItemInBgTab)
-        self.mainTreeView.openInBgTabClicked.connect(self.mainTabWidget.openItemInBgTab)
-        self.mainTreeView.openInNewTabClicked.connect(self.mainTabWidget.openItemInNewTab)
-        self.mainTreeView.openInCurrTabClicked.connect(self.mainTabWidget.openItem)
-        self.mainTreeView.openInNewWindowClicked.connect(self.mainTabWidget.openItemInNewWindow)
+        self.mainTreeView.wheelClicked.connect(
+            self.mainTabWidget.openItemInBgTab
+        )
+        self.mainTreeView.openInBgTabClicked.connect(
+            self.mainTabWidget.openItemInBgTab
+        )
+        self.mainTreeView.openInNewTabClicked.connect(
+            self.mainTabWidget.openItemInNewTab
+        )
+        self.mainTreeView.openInCurrTabClicked.connect(
+            self.mainTabWidget.openItem
+        )
+        self.mainTreeView.openInNewWindowClicked.connect(
+            self.mainTabWidget.openItemInNewWindow
+        )
 
         self.packTreeModel.rowsRemoved.connect(self.mainTabWidget.removePackTab)
 
     def onCurrTabItemChanged(self, item: QModelIndex):
         if self.mainTreeView.autoScrollFromSrcAct.isChecked():
-            if not item.siblingAtColumn(0) == self.mainTreeView.currentIndex().siblingAtColumn(0):
+            if not item.siblingAtColumn(
+                0
+            ) == self.mainTreeView.currentIndex().siblingAtColumn(0):
                 self.mainTreeView.setCurrentIndex(item)
 
     def onSelectedPackItemChanged(self, item: QModelIndex):
@@ -272,7 +343,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         if not self.mainTreeView.autoScrollToSrcAct.isChecked():
             self.mainTabWidget.openItemInNewTab(item)
 
-    def removeTabsOfClosedRows(self, parent: QModelIndex, first: int, last: int):
+    def removeTabsOfClosedRows(
+        self, parent: QModelIndex, first: int, last: int
+    ):
         for row in range(first, last):
             packItem = self.packTreeModel.index(row, 0, parent)
             self.mainTabWidget.removePackTab(packItem)
@@ -294,10 +367,15 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         if not self.packTreeModel.openedFiles():
             a0.accept()
         elif self.isWindowModified():
-            reply = QMessageBox.question(self, 'Window Close',
-                                         'Do you want to save files before closing the window?',
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
-                                         QMessageBox.StandardButton.No)
+            reply = QMessageBox.question(
+                self,
+                "Window Close",
+                "Do you want to save files before closing the window?",
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No
+                | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.No,
+            )
 
             if reply == QMessageBox.StandardButton.Yes:
                 self.mainTreeView.saveAll()
@@ -335,11 +413,13 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             file_path = Path(file).resolve()
             if file_path in recovery_map:
                 reply = QMessageBox.question(
-                    self, "Restore unsaved changes",
+                    self,
+                    "Restore unsaved changes",
                     f"A recovery file was found for:\n{file_path.name}\n\n"
                     "The app may have crashed with unsaved changes.\n"
                     "Do you want to restore the last auto-saved version?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes
+                    | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.Yes,
                 )
                 if reply == QMessageBox.StandardButton.Yes:
@@ -350,12 +430,16 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                     try:
                         pack = Package.restore_from_recovery(rec, file_path)
                     except Exception:
-                        logging.exception("Failed to restore recovery file %s", rec)
+                        logging.exception(
+                            "Failed to restore recovery file %s", rec
+                        )
                         QMessageBox.warning(
-                            self, "Restore failed",
+                            self,
+                            "Restore failed",
                             f"The recovery file for {file_path.name} could not be opened.\n\n"
                             f"It was kept at:\n{rec}\n\n"
-                            "Opening the last saved version instead.")
+                            "Opening the last saved version instead.",
+                        )
                         self.openAASFile(file)
                     else:
                         self.mainTreeView.add_pack_to_tree(pack)
@@ -396,7 +480,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                     # timer, but log it: a silent failure means the user believes they
                     # are protected while no recovery is being written (disk full, etc.).
                     writeFailed = True
-                    logging.exception("Failed to write recovery file for %s", pkg.file)
+                    logging.exception(
+                        "Failed to write recovery file for %s", pkg.file
+                    )
         self._reportRecoveryWriteStatus(writeFailed)
 
     def _reportRecoveryWriteStatus(self, writeFailed: bool):
@@ -409,7 +495,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         if writeFailed and not self._recoveryWriteFailed:
             self._recoveryStatusLabel.setText(
                 "⚠ Auto-recovery could not be saved — unsaved changes are not backed up. "
-                "See log for details.")
+                "See log for details."
+            )
             self._recoveryStatusLabel.show()
         elif not writeFailed and self._recoveryWriteFailed:
             self._recoveryStatusLabel.hide()
@@ -431,14 +518,20 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         if packTreeViewHeaderState:
             packTreeViewHeader.restoreState(packTreeViewHeaderState)
         else:
-            packTreeViewHeader.showSectionWithNames(DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW, only=True)
-        with open(AppSettings.PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE) as json_file:
+            packTreeViewHeader.showSectionWithNames(
+                DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW, only=True
+            )
+        with open(
+            AppSettings.PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE
+        ) as json_file:
             customLists = json.load(json_file)
             packTreeViewHeader.setCustomLists(customLists)
         packTreeViewHeader.initMenu()
         tabTreeViewHeaderState = AppSettings.TABTREEVIEW_HEADER_STATE.value()
         if tabTreeViewHeaderState:
-            self.mainTabWidget.currentWidget().attrsTreeView.header().restoreState(tabTreeViewHeaderState)
+            self.mainTabWidget.currentWidget().attrsTreeView.header().restoreState(
+                tabTreeViewHeaderState
+            )
 
     def applyLastSessionTreeFontSizes(self):
         fontSizeFilesView = AppSettings.FONTSIZE_FILES_VIEW.value()
@@ -469,17 +562,30 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         AppSettings.SIZE.setValue(self.size())
         AppSettings.LEFT_ZONE_SIZE.setValue(self.mainLayoutWidget.size())
         AppSettings.RIGHT_ZONE_SIZE.setValue(self.subLayoutWidget.size())
-        AppSettings.AAS_FILES_TO_OPEN_ON_START.setValue(self.packTreeModel.openedFiles())
-        AppSettings.FONTSIZE_FILES_VIEW.setValue(PacksTable.currFont.pointSize())
-        AppSettings.FONTSIZE_DETAILED_VIEW.setValue(DetailedInfoTable.currFont.pointSize())
-        AppSettings.PACKTREEVIEW_HEADER_STATE.setValue(self.mainTreeView.header().saveState())
+        AppSettings.AAS_FILES_TO_OPEN_ON_START.setValue(
+            self.packTreeModel.openedFiles()
+        )
+        AppSettings.FONTSIZE_FILES_VIEW.setValue(
+            PacksTable.currFont.pointSize()
+        )
+        AppSettings.FONTSIZE_DETAILED_VIEW.setValue(
+            DetailedInfoTable.currFont.pointSize()
+        )
+        AppSettings.PACKTREEVIEW_HEADER_STATE.setValue(
+            self.mainTreeView.header().saveState()
+        )
         AppSettings.TABTREEVIEW_HEADER_STATE.setValue(
-            self.mainTabWidget.currentWidget().attrsTreeView.header().saveState())
+            self.mainTabWidget.currentWidget()
+            .attrsTreeView.header()
+            .saveState()
+        )
         # AppSettings.DEFAULT_NEW_FILETYPE_FILTER.setValue(self.packTreeView.defaultNewFileType)
 
     def openHandoverDocumentationTool(self):
-        from aas_editor.tools.handover_doc_llm.handover_documentation_tool import HandoverDocumentationToolDialog
+        from aas_editor.tools.handover_doc_llm.handover_documentation_tool import (
+            HandoverDocumentationToolDialog,
+        )
+
         dialog = HandoverDocumentationToolDialog(self)
         dialog.handoverExtracted.connect(self.mainTreeView.add_handover_to_file)
         dialog.exec()
-

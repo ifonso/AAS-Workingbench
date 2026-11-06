@@ -21,14 +21,21 @@ class AasTestEnginesToolDialog(QDialog):
         self.setWindowTitle("AAS-Test-Engines Tool")
         self.setMinimumSize(500, 300)
 
-        description = 'Official test tooling for the Asset Administration Shell: https://github.com/admin-shell-io/aas-test-engines'
-        self.html_renderer = DropFileQWebEngineView(self, emptyViewMsg="Drop AAS file to test here", description=description)
+        description = "Official test tooling for the Asset Administration Shell: https://github.com/admin-shell-io/aas-test-engines"
+        self.html_renderer = DropFileQWebEngineView(
+            self,
+            emptyViewMsg="Drop AAS file to test here",
+            description=description,
+        )
         self.html_renderer.setMinimumSize(300, 300)
         self.html_renderer.fileDropped.connect(self.checkFile)
 
-        self.chooseButton = QPushButton(f"Choose file", self,
-                                        toolTip="Choose file",
-                                        clicked=self.chooseAndCheckFile)
+        self.chooseButton = QPushButton(
+            f"Choose file",
+            self,
+            toolTip="Choose file",
+            clicked=self.chooseAndCheckFile,
+        )
         self.layout().addWidget(self.html_renderer)
         self.layout().addWidget(self.chooseButton)
 
@@ -40,7 +47,9 @@ class AasTestEnginesToolDialog(QDialog):
         self.setLayout(layout)
 
     def chooseAndCheckFile(self):
-        file, _ = QFileDialog.getOpenFileName(self, "Open AAS file", filter=FILTER_AAS_FILES)
+        file, _ = QFileDialog.getOpenFileName(
+            self, "Open AAS file", filter=FILTER_AAS_FILES
+        )
         if file:
             self.checkFile(file)
         else:

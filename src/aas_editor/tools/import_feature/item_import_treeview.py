@@ -73,4 +73,3 @@ class ImportTreeViewItem(PackTreeViewItem):
     def _populateIterable(obj, **kwargs):
         for sub_item_obj in obj:
             ImportTreeViewItem(sub_item_obj, **kwargs)
-

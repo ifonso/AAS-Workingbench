@@ -14,17 +14,43 @@ import traceback
 from collections import namedtuple, deque
 from typing import Any, Iterable, Union, AbstractSet, List
 
-from PyQt6.QtCore import QAbstractItemModel, QVariant, QModelIndex, Qt, QItemSelection, QSize, \
-    QPersistentModelIndex
+from PyQt6.QtCore import (
+    QAbstractItemModel,
+    QVariant,
+    QModelIndex,
+    Qt,
+    QItemSelection,
+    QSize,
+    QPersistentModelIndex,
+)
 from PyQt6.QtGui import QFont
 
 from aas_editor.models import StandardItem
 from aas_editor.package import Package
-from aas_editor.settings.app_settings import NAME_ROLE, OBJECT_ROLE, ATTRIBUTE_COLUMN, \
-    VALUE_COLUMN, PACKAGE_ROLE, PACK_ITEM_ROLE, DEFAULT_FONT, ADD_ITEM_ROLE, CLEAR_ROW_ROLE, \
-    DATA_CHANGE_FAILED_ROLE, IS_LINK_ROLE, TYPE_COLUMN, \
-    TYPE_CHECK_ROLE, TYPE_ROLE, UNDO_ROLE, REDO_ROLE, MAX_UNDOS, UPDATE_ROLE, TYPE_HINT_COLUMN, COLUMN_NAME_ROLE, \
-    LINKED_ITEM_ROLE, COPY_ROLE
+from aas_editor.settings.app_settings import (
+    NAME_ROLE,
+    OBJECT_ROLE,
+    ATTRIBUTE_COLUMN,
+    VALUE_COLUMN,
+    PACKAGE_ROLE,
+    PACK_ITEM_ROLE,
+    DEFAULT_FONT,
+    ADD_ITEM_ROLE,
+    CLEAR_ROW_ROLE,
+    DATA_CHANGE_FAILED_ROLE,
+    IS_LINK_ROLE,
+    TYPE_COLUMN,
+    TYPE_CHECK_ROLE,
+    TYPE_ROLE,
+    UNDO_ROLE,
+    REDO_ROLE,
+    MAX_UNDOS,
+    UPDATE_ROLE,
+    TYPE_HINT_COLUMN,
+    COLUMN_NAME_ROLE,
+    LINKED_ITEM_ROLE,
+    COPY_ROLE,
+)
 from aas_editor.settings import NOT_GIVEN
 from aas_editor.settings.colors import LINK_BLUE, CHANGED_BLUE, NEW_GREEN
 from aas_editor.utils.util import actualizeAASParents
@@ -48,7 +74,9 @@ class StandardTable(QAbstractItemModel):
         self.redo: List[SetDataItem] = []
         self.changedItems: List[QModelIndex] = []
 
-    def index(self, row: int, column: int = 0, parent: QModelIndex = QModelIndex()) -> QModelIndex:
+    def index(
+        self, row: int, column: int = 0, parent: QModelIndex = QModelIndex()
+    ) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
         parentObj = self.objByIndex(parent)
@@ -78,20 +106,29 @@ class StandardTable(QAbstractItemModel):
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._columns)
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...) -> Any:
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: int = ...
+    ) -> Any:
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         if orientation == Qt.Orientation.Horizontal:
             return self._columns[section]
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:
-        if not index.isValid() or index.data(Qt.ItemDataRole.DisplayRole) is None:
+        if (
+            not index.isValid()
+            or index.data(Qt.ItemDataRole.DisplayRole) is None
+        ):
             return Qt.ItemFlag.NoItemFlags
 
         if index.column() in (TYPE_COLUMN, TYPE_HINT_COLUMN):
             return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
-        return Qt.ItemFlag.ItemIsEditable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+        return (
+            Qt.ItemFlag.ItemIsEditable
+            | Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsSelectable
+        )
 
     def hasChildren(self, parent: QModelIndex = ...) -> bool:
         return True if self.rowCount(parent) else False
@@ -109,10 +146,17 @@ class StandardTable(QAbstractItemModel):
                 child = self.objByIndex(childIndex)
                 if child.children():
                     yield from recurse(childIndex)
+
         yield from recurse(parent)
 
-    def match(self, start: QModelIndex, role: int, value: Any, hits: int = ...,
-              flags: Qt.MatchFlag = ...) -> List[QModelIndex]:
+    def match(
+        self,
+        start: QModelIndex,
+        role: int,
+        value: Any,
+        hits: int = ...,
+        flags: Qt.MatchFlag = ...,
+    ) -> List[QModelIndex]:
         kwargs = {}
         if hits is not ...:
             kwargs["hits"] = hits
@@ -124,7 +168,9 @@ class StandardTable(QAbstractItemModel):
             for item in self.iterItems(start):
                 logging.info("match for: %s", item.data(NAME_ROLE))
                 try:
-                    if (item.data(OBJECT_ROLE) is value) or (item.data(OBJECT_ROLE) == value):
+                    if (item.data(OBJECT_ROLE) is value) or (
+                        item.data(OBJECT_ROLE) == value
+                    ):
                         res.append(item)
                 except AttributeError:
                     continue
@@ -156,16 +202,23 @@ class StandardTable(QAbstractItemModel):
                     break
             return res
         else:
-            return super(StandardTable, self).match(start, role, value, **kwargs)
+            return super(StandardTable, self).match(
+                start, role, value, **kwargs
+            )
 
-    def addItem(self, obj: Union[Package, 'SubmodelElement', Iterable],
-                parent: QModelIndex = QModelIndex()):
+    def addItem(
+        self,
+        obj: Union[Package, "SubmodelElement", Iterable],
+        parent: QModelIndex = QModelIndex(),
+    ):
         parent = parent.siblingAtColumn(0)
         self._addItemObjToParentObj(obj, parent)
         itemInitKwargs = self._getKwargsForItemInit(obj, parent)
         return self._addItem(parent, itemInitKwargs)
 
-    def _getKwargsForItemInit(self, obj: Union[Package, 'SubmodelElement', Iterable], parent):
+    def _getKwargsForItemInit(
+        self, obj: Union[Package, "SubmodelElement", Iterable], parent
+    ):
         parentItem = self.objByIndex(parent)
         kwargs = {
             "obj": obj,
@@ -173,7 +226,11 @@ class StandardTable(QAbstractItemModel):
         }
         return kwargs
 
-    def _addItemObjToParentObj(self, obj: Union[Package, 'SubmodelElement', Iterable], parent: QModelIndex):
+    def _addItemObjToParentObj(
+        self,
+        obj: Union[Package, "SubmodelElement", Iterable],
+        parent: QModelIndex,
+    ):
         parentObj = parent.data(OBJECT_ROLE)
         if isinstance(parentObj, AbstractSet):
             parentObj.add(obj)
@@ -183,18 +240,29 @@ class StandardTable(QAbstractItemModel):
             parentObj[obj.key] = obj.value
         else:
             raise AttributeError(
-                f"Object couldn't be added: parent obj type is not appendable: {type(parentObj)}")
+                f"Object couldn't be added: parent obj type is not appendable: {type(parentObj)}"
+            )
 
     def _addItem(self, parent: QModelIndex, itemInitKwargs):
-        self.beginInsertRows(parent, self.rowCount(parent), self.rowCount(parent))
+        self.beginInsertRows(
+            parent, self.rowCount(parent), self.rowCount(parent)
+        )
         item = self.itemTyp(**itemInitKwargs)
         self.endInsertRows()
         itemIndex = self.index(item.row(), 0, parent)
-        self.undo.append(SetDataItem(index=QPersistentModelIndex(itemIndex), value=NOT_GIVEN, role=CLEAR_ROW_ROLE))
+        self.undo.append(
+            SetDataItem(
+                index=QPersistentModelIndex(itemIndex),
+                value=NOT_GIVEN,
+                role=CLEAR_ROW_ROLE,
+            )
+        )
         self.redo.clear()
         return itemIndex
 
-    def insertRows(self, row: int, count: int, parent: QModelIndex = ...) -> bool:
+    def insertRows(
+        self, row: int, count: int, parent: QModelIndex = ...
+    ) -> bool:
         self.beginInsertRows(parent, row, row + count - 1)
         self.endInsertRows()
         return True
@@ -204,22 +272,33 @@ class StandardTable(QAbstractItemModel):
         if not index.isValid():
             return QVariant()
         if self.hasChildren(index):
-            self.beginRemoveRows(index, 0, max(self.rowCount(index)-1, 0))
+            self.beginRemoveRows(index, 0, max(self.rowCount(index) - 1, 0))
             self.removeRows(0, self.rowCount(index), index)
             self.endRemoveRows()
-            self.rowsRemoved.emit(index, 0, max(self.rowCount(index)-1, 0))
-            self.dataChanged.emit(index.siblingAtColumn(0),
-                                  index.model().index(self.rowCount(index) - 1, self.columnCount(index) - 1, index))
+            self.rowsRemoved.emit(index, 0, max(self.rowCount(index) - 1, 0))
+            self.dataChanged.emit(
+                index.siblingAtColumn(0),
+                index.model().index(
+                    self.rowCount(index) - 1, self.columnCount(index) - 1, index
+                ),
+            )
 
         self.objByIndex(index).populate()
         if self.hasChildren(index):
-            self.beginInsertRows(index, 0, max(self.rowCount(index)-1, 0))
+            self.beginInsertRows(index, 0, max(self.rowCount(index) - 1, 0))
             self.endInsertRows()
-            self.rowsInserted.emit(index, 0, max(self.rowCount(index)-1, 0))
-            self.dataChanged.emit(index.siblingAtColumn(0),
-                                  index.model().index(self.rowCount(index) - 1, self.columnCount(index) - 1, index))
+            self.rowsInserted.emit(index, 0, max(self.rowCount(index) - 1, 0))
+            self.dataChanged.emit(
+                index.siblingAtColumn(0),
+                index.model().index(
+                    self.rowCount(index) - 1, self.columnCount(index) - 1, index
+                ),
+            )
         else:
-            self.dataChanged.emit(index.siblingAtColumn(0), index.siblingAtColumn(self.columnCount()))
+            self.dataChanged.emit(
+                index.siblingAtColumn(0),
+                index.siblingAtColumn(self.columnCount()),
+            )
         return True
 
     def data(self, index: QModelIndex, role: int = ...) -> Any:
@@ -229,7 +308,7 @@ class StandardTable(QAbstractItemModel):
             return self._getFont(index)
         if role == Qt.ItemDataRole.SizeHintRole:
             fontSize = self.currFont.pointSize()
-            return QSize(-1, int((fontSize+2)*1.9))
+            return QSize(-1, int((fontSize + 2) * 1.9))
         if role == Qt.ItemDataRole.TextAlignmentRole:
             return Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         if role == DATA_CHANGE_FAILED_ROLE:
@@ -247,15 +326,19 @@ class StandardTable(QAbstractItemModel):
             try:
                 if index.column() in (ATTRIBUTE_COLUMN, VALUE_COLUMN):
                     objToCopy = index.data(OBJECT_ROLE)
-                    objToCopy = copy.deepcopy(objToCopy) #FIXME
-                    actualizeAASParents(objToCopy)  # TODO check if there is a better solution to del aas parents
+                    objToCopy = copy.deepcopy(objToCopy)  # FIXME
+                    actualizeAASParents(
+                        objToCopy
+                    )  # TODO check if there is a better solution to del aas parents
                     return objToCopy
                 elif index.column() in (TYPE_COLUMN, TYPE_HINT_COLUMN):
                     return index.data(Qt.ItemDataRole.DisplayRole)
                 else:
                     objToCopy = index.data(Qt.ItemDataRole.EditRole)
                     objToCopy = copy.deepcopy(objToCopy)
-                    actualizeAASParents(objToCopy)  # TODO check if there is a better solution to del aas parents
+                    actualizeAASParents(
+                        objToCopy
+                    )  # TODO check if there is a better solution to del aas parents
                     return objToCopy
             except Exception as e:
                 tb = traceback.format_exc()
@@ -297,7 +380,11 @@ class StandardTable(QAbstractItemModel):
             reference = self.data(index, OBJECT_ROLE)
             objStore = self.data(index, PACKAGE_ROLE).objStore
             obj = reference.resolve(objStore)
-            linkedPackItem, = self.data(index, PACK_ITEM_ROLE).model().match(QModelIndex(), OBJECT_ROLE, obj, hits=1)
+            (linkedPackItem,) = (
+                self.data(index, PACK_ITEM_ROLE)
+                .model()
+                .match(QModelIndex(), OBJECT_ROLE, obj, hits=1)
+            )
             return linkedPackItem
         except AttributeError:
             return QModelIndex()
@@ -305,13 +392,20 @@ class StandardTable(QAbstractItemModel):
     def setData(self, index: QModelIndex, value: Any, role: int = ...) -> bool:
         if isinstance(index, QPersistentModelIndex):
             index = QModelIndex(index)
-        if not index.isValid() and role not in (Qt.ItemDataRole.FontRole, ADD_ITEM_ROLE, UNDO_ROLE, REDO_ROLE):
+        if not index.isValid() and role not in (
+            Qt.ItemDataRole.FontRole,
+            ADD_ITEM_ROLE,
+            UNDO_ROLE,
+            REDO_ROLE,
+        ):
             return QVariant()
         elif role == Qt.ItemDataRole.FontRole:
             if isinstance(value, QFont):
                 font = QFont(value)
                 self.currFont.setPointSize(font.pointSize())
-                self.dataChanged.emit(self.index(0), self.index(self.rowCount()))
+                self.dataChanged.emit(
+                    self.index(0), self.index(self.rowCount())
+                )
                 return True
         elif role == ADD_ITEM_ROLE:
             try:
@@ -337,7 +431,13 @@ class StandardTable(QAbstractItemModel):
                 newValue, oldValue = self.editItem(index, value)
                 self.setChanged(index)
                 self.update(index)
-                self.undo.append(SetDataItem(index=QPersistentModelIndex(index), value=oldValue, role=role))
+                self.undo.append(
+                    SetDataItem(
+                        index=QPersistentModelIndex(index),
+                        value=oldValue,
+                        role=role,
+                    )
+                )
                 self.redo.clear()
                 return True
             except Exception as e:
@@ -378,8 +478,13 @@ class StandardTable(QAbstractItemModel):
         item = self.objByIndex(index)
 
         parentObj = item.parentObj
-        if ClassesInfo.changedParentObject(type(parentObj)) and index.parent().isValid():
-            parentObj = getattr(parentObj, ClassesInfo.changedParentObject(type(parentObj)))
+        if (
+            ClassesInfo.changedParentObject(type(parentObj))
+            and index.parent().isValid()
+        ):
+            parentObj = getattr(
+                parentObj, ClassesInfo.changedParentObject(type(parentObj))
+            )
 
         if isinstance(parentObj, list):
             oldValue = item.obj
@@ -404,8 +509,15 @@ class StandardTable(QAbstractItemModel):
             except TypeError as e:
                 # FIXME: Warning:pyi40aas specific code part for setting Property.value
                 try:
-                    valueTypeItem = self.match(QModelIndex(), Qt.ItemDataRole.DisplayRole, "value_type", 1)[0]
-                    self.setData(valueTypeItem, type(newValue), Qt.ItemDataRole.EditRole)
+                    valueTypeItem = self.match(
+                        QModelIndex(),
+                        Qt.ItemDataRole.DisplayRole,
+                        "value_type",
+                        1,
+                    )[0]
+                    self.setData(
+                        valueTypeItem, type(newValue), Qt.ItemDataRole.EditRole
+                    )
                 except IndexError:
                     raise e
                 setattr(parentObj, item.objName, newValue)
@@ -416,10 +528,14 @@ class StandardTable(QAbstractItemModel):
         """Set the item and all parents as changed"""
         self._setChanged(True, topLeft, bottomRight)
 
-    def setUnchanged(self, topLeft: QModelIndex, bottomRight: QModelIndex = None):
+    def setUnchanged(
+        self, topLeft: QModelIndex, bottomRight: QModelIndex = None
+    ):
         self._setChanged(False, topLeft, bottomRight)
 
-    def _setChanged(self, changed: bool, topLeft: QModelIndex, bottomRight: QModelIndex):
+    def _setChanged(
+        self, changed: bool, topLeft: QModelIndex, bottomRight: QModelIndex
+    ):
         bottomRight = topLeft if bottomRight is None else bottomRight
         if topLeft.isValid() and bottomRight.isValid():
             selection = QItemSelection(topLeft, bottomRight)
@@ -437,10 +553,12 @@ class StandardTable(QAbstractItemModel):
                     if packItem and packItem.isValid():
                         packItem.model().dataChanged.emit(packItem, packItem)
 
-    def removeRows(self, row: int, count: int, parent: QModelIndex = ...) -> bool:
+    def removeRows(
+        self, row: int, count: int, parent: QModelIndex = ...
+    ) -> bool:
         parentItem = self.objByIndex(parent)
 
-        self.beginRemoveRows(parent, row, row+count-1)
+        self.beginRemoveRows(parent, row, row + count - 1)
         for n in range(count):
             child = parentItem.children()[row]
             child.setParent(None)
@@ -448,8 +566,13 @@ class StandardTable(QAbstractItemModel):
         self.endRemoveRows()
         return True
 
-    def clearRows(self, row: int, count: int,
-                  parent: QModelIndex = ..., defaultVal=NOT_GIVEN) -> bool:
+    def clearRows(
+        self,
+        row: int,
+        count: int,
+        parent: QModelIndex = ...,
+        defaultVal=NOT_GIVEN,
+    ) -> bool:
         """Delete rows if they are children of Iterable else set to Default"""
         parentItem = self.objByIndex(parent)
         parentObj = parentItem.data(OBJECT_ROLE)
@@ -463,7 +586,7 @@ class StandardTable(QAbstractItemModel):
             except AttributeError:
                 pass
 
-        for currRow in range(row+count-1, row-1, -1):
+        for currRow in range(row + count - 1, row - 1, -1):
             child = parentItem.children()[currRow]
             if isinstance(parentObj, (list, dict, AbstractSet)):
                 if isinstance(parentObj, list):
@@ -478,9 +601,16 @@ class StandardTable(QAbstractItemModel):
                     raise TypeError(
                         f"Unknown parent object type: "
                         f"object could not be deleted or set to default: "
-                        f"{type(parentObj)}")
+                        f"{type(parentObj)}"
+                    )
                 self.removeRow(currRow, parent)
-                self.undo.append(SetDataItem(index=QPersistentModelIndex(parent), value=oldValue, role=ADD_ITEM_ROLE))
+                self.undo.append(
+                    SetDataItem(
+                        index=QPersistentModelIndex(parent),
+                        value=oldValue,
+                        role=ADD_ITEM_ROLE,
+                    )
+                )
                 self.redo.clear()
             else:
                 if not defaultVal == NOT_GIVEN:
@@ -491,16 +621,23 @@ class StandardTable(QAbstractItemModel):
                     oldValue = child.obj
                     self.removeRow(currRow, parent)
                     self.undo.append(
-                        SetDataItem(index=QPersistentModelIndex(parent), value=oldValue,
-                                    role=ADD_ITEM_ROLE))
+                        SetDataItem(
+                            index=QPersistentModelIndex(parent),
+                            value=oldValue,
+                            role=ADD_ITEM_ROLE,
+                        )
+                    )
                     self.redo.clear()
                 else:
                     raise TypeError(
                         f"Unknown parent object type: "
                         f"object could not be deleted or set to default: "
-                        f"{type(parentObj)}")
+                        f"{type(parentObj)}"
+                    )
         return True
 
-    def clearRow(self, row: int, parent: QModelIndex = ..., defaultVal=NOT_GIVEN) -> bool:
+    def clearRow(
+        self, row: int, parent: QModelIndex = ..., defaultVal=NOT_GIVEN
+    ) -> bool:
         """Delete row if it is child of Iterable else set to Default"""
         return self.clearRows(row, 1, parent, defaultVal)

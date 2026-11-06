@@ -20,16 +20,61 @@ from typing import List
 
 from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtCore import pyqtSignal, QModelIndex, QPersistentModelIndex, QPoint, QMimeData, QUrl, \
-    QStandardPaths, Qt, QObject, QAbstractProxyModel, qDebug, qCritical, QAbstractItemModel
-from PyQt6.QtGui import QPixmap, QRegion, QDrag, QCursor, QMouseEvent, \
-    QDragEnterEvent, QDragLeaveEvent, QDropEvent, QCloseEvent, QAction, QShortcut
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QHBoxLayout, QFrame, \
-    QTabBar, QMenu, QSplitter, QPushButton, QMessageBox, QToolButton, QFileDialog, QCompleter, QStyledItemDelegate
+from PyQt6.QtCore import (
+    pyqtSignal,
+    QModelIndex,
+    QPersistentModelIndex,
+    QPoint,
+    QMimeData,
+    QUrl,
+    QStandardPaths,
+    Qt,
+    QObject,
+    QAbstractProxyModel,
+    qDebug,
+    qCritical,
+    QAbstractItemModel,
+)
+from PyQt6.QtGui import (
+    QPixmap,
+    QRegion,
+    QDrag,
+    QCursor,
+    QMouseEvent,
+    QDragEnterEvent,
+    QDragLeaveEvent,
+    QDropEvent,
+    QCloseEvent,
+    QAction,
+    QShortcut,
+)
+from PyQt6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QTabWidget,
+    QHBoxLayout,
+    QFrame,
+    QTabBar,
+    QMenu,
+    QSplitter,
+    QPushButton,
+    QMessageBox,
+    QToolButton,
+    QFileDialog,
+    QCompleter,
+    QStyledItemDelegate,
+)
 
 from aas_editor.settings.app_settings import *
-from aas_editor.settings.icons import FORWARD_ICON, BACK_ICON, SPLIT_VERT_ICON, SPLIT_HORIZ_ICON, ZOOM_IN_ICON, \
-    ZOOM_OUT_ICON, SETTINGS_ICON
+from aas_editor.settings.icons import (
+    FORWARD_ICON,
+    BACK_ICON,
+    SPLIT_VERT_ICON,
+    SPLIT_HORIZ_ICON,
+    ZOOM_IN_ICON,
+    ZOOM_OUT_ICON,
+    SETTINGS_ICON,
+)
 from aas_editor.settings.shortcuts import SC_BACK, SC_FORWARD, SC_SEARCH
 from aas_editor.utils.util_type import getTypeName
 from aas_editor.widgets import SearchBar, ToolBar
@@ -42,15 +87,16 @@ CASE_SENSITIVITY = Qt.CaseSensitivity.CaseInsensitive
 
 
 class Signal(QObject):
-    modelChanged = pyqtSignal(['QAbstractItemModel'])
+    modelChanged = pyqtSignal(["QAbstractItemModel"])
 
 
 class AddressLine(LineEdit):
     """Class for address line used in tabs"""
+
     signal = Signal()
     _model: StandardTable = None
 
-    def __init__(self, parent: 'Tab') -> None:
+    def __init__(self, parent: "Tab") -> None:
         super().__init__(parent)
         self.tab = parent
 
@@ -59,7 +105,9 @@ class AddressLine(LineEdit):
         self.completer().setCaseSensitivity(CASE_SENSITIVITY)
         if AddressLine._model:
             self.completer().setModel(AddressLine._model)
-            self.completer().activated[QModelIndex].connect(self.onReturnPressed)
+            self.completer().activated[QModelIndex].connect(
+                self.onReturnPressed
+            )
             self.returnPressed.connect(self.onReturnPressed)
             self.clicked.connect(self.completer().complete)
         AddressLine.signal.modelChanged.connect(self.onModelChanged)
@@ -83,7 +131,9 @@ class AddressLine(LineEdit):
             self.tab.openItem(index)
         else:
             qCritical(f"Index was not found for address {self.text()}")
-            QMessageBox.critical(self, "Error", f"Item not found: {self.text()}")
+            QMessageBox.critical(
+                self, "Error", f"Item not found: {self.text()}"
+            )
 
     def onReturnPressed(self):
         self.completer().setCompletionPrefix(self.text().rstrip("/"))
@@ -91,7 +141,9 @@ class AddressLine(LineEdit):
             index = self.completer().currentIndex()
             self.open(index)
         else:
-            QMessageBox.critical(self, "Error", f"Item not found: {self.text()}")
+            QMessageBox.critical(
+                self, "Error", f"Item not found: {self.text()}"
+            )
 
 
 class AddressLineCompleter(QCompleter):
@@ -133,7 +185,9 @@ class TabBar(QTabBar):
         super(TabBar, self).mousePressEvent(a0)
 
     def mouseMoveEvent(self, a0: QMouseEvent) -> None:
-        if (a0.buttons() == Qt.MouseButton.LeftButton) and abs(a0.pos().y()) > 30:
+        if (a0.buttons() == Qt.MouseButton.LeftButton) and abs(
+            a0.pos().y()
+        ) > 30:
             globalPos = self.mapToGlobal(a0.pos())
             posInTab = self.mapFromGlobal(globalPos)
 
@@ -167,7 +221,11 @@ class TabBar(QTabBar):
         a0.accept()
 
     def dropEvent(self, a0: QDropEvent) -> None:
-        if a0.source() == self or self.indexTabToDrag < 0 or not isinstance(a0.source(), TabBar):
+        if (
+            a0.source() == self
+            or self.indexTabToDrag < 0
+            or not isinstance(a0.source(), TabBar)
+        ):
             a0.accept()
             return
 
@@ -178,13 +236,13 @@ class TabBar(QTabBar):
         try:
             tab = a0.source().parentWidget().widget(self.indexTabToDrag)
             packItem = QModelIndex(tab.packItem)
-            index=self.parentWidget().openItemInNewTab(packItem)
+            index = self.parentWidget().openItemInNewTab(packItem)
             a0.source().tabCloseRequested.emit(self.indexTabToDrag)
         except AttributeError as e:
             print("Error occured while drop Event:", e)
         else:
             if insertAfter and insertAfter >= 0:
-                self.moveTab(index, insertAfter+1)
+                self.moveTab(index, insertAfter + 1)
         TabBar.indexTabToDrag = -1
 
     def detachTab(self, index, point):
@@ -200,39 +258,57 @@ class TabBar(QTabBar):
 
     # noinspection PyArgumentList
     def initActions(self):
-        self.closeAct = QAction("Close", self,
-                                statusTip="Close selected tab",
-                                triggered=lambda: self.tabCloseRequested.emit(self.menuIndexTab))
+        self.closeAct = QAction(
+            "Close",
+            self,
+            statusTip="Close selected tab",
+            triggered=lambda: self.tabCloseRequested.emit(self.menuIndexTab),
+        )
 
-        self.closeOthersAct = QAction("Close others", self,
-                                   statusTip="Close all tabs except selected",
-                                   triggered=lambda: self.closeOthers())
+        self.closeOthersAct = QAction(
+            "Close others",
+            self,
+            statusTip="Close all tabs except selected",
+            triggered=lambda: self.closeOthers(),
+        )
 
-        self.closeAllRightAct = QAction("Close all to the right", self,
-                                        statusTip="Close all tabs to the right",
-                                        triggered=lambda: self.closeAllRight())
+        self.closeAllRightAct = QAction(
+            "Close all to the right",
+            self,
+            statusTip="Close all tabs to the right",
+            triggered=lambda: self.closeAllRight(),
+        )
 
-        self.closeAllLeftAct = QAction("Close all to the left", self,
-                                       statusTip="Close all tabs to the left",
-                                       triggered=lambda: self.closeAllLeft())
+        self.closeAllLeftAct = QAction(
+            "Close all to the left",
+            self,
+            statusTip="Close all tabs to the left",
+            triggered=lambda: self.closeAllLeft(),
+        )
 
-        self.splitVerticallyAct = QAction(SPLIT_VERT_ICON,
-                                          "Split vertically", self,
-                                          statusTip="Split editor area into 2 tab groups",
-                                          triggered=lambda: self.splitVertically())
+        self.splitVerticallyAct = QAction(
+            SPLIT_VERT_ICON,
+            "Split vertically",
+            self,
+            statusTip="Split editor area into 2 tab groups",
+            triggered=lambda: self.splitVertically(),
+        )
 
-        self.splitHorizontallyAct = QAction(SPLIT_HORIZ_ICON, "Split horizontally", self,
-                                            statusTip="Split editor area into 2 tab groups",
-                                            triggered=lambda: self.splitHorizontally())
-
+        self.splitHorizontallyAct = QAction(
+            SPLIT_HORIZ_ICON,
+            "Split horizontally",
+            self,
+            statusTip="Split editor area into 2 tab groups",
+            triggered=lambda: self.splitHorizontally(),
+        )
 
     def closeOthers(self):
-        for i in range(self.count()-1, -1, -1):
+        for i in range(self.count() - 1, -1, -1):
             if i != self.menuIndexTab:
                 self.tabCloseRequested.emit(i)
 
     def closeAllRight(self):
-        for i in range(self.count()-1, self.menuIndexTab - 1, -1):
+        for i in range(self.count() - 1, self.menuIndexTab - 1, -1):
             if i != self.menuIndexTab:
                 self.tabCloseRequested.emit(i)
 
@@ -250,13 +326,17 @@ class TabBar(QTabBar):
     def addTabWidget(self, orientation=Qt.Orientation.Horizontal):
         tabWidget: TabWidget = self.parentWidget()
         if not isinstance(tabWidget, QTabWidget):
-            raise TypeError("Parent widget of Tabbar must be of type QTabWidget",
-                            type(tabWidget))
+            raise TypeError(
+                "Parent widget of Tabbar must be of type QTabWidget",
+                type(tabWidget),
+            )
 
         splitter: QSplitter = tabWidget.parentWidget()
         if not isinstance(splitter, QSplitter):
-            raise TypeError("Parent widget of TabWidget must be of type QSplitter",
-                            type(splitter))
+            raise TypeError(
+                "Parent widget of TabWidget must be of type QSplitter",
+                type(splitter),
+            )
         splitter.setOrientation(orientation)
 
         tab: TabWithTreeView = tabWidget.widget(self.menuIndexTab)
@@ -265,9 +345,9 @@ class TabBar(QTabBar):
         newTabWidget.openItem(packItem)
 
         if orientation == Qt.Orientation.Horizontal:
-            size = int(tabWidget.width()/2)
+            size = int(tabWidget.width() / 2)
         else:
-            size = int(tabWidget.height()/2)
+            size = int(tabWidget.height() / 2)
 
         newTabWidgetIndex = splitter.indexOf(tabWidget) + 1
         sizes = splitter.sizes()
@@ -292,10 +372,15 @@ class TabBar(QTabBar):
 
 
 class TabWithTreeView(QWidget):
-    currItemChanged = pyqtSignal(['QModelIndex'])
+    currItemChanged = pyqtSignal(["QModelIndex"])
 
-    def __init__(self, packItem=QModelIndex(), parent: 'TabWidget' = None,
-                 treeViewCls = None, treeViewClsKwargs = None):
+    def __init__(
+        self,
+        packItem=QModelIndex(),
+        parent: "TabWidget" = None,
+        treeViewCls=None,
+        treeViewClsKwargs=None,
+    ):
         super(TabWithTreeView, self).__init__(parent)
         self.tabWidget = parent
         self.icon = QIcon()
@@ -313,14 +398,30 @@ class TabWithTreeView(QWidget):
         self.objTypeLine.setReadOnly(True)
 
         globalSettings = QWebEngineProfile.defaultProfile().settings()
-        globalSettings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
+        globalSettings.setAttribute(
+            QWebEngineSettings.WebAttribute.PluginsEnabled, True
+        )
         self.mediaWidget = QWebEngineView()
-        self.saveMediaAsBtn = QPushButton(f"Save media as..", self,
-                                          toolTip="Save media file as..",
-                                          clicked=lambda: self.saveMediaAsWithDialog(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)))
-        self.saveMediaBtn = QPushButton(f"Save media on desktop", self,
-                                        toolTip="Save media file on desktop",
-                                        clicked=lambda: self.saveMediaAsWithDialog(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)))
+        self.saveMediaAsBtn = QPushButton(
+            f"Save media as..",
+            self,
+            toolTip="Save media file as..",
+            clicked=lambda: self.saveMediaAsWithDialog(
+                QStandardPaths.writableLocation(
+                    QStandardPaths.StandardLocation.DocumentsLocation
+                )
+            ),
+        )
+        self.saveMediaBtn = QPushButton(
+            f"Save media on desktop",
+            self,
+            toolTip="Save media file on desktop",
+            clicked=lambda: self.saveMediaAsWithDialog(
+                QStandardPaths.writableLocation(
+                    QStandardPaths.StandardLocation.DesktopLocation
+                )
+            ),
+        )
         self.mediaViewWidget = QWidget()
         mediaViewWidgetLayout = QVBoxLayout(self.mediaViewWidget)
         mediaViewWidgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -331,15 +432,26 @@ class TabWithTreeView(QWidget):
 
         if treeViewCls is None:
             from aas_editor.treeviews.treeview_detailed import AttrsTreeView
+
             treeViewCls = AttrsTreeView
-        self.attrsTreeView = treeViewCls(self) if not treeViewClsKwargs else treeViewCls(self, **treeViewClsKwargs)
+        self.attrsTreeView = (
+            treeViewCls(self)
+            if not treeViewClsKwargs
+            else treeViewCls(self, **treeViewClsKwargs)
+        )
         self.attrsTreeView.setFrameShape(QFrame.Shape.NoFrame)
 
         self.initToolbar()
-        self.searchBar = SearchBar(self.attrsTreeView, parent=self,
-                                   filterColumns=[ATTRIBUTE_COLUMN, VALUE_COLUMN], closable=True)
+        self.searchBar = SearchBar(
+            self.attrsTreeView,
+            parent=self,
+            filterColumns=[ATTRIBUTE_COLUMN, VALUE_COLUMN],
+            closable=True,
+        )
         self.searchBar.hide()
-        self.openSearchBarSC = QShortcut(SC_SEARCH, self, activated=self.searchBar.showFocused)
+        self.openSearchBarSC = QShortcut(
+            SC_SEARCH, self, activated=self.searchBar.showFocused
+        )
 
         self.packItem = QPersistentModelIndex(QModelIndex())
         self.prevItems = []
@@ -357,11 +469,20 @@ class TabWithTreeView(QWidget):
         settingsBtn = QToolButton(icon=SETTINGS_ICON)
         settingsBtn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         menuSettings = QMenu("Settings")
-        menuSettings.addAction(QAction("Hide/show tabs bar", self,
-                       statusTip="Hide/show tabs bar",
-                       toggled=lambda a: self.tabWidget.tabBar().show() if a else self.tabWidget.tabBar().hide(),
-                       checkable=True,
-                       checked=not self.tabWidget.tabBar().isHidden()))
+        menuSettings.addAction(
+            QAction(
+                "Hide/show tabs bar",
+                self,
+                statusTip="Hide/show tabs bar",
+                toggled=lambda a: (
+                    self.tabWidget.tabBar().show()
+                    if a
+                    else self.tabWidget.tabBar().hide()
+                ),
+                checkable=True,
+                checked=not self.tabWidget.tabBar().isHidden(),
+            )
+        )
         settingsBtn.setMenu(menuSettings)
         self.toolBar.addWidget(settingsBtn)
 
@@ -376,19 +497,27 @@ class TabWithTreeView(QWidget):
 
     # noinspection PyArgumentList
     def initActions(self):
-        self.backAct = QAction(BACK_ICON, "Back", self,
-                               statusTip=f"Go back one item",
-                               toolTip=f"Go back one item",
-                               shortcut=SC_BACK,
-                               triggered=lambda: self.openPrevItem(),
-                               enabled=False)
+        self.backAct = QAction(
+            BACK_ICON,
+            "Back",
+            self,
+            statusTip=f"Go back one item",
+            toolTip=f"Go back one item",
+            shortcut=SC_BACK,
+            triggered=lambda: self.openPrevItem(),
+            enabled=False,
+        )
 
-        self.forwardAct = QAction(FORWARD_ICON, "Forward", self,
-                                  statusTip=f"Go forward one item",
-                                  toolTip=f"Go forward one item",
-                                  shortcut=SC_FORWARD,
-                                  triggered=lambda: self.openNextItem(),
-                                  enabled=False)
+        self.forwardAct = QAction(
+            FORWARD_ICON,
+            "Forward",
+            self,
+            statusTip=f"Go forward one item",
+            toolTip=f"Go forward one item",
+            shortcut=SC_FORWARD,
+            triggered=lambda: self.openNextItem(),
+            enabled=False,
+        )
 
     def windowTitle(self) -> str:
         return self.packItem.data(NAME_ROLE)
@@ -440,8 +569,12 @@ class TabWithTreeView(QWidget):
         self.attrsTreeView.newPackItem(self.packItem)
         self.currItemChanged.emit(QModelIndex(self.packItem))
 
-        self.forwardAct.setEnabled(True) if self.nextItems else self.forwardAct.setDisabled(True)
-        self.backAct.setEnabled(True) if self.prevItems else self.backAct.setDisabled(True)
+        self.forwardAct.setEnabled(
+            True
+        ) if self.nextItems else self.forwardAct.setDisabled(True)
+        self.backAct.setEnabled(
+            True
+        ) if self.prevItems else self.backAct.setDisabled(True)
         if state:
             self.attrsTreeView.header().restoreState(state)
 
@@ -452,18 +585,24 @@ class TabWithTreeView(QWidget):
             if not self.mediaWidget.width():
                 # set equal sizes
                 oldSizes = self.splitter.sizes()
-                newSizes = [sum(oldSizes)//(len(oldSizes)) for i in oldSizes]
+                newSizes = [sum(oldSizes) // (len(oldSizes)) for i in oldSizes]
                 self.splitter.setSizes(newSizes)
 
             try:
-                mediaContent: "MediaContent" = self.packItem.data(MEDIA_CONTENT_ROLE)
+                mediaContent: "MediaContent" = self.packItem.data(
+                    MEDIA_CONTENT_ROLE
+                )
                 if self.packItem.data(IS_URL_MEDIA_ROLE):
                     self.mediaWidget.load(QUrl(mediaContent.value))
                 else:
-                    self.mediaWidget.setContent(mediaContent.value, mediaContent.content_type)
+                    self.mediaWidget.setContent(
+                        mediaContent.value, mediaContent.content_type
+                    )
             except Exception as e:
                 logging.exception(e)
-                self.mediaWidget.setContent(b"Error occurred while loading media")
+                self.mediaWidget.setContent(
+                    b"Error occurred while loading media"
+                )
             self.mediaWidget.setZoomFactor(1.0)
         else:
             self.mediaViewWidget.hide()
@@ -474,8 +613,9 @@ class TabWithTreeView(QWidget):
         saved = False
         while not saved:
             try:
-                file, _ = QFileDialog.getSaveFileName(self, 'Save media File',
-                                                   directory+"/"+file.strip("/"))
+                file, _ = QFileDialog.getSaveFileName(
+                    self, "Save media File", directory + "/" + file.strip("/")
+                )
             except AttributeError as e:
                 QMessageBox.critical(self, "Error", f"{e}")
             else:
@@ -485,13 +625,15 @@ class TabWithTreeView(QWidget):
                     # cancel pressed
                     return
 
-    def saveMedia(self, media = None, file: str = None) -> bool:
+    def saveMedia(self, media=None, file: str = None) -> bool:
         try:
             with open(file, "wb") as f:
                 f.write(media.value)
             return True
         except (TypeError, ValueError) as e:
-            QMessageBox.critical(self, "Error", f"Media couldn't be saved: {file}: {e}")
+            QMessageBox.critical(
+                self, "Error", f"Media couldn't be saved: {file}: {e}"
+            )
         except AttributeError as e:
             QMessageBox.critical(self, "Error", f"No chosen media to save: {e}")
         return False
@@ -528,19 +670,29 @@ class TabWithTreeView(QWidget):
 
 class TabWidget(QTabWidget):
     # signal for changing current item in packet treeview
-    currItemChanged = pyqtSignal(['QModelIndex'])
+    currItemChanged = pyqtSignal(["QModelIndex"])
     openedTabWidgets = []
 
-    def __init__(self, parent: QWidget = None, unclosable=False,
-                 tabBarCls=TabBar, tabBarClsKwargs = None,
-                 tabCls=TabWithTreeView, tabClsKwargs = None):
+    def __init__(
+        self,
+        parent: QWidget = None,
+        unclosable=False,
+        tabBarCls=TabBar,
+        tabBarClsKwargs=None,
+        tabCls=TabWithTreeView,
+        tabClsKwargs=None,
+    ):
         super(TabWidget, self).__init__(parent)
         self.unclosable = unclosable
 
         self.initActions()
         self.buildHandlers()
 
-        self.setTabBar(tabBarCls(self) if not tabBarClsKwargs else tabBarCls(self, **tabBarClsKwargs))
+        self.setTabBar(
+            tabBarCls(self)
+            if not tabBarClsKwargs
+            else tabBarCls(self, **tabBarClsKwargs)
+        )
         self.setAcceptDrops(True)
         self.setStyleSheet("QTabBar::tab { height: 25px; width: 200px}")
         self.setCurrentIndex(-1)
@@ -555,13 +707,21 @@ class TabWidget(QTabWidget):
 
     # noinspection PyArgumentList
     def initActions(self):
-        self.zoomInAct = QAction(ZOOM_IN_ICON, "Zoom in", self,
-                                 statusTip="Zoom in detailed info",
-                                 triggered=lambda: self.zoomIn())
+        self.zoomInAct = QAction(
+            ZOOM_IN_ICON,
+            "Zoom in",
+            self,
+            statusTip="Zoom in detailed info",
+            triggered=lambda: self.zoomIn(),
+        )
 
-        self.zoomOutAct = QAction(ZOOM_OUT_ICON, "Zoom out", self,
-                                  statusTip="Zoom out detailed info",
-                                  triggered=lambda: self.zoomOut())
+        self.zoomOutAct = QAction(
+            ZOOM_OUT_ICON,
+            "Zoom out",
+            self,
+            statusTip="Zoom out detailed info",
+            triggered=lambda: self.zoomOut(),
+        )
 
     def zoomIn(self):
         if isinstance(self.currentWidget(), TabWithTreeView):
@@ -578,15 +738,25 @@ class TabWidget(QTabWidget):
     def tabInserted(self, index):
         super(TabWidget, self).tabInserted(index)
         tab: TabWithTreeView = self.widget(index)
-        tab.windowTitleChanged.connect(lambda text: self.setTabText(self.indexOf(tab), text))
-        tab.windowIconChanged.connect(lambda icon: self.setTabIcon(self.indexOf(tab), icon))
-        tab.currItemChanged.connect(lambda packItem: self.onCurrTabItemChanged(tab, packItem))
+        tab.windowTitleChanged.connect(
+            lambda text: self.setTabText(self.indexOf(tab), text)
+        )
+        tab.windowIconChanged.connect(
+            lambda icon: self.setTabIcon(self.indexOf(tab), icon)
+        )
+        tab.currItemChanged.connect(
+            lambda packItem: self.onCurrTabItemChanged(tab, packItem)
+        )
         tab.attrsTreeView.openInCurrTabClicked.connect(self.openItem)
         tab.attrsTreeView.openInNewTabClicked.connect(self.openItemInNewTab)
         tab.attrsTreeView.openInBgTabClicked.connect(self.openItemInBgTab)
-        tab.attrsTreeView.openInNewWindowClicked.connect(TabWidget.openItemInNewWindow)
+        tab.attrsTreeView.openInNewWindowClicked.connect(
+            TabWidget.openItemInNewWindow
+        )
 
-    def onCurrTabItemChanged(self, tab: 'TabWithTreeView', packItem: QModelIndex):
+    def onCurrTabItemChanged(
+        self, tab: "TabWithTreeView", packItem: QModelIndex
+    ):
         if tab == self.currentWidget():
             self.currItemChanged.emit(packItem)
 
@@ -613,7 +783,9 @@ class TabWidget(QTabWidget):
         tabWindow.show()
         return tabWindow
 
-    def openItemInNewTab(self, packItem: QModelIndex, afterCurrent: bool = True) -> int:
+    def openItemInNewTab(
+        self, packItem: QModelIndex, afterCurrent: bool = True
+    ) -> int:
         kwargs = self.tabClsKwargs if self.tabClsKwargs else {}
         tab = self.tabCls(packItem, parent=self, **kwargs)
         tabIndex = self.newTab(tab, afterCurrent)
@@ -631,7 +803,9 @@ class TabWidget(QTabWidget):
         icon = widget.windowIcon() if widget.windowIcon() else QIcon()
         label = widget.windowTitle() if widget.windowTitle() else ""
         if afterCurrent:
-            tabIndex = self.insertTab(self.currentIndex()+1, widget, icon, label)
+            tabIndex = self.insertTab(
+                self.currentIndex() + 1, widget, icon, label
+            )
         else:
             tabIndex = self.addTab(widget, icon, label)
         return tabIndex
@@ -655,7 +829,9 @@ class TabWidget(QTabWidget):
             self.deleteLater()
 
     def removePackTab(self, packItem: QModelIndex):
-        for tabIndex in range(self.count()-1, -1, -1):
+        for tabIndex in range(self.count() - 1, -1, -1):
             tab: TabWithTreeView = self.widget(tabIndex)
-            if QModelIndex(tab.packItem).siblingAtColumn(0) == packItem.siblingAtColumn(0):
+            if QModelIndex(tab.packItem).siblingAtColumn(
+                0
+            ) == packItem.siblingAtColumn(0):
                 self.removeTab(tabIndex)

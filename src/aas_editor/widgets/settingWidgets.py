@@ -9,7 +9,14 @@
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 from typing import Dict
 
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QHBoxLayout, QRadioButton
+from PyQt6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QVBoxLayout,
+    QLabel,
+    QHBoxLayout,
+    QRadioButton,
+)
 from PyQt6.QtCore import Qt
 
 from aas_editor.settings import AppSettings, Setting
@@ -19,7 +26,15 @@ from aas_editor.widgets.groupBoxes import OptionGroupBox
 class RadioBtnsGroupBox(OptionGroupBox):
     """Groupbox to choose default type of new file"""
 
-    def __init__(self, parent, title, options: Dict[str, any], appSetting: Setting, description: str = None, **kwargs):
+    def __init__(
+        self,
+        parent,
+        title,
+        options: Dict[str, any],
+        appSetting: Setting,
+        description: str = None,
+        **kwargs,
+    ):
         super().__init__(parent, **kwargs)
         self.setTitle(title)
         self.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -66,17 +81,24 @@ class SettingsDialog(QDialog):
 
         self.setWindowTitle("Settings")
 
-        QBtn = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        QBtn = (
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
         self.optionGroupBoxes = [
-            RadioBtnsGroupBox(self,
-                              appSetting=setting,
-                              title=setting.display_name,
-                              options=setting.options,
-                              description=setting.description) for setting in AppSettings.SETTINGS_TO_CHOOSE_BY_USER]
+            RadioBtnsGroupBox(
+                self,
+                appSetting=setting,
+                title=setting.display_name,
+                options=setting.options,
+                description=setting.description,
+            )
+            for setting in AppSettings.SETTINGS_TO_CHOOSE_BY_USER
+        ]
 
         self.layout = QVBoxLayout()
         message = QLabel("App settings")

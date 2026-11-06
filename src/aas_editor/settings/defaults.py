@@ -16,9 +16,17 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
-from basyx.aas.model import Key, KeyTypes, File, Blob, SubmodelElement, \
-    Property, AssetAdministrationShell, Submodel, \
-    SubmodelElementList
+from basyx.aas.model import (
+    Key,
+    KeyTypes,
+    File,
+    Blob,
+    SubmodelElement,
+    Property,
+    AssetAdministrationShell,
+    Submodel,
+    SubmodelElementList,
+)
 from basyx.aas.model.datatypes import String
 
 from aas_editor.additional.classes import DictItem
@@ -87,23 +95,13 @@ DEFAULTS = {
     SubmodelElementList: {
         "type_value_list_element": Property,
         "value_type_list_element": String,
-    }
+    },
 }
 
 DEFAULT_COMPLETIONS = {
-    Key: {
-        "value": []
-    },
-    File: {
-        "content_type": MIME_TYPES
-    },
-    Blob: {
-        "content_type": MIME_TYPES
-    },
-    DictItem: {
-        "key": LANGUAGES
-    },
-    Property: {
-        "category": CATEGORIES
-    }
+    Key: {"value": []},
+    File: {"content_type": MIME_TYPES},
+    Blob: {"content_type": MIME_TYPES},
+    DictItem: {"key": LANGUAGES},
+    Property: {"category": CATEGORIES},
 }
