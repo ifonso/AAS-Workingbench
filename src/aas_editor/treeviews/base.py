@@ -1271,6 +1271,10 @@ class TreeView(BasicTreeView):
         if not isinstance(submodelList, SubmodelElementList):
             return
         defaults = child_defaults(submodelList)
+        if objVal is not None and not isinstance(objVal, defaults.element_type):
+            # Something of another type is meant to go in. The SDK refuses it,
+            # and the dialog shows what was given.
+            return
         paramsToHide = dict(
             ClassesInfo.defaultParamsToHide(defaults.element_type)
         )

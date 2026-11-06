@@ -129,6 +129,7 @@ def test_line_edit_emits_text_when_user_types(qtbot: QtBot) -> None:
   Watch each model, and the proxy in front of it, with `QAbstractItemModelTester` to catch violations of the signal contract.
   In `tests/medium`, the `model_support` fixture builds the legacy models and offers `watch` and `violations` for this.
 - Modal dialogs block the event loop, so stub out `exec()` or have the code under test receive the answer as an argument.
+- To test the dialogs that the editor generates from type hints, use `tests/medium/forms.py`. `Form` finds the widgets by the name of the constructor parameter and fills them, and `answering` stands in for `exec`. The `lab` fixture in `tests/medium/conftest.py` adds and edits elements through the views, so a test makes an element the way a user does.
 
 ## Testing AAS behavior
 

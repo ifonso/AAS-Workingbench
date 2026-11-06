@@ -3,6 +3,7 @@
 import datetime
 import decimal
 import json
+import zipfile
 
 from basyx.aas import model
 from basyx.aas.model import datatypes
@@ -418,16 +419,28 @@ class TestListChildren:
             child.id_short.startswith("generated_submodel_list_hack_")
             for child in children
         )
-        for suffix in (".json", ".aasx"):
-            path = tmp_path / f"saved{suffix}"
-            lab.package.write(path)
-            if suffix == ".json":
-                text = path.read_text(encoding="utf-8")
-                assert "generated_submodel_list_hack_" not in text
-                (saved,) = json.loads(text)["submodels"]
-                (saved_list,) = saved["submodelElements"]
-                assert [c["value"] for c in saved_list["value"]] == ["1", "2"]
-                assert all("idShort" not in c for c in saved_list["value"])
+        json_path = tmp_path / "saved.json"
+        lab.package.write(json_path)
+        text = json_path.read_text(encoding="utf-8")
+        assert "generated_submodel_list_hack_" not in text
+        (saved,) = json.loads(text)["submodels"]
+        (saved_list,) = saved["submodelElements"]
+        assert [c["value"] for c in saved_list["value"]] == ["1", "2"]
+        assert all("idShort" not in c for c in saved_list["value"])
+        xml_path = tmp_path / "saved.xml"
+        lab.package.write(xml_path)
+        assert "generated_submodel_list_hack_" not in xml_path.read_text(
+            encoding="utf-8"
+        )
+        aasx_path = tmp_path / "saved.aasx"
+        lab.package.write(aasx_path)
+        with zipfile.ZipFile(aasx_path) as archive:
+            parts = {name: archive.read(name) for name in archive.namelist()}
+        assert parts
+        assert all(
+            b"generated_submodel_list_hack_" not in content
+            for content in parts.values()
+        )
 
     def test_the_tree_shows_the_type_of_a_child_that_has_no_id_short(
         self, lab_class
@@ -471,6 +484,29 @@ class TestListChildren:
         assert isinstance(child, model.Range)
         assert (str(child.min), str(child.max)) == ("0.5", "2.5")
         assert child.value_type is datatypes.Decimal
+
+    def test_a_new_list_offers_only_types_that_can_be_made(
+        self, qapp, qtbot
+    ) -> None:
+        from aas_editor.dialogs import EditObjDialog
+
+        with_dialog = EditObjDialog(
+            model.SubmodelElement, parent=None, rmDefParams=False
+        )
+        qtbot.addWidget(with_dialog)
+        chooser = with_dialog.inputWidget
+        chooser.typeComboBox.setCurrentIndex(
+            chooser.typeComboBox.findData(model.SubmodelElementList)
+        )
+        combo = Form(with_dialog).widget("type_value_list_element").widget
+
+        offered = {combo.itemData(row) for row in range(combo.count())}
+
+        assert model.DataElement not in offered
+        assert model.EventElement not in offered
+        assert model.Property in offered
+        assert model.SubmodelElementList in offered
+        assert len(offered) == 14
 
     def test_a_list_cannot_get_a_child_of_another_type_through_the_dialog(
         self, lab_class

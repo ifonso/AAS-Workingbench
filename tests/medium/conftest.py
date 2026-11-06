@@ -243,6 +243,7 @@ def lab_class(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         value_dialog = ValueEditDialog
 
         def __init__(self, *elements: model.SubmodelElement) -> None:
+            self.monkeypatch = monkeypatch
             self.shown = views()
             self.submodel = make_submodel(elements=elements)
             self.package = self.shown.open_package(self.submodel)

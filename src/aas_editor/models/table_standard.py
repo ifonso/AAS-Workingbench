@@ -665,8 +665,17 @@ class StandardTable(QAbstractItemModel):
         converts the values with it.
 
         :return: the command, or None if the attribute has the value already
-        :raise InvalidValueError: if the value does not fit the value type
+        :raise InvalidValueError: if the value does not fit the value type, or
+            the attribute is fixed once the object is made
         """
+        fixed = getattr(type(owner), name, None)
+        if isinstance(fixed, property) and fixed.fset is None:
+            # The SDK sets these only in the constructor, like the type of the
+            # children of a SubmodelElementList.
+            raise InvalidValueError(
+                f"'{name}' cannot be changed after the "
+                f"{type(owner).__name__} is made. Make a new one"
+            )
         observer = self._observerFor(index)
         if is_value_type_attr(owner, name):
             typeCommand = SetValueType(observer, owner, value, origin=self)

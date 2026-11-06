@@ -30,16 +30,11 @@ from basyx.aas.model import (
 from basyx.aas.model.datatypes import String
 
 from aas_editor.additional.classes import DictItem
+from aas_editor.domain.language_tags import COMMON_LANGUAGE_TAGS
 
 CATEGORIES = ["CONSTANT", "PARAMETER", "VARIABLE"]
 
-LANGUAGES = [
-    "de",
-    "en",
-    "fr",
-    "it",
-    "ja",
-]
+LANGUAGES = list(COMMON_LANGUAGE_TAGS)
 
 MIME_TYPES = [
     "application/graphql",
