@@ -223,31 +223,50 @@ def test_the_menu_separates_the_sections_and_hides_what_does_not_apply(
     from PyQt6.QtWidgets import QMenu
 
     _register(registry, action_id="create.sample", order=1)
-    _register(registry, action_id="files.sample", order=1)
+    _register(registry, action_id="structure.sample", order=1)
     shown = views()
     shown.open_package(make_submodel(elements=[make_property("p")]))
     shown.select(shown.index("submodels", "Submodel"))
 
     menu = QMenu()
     shown.view.registeredActions.add_to_menu(menu)
-    texts = [
-        "|" if action.isSeparator() else action.text()
-        for action in menu.actions()
-        if action.isSeparator() or action.text() == "Tag the element"
-    ]
+    separators = [a for a in menu.actions() if a.isSeparator()]
+    ids = ("create.sample", "structure.sample")
     on_submodel = [
-        shown.view.registeredActions.find(f"{prefix}.sample").isVisible()
-        for prefix in ("create", "files")
+        shown.view.registeredActions.find(i).isVisible() for i in ids
     ]
     shown.select(shown.index("submodels", "Submodel", "p"))
     on_property = [
-        shown.view.registeredActions.find(f"{prefix}.sample").isVisible()
-        for prefix in ("create", "files")
+        shown.view.registeredActions.find(i).isVisible() for i in ids
     ]
 
-    assert texts.count("|") >= 2
+    assert len(separators) == 2
     assert on_submodel == [False, False]
     assert on_property == [True, True]
+
+
+def test_a_crowded_section_is_a_submenu_that_hides_when_nothing_applies(
+    views, registry
+) -> None:
+    from PyQt6.QtWidgets import QMenu
+
+    _register(registry, action_id="files.sample", order=1)
+    shown = views()
+    shown.open_package(make_submodel(elements=[make_property("p")]))
+    menu = QMenu()
+    shown.view.registeredActions.add_to_menu(menu)
+    (submenu,) = [a for a in menu.actions() if a.menu() is not None]
+    action = shown.view.registeredActions.find("files.sample")
+
+    shown.select(shown.index("submodels", "Submodel"))
+    on_submodel = submenu.isVisible()
+    shown.select(shown.index("submodels", "Submodel", "p"))
+    on_property = submenu.isVisible()
+
+    assert submenu.text() == "Package files"
+    assert action in submenu.menu().actions()
+    assert action not in menu.actions()
+    assert (on_submodel, on_property) == (False, True)
 
 
 def test_an_action_of_the_toolbar_is_never_hidden(views, registry) -> None:

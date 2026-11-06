@@ -178,6 +178,16 @@ _MENU_SECTIONS: tuple[tuple[str, ...], ...] = (
 )
 
 
+# The sections with many actions are a submenu of the context menu, so that
+# the menu of an element is not a list of fifty entries. The others are in the
+# menu itself, between separators.
+_SUBMENU_TITLES = {
+    4: "Concept descriptions",
+    5: "Qualifiers, extensions and bulk changes",
+    6: "Package files",
+}
+
+
 def menu_section(action_id: str) -> int:
     """Returns the section of the context menu that an action belongs to.
 
@@ -227,6 +237,7 @@ class ViewActions:
         self._context = context
         self._can_edit = can_edit
         self._entries: list[tuple[ActionSpec, QAction]] = []
+        self._submenus: list[tuple[QMenu, list[QAction]]] = []
         for spec in (registry or _registry).specs_for(kind):
             self._entries.append((spec, self._create(view, spec)))
 
@@ -270,12 +281,22 @@ class ViewActions:
         if not self._entries:
             return
         previous: int | None = None
+        target: QMenu = menu
         for spec, action in self._entries:
             section = menu_section(spec.action_id)
             if previous != section:
-                menu.addSeparator()
                 previous = section
-            menu.addAction(action)
+                title = _SUBMENU_TITLES.get(section)
+                if title is None:
+                    menu.addSeparator()
+                    target = menu
+                else:
+                    target = QMenu(title, menu)
+                    menu.addMenu(target)
+                    self._submenus.append((target, []))
+            if target is not menu:
+                self._submenus[-1][1].append(action)
+            target.addAction(action)
 
     def update(self) -> None:
         """Shows and enables each action by the rule of its spec.
@@ -293,6 +314,11 @@ class ViewActions:
             action.setEnabled(allowed and applies)
             if not spec.toolbar:
                 action.setVisible(applies)
+        for submenu, actions in self._submenus:
+            shown = [a for a in actions if a.isVisible()]
+            entry = submenu.menuAction()
+            entry.setVisible(bool(shown))
+            entry.setEnabled(any(a.isEnabled() for a in shown))
 
     def disable_mutating(self) -> None:
         """Disables the actions that change a package."""
