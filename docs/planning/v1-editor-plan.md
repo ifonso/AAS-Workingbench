@@ -276,15 +276,22 @@ All ─ WP12
 | WP10 | `feat/concept-descriptions` | Done |
 | WP11 | `feat/bulk-editing-and-presets` | Done |
 | WP12 | `docs/v1-editor-release` | Done |
+| WP13 | `feat/failsafe-load-report` | Done |
+| WP14 | `feat/element-editing-gaps` | Done |
+| WP15 | `feat/selection-and-navigation` | Done |
+| WP16 | `feat/concept-description-gaps` | Done |
+| WP17 | `feat/attribute-vocabulary` | Done |
+| WP18 | `test/acceptance-coverage` | Done |
+| WP19 | `feat/package-tree-vocabulary` | Done |
 
 ## Exit criteria result
 
-Checked by WP12 on 2026-11-06. The evidence for each criterion that has a test is in the [acceptance audit](../software/v1-acceptance-audit.md).
+Checked by WP12, and again after WP19, on 2026-11-06. The evidence for each criterion that has a test is in the [acceptance audit](../software/v1-acceptance-audit.md).
 
 | Criterion | Result | Evidence |
 |---|---|---|
-| Every F-EDT capability is implemented or listed under Out of scope | **Not met** | Of 199 acceptance criteria, 22 are neither implemented nor in the Out of scope table (listed below), and 9 more rest only on a "Known limit" of the changelog. |
-| `make check` passes, and new layers have no type-checking warnings | Met | `ruff format --check`, `ruff check`, and `pyright` have no errors. `pyright` on `domain`, `application`, `infrastructure` and `ui` has 0 errors and 0 warnings. The legacy modules and the tests have 1231 warnings. `make` itself was not run. Its commands were. |
+| Every F-EDT capability is implemented or listed under Out of scope | Met | Of 199 acceptance criteria none is a gap: 114 are tested, 8 tested in part, 37 different on purpose with the reason recorded, 35 out of scope, and 5 do not apply. WP12 found 22 gaps, and WP13 to WP19 closed or reclassified them. "Tested" means that a test asserts it. Most ran offscreen, and no person has used them. |
+| `make check` passes, and new layers have no type-checking warnings | Met | `ruff format --check`, `ruff check`, and `pyright` have no errors. `pyright` on `domain`, `application`, `infrastructure` and `ui` has 0 errors and 0 warnings. The legacy modules and the tests have about 1380 warnings. `make` itself was not run. Its commands were. |
 | The whole corpus round-trips without losing content or file parts | **Met for 83 of 132 packages. Not met for the 49 that open only in failsafe: the editor now says what is left out, and that content is still lost on Save As** | `AAS_CORPUS_TEMPLATES=all` passes (853 passed, 18 skipped). For the 49 the round-trip test compares the package that failsafe loaded with the saved one, so it proves that a save adds no further loss. WP13 added what it could not see: every one of the 49 now has a report of what the SDK left out when it opened the file (91 objects, 26 elements, 83 details), and the 83 others have none. `test_load_report_corpus.py` checks the report against the `idShort` entries of the XML, and the entries that are missing are exactly those below the places that the report names, for all 132. The SDK does not hand the left-out content to the editor, and D3 rules out a reader of our own, so the content is not in a copy saved with Save As. See [ADR 0018](../software/adr/0018-load-report.md). |
 | Every failure to save leaves the original file intact | Met | `test_safe_save.py` checks the bytes and the folder after a writer that fails, a Save As over an existing file, an unknown extension, and, since WP12, a replace that the system refuses. A full disk and a power cut were not tried. |
 | All 14 SubmodelElement types can be created, edited, moved where valid, undone, saved, and reloaded in a test | Met | `test_element_types.py` does all but the move, for each of the 14. `test_element_moves.py`, added by WP12, does the move, with undo, redo, save and reload, for each of the 14. |
