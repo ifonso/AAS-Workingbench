@@ -15,7 +15,7 @@ from typing import Any, Callable, Iterable, Union, AbstractSet, List
 
 from collections.abc import MutableMapping
 
-from basyx.aas.model import NamespaceSet, Referable
+from basyx.aas.model import Identifiable, NamespaceSet, Referable
 from PyQt6.QtCore import (
     QAbstractItemModel,
     QVariant,
@@ -38,8 +38,14 @@ from aas_editor.application.edits import (
     SetAttribute,
 )
 from aas_editor.application.listeners import Subscription
+from aas_editor.application.operations.rename import RenameCommand
+from aas_editor.application.operations.rename import RenameError
+from aas_editor.application.operations.rename import ReplaceIdentifiable
 from aas_editor.models import StandardItem
 from aas_editor.package import Package
+from aas_editor.ui.reference_actions import EditCancelled
+from aas_editor.ui.reference_actions import rename_command
+from aas_editor.ui.reference_actions import replace_command
 from aas_editor.settings.app_settings import (
     NAME_ROLE,
     OBJECT_ROLE,
@@ -68,6 +74,10 @@ from aas_editor.utils.util import actualizeAASParents
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import getArgs, isIterable
+
+
+# What `renameCommand` returns for an edit that is no rename.
+_NOT_RENAMED = object()
 
 
 class StandardTable(QAbstractItemModel):
@@ -603,19 +613,54 @@ class StandardTable(QAbstractItemModel):
         observer = self._observerFor(index)
         if isinstance(container, (list, AbstractSet, MutableMapping)):
             # The edited item is a member of the container, not an attribute.
+            if isinstance(item.obj, Identifiable) and isinstance(
+                value, Identifiable
+            ):
+                # An object with another id leaves references behind.
+                return replace_command(
+                    self._packageOf(index), container, item.obj, value, self
+                )
             return ReplaceMember(
                 observer, container, item.obj, value, origin=self
             )
+        renamed = self.renameCommand(index, container, item.objName, value)
+        if renamed is not _NOT_RENAMED:
+            return renamed
         command = SetAttribute(
             observer, container, item.objName, value, origin=self
         )
         return None if command.is_noop else command
 
+    def renameCommand(self, index: QModelIndex, owner, attribute, value):
+        """Return the command for an id or idShort edit, with its references.
+
+        An id that another object has is refused. A rename that changes
+        references shows a preview first.
+
+        :return: the command, None if nothing changes, or _NOT_RENAMED if the
+            edit is no rename
+        :raise EditCancelled: if the user cancelled a question
+        :raise RenameError: if the value cannot be used
+        """
+        if (
+            attribute not in ("id", "id_short")
+            or not isinstance(owner, Referable)
+            or not isinstance(value, str)
+        ):
+            return _NOT_RENAMED
+        package = self._packageOf(index)
+        if package is None:
+            return _NOT_RENAMED
+        return rename_command(package, owner, attribute, value, self)
+
     def _syncAfterEdit(self, index: QModelIndex, command: Command):
         """Make the item show the object that the edit made of it"""
         item = self.objByIndex(index)
-        if isinstance(command, ReplaceMember):
+        if isinstance(command, (ReplaceMember, ReplaceIdentifiable)):
             item.obj = command.new
+        elif isinstance(command, RenameCommand):
+            if item.objName == command.name:
+                item.obj = getattr(command.owner, command.name)
         elif isinstance(command, SetAttribute) and item.objName == command.name:
             item.obj = getattr(command.owner, command.name)
 

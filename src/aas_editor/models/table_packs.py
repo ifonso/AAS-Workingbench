@@ -20,6 +20,7 @@ from aas_editor.application.edits import (
     SetAttribute,
 )
 from aas_editor.models import StandardTable, PackTreeViewItem
+from aas_editor.models.table_standard import _NOT_RENAMED
 from aas_editor.package import Package, StoredFile
 from aas_editor.settings.app_settings import (
     PACKAGE_ROLE,
@@ -87,6 +88,9 @@ class PacksTable(StandardTable):
             except KeyError:
                 typehint = None
             self._checkClearable(attribute, typehint, value)
+            renamed = self.renameCommand(index, owner, attribute, value)
+            if renamed is not _NOT_RENAMED:
+                return renamed
             command = SetAttribute(
                 self._observerFor(index), owner, attribute, value, origin=self
             )

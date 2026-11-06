@@ -26,6 +26,7 @@ Example:
 from collections.abc import Collection
 from collections.abc import Iterable
 from dataclasses import dataclass
+import enum
 from typing import Any
 from typing import cast
 
@@ -44,6 +45,17 @@ from aas_editor.domain.references import Usage
 from aas_editor.domain.references import chain
 from aas_editor.domain.references import path_of
 from aas_editor.domain.references import without_nested
+
+
+class DeletePrompt(enum.Enum):
+    """What to ask the user before a delete."""
+
+    NONE = "none"
+    """Delete at once."""
+    CONFIRM = "confirm"
+    """Ask whether to delete, because the delete is destructive."""
+    USAGES = "usages"
+    """Show the references, and ask what to do with them."""
 
 
 @dataclass(frozen=True, eq=False)
@@ -89,6 +101,27 @@ class DeletePlan:
             )
             or any(_has_children(target) for target in self.targets)
         )
+
+
+def prompt_for(
+    plan: DeletePlan, skip_confirmation: bool = False
+) -> DeletePrompt:
+    """Decides what to ask the user before a delete.
+
+    Args:
+        plan: What `plan_delete` made.
+        skip_confirmation: True when the user asked to delete without a
+            question. That skips the confirmation, but never the references:
+            the user should see what would point at nothing.
+
+    Returns:
+        The question to ask.
+    """
+    if plan.has_usages:
+        return DeletePrompt.USAGES
+    if plan.is_destructive and not skip_confirmation:
+        return DeletePrompt.CONFIRM
+    return DeletePrompt.NONE
 
 
 def plan_delete(
@@ -139,16 +172,38 @@ def delete_commands(
         that undo puts the objects back before the references to them. Push
         them inside one group.
     """
-    removals = plan.removals if remove_references else ()
-    removed = {id(change.slot) for change in removals}
-    # A reference that is taken away needs no new position.
-    shifts = [c for c in plan.shifts if id(c.slot) not in removed]
-    commands = reference_commands(observer, [*shifts, *removals])
+    commands = cleanup_commands(observer, plan, remove_references)
     commands.extend(
         RemoveMember(observer, container_of(target, store), target)
         for target in plan.targets
     )
     return commands
+
+
+def cleanup_commands(
+    observer: ModelChangeObserver,
+    plan: DeletePlan,
+    remove_references: bool,
+) -> list[Command]:
+    """Builds the commands for the references, without deleting anything.
+
+    For a caller that deletes the objects itself, such as a view that also has
+    to follow the rows of its model.
+
+    Args:
+        observer: Where the commands report.
+        plan: What `plan_delete` made.
+        remove_references: Whether to take the references away.
+
+    Returns:
+        The commands that give the references to list items their new
+        position, and that take the references away if asked to.
+    """
+    removals = plan.removals if remove_references else ()
+    removed = {id(change.slot) for change in removals}
+    # A reference that is taken away needs no new position.
+    shifts = [c for c in plan.shifts if id(c.slot) not in removed]
+    return reference_commands(observer, [*shifts, *removals])
 
 
 def container_of(target: model.Referable, store: object) -> object:

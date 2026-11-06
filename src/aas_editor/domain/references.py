@@ -149,10 +149,12 @@ def describe_object(obj: object) -> str:
     """Returns a short text for an AAS object, such as `Property 'Pump'`.
 
     Args:
-        obj: Any object. Identifiables are named by their id.
+        obj: Any object. Identifiables are named by their idShort, or by
+            their id. An element is named by its idShort path, and by the
+            identifiable it is in.
 
     Returns:
-        The class name and the idShort, path or id when there is one.
+        The class name and the name, path or id when there is one.
     """
     kind = type(obj).__name__
     if isinstance(obj, model.Identifiable):
@@ -160,9 +162,14 @@ def describe_object(obj: object) -> str:
         return f"{kind} '{name}'"
     if isinstance(obj, model.Referable):
         try:
-            return f"{kind} '{obj.get_id_short_path()}'"
+            name = obj.get_id_short_path()
         except (ValueError, AttributeError):
-            return f"{kind} '{obj.id_short}'" if obj.id_short else kind
+            name = obj.id_short or ""
+        text = f"{kind} '{name}'" if name else kind
+        root = obj.get_identifiable_root()
+        if root is None:
+            return text
+        return f"{text} of {describe_object(root)}"
     return kind
 
 

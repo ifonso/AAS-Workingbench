@@ -34,6 +34,10 @@ def main():
     initialize_all_icons()
 
     from aas_editor.editorApp import EditorApp as CurrentApp
+    from aas_editor.ui.reference_actions import register_reference_actions
+
+    # The actions must be registered before the first tree view is created.
+    register_reference_actions()
 
     # Check if a file path is provided as an argument
     fileToOpen = sys.argv[1] if len(sys.argv) > 1 else None
