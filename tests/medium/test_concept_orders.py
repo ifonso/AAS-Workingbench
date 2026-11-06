@@ -16,11 +16,11 @@ from tests.factories import make_external_reference
 from tests.factories import make_property
 from tests.factories import make_samm_concept
 from tests.factories import make_submodel
+from tests.medium.concept_lab import build_lab_class
 from tests.serialization import snapshot
 
+from aas_editor.application.editing import edit_mode
 from aas_editor.domain.concept_order import ConceptOrder
-
-CONCEPTS = "concept_descriptions"
 
 
 def _concept(id_: str, id_short: str) -> model.ConceptDescription:
@@ -35,76 +35,7 @@ def _prop(id_short: str, semantic: str) -> model.Property:
 
 @pytest.fixture
 def lab(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import OBJECT_ROLE
-    from aas_editor.ui import concept_actions
-    from aas_editor.ui import concept_dialogs
-    from aas_editor.ui import reference_dialogs
-    from aas_editor.ui.concept_actions import register_concept_actions
-
-    register_concept_actions()
-
-    class Lab:
-        def __init__(self, *objects: model.Identifiable) -> None:
-            self.shown = views()
-            self.view = self.shown.view
-            self.package = self.shown.open_package(*objects)
-            self.stack = self.package.commandStack
-            self.messages: list[str] = []
-            self.previews: list[list[list[str]]] = []
-            self.confirm = True
-            monkeypatch.setattr(
-                reference_dialogs,
-                "show_message",
-                lambda title, text, parent=None: self.messages.append(text),
-            )
-
-            def confirm_preview(*args: Any, **kwargs: Any) -> bool:
-                self.previews.append([list(row) for row in args[3]])
-                return self.confirm
-
-            monkeypatch.setattr(
-                concept_dialogs, "confirm_preview", confirm_preview
-            )
-            self.shown.select(self.shown.index(CONCEPTS))
-            self.view.updateActions(self.view.currentIndex())
-
-        def choose(self, order: ConceptOrder) -> None:
-            monkeypatch.setattr(
-                concept_actions,
-                "ask_concept_order",
-                lambda current, parent=None: order,
-            )
-            self.view.registeredActions.find("concepts.order").trigger()
-
-        def sort(self) -> None:
-            self.view.registeredActions.find("concepts.sort").trigger()
-
-        def listed(self) -> list[str]:
-            proxy = self.view.model()
-            parent = self.shown.index(CONCEPTS)
-            return [
-                proxy.index(row, 0, parent).data(OBJECT_ROLE).id
-                for row in range(proxy.rowCount(parent))
-            ]
-
-        def stored(self) -> list[str]:
-            return [
-                o.id
-                for o in self.package.objStore
-                if isinstance(o, model.ConceptDescription)
-            ]
-
-        def saved_order(self) -> list[str]:
-            path = tmp_path / "saved.aasx"
-            self.package.write(path)
-            return [
-                o.id
-                for o in Package(path).objStore
-                if isinstance(o, model.ConceptDescription)
-            ]
-
-    return Lab
+    return build_lab_class(views, monkeypatch, tmp_path)
 
 
 def _plain(lab_class) -> Any:
@@ -205,7 +136,7 @@ class TestSort:
         lab = _plain(lab)
         lab.choose(ConceptOrder.ID_SHORT)
 
-        lab.sort()
+        lab.act("concepts.sort")
 
         expected = ["urn:cd:a", "urn:cd:b", "urn:cd:c", "urn:cd:z"]
         assert lab.stored() == expected
@@ -217,7 +148,7 @@ class TestSort:
         lab = _plain(lab)
         lab.choose(ConceptOrder.ID)
 
-        lab.sort()
+        lab.act("concepts.sort")
 
         assert [row[2] for row in lab.previews[0]] == [
             "urn:cd:a",
@@ -229,7 +160,7 @@ class TestSort:
     def test_one_undo_gives_the_old_order_of_the_file_back(self, lab) -> None:
         lab = _plain(lab)
         lab.choose(ConceptOrder.ID)
-        lab.sort()
+        lab.act("concepts.sort")
 
         lab.stack.undo()
 
@@ -241,7 +172,7 @@ class TestSort:
         lab.choose(ConceptOrder.ID)
         lab.confirm = False
 
-        lab.sort()
+        lab.act("concepts.sort")
 
         assert lab.stored() == ["urn:cd:c", "urn:cd:z", "urn:cd:a", "urn:cd:b"]
         assert not lab.stack.can_undo
@@ -261,7 +192,7 @@ class TestSort:
         lab.choose(order)
         before = lab.stored()
 
-        lab.sort()
+        lab.act("concepts.sort")
 
         assert lab.messages == ["Cannot apply selected sort order!"]
         assert lab.stored() == before
@@ -272,22 +203,18 @@ class TestSort:
         lab = lab(_concept("urn:cd:a", "Alpha"), _concept("urn:cd:b", "Beta"))
         lab.choose(ConceptOrder.ID)
 
-        lab.sort()
+        lab.act("concepts.sort")
 
         assert "already" in lab.messages[0]
         assert not lab.stack.can_undo
 
-    def test_it_is_refused_in_read_mode(self, lab) -> None:
-        from aas_editor.application.editing import edit_mode
-
+    def test_it_is_off_in_read_mode(self, lab) -> None:
         lab = _plain(lab)
         lab.choose(ConceptOrder.ID)
         edit_mode().set_editing(False)
         try:
             lab.view.updateActions(lab.view.currentIndex())
-            enabled = lab.view.registeredActions.find(
-                "concepts.sort"
-            ).isEnabled()
+            enabled = lab.enabled("concepts.sort")
         finally:
             edit_mode().set_editing(True)
 
