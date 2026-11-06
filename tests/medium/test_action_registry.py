@@ -279,3 +279,24 @@ def test_an_action_of_the_toolbar_is_never_hidden(views, registry) -> None:
 
     assert not action.isEnabled()
     assert action.isVisible()
+
+
+def test_a_menu_that_was_deleted_does_not_break_the_next_update(
+    views, registry
+) -> None:
+    # A crowded section is a submenu that the view refreshes whenever the
+    # clipboard changes. A menu that its owner deletes must not make every
+    # later refresh of the view, and of any test after it, fail.
+    from PyQt6.QtWidgets import QMenu
+
+    _register(registry, action_id="files.sample", order=1)
+    shown = views()
+    shown.open_package(make_submodel(elements=[make_property("p")]))
+    shown.select(shown.index("submodels", "Submodel", "p"))
+    menu = QMenu()
+    shown.view.registeredActions.add_to_menu(menu)
+
+    del menu
+    shown.view.registeredActions.update()
+
+    assert shown.view.registeredActions.find("files.sample").isEnabled()
