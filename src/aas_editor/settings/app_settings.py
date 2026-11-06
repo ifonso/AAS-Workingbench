@@ -174,7 +174,8 @@ CUSTOM_COLUMN_LISTS_FILE = _PACKAGE_DIR / "custom_column_lists.json"
 
 # Themes
 APP_LOGO = QIcon(str(ICONS_FOLDER / "logo.svg"))
-DEFAULT_THEME = "grey"
+# The id of a theme of `aas_editor.ui.theme`. It is used when no theme was saved.
+DEFAULT_THEME = "fluent-light"
 
 SETTINGS = QSettings(str(SETTINGS_FILE), QSettings.Format.IniFormat)
 

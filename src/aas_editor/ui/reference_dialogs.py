@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import QTableWidgetItem
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import problem_style
 from aas_editor.application.operations.delete import DeletePlan
 from aas_editor.application.operations.references import ReferenceChange
 from aas_editor.application.operations.rename import InvalidIdShortError
@@ -231,7 +231,7 @@ class RenameDialog(QDialog):
         self.edit = QLineEdit(text)
         self.error_label = QLabel()
         self.error_label.setWordWrap(True)
-        self.error_label.setStyleSheet(PROBLEM_STYLE)
+        self.error_label.setStyleSheet(problem_style())
         self.preview_label = QLabel()
         self.table = ReferenceTable(["Where", "Before", "After"])
         self.fix_button: QPushButton | None = None

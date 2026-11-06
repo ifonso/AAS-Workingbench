@@ -38,7 +38,7 @@ from aas_editor.domain.concept_summary import SummaryRow
 from aas_editor.domain.concept_summary import concept_named_by
 from aas_editor.domain.concept_summary import summarize
 from aas_editor.domain.references import describe_reference
-from aas_editor.ui.colors import ADVISORY_STYLE
+from aas_editor.ui.colors import advisory_style
 from aas_editor.ui.reference_jump import find_row
 
 OPEN_TEXT = "Open concept description"
@@ -113,7 +113,7 @@ class EmbeddedConceptPanel(QFrame):
 
         self.notice = QLabel(self)
         self.notice.setWordWrap(True)
-        self.notice.setStyleSheet(ADVISORY_STYLE)
+        self.notice.setStyleSheet(advisory_style())
         self.notice.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
         )

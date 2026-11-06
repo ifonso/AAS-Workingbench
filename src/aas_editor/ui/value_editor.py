@@ -35,8 +35,8 @@ from PyQt6.QtWidgets import QWidget
 from basyx.aas import model
 from basyx.aas.model import datatypes
 
-from aas_editor.ui.colors import PROBLEM_BORDER_STYLE
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import problem_border_style
+from aas_editor.ui.colors import problem_style
 from aas_editor.domain import blob_content
 from aas_editor.domain import typed_values
 from aas_editor.domain import value_types
@@ -242,7 +242,7 @@ class ValueLineEdit(QLineEdit):
         self.setAccessibleDescription(problem or "")
         # The frame is not the only sign: the tooltip and the description say
         # what is wrong, and ValueEdit shows it in words.
-        self.setStyleSheet(PROBLEM_BORDER_STYLE if problem else "")
+        self.setStyleSheet(problem_border_style() if problem else "")
 
 
 class ValueEdit(QWidget):
@@ -277,7 +277,7 @@ class ValueEdit(QWidget):
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
         self.problem_label.setVisible(False)
-        self.problem_label.setStyleSheet(PROBLEM_STYLE)
+        self.problem_label.setStyleSheet(problem_style())
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.line)
@@ -407,7 +407,7 @@ class BinaryEdit(QWidget):
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
         self.problem_label.setVisible(False)
-        self.problem_label.setStyleSheet(PROBLEM_STYLE)
+        self.problem_label.setStyleSheet(problem_style())
         self.load_button = QPushButton("Load from file...", self)
         self.save_button = QPushButton("Save to file...", self)
         self.clear_button = QPushButton("Clear", self)

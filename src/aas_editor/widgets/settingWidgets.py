@@ -30,7 +30,7 @@ from aas_editor.domain.default_languages import DefaultLanguagesError
 from aas_editor.domain.default_languages import parse_default_languages
 from aas_editor.domain.id_templates import check_id_template
 from aas_editor.settings import AppSettings, Setting
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import problem_style
 from aas_editor.widgets.groupBoxes import OptionGroupBox
 
 
@@ -76,7 +76,7 @@ class TextSettingsGroupBox(OptionGroupBox):
             form.addRow(setting.display_name or setting.name, edit)
         self.problemLabel = QLabel()
         self.problemLabel.setWordWrap(True)
-        self.problemLabel.setStyleSheet(PROBLEM_STYLE)
+        self.problemLabel.setStyleSheet(problem_style())
         self.problemLabel.hide()
         layout.addWidget(self.problemLabel)
         self._showProblem()

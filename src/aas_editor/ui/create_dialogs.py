@@ -29,7 +29,7 @@ from PyQt6.QtWidgets import QTableWidgetItem
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import problem_style
 from aas_editor.application.operations.create import CreateError
 from aas_editor.application.operations.create import new_shell
 from aas_editor.application.operations.create import new_submodel
@@ -42,7 +42,6 @@ from aas_editor.domain.id_templates import IdKind
 from aas_editor.domain.references import describe_object
 from aas_editor.ui.user_defaults import new_id
 
-_PROBLEM_STYLE = PROBLEM_STYLE
 NO_SHELL_TEXT = "(none: a Submodel that no AAS refers to)"
 _KIND_TEXT = {
     model.AssetKind.TYPE: "Type",
@@ -62,7 +61,7 @@ class _ValidatedDialog(QDialog):
         self.form = QFormLayout()
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
-        self.problem_label.setStyleSheet(_PROBLEM_STYLE)
+        self.problem_label.setStyleSheet(problem_style())
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel,
