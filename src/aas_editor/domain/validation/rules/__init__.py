@@ -2,6 +2,7 @@
 
 from aas_editor.domain.validation.rule import Rule
 from aas_editor.domain.validation.rules import assets
+from aas_editor.domain.validation.rules import concepts
 from aas_editor.domain.validation.rules import files
 from aas_editor.domain.validation.rules import hints
 from aas_editor.domain.validation.rules import identity
@@ -17,6 +18,7 @@ ALL_RULES: tuple[Rule, ...] = (
     *values.RULES,
     *assets.RULES,
     *templates.RULES,
+    *concepts.RULES,
 )
 
 # Advice for hints mode. Not part of the package check or the save gate.
