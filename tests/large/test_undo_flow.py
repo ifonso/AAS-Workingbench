@@ -237,3 +237,41 @@ def test_save_then_undo_makes_the_package_changed_and_save_again_writes_it(
     assert not package.changed
     assert snapshot(Package(tmp_path / "saved.aasx").objStore) == edited
     assert isinstance(model.Property, type)
+
+
+@pytest.mark.parametrize("editor", PACKAGES[:1], indirect=True)
+def test_the_view_menu_switches_between_edit_and_read_mode(editor) -> None:
+    from aas_editor.application.editing import edit_mode
+    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+
+    window, view, package = editor.window, editor.view, editor.package
+    (submodel,) = list(package.submodels)
+    path = ("submodels", submodel.id_short)
+    first = submodel.submodel_element.__iter__().__next__().id_short
+    original = snapshot(package.objStore)
+    view.setCurrentIndex(_index(view, *path, first))
+    in_edit_mode = (
+        window.editModeAct.isChecked(),
+        view.delClearAct.isEnabled(),
+    )
+
+    window.readModeAct.trigger()
+    reading = (
+        edit_mode().is_editing,
+        window.readModeAct.isChecked(),
+        view.delClearAct.isEnabled(),
+        view.cutAct.isEnabled(),
+        view.addAct.isEnabled(),
+    )
+    refused = view.model().setData(
+        _index(view, *path, first), None, CLEAR_ROW_ROLE
+    )
+    unchanged = snapshot(package.objStore) == original
+    window.editModeAct.trigger()
+
+    assert in_edit_mode == (True, True)
+    assert reading == (False, True, False, False, False)
+    assert not refused
+    assert unchanged
+    assert edit_mode().is_editing
+    assert view.delClearAct.isEnabled()
