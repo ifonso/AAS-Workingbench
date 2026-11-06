@@ -5,11 +5,13 @@ import io
 
 from basyx.aas import model
 from tests.factories import make_file_element
+from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
 from aas_editor.application import supplementary_files as files
 from aas_editor.application.file_transfer import copy_source
+from aas_editor.domain.clipboard_json import clone
 
 DOC = "/aasx/files/doc.pdf"
 
@@ -165,3 +167,97 @@ def test_a_content_that_is_identical_is_reused_and_survives_undo(views) -> None:
     out = io.BytesIO()
     target.fileStore.write_file(DOC, out)
     assert out.getvalue() == b"%PDF source"
+
+
+def _replace_setup(views, target_files):
+    """A package with a File, and another with a Property to replace."""
+    shown = views()
+    element = make_file_element("Doc", DOC, "application/pdf")
+    submodel = make_submodel(elements=[element])
+    source = shown.open_package(
+        make_shell(submodels=[submodel]),
+        submodel,
+        files={DOC: (b"%PDF source", "application/pdf")},
+    )
+    other = make_submodel(
+        "urn:uuid:other", "Other", elements=[make_property("Old")]
+    )
+    target = shown.open_package(
+        make_shell("urn:uuid:other-shell", "OtherShell", submodels=[other]),
+        other,
+        files=target_files,
+    )
+    shown.view.expandAll()
+    return shown, source, target, other, element
+
+
+def _replace_old(shown, source, element):
+    """Pastes a copy of an element over the Property of the other package."""
+    from PyQt6.QtCore import Qt
+
+    replacement = clone(element)
+    copy_source.remember(source)
+    row = shown.index("submodels", "Other", "Old", package=1)
+    model_index = shown.view.model().mapToSource(row)
+    done = shown.table.setData(
+        model_index, replacement, Qt.ItemDataRole.EditRole
+    )
+    assert done, shown.table.lastErrorMsg
+    return replacement
+
+
+def test_replacing_an_element_brings_its_file_along(views) -> None:
+    shown, source, target, other, element = _replace_setup(views, None)
+
+    replacement = _replace_old(shown, source, element)
+
+    assert files.read_file(target.fileStore, DOC) == b"%PDF source"
+    assert target.fileStore.get_content_type(DOC) == "application/pdf"
+    assert replacement.value == DOC
+    assert [e.id_short for e in other.submodel_element] == ["Doc"]
+    assert other.get_referable("Doc") is replacement
+    assert files.find_dangling(target.objStore, target.fileStore) == []
+
+
+def test_undo_of_a_replace_takes_the_element_and_its_file_back(views) -> None:
+    shown, source, target, other, element = _replace_setup(views, None)
+
+    _replace_old(shown, source, element)
+    target.commandStack.undo()
+
+    assert list(target.fileStore) == []
+    assert [e.id_short for e in other.submodel_element] == ["Old"]
+    assert not target.commandStack.can_undo
+    target.commandStack.redo()
+    assert files.read_file(target.fileStore, DOC) == b"%PDF source"
+
+
+def test_a_replace_with_a_file_of_the_same_name_keeps_the_target_file(
+    views,
+) -> None:
+    shown, source, target, other, element = _replace_setup(
+        views, {DOC: (b"%PDF target", "application/pdf")}
+    )
+
+    replacement = _replace_old(shown, source, element)
+
+    assert files.read_file(target.fileStore, DOC) == b"%PDF target"
+    assert replacement.value == "/aasx/files/doc_0001.pdf"
+    assert (
+        files.read_file(target.fileStore, replacement.value) == b"%PDF source"
+    )
+
+
+def test_replacing_without_a_known_source_adds_no_file(views) -> None:
+    shown, _source, target, other, element = _replace_setup(views, None)
+    copy_source.forget()
+    from PyQt6.QtCore import Qt
+
+    row = shown.index("submodels", "Other", "Old", package=1)
+    shown.table.setData(
+        shown.view.model().mapToSource(row),
+        clone(element),
+        Qt.ItemDataRole.EditRole,
+    )
+
+    assert list(target.fileStore) == []
