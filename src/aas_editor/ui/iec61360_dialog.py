@@ -30,6 +30,8 @@ from PyQt6.QtWidgets import QScrollArea
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.ui.colors import ADVISORY_STYLE
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.domain.data_specifications import DATA_TYPE_GROUPS
 from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 from aas_editor.domain.data_specifications import LEVEL_TYPE_LABELS
@@ -210,10 +212,10 @@ class Iec61360Dialog(QDialog):
 
         self.problems_label = QLabel()
         self.problems_label.setWordWrap(True)
-        self.problems_label.setStyleSheet("color: #b00020;")
+        self.problems_label.setStyleSheet(PROBLEM_STYLE)
         self.advisories_label = QLabel()
         self.advisories_label.setWordWrap(True)
-        self.advisories_label.setStyleSheet("color: #8a5a00;")
+        self.advisories_label.setStyleSheet(ADVISORY_STYLE)
         self.buttons = make_buttons(self, accept_text)
 
         content = QWidget()

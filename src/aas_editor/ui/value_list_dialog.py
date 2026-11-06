@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import QPlainTextEdit
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.application.operations.data_specs import ImportPlan
 from aas_editor.application.operations.data_specs import plan_value_list_import
 from aas_editor.domain.references import describe_reference
@@ -74,7 +75,7 @@ class ValueListImportDialog(QDialog):
         self.table = ReferenceTable(["Entry", "Value", "Value id", "Result"])
         self.error_label = QLabel()
         self.error_label.setWordWrap(True)
-        self.error_label.setStyleSheet("color: #b00020;")
+        self.error_label.setStyleSheet(PROBLEM_STYLE)
         self.summary_label = QLabel()
         self.summary_label.setWordWrap(True)
         self.buttons = make_buttons(self, "Import")

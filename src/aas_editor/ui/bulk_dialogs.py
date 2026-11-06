@@ -47,8 +47,9 @@ from aas_editor.domain.references import describe_object
 from aas_editor.domain.rename_pattern import FILTER_NAMES
 from aas_editor.domain.rename_pattern import FIELD_NAMES
 from aas_editor.domain.rename_pattern import examples
+from aas_editor.ui.colors import PROBLEM_COLOR
 
-_REFUSED_COLOR = QColor(192, 0, 0)
+_REFUSED_COLOR = QColor(PROBLEM_COLOR)
 
 _HELP = (
     "Text is copied as it is. A field in braces is replaced, and filters "

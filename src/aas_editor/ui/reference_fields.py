@@ -29,6 +29,8 @@ from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.ui.colors import ADVISORY_STYLE
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.domain.reference_picker import ReferenceRule
 from aas_editor.domain.reference_picker import ReferenceStatus
 from aas_editor.domain.reference_picker import class_for_key_type
@@ -49,8 +51,8 @@ _WATCHED = (
     QEvent.Type.FocusOut,
     QEvent.Type.Hide,
 )
-_PROBLEM_STYLE = "color: #b00020;"
-_DANGLING_STYLE = "color: #8a5a00;"
+_PROBLEM_STYLE = PROBLEM_STYLE
+_DANGLING_STYLE = ADVISORY_STYLE
 
 
 def package_of(widget: QWidget) -> Any:
