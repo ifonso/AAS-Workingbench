@@ -203,6 +203,19 @@ class TabBar(QTabBar):
         self.initMenu()
         self.customContextMenuRequested.connect(self.openMenu)
 
+    def tabLayoutChange(self) -> None:
+        """Names the close buttons, which Qt makes without a name."""
+        super().tabLayoutChange()
+        for index in range(self.count()):
+            for side in (
+                QTabBar.ButtonPosition.LeftSide,
+                QTabBar.ButtonPosition.RightSide,
+            ):
+                button = self.tabButton(index, side)
+                if button is not None and not button.accessibleName():
+                    button.setAccessibleName("Close tab")
+                    button.setToolTip("Close tab")
+
     def tabSizeHint(self, index: int) -> QSize:
         """A tab is as wide as its title, between 120 and 240 pixels.
 

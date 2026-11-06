@@ -493,6 +493,14 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # Hidden until asked for, and tabifying shows the dock of the first tab.
         for dock in (validationDock, self.filesDock, self.selectionDock):
             dock.hide()
+            # Qt names the buttons of the title and gives them no tooltip.
+            for button_name, tip in (
+                ("qt_dockwidget_floatbutton", "Float this panel"),
+                ("qt_dockwidget_closebutton", "Close this panel"),
+            ):
+                button = dock.findChild(QAbstractButton, button_name)
+                if button is not None:
+                    button.setToolTip(tip)
         # A panel opens at a height that leaves the trees most of the window.
         self.resizeDocks(
             [validationDock], [DOCK_HEIGHT], QtCore.Qt.Orientation.Vertical

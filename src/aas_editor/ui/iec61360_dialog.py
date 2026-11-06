@@ -63,15 +63,20 @@ class LanguageRows(QWidget):
 
     changed = pyqtSignal()
 
-    def __init__(self, longest: int, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, longest: int, what: str = "Text", parent: QWidget | None = None
+    ) -> None:
         """Builds the widget.
 
         Args:
             longest: The longest text, which the rows show as a tooltip.
+            what: What the rows hold, which names their fields for a screen
+                reader, such as "Preferred name".
             parent: The parent widget.
         """
         super().__init__(parent)
         self._longest = longest
+        self._what = what
         self._rows: list[tuple[QLineEdit, QLineEdit, QWidget]] = []
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
@@ -97,8 +102,10 @@ class LanguageRows(QWidget):
         language_edit = QLineEdit(language)
         language_edit.setPlaceholderText("en")
         language_edit.setMaximumWidth(80)
+        language_edit.setAccessibleName(f"{self._what}, language")
         language_edit.setToolTip("Language tag, such as en or de-DE")
         text_edit = QLineEdit(text)
+        text_edit.setAccessibleName(f"{self._what}, text")
         text_edit.setPlaceholderText(f"Text (at most {self._longest})")
         remove = QPushButton("Remove")
         line.addWidget(language_edit)
@@ -181,9 +188,9 @@ class Iec61360Dialog(QDialog):
             draft.value_list or (), key=lambda pair: (pair.value, id(pair))
         )
 
-        self.preferred_name = LanguageRows(MAX_PREFERRED_NAME)
-        self.short_name = LanguageRows(MAX_SHORT_NAME)
-        self.definition = LanguageRows(MAX_DEFINITION)
+        self.preferred_name = LanguageRows(MAX_PREFERRED_NAME, "Preferred name")
+        self.short_name = LanguageRows(MAX_SHORT_NAME, "Short name")
+        self.definition = LanguageRows(MAX_DEFINITION, "Definition")
         self.unit = QLineEdit(draft.unit)
         self.unit.setPlaceholderText("such as m/s")
         self.unit_id = QLineEdit(draft.unit_id)
@@ -205,6 +212,7 @@ class Iec61360Dialog(QDialog):
         levels.addStretch(1)
         self.value_list_label = QLabel()
         self.pairs_list = QListWidget()
+        self.pairs_list.setAccessibleName("Pairs of the value list")
         self.pairs_list.setMaximumHeight(96)
         self.pairs_list.setSelectionMode(
             QAbstractItemView.SelectionMode.SingleSelection
@@ -266,7 +274,9 @@ class Iec61360Dialog(QDialog):
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
-        content_layout.addWidget(QLabel("Template"))
+        template_label = QLabel("Template")
+        template_label.setBuddy(template)
+        content_layout.addWidget(template_label)
         content_layout.addWidget(template)
         content_layout.addWidget(names)
         content_layout.addWidget(values)

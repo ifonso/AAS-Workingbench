@@ -253,6 +253,7 @@ class PackTreeView(TreeView):
             **kwargs,
         )
         PackTreeView.__instance = self
+        self.setAccessibleName("Package tree")
         self.recentFilesSeparator = None
         self.setAcceptDrops(True)
         self.setExpandsOnDoubleClick(False)

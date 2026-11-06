@@ -118,6 +118,7 @@ class AttrsTreeView(TreeView):
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents
         )
         self.setObjectName("attrsTreeView")
+        self.setAccessibleName("Attributes")
         self.setModelWithProxy(self.treeModel(packItem))
         # The value is what a user edits, so it takes the width that the name
         # and the type leave. A tab is not wide, and a scroll bar for the
