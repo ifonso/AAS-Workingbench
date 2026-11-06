@@ -881,6 +881,13 @@ class PackTreeView(TreeView):
             widgets.messsageBoxes.ErrorMessageBox.withTraceback(
                 self, f"No chosen package to save: {e}"
             ).exec()
+        except Exception as e:
+            # Any other failure, such as a full disk or a locked file, must
+            # reach the user as an error and not close the application.
+            logging.exception("Package couldn't be saved: %s", file)
+            widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                self, f"Package couldn't be saved: {file or originalFile}: {e}"
+            ).exec()
         return False
 
     def savePackInTypeWithDialog(
@@ -1122,7 +1129,14 @@ class PackTreeView(TreeView):
             super(PackTreeView, self).onOneItemDelClear(index)
         else:
             parentObjType = type(index.data(OBJECT_ROLE))
-            defaultVal = getDefaultVal(parentObjType, attribute)
+            try:
+                defaultVal = getDefaultVal(parentObjType, attribute)
+            except AttributeError:
+                # No default means the attribute is mandatory
+                widgets.messsageBoxes.ErrorMessageBox.withDetailedText(
+                    self, f"'{attribute}' is mandatory and cannot be cleared"
+                ).exec()
+                return
             self._setItemData(index, defaultVal, Qt.ItemDataRole.EditRole)
 
     def isPasteOk(self, index: QModelIndex) -> bool:
