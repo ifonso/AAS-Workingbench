@@ -7,12 +7,12 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
-import ast
 import datetime
 import decimal
 from abc import abstractmethod
 from collections import namedtuple
 from enum import Enum
+from inspect import isabstract
 from typing import Optional, Type, TypeVar
 
 import dateutil
@@ -37,6 +37,7 @@ from PyQt6.QtWidgets import (
 from basyx.aas.model.datatypes import Date
 
 from aas_editor.additional.classes import DictItem
+from aas_editor.ui.value_editor import BinaryEdit, ValueEdit, ValueTypeBox
 from aas_editor.utils.util import inheritors
 from aas_editor.utils.util_classes import PreObject
 from aas_editor.utils.util_type import isoftype, issubtype, getTypeName, getArgs
@@ -153,58 +154,21 @@ class DictItemEdit(QWidget):
         return DictItem(keyData, valueData)
 
 
-class BytesEdit(QWidget):
-    def __init__(self, parent=None):
-        super(BytesEdit, self).__init__(parent)
-        self._initLayout()
-
-        self.plainTextEdit = QPlainTextEdit("b''", self)
-        plusButton = QPushButton(
-            f"Choose file", self, toolTip="Choose file", clicked=self.chooseFile
-        )
-
-        self.layout().addWidget(self.plainTextEdit)
-        self.layout().addWidget(plusButton)
-
-    def chooseFile(self):
-        file, _ = QFileDialog.getOpenFileName(self, "Open AAS file")
-        if file:
-            with open(file, "rb") as f:
-                self.plainTextEdit.setPlainText(str(f.read()))
-
-    def _initLayout(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(self)
-        self.setLayout(layout)
+class BytesEdit(BinaryEdit):
+    """Shows the bytes of a Blob as text or hex, in the dialogs generated for
+    the bytes of an object. The user loads and saves files, and never types a
+    Python literal."""
 
     def getPreObj(self):
-        text = self.plainTextEdit.toPlainText()
-        if not text:
-            return PreObject(type(None), (), {})
-        else:
-            return PreObject(bytes, (self._parseBytes(text),), {})
-
-    @staticmethod
-    def _parseBytes(text: str) -> bytes:
-        """Parse a bytes literal such as b'text' without running any code.
-
-        :raise ValueError if the text is not a bytes literal
-        """
-        try:
-            value = ast.literal_eval(text.strip())
-        except (ValueError, SyntaxError, MemoryError, RecursionError) as e:
-            raise ValueError("Value must be of type: b'text'") from e
-        if not isinstance(value, bytes):
-            raise ValueError("Value must be of type: b'text'")
-        return value
+        return PreObject.useExistingObject(self.data())
 
     def getObj2add(self):
-        return self.getPreObj().init()
+        return self.data()
 
-    def setPlainText(self, text):
-        self.plainTextEdit.setPlainText(text)
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            val = val.init()
+        self.set_data(bytes(val) if val is not None else None)
 
 
 class WidgetWithTZinfo(QWidget):
@@ -273,6 +237,12 @@ class DurationEdit(QWidget):
     def duration(self) -> dateutil.relativedelta.relativedelta:
         return self.getObj2add()
 
+    @staticmethod
+    def _fieldText(field) -> str:
+        if isoftype(field, PreObject):
+            field = field.init()
+        return str(field) if field else ""
+
     def setVal(self, val: dateutil.relativedelta.relativedelta):
         Duration_kwargs = namedtuple(
             "Duration_kwargs",
@@ -286,13 +256,14 @@ class DurationEdit(QWidget):
         if isinstance(
             val, (dateutil.relativedelta.relativedelta, Duration_kwargs)
         ):
-            self.yearsEdit.setText(val.years)
-            self.monthsEdit.setText(val.months)
-            self.daysEdit.setText(val.days)
-            self.hoursEdit.setText(val.hours)
-            self.minutesEdit.setText(val.minutes)
-            self.secondsEdit.setText(val.seconds)
-            self.microsecondsEdit.setText(val.microseconds)
+            # The line edits take text, and a field that is zero stays empty.
+            self.yearsEdit.setText(self._fieldText(val.years))
+            self.monthsEdit.setText(self._fieldText(val.months))
+            self.daysEdit.setText(self._fieldText(val.days))
+            self.hoursEdit.setText(self._fieldText(val.hours))
+            self.minutesEdit.setText(self._fieldText(val.minutes))
+            self.secondsEdit.setText(self._fieldText(val.seconds))
+            self.microsecondsEdit.setText(self._fieldText(val.microseconds))
         else:
             raise TypeError(
                 "arg1 must be instance of type dateutil.relativedelta.relativedelta:",
@@ -462,9 +433,15 @@ class StandardInputWidget(QWidget):
             else:  # Type
                 union = getArgs(self.objType)[0]
                 if type(union) == TypeVar:
-                    # add Type inheritors to types
+                    # add Type inheritors to types, but only the ones that can
+                    # be made: an abstract class is no type for the children
+                    # of a list, and the SDK refuses all of them
                     baseType = union.__bound__
-                    types = inheritors(baseType)
+                    types = [
+                        typ
+                        for typ in inheritors(baseType)
+                        if not isabstract(typ)
+                    ]
                 else:
                     # add Union Type attrs to types
                     types = getArgs(union)
@@ -599,7 +576,7 @@ class SpecialInputWidget(StandardInputWidget):
     def setVal(self, val):
         if isoftype(val, PreObject):
             if issubtype(self.objType, bytes) and issubtype(val.objType, bytes):
-                self.widget.setPlainText(val.args[0])
+                self.widget.setVal(val)
                 # TODO: impement for date types
         elif val is not None:
             if issubtype(self.objType, datetime.datetime) and isoftype(
@@ -623,5 +600,48 @@ class SpecialInputWidget(StandardInputWidget):
             ) and isoftype(val, dateutil.relativedelta.relativedelta):
                 self.widget.setDuration(val)
             elif issubtype(self.objType, bytes) and isoftype(val, bytes):
-                # text = val.decode("utf-8")
-                self.widget.setPlainText(str(val))
+                self.widget.setVal(val)
+
+
+class ValueTypeInputWidget(StandardInputWidget):
+    """Chooses the XSD type of a value, such as xs:int, by its name.
+
+    Used for every attribute that holds the class of an XSD type, like the
+    value_type of a Property.
+    """
+
+    def _initWidget(self, **kwargs):
+        return ValueTypeBox(None, parent=self)
+
+    def getPreObj(self):
+        return PreObject.useExistingObject(self.widget.value_type())
+
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            val = val.init()
+        if isinstance(val, type):
+            self.widget.set_value_type(val)
+
+
+class TypedValueInputWidget(StandardInputWidget):
+    """A value that follows the value type of the object it belongs to.
+
+    The form links it to the widget of the value type, so that the text is
+    checked against the chosen type while the user types.
+    """
+
+    def _initWidget(self, **kwargs):
+        return ValueEdit(parent=self)
+
+    def setValueType(self, valueType):
+        self.widget.set_value_type(valueType)
+
+    def getPreObj(self):
+        # Raises InvalidValueError, with a message for the user, if the text
+        # is no value of the type.
+        return PreObject.useExistingObject(self.widget.value())
+
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            val = val.init()
+        self.widget.set_value(val)

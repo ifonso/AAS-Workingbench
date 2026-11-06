@@ -100,6 +100,8 @@ DATA_CHANGE_FAILED_ROLE = 1180
 TYPE_ROLE = 1190
 TYPE_HINT_ROLE = 1200
 TYPE_CHECK_ROLE = 1210
+# The object and the attribute name that editing a cell sets: a tuple, or None.
+EDIT_TARGET_ROLE = 1220
 
 # Columns
 OBJECT_COLUMN_NAME = "object"

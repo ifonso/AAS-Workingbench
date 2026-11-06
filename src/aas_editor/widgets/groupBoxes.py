@@ -47,7 +47,15 @@ from aas_editor.utils.util_type import (
     getArgs,
 )
 from aas_editor.utils.util import isValOk4Typehint
-from aas_editor.widgets.editWidgets import StandardInputWidget
+from aas_editor.domain.language_tags import check_language_tags
+from aas_editor.domain.typed_values import check_new_object
+from aas_editor.widgets.editWidgets import (
+    BytesEdit,
+    SpecialInputWidget,
+    StandardInputWidget,
+    TypedValueInputWidget,
+    ValueTypeInputWidget,
+)
 from aas_editor.widgets.messsageBoxes import ErrorMessageBox
 
 
@@ -143,6 +151,8 @@ class ObjGroupBox(GroupBox):
 
         self.inputWidgets: List[QWidget] = []
         self.paramWidgets: Dict[str, QWidget] = {}
+        # Widget of a value -> the widget it follows, to link each pair once.
+        self._linkedWidgets: Dict[QWidget, QWidget] = {}
 
         reqInitParamsTypehints = getReqParams4init(
             self.objTypeHint,
@@ -214,7 +224,50 @@ class ObjGroupBox(GroupBox):
         title = self.getWidgetTitle(param)
         self.layout().insertRow(row, title, widget)
         self.inputWidgets.append(widget)
+        self.linkValueWidgets()
         self.adjustSize()
+
+    def linkValueWidgets(self):
+        """Make the widgets of a value follow the widgets they depend on.
+
+        A value is checked against the value type of the same object, and the
+        bytes of a Blob suggest the content type of a file that is loaded.
+        Widgets that are not there yet are linked when they are created.
+        """
+        typeWidget = self.paramWidgets.get("value_type")
+        contentTypeWidget = self.paramWidgets.get("content_type")
+        # A value type that the form does not ask for, like the one a list
+        # fixes for its children, is one of the hidden parameters.
+        fixedType = self.paramsToHide.get("value_type")
+        for widget in list(self.paramWidgets.values()):
+            if isinstance(widget, TypedValueInputWidget) and isinstance(
+                typeWidget, ValueTypeInputWidget
+            ):
+                if self._linkedWidgets.get(widget) is typeWidget:
+                    continue
+                typeWidget.widget.value_type_changed.connect(
+                    widget.setValueType
+                )
+                widget.setValueType(typeWidget.widget.value_type())
+                self._linkedWidgets[widget] = typeWidget
+            elif isinstance(widget, TypedValueInputWidget) and fixedType:
+                widget.setValueType(fixedType)
+            elif (
+                isinstance(widget, SpecialInputWidget)
+                and isinstance(widget.widget, BytesEdit)
+                and isinstance(contentTypeWidget, StandardInputWidget)
+            ):
+                if self._linkedWidgets.get(widget) is contentTypeWidget:
+                    continue
+                bytesEdit, lineEdit = widget.widget, contentTypeWidget.widget
+                bytesEdit.set_content_type(lineEdit.text())
+                lineEdit.textChanged.connect(bytesEdit.set_content_type)
+                bytesEdit.content_type_suggested.connect(
+                    lambda suggested, line=lineEdit: (
+                        line.setText(suggested) if not line.text() else None
+                    )
+                )
+                self._linkedWidgets[widget] = contentTypeWidget
 
     def getWidgetTitle(self, param: str):
         title = param.strip("_")
@@ -245,8 +298,14 @@ class ObjGroupBox(GroupBox):
         return PreObject(self.objTypeHint, (), kwargs)
 
     def getObj2add(self):
-        """Return resulting obj due to user input data"""
-        return self.getPreObj().init()
+        """Return resulting obj due to user input data
+
+        :raise ValueError if the values contradict each other, like a Range
+            with a minimum above its maximum
+        """
+        obj = self.getPreObj().init()
+        check_new_object(obj)
+        return obj
 
     def delInputWidget(self, widget: QWidget):
         self.inputWidgets.remove(widget)
@@ -463,6 +522,11 @@ class LangStringSetGroupBox(IterableGroupBox):
         super().__init__(objTypeHint, **kwargs)
 
     def getPreObj(self):
+        problems = check_language_tags(
+            widget.getObj2add().key for widget in self.inputWidgets
+        )
+        if problems:
+            raise ValueError("\n".join(problems))
         preObjDict = super().getPreObj()
         return PreObject(self.langStringTypeHint, (preObjDict,), {})
 

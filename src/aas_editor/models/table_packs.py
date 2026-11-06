@@ -90,6 +90,13 @@ class PacksTable(StandardTable):
             return self.attributeCommand(index, owner, attribute, value)
         return super().editCommand(index, value)
 
+    def editTarget(self, index: QModelIndex):
+        if index.isValid() and (
+            index.data(COLUMN_NAME_ROLE) not in DEFAULT_COLUMNS_IN_PACKS_TABLE
+        ):
+            return index.data(OBJECT_ROLE), index.data(COLUMN_NAME_ROLE)
+        return super().editTarget(index)
+
     def _changedObject(self, index: QModelIndex):
         if index.data(COLUMN_NAME_ROLE) not in DEFAULT_COLUMNS_IN_PACKS_TABLE:
             return index.data(OBJECT_ROLE)

@@ -27,7 +27,10 @@ from PyQt6.QtWidgets import (
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt, QModelIndex
 
+from aas_editor.domain.typed_values import is_value_attr, value_type_of
 from aas_editor.settings import DEFAULT_COMPLETIONS
+from aas_editor.settings.app_settings import EDIT_TARGET_ROLE
+from aas_editor.ui.value_editor import ValueLineEdit
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import issubtype, isoftype
 from aas_editor.widgets.editWidgets import (
@@ -93,12 +96,32 @@ class ColorDelegate(QStyledItemDelegate):
 class EditDelegate(ColorDelegate):
     editableTypesInTable = (bool, int, str, Enum)
 
+    @staticmethod
+    def typedValueTarget(index: QtCore.QModelIndex):
+        """Return the object and attribute of a cell that follows a value type
+
+        :return: a tuple of the Property, Range, Qualifier or Extension and the
+            name of the attribute that holds the value, or None for other cells
+        """
+        target = index.data(EDIT_TARGET_ROLE)
+        if target and is_value_attr(*target):
+            return target
+        return None
+
+    def isTypedValueCell(self, index: QtCore.QModelIndex) -> bool:
+        return self.typedValueTarget(index) is not None
+
     def createEditor(
         self,
         parent: QWidget,
         option: "QStyleOptionViewItem",
         index: QtCore.QModelIndex,
     ) -> QWidget:
+        target = self.typedValueTarget(index)
+        if target:
+            # The text is parsed by the model, for the value type of the owner.
+            owner, _ = target
+            return ValueLineEdit(value_type_of(owner), parent)
         objType = type(index.data(Qt.ItemDataRole.EditRole))
         attr = index.data(Qt.ItemDataRole.DisplayRole)
         if issubtype(objType, bool):
@@ -128,7 +151,10 @@ class EditDelegate(ColorDelegate):
         return widget
 
     def setEditorData(self, editor: QWidget, index: QtCore.QModelIndex) -> None:
-        if isinstance(index.data(Qt.ItemDataRole.EditRole), Enum):
+        if isinstance(editor, ValueLineEdit):
+            editor.set_value(index.data(Qt.ItemDataRole.EditRole))
+            editor.initial_text = editor.text()
+        elif isinstance(index.data(Qt.ItemDataRole.EditRole), Enum):
             currItem = index.data(Qt.ItemDataRole.EditRole)
             items = [member for member in type(currItem)]
             for item in items:
@@ -147,7 +173,12 @@ class EditDelegate(ColorDelegate):
         model: QtCore.QAbstractItemModel,
         index: QtCore.QModelIndex,
     ) -> None:
-        if isoftype(index.data(Qt.ItemDataRole.EditRole), (Enum, DictItem)):
+        if isinstance(editor, ValueLineEdit):
+            # Leaving the text as it was is no edit, so an empty string value
+            # does not replace a missing one.
+            if editor.text() != editor.initial_text:
+                model.setData(index, editor.text(), Qt.ItemDataRole.EditRole)
+        elif isoftype(index.data(Qt.ItemDataRole.EditRole), (Enum, DictItem)):
             obj = editor.currentData()
             model.setData(index, obj, Qt.ItemDataRole.EditRole)
         elif isoftype(index.data(Qt.ItemDataRole.EditRole), int):

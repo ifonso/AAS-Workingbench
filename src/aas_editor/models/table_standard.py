@@ -73,6 +73,7 @@ from aas_editor.settings.app_settings import (
     COLUMN_NAME_ROLE,
     LINKED_ITEM_ROLE,
     COPY_ROLE,
+    EDIT_TARGET_ROLE,
 )
 from aas_editor.settings import NOT_GIVEN
 from aas_editor.settings.colors import LINK_BLUE, CHANGED_BLUE, NEW_GREEN
@@ -466,6 +467,8 @@ class StandardTable(QAbstractItemModel):
             return self._columns[column]
         if role == LINKED_ITEM_ROLE:
             return self.getLinkedItem(index)
+        if role == EDIT_TARGET_ROLE:
+            return self.editTarget(index)
         if role == COPY_ROLE:
             try:
                 if index.column() in (ATTRIBUTE_COLUMN, VALUE_COLUMN):
@@ -624,10 +627,23 @@ class StandardTable(QAbstractItemModel):
                 self._observerFor(index),
                 container,
                 item.obj,
-                self._checkedMember(container, value),
+                self._checkedMember(container, item.obj, value),
                 origin=self,
             )
         return self.attributeCommand(index, container, item.objName, value)
+
+    def editTarget(self, index: QModelIndex):
+        """Return the object and the attribute that an edit of the cell sets.
+
+        :return: a tuple of the object and the name of its attribute, or None
+            if the cell shows an element of a container or no attribute
+        """
+        if not index.isValid() or index.column() != VALUE_COLUMN:
+            return None
+        owner = self._changedObject(index)
+        if isinstance(owner, (list, AbstractSet, MutableMapping)):
+            return None
+        return owner, self.objByIndex(index).objName
 
     def attributeCommand(
         self, index: QModelIndex, owner, name: str, value
@@ -651,15 +667,23 @@ class StandardTable(QAbstractItemModel):
         return None if command.is_noop else command
 
     @staticmethod
-    def _checkedMember(container, value):
-        """Return the member to put into a container, or refuse it.
+    def _checkedMember(container, old, value):
+        """Return the member to put into a container instead of old, or refuse.
 
-        :raise InvalidValueError: if the language of a text is no language tag
+        :raise InvalidValueError: if the language of a text is no language tag,
+            is used by another text, or the text is empty
         """
         if isinstance(container, LangStringSet) and isinstance(value, DictItem):
             problem = check_language_tag(value.key)
             if problem:
                 raise InvalidValueError(problem)
+            taken = value.key in container and (
+                not isinstance(old, DictItem) or old.key != value.key
+            )
+            if taken:
+                raise InvalidValueError(
+                    f"The language '{value.key}' is used by another text"
+                )
             if not value.value:
                 raise InvalidValueError(
                     f"The text for the language '{value.key}' cannot be empty"

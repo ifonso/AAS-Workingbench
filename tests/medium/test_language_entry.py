@@ -79,7 +79,7 @@ def test_a_well_formed_language_is_accepted_and_can_be_undone(texts) -> None:
     before = snapshot(shown.package.objStore)
 
     edited = shown.replace(row, "en-GB", "a")
-    after_edit = dict(prop.description)
+    after_edit = dict(prop.description or {})
     shown.package.commandStack.undo()
 
     assert edited
@@ -94,7 +94,7 @@ def test_an_empty_language_is_refused(texts) -> None:
     edited = shown.replace(shown.row("description", "DictItem 0"), "", "a")
 
     assert not edited
-    assert dict(prop.description) == {"en": "a", "de": "b"}
+    assert dict(prop.description or {}) == {"en": "a", "de": "b"}
 
 
 def test_a_language_of_the_value_of_a_multi_language_property_is_checked(
@@ -108,7 +108,7 @@ def test_a_language_of_the_value_of_a_multi_language_property_is_checked(
 
     assert not edited
     assert "use a hyphen" in shown.message(row)
-    assert dict(mlp.value) == {"en": "a", "de": "b"}
+    assert dict(mlp.value or {}) == {"en": "a", "de": "b"}
 
 
 def test_a_language_of_a_display_name_is_checked(texts) -> None:
@@ -135,4 +135,28 @@ def test_a_text_that_is_empty_is_refused_and_the_entry_stays(texts) -> None:
     assert (
         shown.message(row) == "The text for the language 'fr' cannot be empty"
     )
-    assert dict(prop.description) == {"en": "a", "de": "b"}
+    assert dict(prop.description or {}) == {"en": "a", "de": "b"}
+
+
+def test_a_language_that_another_text_uses_is_refused(texts) -> None:
+    prop = _prop_with_description()
+    shown = texts(prop)
+    row = shown.row("description", "DictItem 0")
+
+    edited = shown.replace(row, "de", "a")
+
+    assert not edited
+    assert shown.message(row) == "The language 'de' is used by another text"
+    assert dict(prop.description or {}) == {"en": "a", "de": "b"}
+
+
+def test_the_text_of_a_language_can_change_when_the_language_stays(
+    texts,
+) -> None:
+    prop = _prop_with_description()
+    shown = texts(prop)
+
+    edited = shown.replace(shown.row("description", "DictItem 0"), "en", "new")
+
+    assert edited
+    assert dict(prop.description or {}) == {"en": "new", "de": "b"}

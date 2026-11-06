@@ -48,6 +48,7 @@ from basyx.aas.model import Submodel, Referable, Identifiable
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 from aas_editor.delegates import EditDelegate
+from aas_editor.ui.value_editor import ValueEditDialog, value_dialog_args
 from aas_editor.application.save import SaveStatus, save
 from aas_editor.infrastructure.package_io import read_package, write_package
 from aas_editor.package import Package, StoredFile
@@ -492,6 +493,16 @@ class PackTreeView(TreeView):
         objVal = objVal if objVal else index.data(Qt.ItemDataRole.EditRole)
         attribute = index.data(COLUMN_NAME_ROLE)
         parentObj = index.data(OBJECT_ROLE)
+        valueArgs = value_dialog_args(parentObj, attribute)
+        if valueArgs is not None:
+            # A value follows its value type, and bytes are not literals.
+            return self.replItemWithDialog(
+                index=index,
+                title=f"Edit {attribute}",
+                objVal=objVal,
+                editDialogType=ValueEditDialog,
+                **valueArgs,
+            )
         try:
             if attribute == OBJECT_COLUMN_NAME:
                 attrTypeHint = type(parentObj)

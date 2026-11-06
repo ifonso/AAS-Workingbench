@@ -30,9 +30,11 @@ from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from basyx.aas import model
 from basyx.aas.model import datatypes
 
 from aas_editor.domain import blob_content
+from aas_editor.domain import typed_values
 from aas_editor.domain import value_types
 from aas_editor.domain.value_types import InvalidValueError
 from aas_editor.domain.value_types import XsdType
@@ -114,12 +116,90 @@ class ValueTypeBox(QComboBox):
         self.value_type_changed.emit(self.value_type())
 
 
-class ValueEdit(QWidget):
-    """A line of text for a value of an XSD type.
+class ValueLineEdit(QLineEdit):
+    """A line of text that follows an XSD type.
 
-    The text is checked against the type while the user types, and the
-    problem is shown below the line. `value` gives the typed value, or raises
-    with the same message.
+    The text is checked while the user types. A wrong text gets a red frame and
+    a tooltip that says what is wrong. `value` gives the typed value.
+    """
+
+    def __init__(
+        self,
+        value_type: XsdType = datatypes.String,
+        parent: QWidget | None = None,
+    ) -> None:
+        """Builds the line.
+
+        Args:
+            value_type: The type that the text must follow.
+            parent: The parent widget.
+        """
+        super().__init__(parent)
+        self._value_type: XsdType = value_type or datatypes.String
+        # The text a view put in, so that it can tell whether the user changed it.
+        self.initial_text = ""
+        self.textChanged.connect(self._refresh)
+        self._refresh()
+
+    def value_type(self) -> XsdType:
+        """Returns the type that the text must follow."""
+        return self._value_type
+
+    def set_value_type(self, value_type: XsdType | None) -> None:
+        """Checks the text against another type.
+
+        Args:
+            value_type: The new type. None means `xs:string`.
+        """
+        self._value_type = value_type or datatypes.String
+        self._refresh()
+
+    def set_value(self, value: Any) -> None:
+        """Shows a value in its lexical form, or nothing for None."""
+        self.setText("" if value is None else value_types.format_value(value))
+
+    def value(self) -> Any:
+        """Returns the typed value.
+
+        Returns:
+            A value of the type, or None if the text is empty and the type is
+            not a text type, where an empty text is a value.
+
+        Raises:
+            InvalidValueError: If the text is no value of the type.
+        """
+        text = self.text()
+        if not text and not value_types.keeps_whitespace(self._value_type):
+            return None
+        return value_types.parse(text, self._value_type)
+
+    def problem(self) -> str | None:
+        """Tells what is wrong with the text, or None if it is fine."""
+        text = self.text()
+        if not text:
+            return None
+        return value_types.check(text, self._value_type)
+
+    def _refresh(self, _: str = "") -> None:
+        name = value_types.type_name(self._value_type)
+        example = _EXAMPLES.get(self._value_type)
+        self.setPlaceholderText(f"{name}: {example}" if example else name)
+        if self._value_type is datatypes.Boolean:
+            completer = QCompleter(["true", "false"], self)
+            completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+            self.setCompleter(completer)
+        else:
+            self.setCompleter(None)
+        problem = self.problem()
+        self.setToolTip(problem or name)
+        self.setAccessibleDescription(problem or "")
+        # The frame is not the only sign: the tooltip and the description say
+        # what is wrong, and ValueEdit shows it in words.
+        self.setStyleSheet("border: 1px solid #c0392b;" if problem else "")
+
+
+class ValueEdit(QWidget):
+    """A line of text for a value of an XSD type, with the problem below it.
 
     Signals:
         changed: The text or the type changed.
@@ -139,23 +219,20 @@ class ValueEdit(QWidget):
             parent: The parent widget.
         """
         super().__init__(parent)
-        self._value_type: XsdType = value_type
-        self.line = QLineEdit(self)
+        self.line = ValueLineEdit(value_type, self)
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
         self.problem_label.setVisible(False)
-        # The label is read by screen readers, and the color alone says nothing.
         self.problem_label.setStyleSheet("color: #c0392b;")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.line)
         layout.addWidget(self.problem_label)
         self.line.textChanged.connect(self._on_text_changed)
-        self._update()
 
     def value_type(self) -> XsdType:
         """Returns the type that the text must follow."""
-        return self._value_type
+        return self.line.value_type()
 
     def set_value_type(self, value_type: XsdType | None) -> None:
         """Checks the text against another type.
@@ -163,8 +240,8 @@ class ValueEdit(QWidget):
         Args:
             value_type: The new type. None means `xs:string`.
         """
-        self._value_type = value_type or datatypes.String
-        self._update()
+        self.line.set_value_type(value_type)
+        self._show_problem()
         self.changed.emit()
 
     def text(self) -> str:
@@ -177,51 +254,28 @@ class ValueEdit(QWidget):
 
     def set_value(self, value: Any) -> None:
         """Shows a value in its lexical form, or nothing for None."""
-        self.line.setText(
-            "" if value is None else value_types.format_value(value)
-        )
+        self.line.set_value(value)
 
     def value(self) -> Any:
-        """Returns the typed value.
-
-        Returns:
-            A value of the type, or None if the text is empty and the type is
-            not a text type, where an empty text is a value.
+        """Returns the typed value, or None if the text of a number is empty.
 
         Raises:
             InvalidValueError: If the text is no value of the type.
         """
-        text = self.line.text()
-        if not text and not value_types.keeps_whitespace(self._value_type):
-            return None
-        return value_types.parse(text, self._value_type)
+        return self.line.value()
 
     def problem(self) -> str | None:
         """Tells what is wrong with the text, or None if it is fine."""
-        text = self.line.text()
-        if not text:
-            return None
-        return value_types.check(text, self._value_type)
+        return self.line.problem()
 
     def _on_text_changed(self, _: str) -> None:
-        self._update()
+        self._show_problem()
         self.changed.emit()
 
-    def _update(self) -> None:
-        name = value_types.type_name(self._value_type)
-        example = _EXAMPLES.get(self._value_type)
-        self.line.setPlaceholderText(f"{name}: {example}" if example else name)
-        if self._value_type is datatypes.Boolean:
-            completer = QCompleter(["true", "false"], self.line)
-            completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-            self.line.setCompleter(completer)
-        else:
-            self.line.setCompleter(None)
+    def _show_problem(self) -> None:
         problem = self.problem()
         self.problem_label.setText(problem or "")
         self.problem_label.setVisible(problem is not None)
-        self.line.setToolTip(problem or name)
-        self.line.setAccessibleDescription(problem or "")
 
 
 class BinaryEdit(QWidget):
@@ -487,6 +541,25 @@ class BinaryEdit(QWidget):
     def _set_problem(self, message: str | None) -> None:
         self.problem_label.setText(message or "")
         self.problem_label.setVisible(message is not None)
+
+
+def value_dialog_args(owner: object, name: str) -> dict[str, Any] | None:
+    """Tells whether an attribute is edited in a `ValueEditDialog`, and how.
+
+    Args:
+        owner: The object that has the attribute.
+        name: The name of the attribute.
+
+    Returns:
+        The keyword arguments for `ValueEditDialog`, or None if the attribute
+        is edited with the generated dialog. A value that follows a value type
+        gets the type, and the bytes of a Blob get `binary` and the media type.
+    """
+    if typed_values.is_value_attr(owner, name):
+        return {"value_type": typed_values.value_type_of(owner)}
+    if isinstance(owner, model.Blob) and name == "value":
+        return {"binary": True, "content_type": owner.content_type}
+    return None
 
 
 class ValueEditDialog(QDialog):
