@@ -136,6 +136,7 @@ These have no direct equivalent in the P0 and P1 list, so keep them while workin
 - Validation with AAS Test Engines
 - Theme selection, with light as the default and a dark theme, both checked for contrast ([ADR 0025](adr/0025-design-tokens-and-theme-architecture.md)), and split tabs
 - A bundled font (Inter) and action icons that follow the theme and are sharp on high resolution screens ([ADR 0027](adr/0027-bundled-font-and-themed-icons.md))
+- Drawn icons for 24 kinds of AAS elements in the trees, one shape for each family and letters for each kind, in light and dark ([ADR 0027](adr/0027-bundled-font-and-themed-icons.md))
 
 ## Working on a feature
 

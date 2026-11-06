@@ -26,6 +26,7 @@ from PyQt6.QtCore import QObject, QVariant
 
 from aas_editor.package import StoredFile
 from aas_editor import settings
+from aas_editor.ui.theme.kind_icons import kind_icon
 from aas_editor.utils.util import (
     getAttrDoc,
     simplifyInfo,
@@ -162,16 +163,8 @@ class StandardItem(QObject):
                 )
             )
         else:
-            try:
-                self.icon = settings.getCharsIcon(
-                    settings.TYPE_SHORTS_DICT[type(self.obj)]
-                )
-            except KeyError:
-                for cls in settings.TYPE_SHORTS_DICT:
-                    if isinstance(self.obj, cls):
-                        self.icon = settings.getCharsIcon(
-                            settings.TYPE_SHORTS_DICT[cls]
-                        )
+            icon = kind_icon(self.obj)
+            self.icon = QIcon() if icon is None else icon
 
     def data(self, role, column=settings.ATTRIBUTE_COLUMN, column_name=""):
         # custom roles

@@ -261,23 +261,3 @@ TYPES_WITH_INSTANCES_NOT_TO_POPULATE = (
     datetime.date,
 )  # '+ TYPES_IN_ONE_ROW
 COMPLEX_ITERABLE_TYPES = (Namespace,)
-
-TYPE_SHORTS_DICT = {
-    AssetAdministrationShell: "AAS",
-    ConceptDescription: "CD",
-    Submodel: "SM",
-    Property: "PRP",
-    Entity: "ENT",
-    Capability: "CP",
-    BasicEventElement: "EVN",
-    Operation: "OPR",
-    RelationshipElement: "REL",
-    AnnotatedRelationshipElement: "REL",
-    SubmodelElementCollection: "SMC",
-    SubmodelElementList: "SML",
-    Range: "RNG",
-    Blob: "BLB",
-    File: "FLE",
-    ReferenceElement: "REF",
-    DataElement: "DT",
-}

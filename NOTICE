@@ -91,6 +91,19 @@ Tabler Icons (src/aas_editor/icons/tabler/)
     folder, and is the text of the same release. The editor draws the files
     in a color of the theme, and does not change them.
 
+Icons of the kinds of AAS elements (src/aas_editor/icons/kinds/)
+    The 24 SVG files that mark the kinds of elements in the trees (shell,
+    submodel, concept description, the elements, and the parts such as
+    qualifier and reference) are the own work of this project, drawn for it in
+    2026, and are under its license, the GNU General Public License, version
+    3. Each is a shape for the family of the kind, with one or two letters for
+    the kind. The shapes and the letters were drawn from scratch on a grid of
+    16 by 16 pixels with a stroke of 1.33. The letters are skeletons of lines
+    that were made for these files, and are written as paths, so no font is
+    needed and none is embedded. No file of another set of icons, and no
+    outline of a font, was copied, traced or used as a model. They carry no
+    third-party license and need no attribution.
+
 Inter (src/aas_editor/fonts/)
     The font of the user interface. Inter is by The Inter Project Authors
     (https://github.com/rsms/inter), and the font file states "Copyright 2016
@@ -160,9 +173,6 @@ Of unrecorded origin
     style sheets of src/aas_editor/themes/ that name no license (see above).
     The old icons of actions, whose names matched the Material Design Icons
     set and whose origin was not recorded, were removed from the repository.
-    The icons that show the kinds of AAS elements in the trees are not files.
-    They are letters that the code draws with the font "Monospace" of the
-    system, and are to be replaced by icons of this project.
 
 
 Software that the editor installs
