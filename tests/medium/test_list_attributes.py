@@ -37,7 +37,8 @@ def test_an_attribute_that_is_fixed_when_the_list_is_made_is_refused_with_a_reas
     assert not edited
     assert lab.refusal == (
         f"'{attribute}' cannot be changed after the SubmodelElementList is "
-        "made. Make a new one"
+        "made. Choose 'Change list settings...' in the context menu of the "
+        "list to rebuild it"
     )
     assert not lab.stack.can_undo
 

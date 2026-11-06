@@ -19,6 +19,7 @@ The checks follow the editor plan:
 from collections.abc import Callable
 from collections.abc import Iterable
 from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
 import os
 from pathlib import Path
@@ -142,10 +143,19 @@ class SaveIssue:
     Attributes:
         message: A sentence for the user.
         details: The names that the sentence is about, such as file paths.
+        code: What kind of issue it is, such as `DANGLING_FILES`, so that a
+            dialog can offer the way to repair it. It does not count when
+            issues are compared.
     """
 
     message: str
     details: tuple[str, ...] = ()
+    code: str = field(default="", compare=False)
+
+
+# Issue codes that the dialogs offer a repair for.
+DANGLING_FILES = "dangling_files"
+UNREFERENCED_FILES = "unreferenced_files"
 
 
 @dataclass(frozen=True)
@@ -246,6 +256,7 @@ def check_save(
                     "the package cannot be written. Remove the path, or add "
                     "the file.",
                     _listed(f"{ref.location} ({ref.path})" for ref in dangling),
+                    DANGLING_FILES,
                 )
             )
         unreferenced = unreferenced_files(references, stored_files)
@@ -255,6 +266,7 @@ def check_save(
                     "These files are in the package, but no File element or "
                     "thumbnail refers to them. They are not saved.",
                     _listed(unreferenced),
+                    UNREFERENCED_FILES,
                 )
             )
     else:

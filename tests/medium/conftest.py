@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from collections.abc import Iterator
+import io
 from pathlib import Path
 from typing import Any
 
@@ -32,8 +33,19 @@ class ModelSupport:
         self._qtlog = qtlog
         self._testers: list[QAbstractItemModelTester] = []
 
-    def pack_table(self, *objects: model.Identifiable):
-        """Creates the package tree model with one package of the objects."""
+    def pack_table(
+        self,
+        *objects: model.Identifiable,
+        files: dict[str, tuple[bytes, str]] | None = None,
+    ):
+        """Creates the package tree model with one package of the objects.
+
+        Args:
+            objects: What the package holds.
+            files: Supplementary files as a mapping from the part name to the
+                content and the content type.
+        """
+
         from aas_editor.models import PackTreeViewItem
         from aas_editor.models import PacksTable
         from aas_editor.package import Package
@@ -48,6 +60,8 @@ class ModelSupport:
         package = Package()
         for obj in objects:
             package.add(obj)
+        for name, (content, content_type) in (files or {}).items():
+            package.fileStore.add_file(name, io.BytesIO(content), content_type)
         table.addItem(package)
         return table
 
@@ -178,10 +192,18 @@ def views(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
             self.view.expandAll()
             holders.append(self.window)
 
-        def open_package(self, *objects: model.Identifiable) -> object:
+        def open_package(
+            self,
+            *objects: model.Identifiable,
+            files: dict[str, tuple[bytes, str]] | None = None,
+        ) -> object:
             package = Package()
             for obj in objects:
                 package.add(obj)
+            for name, (content, content_type) in (files or {}).items():
+                package.fileStore.add_file(
+                    name, io.BytesIO(content), content_type
+                )
             self.table.addItem(package)
             self.view.expandAll()
             return package

@@ -61,6 +61,7 @@ import aas_editor.widgets.messsageBoxes
 from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import CommandStack, ReadOnlyError
 from aas_editor.application.editing import edit_mode
+from aas_editor.application.file_transfer import copy_source
 from aas_editor.domain.clipboard_json import (
     ClipboardError,
     dump_objects,
@@ -281,8 +282,22 @@ class TreeClipboard:
         self.objects: List[Any] = []
         self.objStrings: List[str] = []
         # Where the copy comes from and whether it was cut, for the paste.
-        self.source = None
+        self._source = None
         self.cut = False
+
+    @property
+    def source(self):
+        """The package the copy comes from, or an object with its fileStore"""
+        return self._source
+
+    @source.setter
+    def source(self, value):
+        self._source = value
+        # The add of the pasted objects brings the files of the source along.
+        if value is None:
+            copy_source.forget()
+        else:
+            copy_source.remember(value)
 
     def clear(self):
         self.objects.clear()

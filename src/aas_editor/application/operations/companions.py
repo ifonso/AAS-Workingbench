@@ -11,9 +11,10 @@ compares that with the target package:
   decides: keep the description of the target, or add the copied one under a
   new id and point the copies at it.
 
-`Companions` is the seam for other things that travel with a copy. The files
-of the package are added there by the work package for supplementary files, and
-the dialog and the commands ask `Companions` and nothing else.
+`Companions` is the seam for other things that travel with a copy. It holds
+the references of the copies to the files of their package too. The commands
+that copy those files, and number a name that the target has taken, are in
+`aas_editor.application.file_transfer`.
 
 Example:
     Copying an element to another package::
@@ -39,6 +40,8 @@ from aas_editor.application.edits import AddMember
 from aas_editor.domain import containers
 from aas_editor.domain.clipboard_json import clone
 from aas_editor.domain.clipboard_json import dump_objects
+from aas_editor.domain.file_references import FileReference
+from aas_editor.domain.file_references import references_in
 from aas_editor.domain.ids import new_identifier
 from aas_editor.domain.references import ReferenceIndex
 from aas_editor.domain.references import iter_slots
@@ -54,14 +57,18 @@ class Companions:
     Attributes:
         concept_descriptions: The descriptions that the semantic ids of the
             objects and of everything below them refer to, each once.
+        files: The references of the objects, and of everything below them,
+            to files of their package. Their holders are the objects that
+            were passed in, so pass the copies that are inserted.
     """
 
     concept_descriptions: tuple[ConceptDescription, ...] = ()
+    files: tuple[FileReference, ...] = ()
 
     @property
     def is_empty(self) -> bool:
         """Whether nothing needs to travel with the copy."""
-        return not self.concept_descriptions
+        return not self.concept_descriptions and not self.files
 
 
 class ConceptChoice(enum.Enum):
@@ -104,18 +111,21 @@ class ConceptPlan:
 def gather_companions(
     objects: Iterable[model.Referable],
     source_objects: Iterable[model.Identifiable],
+    with_files: bool = False,
 ) -> Companions:
-    """Finds the concept descriptions that copied objects refer to.
+    """Finds the concept descriptions and files that copied objects refer to.
 
     Args:
         objects: The objects that are copied. Elements and everything below
             them count, with their semantic ids.
         source_objects: The identifiables of the package they come from.
+        with_files: Also list the references to files of the package.
 
     Returns:
         The descriptions found in that package. A semantic id that names no
         description of the package is skipped.
     """
+    objects = list(objects)
     index = ReferenceIndex(source_objects)
     found: dict[str, ConceptDescription] = {}
     for obj in objects:
@@ -128,7 +138,12 @@ def gather_companions(
                 for candidate in index.with_id(key.value):
                     if isinstance(candidate, ConceptDescription):
                         found.setdefault(candidate.id, candidate)
-    return Companions(tuple(found.values()))
+    references: list[FileReference] = []
+    if with_files:
+        for obj in objects:
+            if isinstance(obj, model.Identifiable | model.SubmodelElement):
+                references.extend(references_in(obj))
+    return Companions(tuple(found.values()), tuple(references))
 
 
 def plan_concepts(

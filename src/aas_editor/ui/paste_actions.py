@@ -25,6 +25,7 @@ from PyQt6.QtGui import QKeySequence
 from PyQt6.QtWidgets import QApplication
 
 from aas_editor.application.changes import observer_for
+from aas_editor.application.file_transfer import transfer_commands
 from aas_editor.application.operations.companions import ConceptChoice
 from aas_editor.application.operations.companions import Companions
 from aas_editor.application.operations.companions import concept_commands
@@ -244,6 +245,8 @@ def _paste(context: ActionContext, where: str) -> None:
         )
         source = buffer.source
         companion_commands: list[Any] = []
+        file_before: list[Any] = []
+        file_after: list[Any] = []
         if (
             source is not None
             and source is not package
@@ -253,11 +256,22 @@ def _paste(context: ActionContext, where: str) -> None:
             if answer is None:
                 return
             companion_commands, renamed = answer
-            retarget_semantic_ids([item.copy for item in plan.items], renamed)
+            copies = [item.copy for item in plan.items]
+            retarget_semantic_ids(copies, renamed)
+            # The files that the copies refer to come along, and the pasted
+            # paths follow the names they get in this package.
+            file_before, file_after = transfer_commands(
+                observer_for(package),
+                gather_companions(copies, source.objStore, True).files,
+                source.fileStore,
+                package.fileStore,
+            )
         with stack.group(plan.description):
-            for command in companion_commands:
+            for command in [*file_before, *companion_commands]:
                 context.push(command)
             for command in paste_commands(observer_for(package), plan):
+                context.push(command)
+            for command in file_after:
                 context.push(command)
     except (ClipboardError, PasteError) as error:
         paste_dialogs.show_problem(str(error), view)

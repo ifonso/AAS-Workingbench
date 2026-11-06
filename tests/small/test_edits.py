@@ -318,6 +318,29 @@ def test_supplementary_file_is_added_and_deleted_again(
     assert out.getvalue() == b"data"
 
 
+def test_adding_a_file_the_store_has_already_leaves_it_alone_on_undo(
+    observer: ModelChangeObserver,
+) -> None:
+    store = DictSupplementaryFileContainer()
+    store.add_file("/a.txt", io.BytesIO(b"data"), "text/plain")
+    stack = CommandStack()
+
+    stack.push(
+        AddSupplementaryFile(
+            observer,
+            store,
+            "/a.txt",
+            b"data",
+            "text/plain",
+            object(),
+            lambda name: None,
+        )
+    )
+    stack.undo()
+
+    assert "/a.txt" in store
+
+
 def test_link_submodels_is_one_step_that_adds_every_missing_reference(
     observer: ModelChangeObserver,
 ) -> None:

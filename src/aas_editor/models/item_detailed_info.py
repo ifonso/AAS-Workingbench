@@ -16,6 +16,9 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
+from basyx.aas.model import SubmodelElementList
+
+from aas_editor.domain.containers import position_of
 from aas_editor.models import StandardItem
 from aas_editor import settings
 from aas_editor.settings import DICT_TYPES
@@ -81,4 +84,39 @@ class DetailedInfoItem(StandardItem):
     @staticmethod
     def _populateUnknown(obj, **kwargs):
         for attr in getAttrs4detailInfo(obj):
+            if attr == "id_short" and isListItem(obj):
+                # The item of a list has no idShort: its position names it.
+                ListIndexItem(obj, name=LIST_INDEX_NAME, **kwargs)
+                continue
             DetailedInfoItem(getattr(obj, attr), name=attr, **kwargs)
+
+
+LIST_INDEX_NAME = "index"
+
+
+def isListItem(obj) -> bool:
+    """Tell whether an object is an item of a SubmodelElementList."""
+    return isinstance(getattr(obj, "parent", None), SubmodelElementList)
+
+
+class ListIndexItem(DetailedInfoItem):
+    """The read-only row with the position of an item in its list.
+
+    The position is read from the list whenever the row is shown, so the row
+    follows an item that moved, and an item that was added or removed before it.
+    """
+
+    readOnly = True
+
+    def __init__(self, element, name=LIST_INDEX_NAME, **kwargs):
+        self.element = element
+        super().__init__(self.position(), name=name, typehint=int, **kwargs)
+
+    def position(self) -> int:
+        """Return the position of the element in its list."""
+        position = position_of(self.element.parent.value, self.element)
+        return -1 if position is None else position
+
+    def data(self, role, column=settings.ATTRIBUTE_COLUMN, column_name=""):
+        self._obj = self.position()
+        return super().data(role, column, column_name)
