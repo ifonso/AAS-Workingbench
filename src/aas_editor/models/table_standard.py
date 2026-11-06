@@ -184,8 +184,11 @@ class StandardTable(QAbstractItemModel):
             return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
         flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-        # Read mode (D18): nothing is edited, not even inline.
-        if edit_mode().is_editing:
+        # Read mode (D18): nothing is edited, not even inline. The position of
+        # an item in a list is no attribute, so it is never edited.
+        if edit_mode().is_editing and not getattr(
+            self.objByIndex(index), "readOnly", False
+        ):
             flags |= Qt.ItemFlag.ItemIsEditable
         return flags
 
@@ -694,6 +697,12 @@ class StandardTable(QAbstractItemModel):
         :raise InvalidValueError: if the value does not fit the value type, or
             the attribute is fixed once the object is made
         """
+        if name == "index" and getattr(
+            self.objByIndex(index), "readOnly", False
+        ):
+            raise InvalidValueError(
+                "The position of an item in a list cannot be edited."
+            )
         renamed = self.renameCommand(index, owner, name, value)
         if renamed is not _NOT_RENAMED:
             return renamed
