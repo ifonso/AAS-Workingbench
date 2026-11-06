@@ -7,6 +7,7 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
+import ast
 import datetime
 import decimal
 from abc import abstractmethod
@@ -182,10 +183,22 @@ class BytesEdit(QWidget):
         text = self.plainTextEdit.toPlainText()
         if not text:
             return PreObject(type(None), (), {})
-        elif text.startswith(("b'", 'b"')) and text.endswith(("'", '"')):
-            return PreObject(eval, (text,), {})
         else:
+            return PreObject(bytes, (self._parseBytes(text),), {})
+
+    @staticmethod
+    def _parseBytes(text: str) -> bytes:
+        """Parse a bytes literal such as b'text' without running any code.
+
+        :raise ValueError if the text is not a bytes literal
+        """
+        try:
+            value = ast.literal_eval(text.strip())
+        except (ValueError, SyntaxError, MemoryError, RecursionError) as e:
+            raise ValueError("Value must be of type: b'text'") from e
+        if not isinstance(value, bytes):
             raise ValueError("Value must be of type: b'text'")
+        return value
 
     def getObj2add(self):
         return self.getPreObj().init()
