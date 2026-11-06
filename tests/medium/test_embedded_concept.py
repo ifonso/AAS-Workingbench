@@ -111,6 +111,16 @@ class TestPanel:
         assert "urn:no:such:concept" in panel.notice_text
         assert panel.header == ""
 
+    def test_a_submodel_whose_semantic_id_names_nothing_shows_the_notice(
+        self, panel_for
+    ) -> None:
+        submodel = make_submodel()
+        submodel.semantic_id = make_external_reference("urn:no:such:concept")
+        panel, _ = panel_for(submodel, submodel)
+
+        assert panel.concept is None
+        assert panel.notice_text.startswith(NOT_FOUND)
+
     def test_an_element_without_a_semantic_id_shows_nothing(
         self, panel_for
     ) -> None:

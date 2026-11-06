@@ -26,15 +26,15 @@ A criterion with a test that covers part of it is `P`, with the missing part nam
 |---|---|---|---|---|---|---|---|---|
 | F-EDT-01 Editor framework | 2 | 4 | 5 | 0 | 1 | 2 | 1 | 15 |
 | F-EDT-02 Environment, AAS, AssetInformation | 0 | 5 | 4 | 0 | 6 | 2 | 0 | 17 |
-| F-EDT-03 Submodel and SubmodelRef | 0 | 9 | 3 | 0 | 2 | 1 | 1 | 16 |
+| F-EDT-03 Submodel and SubmodelRef | 0 | 9 | 3 | 1 | 1 | 1 | 1 | 16 |
 | F-EDT-04 SubmodelElements | 5 | 5 | 1 | 6 | 2 | 3 | 0 | 22 |
-| F-EDT-05 ConceptDescription and IEC 61360 | 4 | 3 | 1 | 5 | 4 | 2 | 0 | 19 |
-| F-EDT-06 Common attribute modules | 6 | 5 | 0 | 0 | 3 | 2 | 0 | 16 |
-| F-EDT-07 Qualifiers and Extensions | 1 | 3 | 0 | 2 | 5 | 2 | 0 | 13 |
+| F-EDT-05 ConceptDescription and IEC 61360 | 9 | 1 | 1 | 6 | 2 | 0 | 0 | 19 |
+| F-EDT-06 Common attribute modules | 6 | 5 | 0 | 1 | 2 | 2 | 0 | 16 |
+| F-EDT-07 Qualifiers and Extensions | 1 | 2 | 0 | 3 | 5 | 2 | 0 | 13 |
 | F-EDT-08 Copy, paste, reorder | 6 | 6 | 0 | 2 | 5 | 1 | 0 | 20 |
 | F-EDT-09 Multi-element editing | 3 | 6 | 0 | 8 | 0 | 3 | 1 | 21 |
 | F-EDT-10 Supplementary files | 7 | 3 | 0 | 2 | 2 | 2 | 2 | 18 |
-| F-EDT-11 References, semantics, lookups | 5 | 3 | 0 | 1 | 11 | 2 | 0 | 22 |
+| F-EDT-11 References, semantics, lookups | 8 | 2 | 0 | 2 | 10 | 0 | 0 | 22 |
 | **All** | **39** | **52** | **14** | **26** | **41** | **22** | **5** | **199** |
 
 Of 199 criteria, 39 have a test that asserts them, and 52 more are tested in part.
@@ -55,7 +55,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | F-EDT-04 AC22: a null `orderRelevant` is shown as the default (true). | The SDK has a bool that is true by default, and a file without `orderRelevant` reads as true (probe). The case cannot occur. `P`, because the tests assert the default only for a new list. |
 | F-EDT-04 AC9 and F-EDT-10 AC14, AC15: Base64 to binary and back for a Blob. | No code. The editor shows the bytes as text or hex. A gap. |
 | F-EDT-01 AC10, AC11: push and pop of an editing location. | No code. Back after Jump to target, and Back in the tabs, are the nearest thing. A gap. |
-| F-EDT-05 AC10: the view orders of concept descriptions. | Four of six: name, idShort, id, first use. "List index", "By SubmodelElements" and the structured order are not offered. A gap. |
+| F-EDT-05 AC10: the view orders of concept descriptions. | Four of six: name, idShort, id, first use. "List index", "By SubmodelElements" and the structured order are not offered. A gap. **Closed in WP16**: the store of the package keeps the order of the file now, so the list index exists, and all six are offered ([ADR 0021](adr/0021-order-of-the-file-and-concept-description-gaps.md)). |
 | F-EDT-04 AC2: new MultiLanguageProperty has a row for each default language. | No setting of default languages. A gap. |
 
 ## F-EDT-01 Editor framework
@@ -118,7 +118,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 12 | P | `test_rename.py::test_rename_updates_semantic_ids_of_a_concept_description`. |
 | 13 | G | No dynamic environment, so no read-only id. |
 | 14 | O | Plan: "Stubs and Fetch". |
-| 15 | O | Limit: the embedded display of a description is not done. |
+| 15 | D | The tab of a submodel shows the description that its semantic id names, read-only and collapsed, and the notice of the original when it names none ([ADR 0021](adr/0021-order-of-the-file-and-concept-description-gaps.md)): `test_embedded_concept.py::TestPanel::test_a_submodel_shows_its_description_too`, `::test_a_semantic_id_that_names_nothing_shows_the_notice`. The original's display is an editor. |
 | 16 | N | Scripting. |
 
 ## F-EDT-04 SubmodelElements
@@ -155,21 +155,21 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 1 | I | "Add concept description" on the node, with a generated id. Tested through Create from semantic id, not the node. |
 | 2 | D | The SDK refuses an empty preferred name. The dialog starts with a row filled with the idShort (ADR 0014). |
 | 3 | D | A record is made with its content in one step, so the defect of the original cannot occur (ADR 0014). `test_concept_actions.py::test_adding_a_record_with_the_template_key`. |
-| 4 | P | Stored data type tested. Delete through "(none)" is not. |
+| 4 | T | `test_concept_records.py::TestDataType::test_a_chosen_data_type_is_stored_as_the_literal`, `::test_choosing_none_removes_the_data_type` (undo, redo, save and read again). |
 | 5 | T | `test_concept_dialogs.py::TestIec61360Dialog::test_a_short_name_over_18_characters_shows_why_and_blocks`. |
 | 6 | T | `test_concept_actions.py::test_empty_attributes_are_removed_in_one_step`. |
-| 7 | G | The dialog cannot delete a value list as a whole. |
+| 7 | T | `test_concept_records.py::TestValueList::test_removing_the_only_pair_leaves_no_value_list`, `::test_remove_value_list_takes_every_pair_away`. Done in the record dialog (Remove pair, Remove value list), not in a menu of the pair. |
 | 8 | T | `test_value_list_text.py::TestLines`, `test_concept_actions.py::test_the_clipboard_is_imported_after_the_preview`. A line without a value id is reported, not silently skipped. |
 | 9 | T | `test_concept_actions.py::test_each_pair_with_an_id_becomes_a_description`, `test_concepts.py::test_a_pair_becomes_a_description_with_an_iec_record`. |
-| 10 | P | Four orders, with tests. Three of the six are missing (see above). |
-| 11 | D | The order is a view only, D16. |
-| 12 | D | Same. "By SubmodelElements" is not offered. |
-| 13 | O | Plan: moving concept descriptions. |
-| 14 | O | Limit: the embedded display in the panel of an element. |
+| 10 | D | All six orders (and the name) are offered, and the tree lists the descriptions as each says without changing the package ([ADR 0021](adr/0021-order-of-the-file-and-concept-description-gaps.md)): `test_concept_orders.py::TestOrders`, `test_concept_order.py`. The three new ones order the one list. They do not make the branches or the nesting under the elements that the original's tree shows. |
+| 11 | T | The store keeps the order of the file now (ADR 0021). `test_concept_orders.py::TestSort::test_sorting_by_id_short_writes_the_order_and_goes_back_to_the_list_index` (the file, the view, and a save), `::test_one_undo_gives_the_old_order_of_the_file_back`. The question has an undo instead of "cannot be reverted". |
+| 12 | T | `test_concept_orders.py::TestSort::test_an_order_that_cannot_sort_gives_the_message_and_changes_nothing`, for list index, by elements and structured. |
+| 13 | O | Plan: moving concept descriptions. The store keeps an order now, so it could be built. |
+| 14 | D | The tab of an element shows its description, read-only and collapsed, with no move panel because a tab has none (`test_embedded_concept.py::TestPanel`, `::TestInATab`). It is not hidden for "By SubmodelElements", because the descriptions are not nested in this tree and it would show them nowhere (ADR 0021). |
 | 15 | D | Sync fills the short name, because the preferred name cannot be empty (changelog). |
-| 16 | O | Limit: a preset adds, and does not replace a blank record. |
+| 16 | D | The SDK cannot hold a blank record: `test_blank_member_probes.py` (made, edited, and read from a file, also in failsafe mode). The preset adds the one record, which is the end state of the criterion: `test_preset_actions.py::test_a_data_specification_preset_gives_one_record_and_no_blank_one` (ADR 0021). |
 | 17 | P | `test_preset_files.py::test_a_missing_shipped_file_is_reported`. Wording differs. |
-| 18 | G | No SAMM. |
+| 18 | T | Both things the criterion asks for: `test_samm_panel.py::test_a_samm_description_lists_id_before_id_short`, `::test_a_samm_description_gets_no_such_hint`, and the recognition in `test_samm.py`. Editing SAMM elements is F-SMT-05, not F-EDT, and is not done (the extension is edited as an extension). |
 | 19 | O | Plan: moving concept descriptions. |
 
 ## F-EDT-06 Common attribute modules
@@ -189,7 +189,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 11 | P | `test_hints.py::test_inline_hint_is_off_when_hints_mode_is_off`. "Fields unchanged" is not asserted. |
 | 12 | P | `test_hints.py::test_read_mode_shows_no_row_for_a_null_attribute`. No test that no action button is on screen. |
 | 13 | P | `test_data_spec_operations.py::TestFixKeys`. The action has another name and no log line. |
-| 14 | O | Limit: a preset never replaces a blank record. |
+| 14 | D | Same as F-EDT-05 AC16: no blank record can exist, and the preset adds the one record (`test_blank_member_probes.py`, `test_preset_actions.py::test_a_data_specification_preset_gives_one_record_and_no_blank_one`, ADR 0021). |
 | 15 | G | Language entries cannot be moved. |
 | 16 | P | The hint exists (`test_validation_hints.py::test_category_is_an_info_hint_when_an_element_has_one`). The category is not read-only. |
 
@@ -197,7 +197,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | P | `test_preset_actions.py::test_a_qualifier_preset_is_added_to_every_selected_element`: type, value, kind. The blank qualifier is not replaced (limit). |
+| 1 | D | The SDK cannot hold a blank qualifier (the type needs a character: `test_blank_member_probes.py`), so there is none to replace. The end state is asserted: one qualifier with type, value, kind and semantic id (`test_preset_actions.py::test_a_qualifier_preset_gives_one_qualifier_with_its_semantic_id`, `::test_a_qualifier_preset_is_added_to_every_selected_element`; ADR 0021). |
 | 2 | D | A missing preset file is listed in the dialog and the dialog still opens (ADR 0017). |
 | 3 | T | `test_preset_actions.py::test_a_qualifier_on_the_clipboard_is_added`. |
 | 4 | P | `test_preset_actions.py::test_bad_clipboard_content_is_refused_with_a_message`. Only "add from clipboard" exists, not "paste". |
@@ -289,11 +289,11 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | O | Limit: the picker lists the open package only. |
+| 1 | T | `test_reference_picker_packages.py::TestDialog::test_both_packages_are_listed_with_the_package_of_each`, `::test_the_picker_of_a_form_offers_the_description_of_the_other_package` (through the form of a semantic id), `test_reference_picker_sources.py`. The semantic id of a submodel or element starts on the filter "Concept descriptions", as the original does. |
 | 2 | T | `test_reference_picker_fields.py::TestPickingATarget::test_a_concept_description_gives_an_external_reference_to_its_id`. |
 | 3 | T | `test_reference_picker_fields.py::test_the_model_kind_keeps_the_concept_description_key_type`. |
 | 4 | P | `test_reference_picker_fields.py::test_an_sdk_refusal_is_shown_as_a_reason_and_blocks_ok`. There is no "Select" for a non-matching row, because the picker lists only matching ones. |
-| 5 | P | The stored files have their own chooser (`FileChoiceDialog`, tested through the File element). The reference picker has no file filter. |
+| 5 | D | A reference cannot point at a stored file, because V3.1 has no key type for one (`test_file_choice_dialog.py::test_no_key_type_of_v31_names_a_stored_file`), so the file filter is the chooser of the File element: it lists the stored files only and gives the name that becomes the value (`test_file_choice_dialog.py`, `test_package_files_ui.py::test_choosing_a_file_for_a_file_element_keeps_its_media_type`; ADR 0021). |
 | 6 | O | Plan: "Add from pool of known concepts". |
 | 7 | P | `test_reference_picker_fields.py::test_every_reference_field_gets_the_picker` includes the supplemental semantic id. Appending is not asserted. |
 | 8 | O | Plan: ECLASS. |
@@ -303,8 +303,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 12 | O | Same. |
 | 13 | O | Same. |
 | 14 | O | Same. |
-| 15 | G | No "Create empty" concept description. |
-| 16 | G | The action is off for an element with no semantic id, and says nothing. |
+| 15 | T | `test_concept_create_empty.py` (a `urn:uuid:` id and nothing else, selected, one undo step, saved; the semantic id of an element is the same object afterwards). |
+| 16 | T | `test_concept_actions.py::TestCreateFromSemanticId::test_an_element_without_semantic_id_says_why_nothing_is_created`. The text is `Cannot create a concept description because no valid semantic id is present in ...`. |
 | 17 | T | `test_concepts.py::TestNewConcept::test_the_id_is_the_first_key_and_the_names_come_from_the_element`. |
 | 18 | O | Part of ECLASS import. |
 | 19 | D | Jump works in the tabs, where references are shown, not in the tree (changelog). `test_reference_jump.py`. |

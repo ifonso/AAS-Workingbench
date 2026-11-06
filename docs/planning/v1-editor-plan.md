@@ -309,10 +309,8 @@ Nothing here was started in WP12, because each needs a design.
    Back after Jump to target and the Back of the tabs cover most of it.
 5. **Defaults and notices that the original gives for new objects** (F-EDT-04 AC2, AC17; F-EDT-06 AC1, AC5; F-EDT-07 AC12; F-EDT-02 AC11, AC13).
    Default languages of a new MultiLanguageProperty, the notice for the asset id of an Entity, "Create w/ default" and the notices about missing descriptions, ids made from a template (`urn:x:DDDD`), a hint for a blank name of an extension, `Batch` as an asset kind.
-6. **Concept descriptions** (F-EDT-05 AC7, AC10, AC18; F-EDT-03 AC15; F-EDT-05 AC14; F-EDT-11 AC15, AC16).
-   Delete a value list as a whole, the orders "List index", "By SubmodelElements" and "Structured", SAMM, the embedded display of a description in the panel of an element, "Create empty", and a message where the action is only off.
-7. **Small gaps in the editors.**
-   Move language entries (F-EDT-06 AC15), a read-only category (AC16), a fallback text field when the clipboard is denied (F-EDT-08 AC8), Copy recursively of an AAS (F-EDT-02 AC3, AC4), delete the thumbnail (AC14), a file filter in the reference picker (F-EDT-11 AC5), paste into an existing qualifier (F-EDT-07 AC5).
+6. **Small gaps in the editors.**
+   Move language entries (F-EDT-06 AC15), a read-only category (AC16), a fallback text field when the clipboard is denied (F-EDT-08 AC8), Copy recursively of an AAS (F-EDT-02 AC3, AC4), delete the thumbnail (AC14), paste into an existing qualifier (F-EDT-07 AC5).
 8. **The tabs still speak Python.**
    The type column shows `NoneType`, `Namespa...` and `Constrain...`, the type hint column shows `Optional[Union[Duration, DateTime, ...]]`, attributes are in snake case (`value_type`, `display_name`), and list entries are called `DictItem 1`.
    A new user cannot tell what these mean, and the original names the AAS attribute and its description.

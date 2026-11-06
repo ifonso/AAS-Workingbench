@@ -19,12 +19,12 @@ check = save_check_for(report)
 
 | Part | Where | What |
 |---|---|---|
-| Rules | `domain/validation/rules/` | 20 rules, one module for each topic. A rule takes a `ValidationContext` and yields `Finding`s. |
+| Rules | `domain/validation/rules/` | 24 rules, one module for each topic. A rule takes a `ValidationContext` and yields `Finding`s. |
 | Context | `domain/validation/context.py` | The package walked once for all rules: elements, qualifiers, extensions, semantic holders, language texts, file references, coded values. |
 | Engine | `domain/validation/engine.py` | `validate(objects, stored_files=None, rules=ALL_RULES, tolerant=False)` returns a `ValidationReport`. A rule that raises is a defect and is not caught, unless `tolerant` is true: then it is logged and reported as a warning of the rule `EDT-RULE-FAILED`. |
 | Findings | `domain/validation/findings.py` | `Finding` (rule id, severity, message, subject, anchor, attribute, `blocks_save`) and `ValidationReport` (`errors`, `warnings`, `blocking`, `of_rule`, `counts_by_rule`). |
 | Coverage | `domain/validation/coverage.py` | The table below, as data. A test keeps it in step with the rules. |
-| Hint rules | `domain/validation/rules/hints.py` | `HINT_RULES`: five rules for hints mode, outside `ALL_RULES`. |
+| Hint rules | `domain/validation/rules/hints.py` | `HINT_RULES`: six rules for hints mode, outside `ALL_RULES`. |
 | Field checks | `domain/validation/field_checks.py` | The checks of single texts, which the rules and the hints under dialog fields share. |
 | Application | `application/validation.py` | `validate_package(source)`, `save_check_for(report)`, and `SaveGate`, the check of a save. |
 | Service | `ui/validation_service.py` | One for each package. It runs the rules, debounced, for the dock and the hints. |
@@ -68,6 +68,10 @@ A control character in the value of a Property (`AASd-130`) does not block: the 
 | `AASd-118` | Error | A supplemental semantic id needs a semantic id | Refused on add and on clear, accepted when an object is made with a supplemental id only |
 | `AASd-119` | Error | A template qualifier on a submodel needs kind Template | Not checked |
 | `AASd-129` | Error | A template qualifier on an element needs a template submodel | Not checked |
+| `AASc-3a-004` | Error | A description of the category PROPERTY or VALUE has an IEC 61360 data type of its group (14 types) | Part 3a. Not checked |
+| `AASc-3a-005` | Error | The category REFERENCE has the data type STRING, IRI or IRDI | Part 3a. Not checked |
+| `AASc-3a-006` | Error | The category DOCUMENT has the data type FILE, BLOB or HTML | Part 3a. Not checked |
+| `AASc-3a-007` | Error | The category QUALIFIER_TYPE has a data type | Part 3a. Not checked |
 | `AASd-130` | Error | A string value has only XML characters | Checked for names, texts and ids, not for values |
 | `AASd-133` | Error | An external subject id is an external reference | Not checked |
 | `EDT-DANGLING-REFERENCE` | Warning | A model reference with no target in the package | Not the SDK's job. An external reference never counts. |
@@ -119,12 +123,14 @@ The work package list named AASd-006, 007, 012, 013, 077, 119, 129, 133 and 134 
 The probes changed it: 077 and 134 are enforced, 013 does not exist in V3, 012 cannot be checked, and 006 and 007 can be checked in part.
 They added AASd-002, 005, 020, 109, 116, 118 and 130.
 
+AASc-3a-004 to 007 are the constraints of Part 3a that tie the category of a concept description to the data type of its IEC 61360 record. The Part 3a text is not in the local specifications, so the wording and the sets of data types come from the verification code of Package Explorer (`AasCore.Aas3_1`, `verification.cs` and `constants.cs`), which is generated from it. None of the 132 bundled templates sets one of these categories (their descriptions have none, `PARAMETER` or `CONSTANT`), so none gets a finding. The other constraints of Part 3a that the editor knows are advisories of the IEC 61360 dialog (AASc-3a-008 to 010), not rules.
+
 AASd-129 follows the V3.1 text, without the exception of V3.2 for operation variables.
 No bundled template has a template qualifier in an instance submodel, so the exception changes nothing for them.
 
 ## Hints
 
-Hints mode adds the findings of five hint rules to the report. A hint that Package Explorer calls High is a warning, and a Notice is info. The dock and the save gate do not list them.
+Hints mode adds the findings of six hint rules to the report. A hint that Package Explorer calls High is a warning, and a Notice is info. The dock and the save gate do not list them.
 
 | Rule | Severity | Hint | Source |
 |---|---|---|---|
@@ -133,6 +139,7 @@ Hints mode adds the findings of five hint rules to the report. A hint that Packa
 | `EDT-HINT-COPY-NAME` | Warning | An idShort has three dashes, as a copy of the original names it | F-EDT-06 |
 | `EDT-HINT-ASSET-ID-EMPTY` | Warning | The global asset id of a shell is blank | F-EDT-02 AC9 |
 | `EDT-HINT-ASSET-ID-DUPLICATE` | Warning | Two shells share a global asset id | F-EDT-02 AC9 |
+| `EDT-HINT-NO-DATA-SPEC` | Warning | A concept description has no data specification. One with a SAMM element is left out | F-EDT-05 AC18 |
 
 The tab shows the findings and hints whose anchor is its object. The create dialogs show `field_problem` for the idShort, the value of a key, and the global asset id while the user types: the idShort check is the one of AASd-002, so a field and the rule give one message. The notices of Package Explorer about missing descriptions, display names and semantic ids are not done.
 
