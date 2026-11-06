@@ -41,7 +41,11 @@ from aas_editor.settings.app_settings import (
     IS_LINK_ROLE,
     PARENT_OBJ_ROLE,
 )
-from aas_editor.ui.value_editor import ValueEditDialog, value_dialog_args
+from aas_editor.ui.value_editor import (
+    ValueEditDialog,
+    entryTextArgs,
+    value_dialog_args,
+)
 from aas_editor.utils.util import getAttrTypeHint
 from aas_editor import dialogs
 from aas_editor.treeviews.base import TreeView
@@ -187,6 +191,7 @@ class AttrsTreeView(TreeView):
                 objTypeHint=attrTypeHint,
                 title=f"Edit/Create {attribute}",
                 objVal=objVal,
+                **entryTextArgs(parentObj),
             )
 
     def currentIndex(self) -> QtCore.QModelIndex:

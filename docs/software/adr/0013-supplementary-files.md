@@ -1,4 +1,4 @@
-# ADR 0012: Stored files change with their references, and never overwrite
+# ADR 0013: Stored files change with their references, and never overwrite
 
 **Status:** Accepted
 
