@@ -3,12 +3,12 @@
 from PyQt6.QtGui import QIcon
 import pytest
 
-from aas_editor.domain.design_tokens import contrast_ratio
 from aas_editor.domain.design_tokens import DARK
 from aas_editor.domain.design_tokens import ICON_CONTRAST
 from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.ui.theme.icons import icon_color
+from aas_editor.domain.design_tokens import contrast_ratio
 from aas_editor.ui.theme.icons import IconRole
+from aas_editor.ui.theme.icons import icon_color
 
 # The surfaces that an icon of the editor is drawn on: toolbars, trees and
 # forms, the strip of a dock, and a selected row.

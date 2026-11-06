@@ -14,6 +14,7 @@ and a role. An icon of the Tabler set is made with `tabler_icon`.
 from enum import StrEnum
 from functools import cache
 from pathlib import Path
+from typing import cast
 
 from PyQt6.QtCore import QByteArray
 from PyQt6.QtCore import QRect
@@ -89,7 +90,8 @@ def _draw(path: Path, color: str, size: QSize, ratio: float) -> QPixmap:
     pixmaps beyond the `QApplication`, which is unsafe.
     """
     key = f"aas-icon:{path.as_posix()}:{color}:{size.width()}x{size.height()}@{ratio}"
-    cached = QPixmapCache.find(key)
+    # The stub says QPixmap, but PyQt6 returns None for a key that is not there.
+    cached = cast("QPixmap | None", QPixmapCache.find(key))
     if cached is not None and not cached.isNull():
         return cached
     renderer = QSvgRenderer(
