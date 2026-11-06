@@ -4,7 +4,7 @@ The SDK cannot change the class of an element, so the new element is built
 through the constructor of its class, from the attributes of the old one. The
 original editor does this and drops attributes without a word. This module
 finds what the new element would lack, before anything changes, so that the
-editor can show it and ask (see ADR 0010).
+editor can show it and ask (see ADR 0012).
 
 Every conversion keeps what all elements share: idShort, display name,
 category, description, semantic id, supplemental semantic ids, qualifiers,

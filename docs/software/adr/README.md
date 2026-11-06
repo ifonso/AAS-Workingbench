@@ -14,7 +14,9 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0007](0007-command-stack-and-change-observer.md) | Edits as commands on AAS objects, reported to an observer | Accepted |
 | [0008](0008-values-follow-their-type.md) | Values follow their value type, and a change of the type converts or refuses | Accepted |
 | [0009](0009-reference-integrity.md) | Find references by walking the SDK objects, and index them for each operation | Accepted |
-| [0010](0010-replacing-an-element-shows-what-is-lost.md) | Replacing an element builds a new one, shows what is lost, and keeps the references | Accepted |
+| [0010](0010-validation-findings.md) | Validation rules report findings, and a partial load stays partial | Accepted |
+| [0011](0011-natural-order-in-trees.md) | Trees show the saved order, and the others are sorted by name | Accepted |
+| [0012](0012-replacing-an-element-shows-what-is-lost.md) | Replacing an element builds a new one, shows what is lost, and keeps the references | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.

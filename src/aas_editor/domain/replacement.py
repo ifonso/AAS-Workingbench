@@ -8,7 +8,7 @@ a new element through the constructor of the SDK and swap it in place.
 
 A plan is found without changing anything. It lists everything that the new
 element does not have: the editor shows that list and asks before it goes on,
-so nothing is lost silently (see ADR 0010). It also tells where the items of
+so nothing is lost silently (see ADR 0012). It also tells where the items of
 the element went, because a reference to an item names it by its idShort or
 its position.
 """

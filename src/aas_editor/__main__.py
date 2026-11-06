@@ -44,6 +44,14 @@ def main():
     # The actions must be registered before the first tree view is created.
     register_reference_actions()
 
+    from aas_editor.ui.move_actions import register_move_actions
+
+    register_move_actions()
+
+    from aas_editor.ui.paste_actions import register_paste_actions
+
+    register_paste_actions()
+
     from aas_editor.ui.conversion_actions import register_conversion_actions
 
     register_conversion_actions()

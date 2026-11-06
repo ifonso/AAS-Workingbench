@@ -1,4 +1,4 @@
-# ADR 0010: Replacing an element builds a new one, shows what is lost, and keeps the references
+# ADR 0012: Replacing an element builds a new one, shows what is lost, and keeps the references
 
 **Status:** Accepted
 
