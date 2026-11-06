@@ -145,3 +145,43 @@ def test_a_file_can_be_opened_in_a_new_tab_at_once(tabs: Any) -> None:
     tab = tabs.open("submodels", "Submodel", "Picture")
 
     assert tab.splitter.widget(1) is tab.mediaViewWidget
+
+
+def test_a_preview_that_is_shut_has_a_button_that_opens_it(tabs: Any) -> None:
+    tabs.show(NARROW_TAB)
+    tab = tabs.open("submodels", "Submodel", "Picture")
+    assert tab.splitter.sizes()[1] == 0
+    assert tab.showPreviewBtn.isVisible()
+
+    tab.showPreviewBtn.click()
+
+    assert tab.splitter.sizes()[1] > 0
+    assert not tab.showPreviewBtn.isVisible()
+
+
+def test_a_tab_with_an_open_preview_has_no_button(tabs: Any) -> None:
+    tabs.show(WIDE_TAB)
+
+    tab = tabs.open("submodels", "Submodel", "Picture")
+
+    assert not tab.showPreviewBtn.isVisible()
+
+
+def test_an_element_without_a_file_has_no_button(tabs: Any) -> None:
+    tabs.show(NARROW_TAB)
+
+    tab = tabs.open("submodels", "Submodel", "Speed")
+
+    assert not tab.showPreviewBtn.isVisible()
+
+
+def test_the_button_comes_back_when_the_handle_is_dragged_shut(
+    tabs: Any,
+) -> None:
+    tabs.show(WIDE_TAB)
+    tab = tabs.open("submodels", "Submodel", "Picture")
+
+    tab.splitter.setSizes([WIDE_TAB, 0])
+    tab.splitter.splitterMoved.emit(WIDE_TAB, 1)
+
+    assert tab.showPreviewBtn.isVisible()

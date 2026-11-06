@@ -175,16 +175,21 @@ _MENU_SECTIONS: tuple[tuple[str, ...], ...] = (
     ("concepts",),
     ("bulk", "preset", "clipboard"),
     ("files", "blob"),
+    ("navigate",),
 )
 
 
 # The sections with many actions are a submenu of the context menu, so that
 # the menu of an element is not a list of fifty entries. The others are in the
-# menu itself, between separators.
+# menu itself, between separators. Cut, Copy, Paste and Delete are not
+# registered actions, so they stay at the top of the menu whatever is here.
 _SUBMENU_TITLES = {
+    1: "Move and paste",
+    2: "Rename and references",
     4: "Concept descriptions",
     5: "Qualifiers, extensions and bulk changes",
     6: "Package files",
+    7: "Location",
 }
 
 

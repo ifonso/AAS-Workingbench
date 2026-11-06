@@ -30,6 +30,9 @@ from aas_editor.utils.recovery import (
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import transfer_reports
 from aas_editor.application.header_state import restorable_state
+from aas_editor.domain.window_layout import DEFAULT_SIZE
+from aas_editor.domain.window_layout import window_size
+from aas_editor.domain.window_layout import zone_widths
 from aas_editor.ui.package_files import PackageFilesDock
 from aas_editor.ui.selection_panel import SelectionDock
 from aas_editor.package import Package
@@ -616,7 +619,12 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
 
     def applyLastSessionTreeStates(self):
         packTreeViewHeader: HeaderView = self.mainTreeView.header()
-        packTreeViewHeaderState = AppSettings.PACKTREEVIEW_HEADER_STATE.value()
+        # A state that an earlier release saved would bring its widths back.
+        packTreeViewHeaderState = restorable_state(
+            AppSettings.PACKTREEVIEW_HEADER_STATE.value(),
+            AppSettings.PACKTREEVIEW_HEADER_LAYOUT.value(),
+            PACK_TREE_HEADER_LAYOUT_VERSION,
+        )
         if packTreeViewHeaderState:
             packTreeViewHeader.restoreState(packTreeViewHeaderState)
         else:
@@ -650,18 +658,38 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         DetailedInfoTable.currFont.setPointSize(fontSizeDetailedView)
 
     def applyLastSessionLayouts(self):
-        splitterLeftSize = AppSettings.LEFT_ZONE_SIZE.value()
-        splitterRightSize = AppSettings.RIGHT_ZONE_SIZE.value()
-        self.mainLayoutWidget.resize(splitterLeftSize)
-        self.subLayoutWidget.resize(splitterRightSize)
+        saved = restorable_state(
+            (
+                AppSettings.LEFT_ZONE_SIZE.value(),
+                AppSettings.RIGHT_ZONE_SIZE.value(),
+            ),
+            AppSettings.ZONES_LAYOUT.value(),
+            ZONES_LAYOUT_VERSION,
+        )
+        if saved:
+            left, right = saved
+            widths = [left.width(), right.width()]
+        else:
+            # A first run, or sizes of an earlier release: the new default.
+            widths = list(zone_widths(self.width()))
+        self.splitter.setSizes(widths)
 
     def applyLastSessionOrientation(self):
         orientation = AppSettings.ORIENTATION.value()
         self.setOrientation(orientation)
 
     def applyLastSessionMainWindowSize(self):
-        size = AppSettings.SIZE.value()
-        self.resize(size)
+        saved = AppSettings.SIZE.value() if AppSettings.SIZE.isSaved() else None
+        screen = QGuiApplication.primaryScreen()
+        room = (
+            screen.availableGeometry() if screen else QRect(0, 0, *DEFAULT_SIZE)
+        )
+        width, height = window_size(
+            (saved.width(), saved.height()) if saved else None,
+            room.width(),
+            room.height(),
+        )
+        self.resize(width, height)
 
     def applyLastSessionTheme(self):
         theme = AppSettings.THEME.value()
@@ -692,6 +720,10 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         AppSettings.TABTREEVIEW_HEADER_LAYOUT.setValue(
             TAB_HEADER_LAYOUT_VERSION
         )
+        AppSettings.PACKTREEVIEW_HEADER_LAYOUT.setValue(
+            PACK_TREE_HEADER_LAYOUT_VERSION
+        )
+        AppSettings.ZONES_LAYOUT.setValue(ZONES_LAYOUT_VERSION)
         # AppSettings.DEFAULT_NEW_FILETYPE_FILTER.setValue(self.packTreeView.defaultNewFileType)
 
     def openHandoverDocumentationTool(self):

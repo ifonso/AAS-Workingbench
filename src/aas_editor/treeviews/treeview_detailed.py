@@ -26,6 +26,7 @@
 
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt, QModelIndex
+from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtWidgets import QAbstractScrollArea, QHeaderView
 
 import aas_editor.widgets as widgets
@@ -33,14 +34,18 @@ import aas_editor.widgets.messsageBoxes
 from aas_editor.models import DetailedInfoTable
 from aas_editor.delegates import EditDelegate
 from aas_editor.settings.app_settings import (
+    ATTR_COLUMN_PADDING,
     ATTR_COLUMN_WIDTH,
     NAME_ROLE,
     ATTRIBUTE_COLUMN,
     TYPE_COLUMN,
+    TYPE_COLUMN_PADDING,
     TYPE_COLUMN_WIDTH,
     TYPE_HINT_COLUMN,
     VALUE_COLUMN,
     VALUE_COLUMN_WIDTH,
+    WIDEST_ATTRIBUTE_NAME,
+    WIDEST_TYPE_NAME,
     LINKED_ITEM_ROLE,
     IS_LINK_ROLE,
     PARENT_OBJ_ROLE,
@@ -87,13 +92,32 @@ class AttrsTreeView(TreeView):
         header.setSectionResizeMode(
             TYPE_COLUMN, QHeaderView.ResizeMode.Interactive
         )
-        self.setColumnWidth(ATTRIBUTE_COLUMN, ATTR_COLUMN_WIDTH)
+        self.setColumnWidth(ATTRIBUTE_COLUMN, self.fittingAttributeWidth())
         self.setColumnWidth(VALUE_COLUMN, VALUE_COLUMN_WIDTH)
-        self.setColumnWidth(TYPE_COLUMN, TYPE_COLUMN_WIDTH)
+        self.setColumnWidth(TYPE_COLUMN, self.fittingTypeWidth())
         # The type that the Python SDK declares says what the type column
         # says, in words that only a programmer reads.
         self.header().hideSection(TYPE_HINT_COLUMN)
         self.setItemDelegate(EditDelegate(self))
+
+    @staticmethod
+    def _measured(text: str, bold: bool, padding: int, fallback: int) -> int:
+        font = QFont(DetailedInfoTable.currFont)
+        font.setBold(bold)
+        width = QFontMetrics(font).horizontalAdvance(text)
+        return width + padding if width > 0 else fallback
+
+    def fittingAttributeWidth(self) -> int:
+        """Return the width that keeps the common attribute names whole."""
+        return self._measured(
+            WIDEST_ATTRIBUTE_NAME, True, ATTR_COLUMN_PADDING, ATTR_COLUMN_WIDTH
+        )
+
+    def fittingTypeWidth(self) -> int:
+        """Return the width that keeps the common type names whole."""
+        return self._measured(
+            WIDEST_TYPE_NAME, False, TYPE_COLUMN_PADDING, TYPE_COLUMN_WIDTH
+        )
 
     def buildHandlers(self):
         super(AttrsTreeView, self).buildHandlers()
