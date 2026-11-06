@@ -29,8 +29,13 @@ from basyx.aas.model import (
 )
 from basyx.aas.model.datatypes import String
 
+from collections.abc import Callable
+
+from basyx.aas.model.concept import ConceptDescription
+
 from aas_editor.additional.classes import DictItem
 from aas_editor.domain.language_tags import COMMON_LANGUAGE_TAGS
+from aas_editor.domain.ids import new_identifier
 
 CATEGORIES = ["CONSTANT", "PARAMETER", "VARIABLE"]
 
@@ -74,12 +79,6 @@ DEFAULT_INHERITOR = {
 }
 # Default parameter values of types
 DEFAULTS = {
-    AssetAdministrationShell: {
-        "id_": "https://www.example.com/",
-    },
-    Submodel: {
-        "id_": "https://www.example.com/",
-    },
     Key: {
         "type_": KeyTypes.GLOBAL_REFERENCE,
         "value": "https://www.example.com/",
@@ -91,6 +90,15 @@ DEFAULTS = {
         "type_value_list_element": Property,
         "value_type_list_element": String,
     },
+}
+
+# Parameters whose default is made when a dialog opens, so that every new
+# object gets its own value. A fixed id would be refused as a duplicate for the
+# second object (D14).
+GENERATED_DEFAULTS: dict[type, dict[str, Callable[[], str]]] = {
+    AssetAdministrationShell: {"id_": new_identifier},
+    Submodel: {"id_": new_identifier},
+    ConceptDescription: {"id_": new_identifier},
 }
 
 DEFAULT_COMPLETIONS = {

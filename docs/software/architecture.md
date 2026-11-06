@@ -82,6 +82,11 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/list_children.py` | What a new child of a SubmodelElementList gets from the list: its type, value type, and semantic id. |
 | `ui/value_editor.py` | `ValueTypeBox`, `ValueLineEdit`, `ValueEdit`, `BinaryEdit`, and `ValueEditDialog`. They only show the rules of the domain modules (see [Entering values](#entering-values)). |
 | `ui/blob_actions.py` | The context menu actions that load and save the bytes of a Blob. Registered by `__main__.py` with `register_blob_actions`. |
+| `domain/ids.py` | Generated ids (`urn:uuid:`, D14), numbered idShorts for copies (D13), and `fix_id_short`, which turns any text into a valid idShort. |
+| `domain/references.py` | Finds every place where an AAS object stores a reference (`iter_slots`), and `ReferenceIndex`, which tells duplicate ids, the usages of an object, and dangling references (see [Reference integrity](#reference-integrity)). |
+| `application/operations/` | The plans and commands that keep references intact: `rename.py`, `delete.py`, `fix.py`, and `references.py`, which turns reference changes into commands. |
+| `ui/reference_dialogs.py` | The dialogs for renames, deletes and repairs: the preview of references, the rename dialog with Fix and Generate, and the delete dialog with the usages. |
+| `ui/reference_actions.py`, `ui/delete_flow.py` | The actions Rename id, Rename idShort, Sync idShort and Fix References, and the questions that come before a delete. |
 
 ### How saving works
 
@@ -132,7 +137,7 @@ infrastructure ──────┘
 | `application/changes.py` | Application | `Change` (added, removed, moved, changed), `ModelChangeObserver`, and `observer_for(package)`. |
 | `domain/containers.py` | Domain | Adding, removing, and replacing members of the containers of BaSyx objects (namespace sets, lists, sets, and mappings), and telling the position, so that a command can put a member back. |
 | `application/commands.py` | Application | `Command`, `CommandGroup`, and `CommandStack` with undo, redo, atomic groups, a saved-state marker, and the read gate. |
-| `application/edits.py` | Application | The commands of the editor: `SetAttribute`, `SetValueType`, `AddMember`, `RemoveMember`, `ReplaceMember`, `AddSupplementaryFile`, and `link_submodels`. |
+| `application/edits.py` | Application | The commands of the editor: `SetAttribute`, `SetValueType`, `AddMember`, `RemoveMember`, `ReplaceMember`, `AddSupplementaryFile`, and `link_submodels`. `SetAttribute` keeps the position of the owner for every attribute. |
 | `application/editing.py` | Application | `EditMode`, the global switch between Edit and Read mode (D18). |
 | `application/listeners.py` | Application | The callback list behind all of them. It holds bound methods weakly. |
 
@@ -218,6 +223,20 @@ register_action(
 - Every tree view builds an action for each spec that fits its kind of view when it is created. Register before the first view exists, for example by importing your module in the composition root, `__main__.py`, after its existing imports.
 - `is_enabled` is asked whenever the current item changes. `mutates` is true by default, and then the action is also disabled in Read mode and in views that do not allow editing.
 - `ActionContext` has the view, the current index, the selection, the package, and its stack. `toolbar=True` adds the action to the main toolbar, and `order` sorts the actions.
+
+### Reference integrity
+
+[ADR 0009](adr/0009-reference-integrity.md) records the design.
+
+- A reference of the SDK is immutable, so changing one means replacing it where it is stored. `iter_slots` finds those places by reading the attributes of the SDK objects, with no list of fields. `ReferenceSlot` names the object, the attribute, and the list or set that holds the reference.
+- `ReferenceIndex(package.objStore)` is built for one operation and dropped. It answers `is_taken(id)`, `duplicate_ids()`, `usages_of(targets)`, `through(path)`, `resolve(reference)`, and `dangling()`. Building it takes about 17 ms for the largest bundled template.
+- Every operation first makes a plan without changing anything, then builds commands for the plan:
+  - `plan_rename_id` and `plan_rename_id_short` give a `RenamePlan`, and `RenameCommand` makes the rename and the updates of the references as one step. A duplicate id and an invalid idShort are refused with a `RenameError`, and the idShort error carries a suggestion.
+  - `plan_delete` gives a `DeletePlan` with the usages, the references that can be taken away, and those that must stay. `prompt_for` says what to ask, and `delete_commands` or `cleanup_commands` build the commands.
+  - `plan_fix_references` gives the repairs and what cannot be repaired. `sync_id_short_commands` copies an idShort to a concept description.
+- The tree views ask through `ui/delete_flow.prepare_delete` before they delete the selected rows. The item models send an id or idShort typed in a cell through `ui/reference_actions.rename_command`, so a cell edit and the Rename action take the same path.
+- `register_reference_actions()` adds the actions to the registry. `__main__.py` calls it before the first view exists.
+- A feature that moves or replaces elements must keep references right in the same step. For positions in a list, use `rewrite_keys` with a `KeyRename` for each item that moved.
 
 ### Working with legacy code
 

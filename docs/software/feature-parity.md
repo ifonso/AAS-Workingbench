@@ -95,16 +95,16 @@ Treat `Partial` as "something exists", and confirm the details when starting eac
 | ID | Feature | Priority | Status | Evidence or gap |
 |---|---|---|---|---|
 | F-EDT-01 | Editor framework | P0 | Partial | Generic editors generated from type hints |
-| F-EDT-02 | Environment, AAS, AssetInformation | P0 | Partial | Through the generic editors |
-| F-EDT-03 | Submodel and SubmodelRef | P0 | Partial | Through the generic editors |
-| F-EDT-04 | SubmodelElements | P0 | Partial | All 14 types are made, edited, undone, saved, and reloaded in a test. Values follow `valueType` (31 XSD types), a Range checks min and max, a Blob has a text and hex editor with file load and save, a list asks for its type first, and every attribute of BasicEventElement is editable. Later work packages: Refactor (WP8b), move (WP6), ConceptDescription buttons (WP10). |
-| F-EDT-05 | ConceptDescription and IEC 61360 | P0 | Partial | Through the generic editors |
-| F-EDT-06 | Common attribute modules | P0 | Partial | Through the generic editors. Language tags are checked (BCP 47), and deleting a supplemental semantic id leaves the semantic id alone. Hints, Fix, Sync, and Generate belong to later work packages (WP4, WP5b). |
+| F-EDT-02 | Environment, AAS, AssetInformation | P0 | Partial | Through the generic editors. New shells get a `urn:uuid:` id, an id that another object has is refused, and Rename id updates the references to the shell. Deleting a shell leaves its submodels. |
+| F-EDT-03 | Submodel and SubmodelRef | P0 | Partial | Through the generic editors. Rename id updates the references, Delete shows the usages and offers to remove them, and Fix References repairs an idShort in the first key and wrong key types. Remove attributes in bulk and the SMT actions are not done. |
+| F-EDT-04 | SubmodelElements | P0 | Partial | All 14 types are made, edited, undone, saved, and reloaded in a test. Values follow `valueType` (31 XSD types), a Range checks min and max, a Blob has a text and hex editor with file load and save, a list asks for its type first, and every attribute of BasicEventElement is editable. Sync idShort copies to the concept description. Later work packages: Refactor (WP8b), move (WP6), ConceptDescription buttons (WP10). |
+| F-EDT-05 | ConceptDescription and IEC 61360 | P0 | Partial | Through the generic editors. Rename id updates the semantic ids, and Sync idShort fills the short name. The SDK allows no empty preferred name. |
+| F-EDT-06 | Common attribute modules | P0 | Partial | Through the generic editors. The id is checked for duplicates, a new id is generated, an invalid idShort gets a suggestion (Fix), language tags are checked (BCP 47), and deleting a supplemental semantic id leaves the semantic id alone. Hints belong to WP5b. |
 | F-EDT-07 | Qualifiers and Extensions | P1 | Partial | Through the generic editors |
-| F-EDT-08 | Copy, paste, and reorder | P0 | Partial | Copy, cut, paste, and undo, with one history for each package. Cut removes the source from every kind of parent. Reorder not confirmed. |
+| F-EDT-08 | Copy, paste, and reorder | P0 | Partial | Copy, cut, paste, and undo, with one history for each package. Cut removes the source from every kind of parent. Delete asks first when it is destructive, shows the usages, and is one undo step for a bulk delete. Reorder not confirmed. |
 | F-EDT-09 | Multi-element editing | P1 | Partial | Multi-select with bulk cut, copy, and delete |
 | F-EDT-10 | Supplementary files | P1 | Partial | `StoredFile` in `package.py` |
-| F-EDT-11 | References, semantics, lookups | P1 | Partial | Reference links open in tabs, with no lookup |
+| F-EDT-11 | References, semantics, lookups | P1 | Partial | Reference links open in tabs, with no lookup. The index finds dangling references, but nothing lists them yet. |
 
 ### Templates, exchange, plugins, and companions
 
@@ -127,6 +127,7 @@ These have no direct equivalent in the P0 and P1 list, so keep them while workin
 
 - Crash recovery
 - Undo and redo, with one history for each package that restores the position of what was deleted
+- References that stay right: a rename updates them with a preview, and a delete shows what refers to the object
 - Excel import with mappings
 - LLM-assisted Handover Documentation
 - Validation with AAS Test Engines

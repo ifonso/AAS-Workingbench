@@ -51,18 +51,21 @@ from PyQt6.QtWidgets import (
 )
 
 from basyx.aas.model import SubmodelElementList
+from basyx.aas.model import Referable
 
 import aas_editor.dialogs as dialogs
 import aas_editor.settings as settings
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 
+from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import CommandStack, ReadOnlyError
 from aas_editor.application.editing import edit_mode
 from aas_editor.domain.list_children import child_defaults
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.utils.util_type import getTypeName
 from aas_editor.ui.actions import ActionContext, ViewActions, ViewKind
+from aas_editor.ui.delete_flow import DeleteCancelled, prepare_delete
 from aas_editor.settings.app_settings import *
 from aas_editor.additional.classes import DictItem
 from aas_editor.delegates import EditDelegate
@@ -1009,12 +1012,69 @@ class TreeView(BasicTreeView):
         index = self.currentIndex()
         self.model().setData(index, NOT_GIVEN, UPDATE_ROLE)
 
-    def onDelClear(self):
+    def onDelClear(self, confirm=True):
+        """Delete or clear the selected rows.
+
+        Deleting objects asks first when the delete is destructive or the
+        objects are referenced (D11), and a cut does not ask (confirm False).
+        Taking the references away is part of the same undo step.
+        """
         indexes = self.getTopLevelSameLevelIndexes(self.selectedIndexes())
-        if indexes and len(indexes) == 1:
+        if not indexes:
+            return
+        try:
+            prepared = self.prepareDelete(indexes, confirm)
+        except DeleteCancelled:
+            return
+        if prepared is None or not prepared.commands:
+            self._delClearIndexes(indexes)
+            return
+        stack = self.activeStack()
+        with self.historyGroup(indexes[0], prepared.description):
+            for command in prepared.commands:
+                stack.push(command)
+            self._delClearIndexes(indexes)
+
+    def _delClearIndexes(self, indexes: List[QModelIndex]):
+        if len(indexes) == 1:
             self.onOneItemDelClear(indexes[0])
-        elif indexes:
+        else:
             self.onMultipleDelClear(indexes)
+
+    def deletableObject(self, index: QModelIndex):
+        """Return the AAS object that deleting the row removes, if any"""
+        obj = index.data(OBJECT_ROLE)
+        return obj if isinstance(obj, Referable) else None
+
+    def prepareDelete(self, indexes: List[QModelIndex], confirm: bool):
+        """Plan the delete of the rows and ask what the plan needs.
+
+        :return: the commands for the references to the objects, None if the
+            rows hold no object that a reference can point at
+        :raise DeleteCancelled: if the user cancelled
+        """
+        package = indexes[0].data(PACKAGE_ROLE)
+        if not edit_mode().is_editing:
+            # Read mode refuses the delete, and says so, without any question.
+            return None
+        targets = [
+            obj
+            for obj in (self.deletableObject(index) for index in indexes)
+            if obj is not None
+        ]
+        if package is None or not targets:
+            return None
+        shiftHeld = bool(
+            QApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier
+        )
+        return prepare_delete(
+            package.objStore,
+            targets,
+            observer_for(package),
+            confirm=confirm,
+            skip_confirmation=shiftHeld,
+            parent=self,
+        )
 
     def onOneItemDelClear(self, index: QModelIndex):
         attribute = index.data(NAME_ROLE)
@@ -1102,7 +1162,16 @@ class TreeView(BasicTreeView):
             idx for idx in top_level_candidates if idx.parent() == first_parent
         ]
 
-        return same_level_indexes
+        # A view that selects whole rows lists every column of a row. The row
+        # is one object, so it counts once, or a delete would run once for
+        # each column and remove the rows behind it.
+        rows = set()
+        one_for_each_row = []
+        for idx in same_level_indexes:
+            if idx.row() not in rows:
+                rows.add(idx.row())
+                one_for_each_row.append(idx)
+        return one_for_each_row
 
     def isPasteOk(self, index: QModelIndex) -> bool:
         if self.treeClipboard.isEmpty() or not index.isValid():
@@ -1208,7 +1277,8 @@ class TreeView(BasicTreeView):
 
     def onCut(self):
         self.onCopy()
-        self.onDelClear()
+        # Cut is immediate, and the objects come back with the paste (D12).
+        self.onDelClear(confirm=False)
 
     def addItemWithDialog(
         self,

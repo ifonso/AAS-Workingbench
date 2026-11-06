@@ -26,7 +26,12 @@ import aas_editor.widgets as widgets
 import aas_editor.widgets.buttons
 from aas_editor.additional.classes import DictItem
 from aas_editor.widgets.widgetUtil import InputWidgetUtil
-from aas_editor.settings import DEFAULT_COMPLETIONS, DEFAULTS, OBJECT_ROLE
+from aas_editor.settings import (
+    DEFAULT_COMPLETIONS,
+    DEFAULTS,
+    GENERATED_DEFAULTS,
+    OBJECT_ROLE,
+)
 from aas_editor.utils.util import (
     getReqParams4init,
     getParamsAndTypehints4init,
@@ -186,6 +191,8 @@ class ObjGroupBox(GroupBox):
         attr = self.paramsToAttrs.get(param, param)
         if hasattr(self.objVal, attr):
             val = getattr(self.objVal, attr)
+        elif param in GENERATED_DEFAULTS.get(self.objTypeHint, {}):
+            val = GENERATED_DEFAULTS[self.objTypeHint][param]()
         else:
             val = DEFAULTS.get(self.objTypeHint, {}).get(
                 param, getDefaultVal(self.objTypeHint, param, None)

@@ -14,6 +14,7 @@ children. They are never serialized (D17), so this is harmless.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 from typing import Generic
 from typing import TypeVar
 
@@ -177,16 +178,74 @@ def replace_item(
         raise
 
 
-def namespace_sets_of(
-    element: model.Referable,
-) -> list[model.NamespaceSet[model.Referable]]:
-    """Returns the namespace sets of its parent that hold an element."""
-    sets = getattr(element.parent, "namespace_element_sets", ())
+def namespace_sets_of(element: object) -> list[model.NamespaceSet[Any]]:
+    """Returns the namespace sets of its parent that hold an object."""
+    parent = getattr(element, "parent", None)
+    sets = getattr(parent, "namespace_element_sets", ())
     return [
         namespace_set
         for namespace_set in sets  # pyright: ignore[reportUnknownVariableType]
         if element in namespace_set
     ]
+
+
+def set_attribute(element: object, name: str, value: object) -> None:
+    """Sets an attribute of an object and keeps its position (D19).
+
+    The SDK takes the object out of its namespace sets and adds it again when
+    an attribute that the set indexes changes: the idShort, and also the
+    semantic id. That moves the object to the end, so the order is restored.
+
+    The SDK does not undo that when the check on adding fails, such as for an
+    item of a list whose semantic id differs from its siblings (AASd-114). It
+    leaves the object out of the list. This function puts it back with the old
+    value.
+
+    Args:
+        element: The object, such as an element, qualifier or extension.
+        name: The name of the attribute.
+        value: The new value.
+
+    Raises:
+        Exception: Whatever the SDK raises for an invalid or taken value, such
+            as `AASConstraintViolation`. The object and the order stay as they
+            were.
+    """
+    snapshots = [
+        snapshot_order(namespace_set)
+        for namespace_set in namespace_sets_of(element)
+    ]
+    previous = getattr(element, name)
+    try:
+        setattr(element, name, value)
+    except Exception:
+        _put_back(element, name, previous, snapshots)
+        raise
+    finally:
+        for snapshot in snapshots:
+            restore_order(snapshot)
+
+
+def _put_back(
+    element: object,
+    name: str,
+    previous: object,
+    snapshots: Sequence[OrderSnapshot[Any]],
+) -> None:
+    """Undoes a refused attribute change that left the object out of its sets."""
+    left = [
+        snapshot
+        for snapshot in snapshots
+        if element not in snapshot.namespace_set
+    ]
+    if not left:
+        return
+    fields = vars(element)
+    # A property keeps its value in a field with a leading underscore.
+    field = f"_{name}" if f"_{name}" in fields else name
+    fields[field] = previous
+    for snapshot in left:
+        _refill(snapshot.namespace_set, snapshot.items)
 
 
 def set_id_short(element: model.Referable, id_short: str | None) -> None:
@@ -200,15 +259,7 @@ def set_id_short(element: model.Referable, id_short: str | None) -> None:
         Exception: Whatever the SDK raises for an invalid or taken idShort,
             such as `AASConstraintViolation`. The order stays as it was.
     """
-    snapshots = [
-        snapshot_order(namespace_set)
-        for namespace_set in namespace_sets_of(element)
-    ]
-    try:
-        element.id_short = id_short
-    finally:
-        for snapshot in snapshots:
-            restore_order(snapshot)
+    set_attribute(element, "id_short", id_short)
 
 
 def _same_members(current: Sequence[object], order: Sequence[object]) -> bool:

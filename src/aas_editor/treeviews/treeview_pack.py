@@ -1214,6 +1214,16 @@ class PackTreeView(TreeView):
             file = str(url.toLocalFile())
             self.openPack(file)
 
+    def deletableObject(self, index: QModelIndex):
+        # Only the object columns delete the object. The others clear an
+        # attribute of it.
+        if index.data(COLUMN_NAME_ROLE) in (
+            OBJECT_COLUMN_NAME,
+            OBJECT_VALUE_COLUMN_NAME,
+        ):
+            return super().deletableObject(index)
+        return None
+
     def onOneItemDelClear(self, index: QModelIndex):
         attribute = index.data(COLUMN_NAME_ROLE)
         if isinstance(index.data(OBJECT_ROLE), Package):

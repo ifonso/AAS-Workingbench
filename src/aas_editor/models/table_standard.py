@@ -17,6 +17,7 @@ from collections.abc import MutableMapping
 
 from basyx.aas.model import (
     AASConstraintViolation,
+    Identifiable,
     LangStringSet,
     NamespaceSet,
     Referable,
@@ -52,8 +53,14 @@ from aas_editor.domain.typed_values import (
     prepare_edit,
 )
 from aas_editor.domain.value_types import InvalidValueError
+from aas_editor.application.operations.rename import RenameCommand
+from aas_editor.application.operations.rename import RenameError
+from aas_editor.application.operations.rename import ReplaceIdentifiable
 from aas_editor.models import StandardItem
 from aas_editor.package import Package
+from aas_editor.ui.reference_actions import EditCancelled
+from aas_editor.ui.reference_actions import rename_command
+from aas_editor.ui.reference_actions import replace_command
 from aas_editor.settings.app_settings import (
     NAME_ROLE,
     OBJECT_ROLE,
@@ -96,7 +103,15 @@ def isMemberContainer(obj) -> bool:
 
 # Why a change is refused, in words the user can read. A view shows the message
 # of such an error as it is, without the traceback of an unexpected failure.
-REFUSALS = (ReadOnlyError, InvalidValueError, AASConstraintViolation)
+REFUSALS = (
+    ReadOnlyError,
+    InvalidValueError,
+    AASConstraintViolation,
+    RenameError,
+)
+
+# What `renameCommand` returns for an edit that is no rename.
+_NOT_RENAMED = object()
 
 
 class StandardTable(QAbstractItemModel):
@@ -599,6 +614,9 @@ class StandardTable(QAbstractItemModel):
                     self.setChanged(index)
                     self.update(index)
                 return True
+            except EditCancelled:
+                # The user said no to a question, so this is no failure.
+                return False
             except REFUSALS as e:
                 self._reportFailure(index, str(e))
             except Exception as e:
@@ -633,6 +651,13 @@ class StandardTable(QAbstractItemModel):
         container = self._changedObject(index)
         if isMemberContainer(container):
             # The edited item is a member of the container, not an attribute.
+            if isinstance(item.obj, Identifiable) and isinstance(
+                value, Identifiable
+            ):
+                # An object with another id leaves references behind.
+                return replace_command(
+                    self._packageOf(index), container, item.obj, value, self
+                )
             return ReplaceMember(
                 self._observerFor(index),
                 container,
@@ -668,6 +693,9 @@ class StandardTable(QAbstractItemModel):
         :raise InvalidValueError: if the value does not fit the value type, or
             the attribute is fixed once the object is made
         """
+        renamed = self.renameCommand(index, owner, name, value)
+        if renamed is not _NOT_RENAMED:
+            return renamed
         fixed = getattr(type(owner), name, None)
         if isinstance(fixed, property) and fixed.fset is None:
             # The SDK sets these only in the constructor, like the type of the
@@ -709,11 +737,36 @@ class StandardTable(QAbstractItemModel):
                 )
         return value
 
+    def renameCommand(self, index: QModelIndex, owner, attribute, value):
+        """Return the command for an id or idShort edit, with its references.
+
+        An id that another object has is refused. A rename that changes
+        references shows a preview first.
+
+        :return: the command, None if nothing changes, or _NOT_RENAMED if the
+            edit is no rename
+        :raise EditCancelled: if the user cancelled a question
+        :raise RenameError: if the value cannot be used
+        """
+        if (
+            attribute not in ("id", "id_short")
+            or not isinstance(owner, Referable)
+            or not isinstance(value, str)
+        ):
+            return _NOT_RENAMED
+        package = self._packageOf(index)
+        if package is None:
+            return _NOT_RENAMED
+        return rename_command(package, owner, attribute, value, self)
+
     def _syncAfterEdit(self, index: QModelIndex, command: Command):
         """Make the item show the object that the edit made of it"""
         item = self.objByIndex(index)
-        if isinstance(command, ReplaceMember):
+        if isinstance(command, (ReplaceMember, ReplaceIdentifiable)):
             item.obj = command.new
+        elif isinstance(command, RenameCommand):
+            if item.objName == command.name:
+                item.obj = getattr(command.owner, command.name)
         elif isinstance(command, SetAttribute) and item.objName == command.name:
             item.obj = getattr(command.owner, command.name)
         elif isinstance(command, SetValueType) and item.objName == "value_type":

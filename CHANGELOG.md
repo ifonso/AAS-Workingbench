@@ -37,6 +37,13 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Adding to a SubmodelElementList opens a dialog for the type of the list, with the value type of the list fixed and the semantic id of the list filled in. Before, any type could be chosen, and the SDK refused the wrong ones afterwards.
 - The form of a new SubmodelElementList offers only element types that can be made, and shows `order_relevant` ticked, as the SDK default is true. Editing what a list fixes when it is made, such as `order_relevant`, is refused with a message that says to make a new list.
 - Every attribute of the 14 submodel element types can be reached in the form and in the tab, including `direction`, `state`, `messageTopic`, `messageBroker`, `lastUpdate`, `minInterval`, and `maxInterval` of a BasicEventElement, which the original editor lacks.
+- Rename id for shells, submodels and concept descriptions, and Rename idShort for elements, in the context menu of the package tree. Both update every reference that has the old id or goes through the old idShort, in semantic ids, supplemental semantic ids, value ids, `refers_to`, the references of a shell, relationships, data specifications and every other field, and in list positions. A preview lists the references that change. The rename and the updates are one undo step. An id or idShort typed in a cell takes the same path.
+- Delete shows what refers to the objects, and offers to remove those references or leave them. A reference that is required, such as the end of a relationship, stays. Deleting a shell, submodel or concept description, or an element with elements below it, asks first, and Shift skips that question. Deleting several objects shows one dialog and is one undo step. Cut asks nothing and leaves the references.
+- Deleting an item of a list moves the references to the items behind it up by one, so they keep pointing at the same item.
+- Fix References in the context menu repairs references that name an object by its idShort instead of its id, and keys that have the wrong type. It lists what it cannot repair.
+- Sync idShort copies the idShort of an element to the concept description of its semantic id, where that has no idShort or short name.
+- An invalid idShort, or one that a sibling has, gets a suggestion such as `My_motor` or `Name_1`, which the user can accept.
+- A test that reads every class of the SDK and fails when the walk over references misses a reference field.
 
 ### Changed
 
@@ -61,6 +68,12 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Adding a reference that a shell has already, or an entry with a key that a mapping has, replaces nothing silently. A reference is refused with an error, and an entry replaces the old one as an edit that can be undone.
 
 ### Fixed
+
+- Setting the semantic id of an element moved it to the end of its siblings, and undo did not put it back. The position is kept for every attribute now.
+- Deleting a row in a tab that selects whole rows ran the delete once for each column, and removed up to three more rows behind it.
+- Giving an item of a list a semantic id that differs from its siblings was refused, as AASd-114 demands, but the SDK had taken the item out of the list by then, and it was lost. The item stays now.
+- An id edited in an attribute or a cell could be the id of another object, and left every reference to the old id pointing at nothing. The edit is refused for a duplicate, and updates the references.
+- The add dialogs for shells and submodels proposed the fixed id `https://www.example.com/`, so the second new object failed. They propose a new `urn:uuid:` id, and so does the dialog for a concept description.
 
 - Installation failed because the `aas_manager/v301` branch of the SDK fork no longer exists.
 - The Excel import tool raised `NameError` instead of showing an error dialog when an operation failed.

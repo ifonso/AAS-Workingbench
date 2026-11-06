@@ -56,7 +56,8 @@ def position_of(container: object, member: object) -> int | None:
     """Returns the position of a member, or None if it has none.
 
     Args:
-        container: A `NamespaceSet`, a list, or a mapping. Other containers
+        container: A `NamespaceSet`, a list (also the SDK's `ConstrainedList`), or a
+            mapping. Other containers
             have no order.
         member: The object to look for, compared by identity. A mapping
             member is a pair, and its key is looked for.

@@ -17,7 +17,6 @@ from aas_editor.application.commands import Command
 from aas_editor.application.edits import (
     AddMember,
     AddSupplementaryFile,
-    SetAttribute,
 )
 from aas_editor.models import StandardTable, PackTreeViewItem
 from aas_editor.package import Package, StoredFile

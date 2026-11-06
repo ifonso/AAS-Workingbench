@@ -5,6 +5,7 @@ import io
 from basyx.aas import model
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 import pytest
+from tests.factories import make_external_reference
 from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
@@ -69,6 +70,63 @@ def test_set_attribute_keeps_the_position_when_it_renames(
     stack.undo()
 
     assert (renamed, _ids(submodel)) == (["z", "b", "c"], ["a", "b", "c"])
+
+
+def test_set_attribute_keeps_the_element_when_the_sdk_refuses_a_semantic_id(
+    observer: ModelChangeObserver,
+) -> None:
+    # AASd-114: the items of a list must have equal semantic ids. The SDK takes
+    # the item out of the list before it checks, and then loses it.
+    items = model.SubmodelElementList(
+        "Items",
+        type_value_list_element=model.Property,
+        value_type_list_element=model.datatypes.String,
+        value=[
+            model.Property(
+                None,
+                model.datatypes.String,
+                value=text,
+                semantic_id=make_external_reference("urn:same"),
+            )
+            for text in ("a", "b", "c")
+        ],
+    )
+    second = list(items.value)[1]
+    stack = CommandStack()
+
+    with pytest.raises(model.AASConstraintViolation):
+        stack.push(
+            SetAttribute(
+                observer,
+                second,
+                "semantic_id",
+                make_external_reference("urn:different"),
+            )
+        )
+
+    assert [item.value for item in items.value] == ["a", "b", "c"]
+    assert second.semantic_id == make_external_reference("urn:same")
+    assert not stack.can_undo
+
+
+def test_set_attribute_keeps_the_position_when_it_sets_a_semantic_id(
+    observer: ModelChangeObserver,
+) -> None:
+    submodel = make_submodel(
+        elements=[make_property("a"), make_property("b"), make_property("c")]
+    )
+    element = next(iter(submodel.submodel_element))
+    stack = CommandStack()
+
+    stack.push(
+        SetAttribute(
+            observer, element, "semantic_id", make_external_reference("urn:x")
+        )
+    )
+    after_push = _ids(submodel)
+    stack.undo()
+
+    assert (after_push, _ids(submodel)) == (["a", "b", "c"], ["a", "b", "c"])
 
 
 def test_set_attribute_reports_a_change_of_the_owner_when_applied_and_reverted(
