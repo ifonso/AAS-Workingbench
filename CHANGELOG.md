@@ -187,6 +187,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- Copying a qualifier, extension, specific asset id, or data specification row puts its JSON on the clipboard, so "Add ... from clipboard" and "Paste qualifier" can read it. It was the text of the cell.
+- The name that the SDK makes up for an item of a list (`generated_submodel_list_hack_...`) no longer shows in the idShort column. It reads that the item has none (D17).
 - On a first run, the package tree hid the names of nested elements, because its first column was too narrow for their indentation. The column now starts wide, and a width that the user chose stays.
 - The Validation dock cut off the rule and the location of a finding. It also said "1 warnings".
 - Closing the application could show an error about a deleted QTimer, and could keep the process from ending. The hints bar told the validation service that it had gone after Qt had destroyed the service.

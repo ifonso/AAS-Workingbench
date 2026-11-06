@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import QWidget
 
 from aas_editor.application.hints import hints_mode
 from aas_editor.application.validation import hints_for
+from aas_editor.domain.attribute_vocabulary import metamodel_name
 from aas_editor.domain.validation import Finding
 from aas_editor.domain.validation import Severity
 from aas_editor.ui.validation_service import ValidatedPackage
@@ -71,8 +72,14 @@ def _lines(findings: tuple[Finding, ...] | list[Finding]) -> list[str]:
 
 
 def _grouped_line(notices: list[Finding]) -> str:
-    rules = ", ".join(f.rule_id for f in notices)
-    return f"{len(notices)} hints: {rules}"
+    topics = ", ".join(_topic(f) for f in notices)
+    return f"{len(notices)} hints about {topics}. Hover to read them"
+
+
+def _topic(finding: Finding) -> str:
+    if finding.attribute is None:
+        return finding.rule_id
+    return metamodel_name(type(finding.subject), finding.attribute)
 
 
 class HintsBar(QFrame):

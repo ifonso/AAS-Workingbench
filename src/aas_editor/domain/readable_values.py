@@ -31,6 +31,8 @@ from dateutil.relativedelta import relativedelta
 
 from aas_editor.additional.classes import DictItem
 from aas_editor.domain.attribute_display import EMPTY
+from aas_editor.domain.attribute_display import GENERATED_ID_SHORT_TEXT
+from aas_editor.domain.attribute_display import is_generated_id_short
 from aas_editor.domain.attribute_display import value_text
 
 _CAMEL_WORD = re.compile(r"[A-Z][a-z]*|[0-9]+")
@@ -53,6 +55,8 @@ def readable_text(value: object) -> str | None:
         enumerations, texts of languages, and references, which the caller
         shows by their last key.
     """
+    if is_generated_id_short(value):
+        return GENERATED_ID_SHORT_TEXT
     text = value_text(value)
     if text is not None or _shown_as_it_is(value):
         return text

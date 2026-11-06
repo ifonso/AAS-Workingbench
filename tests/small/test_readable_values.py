@@ -196,3 +196,10 @@ def test_no_reader_text_looks_like_a_python_repr() -> None:
         text is not None and "(" not in text.replace("(empty)", "")
         for text in texts
     )
+
+
+def test_the_generated_name_of_a_list_item_is_not_shown() -> None:
+    text = readable_text("generated_submodel_list_hack_0123456789abcdef")
+
+    assert text is not None
+    assert "generated_submodel_list_hack" not in text

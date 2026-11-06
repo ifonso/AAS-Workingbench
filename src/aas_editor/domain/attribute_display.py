@@ -40,6 +40,15 @@ _XSD_NAMES: Mapping[type, str] = datatypes.XSD_TYPE_NAMES
 _LANG_STRING = "LangString"
 _NO_LANGUAGE = "(no language)"
 _GENERATED_ID_SHORT_PREFIX = "generated_submodel_list_hack_"
+GENERATED_ID_SHORT_TEXT = "(none: an item of a list has no idShort)"
+"""What a cell reads for the name that the SDK makes up for a list item (D17)."""
+
+
+def is_generated_id_short(value: object) -> bool:
+    """Tells whether a value is the name that the SDK makes up for a list item."""
+    return isinstance(value, str) and value.startswith(
+        _GENERATED_ID_SHORT_PREFIX
+    )
 
 
 def value_type_name(value: object) -> str:
