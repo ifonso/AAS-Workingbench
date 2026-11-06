@@ -47,7 +47,6 @@ from PyQt6.QtGui import (
     QDropEvent,
     QCloseEvent,
     QAction,
-    QShortcut,
 )
 from PyQt6.QtWidgets import (
     QWidget,
@@ -80,7 +79,7 @@ from aas_editor.settings.icons import (
     ZOOM_OUT_ICON,
     SETTINGS_ICON,
 )
-from aas_editor.settings.shortcuts import SC_BACK, SC_FORWARD, SC_SEARCH
+from aas_editor.settings.shortcuts import SC_BACK, SC_FORWARD
 from aas_editor.utils.util_type import getTypeName
 from aas_editor.widgets import SearchBar, ToolBar
 from aas_editor.utils.util import getTreeItemPath
@@ -504,9 +503,9 @@ class TabWithTreeView(QWidget):
             closable=True,
         )
         self.searchBar.hide()
-        self.openSearchBarSC = QShortcut(
-            SC_SEARCH, self, activated=self.searchBar.showFocused
-        )
+        # Limited to this tab, so that the tree's bar and the bar of another
+        # visible tab do not make the key ambiguous.
+        self.openSearchBarSC = self.searchBar.bindFind(self)
 
         # The splitter that the preview of a stored file opens in must exist
         # before the first item is opened.

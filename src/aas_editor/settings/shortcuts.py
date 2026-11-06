@@ -26,7 +26,14 @@ SC_BACK = QKeySequence.StandardKey.Back
 SC_FORWARD = QKeySequence.StandardKey.Forward
 SC_SEARCH = QKeySequence.StandardKey.Find
 SC_OPEN = QKeySequence.StandardKey.Open
-SC_SAVE_ALL = QKeySequence(Qt.KeyboardModifier.ControlModifier | Qt.Key.Key_S)
+# Save is the usual Ctrl+S and acts on the package of the focused view. Save All
+# is Ctrl+Shift+S. Save As has no key of its own, so nothing else uses this one.
+SC_SAVE = QKeySequence.StandardKey.Save
+SC_SAVE_ALL = QKeySequence(
+    Qt.KeyboardModifier.ControlModifier
+    | Qt.KeyboardModifier.ShiftModifier
+    | Qt.Key.Key_S
+)
 SC_EXPAND_RECURS = QKeySequence(
     Qt.KeyboardModifier.ControlModifier
     | Qt.KeyboardModifier.AltModifier
