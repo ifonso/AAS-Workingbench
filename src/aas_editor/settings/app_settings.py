@@ -17,6 +17,8 @@ from PyQt6.QtCore import QSize, QSettings, QDir
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6 import QtCore
 
+from aas_editor.domain.design_tokens import DEFAULT_DENSITY
+from aas_editor.domain.design_tokens import Density
 from aas_editor.settings.util_constants import NOT_GIVEN
 
 # Anchor: aas_editor/ package directory (this file lives in aas_editor/settings/)
@@ -104,11 +106,11 @@ VALUE_COLUMN_WIDTH = 200
 # Raise it when the default columns of the attribute tabs change. A saved
 # header state of another version is not restored, so the new default shows
 # once, and what the user changes later is kept (see application/header_state).
-TAB_HEADER_LAYOUT_VERSION = 3
+TAB_HEADER_LAYOUT_VERSION = 4
 # The same for the header of the package tree, and for the sizes of the two
 # zones of the window (the tree and the tabs). Raise each one when its default
 # changes, so that a session of an older release does not hide the new default.
-PACK_TREE_HEADER_LAYOUT_VERSION = 1
+PACK_TREE_HEADER_LAYOUT_VERSION = 2
 ZONES_LAYOUT_VERSION = 1
 PACK_TREE_OBJECT_COLUMN_WIDTH = 340
 # What the toolbar of the tree needs beyond the width of its buttons: the
@@ -120,7 +122,9 @@ MAX_FONT_SIZE = 60
 MIN_FONT_SIZE = 6
 DEFAULT_FONT = QFont()
 DEFAULT_FONT.setWeight(40)
-DEFAULT_FONT.setPointSize(12)
+# 10 pt is 13 px on a screen of 96 dpi, the body of the type ramp (plan, section
+# 2). The releases before the compact trees had 12 pt, see application/font_sizes.
+DEFAULT_FONT.setPointSize(10)
 
 MAX_RECENT_FILES = 10
 MAX_SIGNS_TO_SHOW = 1000
@@ -150,6 +154,11 @@ TYPE_HINT_ROLE = 1200
 TYPE_CHECK_ROLE = 1210
 # The object and the attribute name that editing a cell sets: a tuple, or None.
 EDIT_TARGET_ROLE = 1220
+# What a row shows of the change marks of its package: `MARK_NEW`, `MARK_CHANGED`,
+# or None. Only the name column has one.
+CHANGE_MARK_ROLE = 1230
+MARK_NEW = "new"
+MARK_CHANGED = "changed"
 
 # Columns
 OBJECT_COLUMN_NAME = "object"
@@ -239,6 +248,8 @@ class AppSettings:
     PACKTREEVIEW_HEADER_LAYOUT = Setting("packTreeViewHeaderLayout", 0, int)
     # The layout that the saved sizes of the two zones were made for.
     ZONES_LAYOUT = Setting("zonesLayout", 0, int)
+    # The version of the default font size that the saved sizes were made under.
+    FONTSIZE_LAYOUT = Setting("fontSizeLayout", 0, int)
     PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE = CUSTOM_COLUMN_LISTS_FILE
     TABTREEVIEW_HEADER_STATE = Setting("tabTreeViewHeaderState", None)
     # The layout that the saved state of the tab header was made for.
@@ -281,7 +292,22 @@ class AppSettings:
         type=bool,
     )
 
+    DENSITY = Setting(
+        name="density",
+        display_name="Row density",
+        description="How tightly the rows of the trees sit: 28, 24, or 20 pixels "
+        "high. A larger font makes a row taller when it does not fit.",
+        options={
+            "Comfortable": Density.COMFORTABLE.value,
+            "Compact": Density.COMPACT.value,
+            "Dense": Density.DENSE.value,
+        },
+        default=DEFAULT_DENSITY.value,
+        type=str,
+    )
+
     SETTINGS_TO_CHOOSE_BY_USER = [
+        DENSITY,
         DEFAULT_NEW_FILETYPE,
         WRITE_JSON_IN_AASX,
         WRITE_PRETTY_JSON,

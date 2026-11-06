@@ -30,7 +30,10 @@ from aas_editor.utils.recovery import (
 )
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import transfer_reports
+from aas_editor.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
+from aas_editor.application.font_sizes import migrated_font_size
 from aas_editor.application.header_state import restorable_state
+from aas_editor.domain.design_tokens import parse_density
 from aas_editor.domain.window_layout import DEFAULT_SIZE
 from aas_editor.domain.window_layout import window_size
 from aas_editor.domain.window_layout import zone_widths
@@ -165,7 +168,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             "Settings",
             self,
             statusTip=f"Edit application settings",
-            triggered=lambda: SettingsDialog(self).exec(),
+            triggered=lambda: self.openSettings(),
         )
 
         self.reportBugAct = QAction(
@@ -671,8 +674,19 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             )
 
     def applyLastSessionTreeFontSizes(self):
-        fontSizeFilesView = AppSettings.FONTSIZE_FILES_VIEW.value()
-        fontSizeDetailedView = AppSettings.FONTSIZE_DETAILED_VIEW.value()
+        # The old default of 12 pt was saved at every exit, so it takes the new
+        # default once, and any other size is the choice of the user.
+        savedVersion = AppSettings.FONTSIZE_LAYOUT.value()
+        fontSizeFilesView = migrated_font_size(
+            AppSettings.FONTSIZE_FILES_VIEW.value(),
+            savedVersion,
+            DEFAULT_FONT.pointSize(),
+        )
+        fontSizeDetailedView = migrated_font_size(
+            AppSettings.FONTSIZE_DETAILED_VIEW.value(),
+            savedVersion,
+            DEFAULT_FONT.pointSize(),
+        )
         PacksTable.currFont.setPointSize(fontSizeFilesView)
         DetailedInfoTable.currFont.setPointSize(fontSizeDetailedView)
 
@@ -716,8 +730,18 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.resize(width, height)
 
     def applyLastSessionTheme(self):
+        self.applyDensity()
         theme = AppSettings.THEME.value()
         self.toggleTheme(theme)
+
+    def applyDensity(self) -> None:
+        """Puts the density of the settings on the trees."""
+        theme_manager().set_density(parse_density(AppSettings.DENSITY.value()))
+
+    def openSettings(self) -> None:
+        """Shows the settings, and applies the ones that act at once."""
+        if SettingsDialog(self).exec():
+            self.applyDensity()
 
     def writeSettings(self):
         AppSettings.THEME.setValue(self.currTheme)
@@ -748,6 +772,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             PACK_TREE_HEADER_LAYOUT_VERSION
         )
         AppSettings.ZONES_LAYOUT.setValue(ZONES_LAYOUT_VERSION)
+        AppSettings.FONTSIZE_LAYOUT.setValue(FONT_SIZE_LAYOUT_VERSION)
         # AppSettings.DEFAULT_NEW_FILETYPE_FILTER.setValue(self.packTreeView.defaultNewFileType)
 
     def openHandoverDocumentationTool(self):

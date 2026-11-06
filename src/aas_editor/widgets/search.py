@@ -20,12 +20,12 @@ from typing import List
 import logging
 
 from PyQt6.QtCore import QModelIndex, QPersistentModelIndex
-from PyQt6.QtGui import QBrush, QAction
+from PyQt6.QtGui import QBrush, QColor, QAction
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QToolButton, QTreeView
 
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.settings.app_settings import NAME_ROLE
-from aas_editor.settings.colors import HIGHLIGHT_YELLOW
+from aas_editor.ui.theme import current_tokens
 from aas_editor.settings.icons import (
     NEXT_ICON,
     PREV_ICON,
@@ -140,7 +140,7 @@ class SearchBar(ToolBar):
             self.view.setCurrentIndex(QModelIndex(self.foundItems[0]))
             for item in self.foundItems:
                 self.view.itemDelegate().setBgColor(
-                    QModelIndex(item), QBrush(HIGHLIGHT_YELLOW)
+                    QModelIndex(item), QBrush(QColor(current_tokens().bg_find))
                 )
         self.model.dataChanged.emit(QModelIndex(), QModelIndex())
 

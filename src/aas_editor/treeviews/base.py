@@ -35,8 +35,6 @@ from PyQt6.QtGui import (
     QPainter,
     QWheelEvent,
     QAction,
-    QPalette,
-    QColor,
     QClipboard,
     QKeyEvent,
 )
@@ -89,6 +87,8 @@ from aas_editor.ui.selection_rows import (
 from aas_editor.settings.app_settings import *
 from aas_editor.additional.classes import DictItem
 from aas_editor.delegates import EditDelegate
+from aas_editor.domain.design_tokens import INDENT
+from aas_editor.ui.theme import theme_manager
 from aas_editor.models import StandardTable
 from aas_editor.settings import (
     TOOLBARS_HEIGHT,
@@ -462,7 +462,10 @@ class TreeView(BasicTreeView):
         # move their selection when the rows of the objects change.
         self._intent = None
         self._stash = None
-        self.setAlternatingRowColors(True)
+        # One level of emphasis and no stripes: the rows are told apart by their
+        # spacing and the lines of the tree, not by alternating colors (plan V4).
+        self.setAlternatingRowColors(False)
+        self.setIndentation(INDENT)
         self.setAnimated(True)
         self.initActions()
         self.initMenu()
@@ -473,14 +476,14 @@ class TreeView(BasicTreeView):
         )  # set ColorDelegate as standard delegate
         self.setSortingEnabled(True)
         self.setHeader(HeaderView(Qt.Orientation.Horizontal, self))
-        p = self.palette()
-        p.setColor(
-            QPalette.ColorRole.AlternateBase,
-            QColor(settings.LIGHT_BLUE_ALTERNATE),
-        )
-        self.setPalette(p)
+        # A new density changes the height that the delegate asks for.
+        theme_manager().changed.connect(self.onThemeChanged)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         edit_mode().subscribe(self.onEditModeChanged)
+
+    def onThemeChanged(self) -> None:
+        """Lay the rows out again, because a new density changes their height"""
+        self.scheduleDelayedItemsLayout()
 
     def canEdit(self) -> bool:
         """Whether this view may change packages now (Edit mode, D18)"""

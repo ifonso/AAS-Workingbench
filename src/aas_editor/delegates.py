@@ -15,7 +15,7 @@ from basyx.aas.model.submodel import *
 from enum import Enum
 from typing import Dict
 
-from PyQt6.QtGui import QPainter, QBrush, QIntValidator
+from PyQt6.QtGui import QFont, QPainter, QBrush, QIntValidator
 from PyQt6.QtWidgets import (
     QWidget,
     QStyledItemDelegate,
@@ -32,6 +32,7 @@ from aas_editor.settings import DEFAULT_COMPLETIONS
 from aas_editor.settings.app_settings import EDIT_TARGET_ROLE
 from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.app_settings import PARENT_OBJ_ROLE
+from aas_editor.ui.compact_rows import paint_row_signs, row_size_hint
 from aas_editor.ui.value_editor import ValueLineEdit
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import issubtype, isoftype
@@ -81,6 +82,13 @@ class ColorDelegate(QStyledItemDelegate):
             )
         else:
             super(ColorDelegate, self).paint(painter, opt, index)
+        paint_row_signs(painter, opt, index)
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex):
+        # Qt ignores the height of a row in a style sheet, so it comes from the
+        # density of the theme and the font of the row (ADR 0025).
+        font = index.data(Qt.ItemDataRole.FontRole)
+        return row_size_hint(font if isinstance(font, QFont) else option.font)
 
     def setBgColor(self, index: QModelIndex, val: QBrush):
         self.indexColors[index] = val

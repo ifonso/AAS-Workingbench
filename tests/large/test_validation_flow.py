@@ -92,8 +92,10 @@ def _error_findings(dock) -> list[object]:
 def test_dock_save_gate_and_marker_work_on_a_real_package(
     editor, qtbot
 ) -> None:
+    from PyQt6.QtGui import QColor
+
+    from aas_editor.domain.design_tokens import LIGHT
     from aas_editor.settings.app_settings import OBJECT_ROLE
-    from aas_editor.settings.colors import CHANGED_BLUE
 
     editor.dock.show()
     qtbot.waitUntil(editor.dock.isVisible, timeout=2000)
@@ -108,7 +110,9 @@ def test_dock_save_gate_and_marker_work_on_a_real_package(
         lambda: len(_error_findings(editor.dock)) == 1, timeout=3000
     )
     row = _index(editor.view, *SUBMODEL, "Q")
-    assert row.data(Qt.ItemDataRole.ForegroundRole) == CHANGED_BLUE
+    assert row.data(Qt.ItemDataRole.ForegroundRole) == QColor(
+        LIGHT.mark_changed
+    )
     assert editor.window.isWindowModified()
 
     # A double click on the finding selects its element in the package tree.
@@ -136,12 +140,9 @@ def test_dock_save_gate_and_marker_work_on_a_real_package(
     editor.stack.undo()
     qtbot.waitUntil(lambda: _error_findings(editor.dock) == [], timeout=3000)
     assert editor.window.isWindowModified()
-    assert (
-        _index(editor.view, *SUBMODEL, renamed.id_short).data(
-            Qt.ItemDataRole.ForegroundRole
-        )
-        == CHANGED_BLUE
-    )
+    assert _index(editor.view, *SUBMODEL, renamed.id_short).data(
+        Qt.ItemDataRole.ForegroundRole
+    ) == QColor(LIGHT.mark_changed)
     editor.stack.redo()
     assert not editor.window.isWindowModified()
     assert (
