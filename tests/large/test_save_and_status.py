@@ -90,10 +90,14 @@ def test_ctrl_shift_s_saves_all_packages(editor) -> None:
     assert not editor.package.changed
 
 
-def test_save_comes_before_save_all_in_the_toolbar(editor) -> None:
-    actions = editor.window.toolBar.actions()
+def test_save_is_on_the_bar_and_save_all_is_in_the_file_menu(editor) -> None:
+    # The plan keeps one Save on the bar, and Save All in File (phase H).
+    bar = editor.window.toolBar.actions()
+    file_menu = editor.window.menuFile.actions()
 
-    assert actions.index(editor.view.saveAct) + 1 == actions.index(
+    assert editor.view.saveAct in bar
+    assert editor.view.saveAllAct not in bar
+    assert file_menu.index(editor.view.saveAct) < file_menu.index(
         editor.view.saveAllAct
     )
 

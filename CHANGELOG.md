@@ -141,8 +141,21 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - **F8** and **Shift+F8** (Navigate menu) go to the next and the previous error or warning of the current package, errors first, wrapping around. The element of the finding becomes the current row of the tree, the status bar says which finding it is, and the panel selects it when it is open. Hints are not part of the walk.
 - A click on the bar of hints above the attributes of a tab opens its first error or warning in the Validation panel, which clears a filter that hides it. A bar that has only hints does not link, and says so in its tooltip.
 
+- An Edit menu with Undo, Redo, Cut, Copy, Paste, Paste above, Paste below, Paste into, Add, Edit in dialog, and Delete, each with its key. A Validate menu with the Validation panel, Hints, and the AAS Test tool. The menu bar is now File, Edit, View, Navigate, Validate, Tools, Help.
+- One command bar over the whole window, with Open, Save, Undo, Redo, Add, Edit, Delete, Back, and Forward. Its buttons act on the tree or the tab that has the focus, and show whether that view can do them. The bar is part of the saved layout and can be hidden in View.
+- The path of a tab is a breadcrumb: each name is a button that opens that object, the type is at its end, a path that does not fit folds its first names into a menu, and a click on the blank area, where you expect to type, edits the path as text with its completer. A button copies the path, and a button searches the tab.
+- The panels at the bottom (Validation, Package files, Selection) are tabs of one strip, in place of three panels side by side, and can still be dragged out. Where they are, which one is on top, and whether the command bar is shown, are saved and come back at the next start.
+- A start screen in place of the empty tree: Open, New with the file types, the recent files, and a hint that files can be dropped on it. The right side stays blank until a package is open.
+- The package tree has chevrons for the branches, and the headers read Package and Type. The tooltip of a row is its whole name, and under it the path from the package.
+- A tab is as wide as its title, between 120 and 240 pixels, and the cross to close it is quiet until the pointer is on it. The last tab of the main window has no cross.
+- View has Command bar and Tab bar entries, Columns as a submenu, and Collapse all and Expand all.
+
 ### Changed
 
+- The package tree has no toolbar of its own, and a tab has none: the command bar of the window acts on the one with the focus. The window has one row of buttons where it had two or three. A tab in a window of its own keeps back and forward buttons, because it has no bar.
+- Save All is in the File menu only, and Save is on the command bar. The keys are the same: `Ctrl+S` saves the package and `Ctrl+Shift+S` saves all.
+- The gear button, the text buttons Paste above and Paste below, and the undo, redo, edit, and add of each tab are gone from the screen. Zoom is in View, autoscroll is in Navigate, "Hide/show tabs bar" is "Tab bar" in View, and the paste actions are in Edit with their keys. Nothing was removed from the context menus.
+- The two items of View that were called Appearance are one section. The Columns menu, which was in the menu bar, is a submenu of View. It was filled once at the start, so it did not follow the columns that a saved state restored.
 - The font of the whole interface is Inter (SIL Open Font License 1.1), bundled with the editor at 13 pixels, in place of the font of the platform. Text is a little wider than in Segoe UI. The zoom of the trees works as before: the point size that was saved, and the zoom actions, are unchanged. See [ADR 0027](docs/software/adr/0027-bundled-font-and-themed-icons.md).
 - The 38 icons of actions are Tabler icons (MIT), drawn in a color of the theme: a switch of theme recolors them, a disabled one is dimmed, and they are sharp on a screen with a pixel ratio above 1. Their contrast on the light theme is 7 to 1 or more, where it was 1.66 to 1. `Add` is a plain plus, and `Save all` is a stack of layers.
 - `NOTICE` lists Inter and Tabler with their versions and licenses, and says which files are still of unrecorded origin. The stand-alone build ships `NOTICE`, the fonts folder with its `OFL.txt`, and the license of Tabler.
@@ -219,6 +232,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- After an edit to a property of a submodel, the rows Asset Administration Shells and Concept Descriptions showed as changed with Submodels, because the three share one object store. A row of a group now shows a change when one of its own objects changed, was added, or was removed.
+- Closing a package asked the tab widget of every main window that was ever made, and raised "wrapped C/C++ object of type TabWidget has been deleted" for one that was gone. It only happened where a second window was made in one process, as in the tests.
 - The default font of the trees had the weight 40, which Qt 5 read as Normal and Qt 6 reads as below Thin. With a font that has a Thin style, such as Inter, every row would be a hairline. It is Normal.
 - The add form of a list, such as supplemental semantic ids under a qualifier, showed the heading of its owner (`Qualifier 1`) over a list that is not a qualifier.
 - Create AAS, Create Submodel, Add specific asset id, the add and edit forms, and the IEC 61360 record dialog opened with the focus on the OK button or on the scroll area, because their buttons were made before their fields. Typing did nothing, and Enter accepted what had not been looked at. They open in their first field.
@@ -302,6 +317,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Documentation
 
+- The testing guide says how long the large tests take in one process, how to wait for them, and what a large test must leave as it found it: held keys, the registry of actions, the settings file, and an event loop that never ends. `tests/large/conftest.py` releases a key that a test left held (`QTest.keySequence` left `Ctrl` held on the offscreen platform, which broke a later test), and `test_main_window.py` has a watchdog.
+- `design.py` is called what it is, the hand-written layout of the main window, in the architecture page and the guides, and [ADR 0028](docs/software/adr/0028-main-window-layout.md) records the layout.
 - A new README with the purpose, build steps, related projects and contact, a `NOTICE` file with third-party attributions, and a `CONTRIBUTING.md` that points to the contributing guides.
 - A [V1 acceptance audit](docs/software/v1-acceptance-audit.md) that classifies each of the 199 acceptance criteria of F-EDT-01 to F-EDT-11 as tested, tested in part, implemented without a test, different on purpose, out of scope, a gap, or not applicable, with the test that shows it. The plan has the result of its exit criteria and a ranked list of what remains after v1.
 - A test that every relative link in the documentation leads to a file and a heading, and a test that each of the 14 element types moves, with undo, save and reload.

@@ -25,6 +25,10 @@ NAME_ROLE = None
 
 AASX_FILE = Path(__file__).parents[1] / "data" / "TestPackage.aasx"
 
+# How long a walk through the rows may take before it counts as stuck.
+WATCHDOG_MS = 300_000
+WATCHDOG_EXIT_CODE = 2
+
 
 # The session QApplication outlives every test. When each test created and
 # dropped its own, Qt deleted objects that the widgets share between windows.
@@ -132,12 +136,21 @@ class TestUi(TestCase):
     def _startTest(self, testFunc):
         self.timer.timeout.connect(testFunc)
         self.timer.start()
+        # An exception in a step does not end the event loop: pytest-qt records
+        # it and the timer fires again, so a step that fails on every row would
+        # run for ever. The watchdog ends the loop with a failure instead. The
+        # slowest of the three runs takes about a minute.
+        watchdog = QTimer()
+        watchdog.setSingleShot(True)
+        watchdog.timeout.connect(lambda: self.app.exit(WATCHDOG_EXIT_CODE))
+        watchdog.start(WATCHDOG_MS)
         try:
             self.assertEqual(self.app.exec(), 0)
         finally:
             # A timer that keeps firing would run the test step again later,
             # against a window that is already closed.
             self.timer.stop()
+            watchdog.stop()
 
     def _nextItemInLeftTree(self):
         pack_index = next(self.itemsGenerator)

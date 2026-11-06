@@ -35,7 +35,9 @@ from PyQt6.QtCore import (
 )
 
 from aas_editor.domain.concept_order import ConceptOrder, sort_key
+from aas_editor.settings.app_settings import COLUMN_NAME_ROLE
 from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_editor.settings.app_settings import PACK_TREE_HEADER_LABELS
 
 
 def hasSavedOrder(obj: Any) -> bool:
@@ -123,6 +125,29 @@ class SearchProxyModel(QSortFilterProxyModel):
             # back in the middle where it belongs.
             return left.row() < right.row()
         return super().lessThan(left, right)
+
+    def headerData(
+        self,
+        section: int,
+        orientation: Qt.Orientation,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
+        """Gives the header the words of the editor, and code the column names.
+
+        The header of the package tree reads `Package` and `Type`, where the
+        model names its columns `object` and `type`. The role `COLUMN_NAME_ROLE`
+        gives the name, which the lists of columns and the menu find a column by.
+        """
+        if orientation != Qt.Orientation.Horizontal:
+            return super().headerData(section, orientation, role)
+        if role == COLUMN_NAME_ROLE:
+            return super().headerData(
+                section, orientation, Qt.ItemDataRole.DisplayRole
+            )
+        name = super().headerData(section, orientation, role)
+        if role == Qt.ItemDataRole.DisplayRole:
+            return PACK_TREE_HEADER_LABELS.get(name, name)
+        return name
 
     def isNaturalOrder(self) -> bool:
         """Tell whether no column is sorted by the user."""

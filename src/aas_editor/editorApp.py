@@ -12,7 +12,7 @@ import logging
 import webbrowser
 from pathlib import Path
 
-from PyQt6 import QtCore
+from PyQt6 import QtCore, sip
 from PyQt6.QtCore import QModelIndex, QTimer, pyqtSignal
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -37,6 +37,7 @@ from aas_editor.domain.design_tokens import parse_density
 from aas_editor.domain.window_layout import DEFAULT_SIZE
 from aas_editor.domain.window_layout import window_size
 from aas_editor.domain.window_layout import zone_widths
+from aas_editor.ui.command_bar import FocusedViewActions
 from aas_editor.ui.package_files import PackageFilesDock
 from aas_editor.ui.selection_panel import SelectionDock
 from aas_editor.package import Package
@@ -83,6 +84,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.initPackageFiles()
         # The validation dock and hints mode, before the menus that list them
         self.validationController = install_validation(self)
+        self.initDocks()
         # Ctrl+K, which lists the actions of the menus that follow
         self.commandPalette = install_palette(self)
         self.initActions()
@@ -230,6 +232,22 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.modeActs.addAction(self.readModeAct)
         edit_mode().subscribe(self.onEditModeChanged)
 
+        # The tab bar of the tab widget can be hidden, which the gear button of
+        # each tab used to offer.
+        self.tabBarAct = QAction(
+            "Tab bar",
+            self,
+            checkable=True,
+            checked=True,
+            statusTip="Show or hide the tab bar",
+            toggled=self.mainTabWidget.tabBar().setVisible,
+        )
+        # The actions of the command bar and of the Edit menu, which act on the
+        # tree or the tab that has the focus.
+        self.focusedActs = FocusedViewActions(
+            self, self.mainTreeView, self.mainTabWidget
+        )
+
         self.setHOrientationAct = QAction(
             "Horizontal",
             self,
@@ -289,6 +307,23 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuFile.addAction(self.mainTreeView.closeAllAct)
         self.menuFile.addAction(self.exitAct)
 
+        self.menuEdit = QMenu("&Edit", self.menubar)
+        for key in ("undo", "redo"):
+            self.menuEdit.addAction(self.focusedActs.actions[key])
+        self.menuEdit.addSeparator()
+        for key in (
+            "cut",
+            "copy",
+            "paste",
+            "paste_above",
+            "paste_below",
+            "paste_into",
+        ):
+            self.menuEdit.addAction(self.focusedActs.actions[key])
+        self.menuEdit.addSeparator()
+        for key in ("add", "edit", "delete"):
+            self.menuEdit.addAction(self.focusedActs.actions[key])
+
         self.menuView = QMenu("&View", self.menubar)
         self.menuView.addSection("Mode")
         self.menuView.addAction(self.editModeAct)
@@ -298,27 +333,40 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         for themeAct in self.themeActs:
             self.menuChooseTheme.addAction(themeAct)
         self.menuView.addAction(self.menuChooseTheme.menuAction())
-        self.menuAppearance = QMenu("Appearance", self.menuView)
-        self.menuAppearance.addAction(self.toolBar.toggleViewAction())
-        self.menuAppearance.addAction(self.searchBarPack.toggleViewAction())
-        self.menuView.addAction(self.menuAppearance.menuAction())
-        self.menuAppearance = QMenu("Orientation", self.menuView)
-        self.menuAppearance.addAction(self.setHOrientationAct)
-        self.menuAppearance.addAction(self.setVOrientationAct)
-        self.menuView.addAction(self.menuAppearance.menuAction())
+        self.menuView.addAction(self.toolBar.toggleViewAction())
+        self.menuView.addAction(self.searchBarPack.toggleViewAction())
+        self.menuView.addAction(self.tabBarAct)
+        self.menuOrientation = QMenu("Orientation", self.menuView)
+        self.menuOrientation.addAction(self.setHOrientationAct)
+        self.menuOrientation.addAction(self.setVOrientationAct)
+        self.menuView.addAction(self.menuOrientation.menuAction())
         self.menuView.addSection("Panels")
         self.menuView.addAction(self.filesDock.toggleViewAction())
         self.menuView.addAction(self.selectionDock.toggleViewAction())
         self.menuView.addAction(
             self.validationController.dock.toggleViewAction()
         )
-        self.menuView.addAction(self.validationController.hints_action)
         self.menuView.addSection("AAS file view")
         self.menuView.addAction(self.mainTreeView.zoomInAct)
         self.menuView.addAction(self.mainTreeView.zoomOutAct)
+        # The columns of the tree. The menu is made when it opens, because the
+        # header makes its actions again when a state is restored.
+        self.menuColumns = QMenu("Columns", self.menuView)
+        self.menuColumns.aboutToShow.connect(self.fillColumnsMenu)
+        self.menuView.addAction(self.menuColumns.menuAction())
         self.menuView.addSection("Detailed view")
         self.menuView.addAction(self.mainTabWidget.zoomInAct)
         self.menuView.addAction(self.mainTabWidget.zoomOutAct)
+        for key in ("collapse_all", "expand_all"):
+            self.menuView.addAction(self.focusedActs.actions[key])
+
+        self.menuValidate = QMenu("Va&lidate", self.menubar)
+        self.menuValidate.addAction(
+            self.validationController.dock.toggleViewAction()
+        )
+        self.menuValidate.addAction(self.validationController.hints_action)
+        self.menuValidate.addSeparator()
+        self.menuValidate.addAction(self.testEnginesToolDialogAct)
 
         self.menuNavigate = QMenu("&Navigate", self.menubar)
         self.menuNavigate.addAction(self.commandPalette.action)
@@ -348,40 +396,43 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuHelp.addAction(self.reportBugAct)
 
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
-        self.menubar.addMenu(self.mainTreeView.header().menu)
         self.menubar.addAction(self.menuNavigate.menuAction())
+        self.menubar.addAction(self.menuValidate.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
 
-    def initToolbars(self):
-        settingsBtn = QToolButton(icon=SETTINGS_ICON)
-        settingsBtn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        menuSettings = QMenu("Settings")
-        menuSettings.addAction(self.mainTreeView.zoomInAct)
-        menuSettings.addAction(self.mainTreeView.zoomOutAct)
-        menuSettings.addAction(self.mainTreeView.autoScrollToSrcAct)
-        menuSettings.addAction(self.mainTreeView.autoScrollFromSrcAct)
-        settingsBtn.setMenu(menuSettings)
+    def fillColumnsMenu(self):
+        """Lists the columns that the header of the tree has now."""
+        self.menuColumns.clear()
+        for action in self.mainTreeView.header().actions():
+            self.menuColumns.addAction(action)
 
-        self.toolBar.addWidget(settingsBtn)
-        self.toolBar.addSeparator()
-        # Save acts on one package and Save All on every one, so the plain
-        # Save comes first.
-        self.toolBar.addAction(self.mainTreeView.saveAct)
-        self.toolBar.addAction(self.mainTreeView.saveAllAct)
+    def initToolbars(self):
+        """Fills the command bar, which acts on the view with the focus.
+
+        The gear button is gone: its zoom and autoscroll actions are in the
+        View and Navigate menus. Save All is in the File menu, and Save is
+        here. Undo, redo, add, edit, and delete are of the view that has the
+        focus (ui/command_bar.py), as are back and forward of its tab.
+        """
+        acts = self.focusedActs.actions
         self.toolBar.addAction(self.mainTreeView.openPackAct)
-        # self.toolBar.addAction(self.mainTreeView.openPackFromServerAct)
-        self.toolBar.addAction(self.mainTreeView.newPackActs[0])
+        self.toolBar.addAction(self.mainTreeView.saveAct)
         self.toolBar.addSeparator()
-        self.toolBar.addAction(self.mainTreeView.collapseAllAct)
-        self.toolBar.addAction(self.mainTreeView.expandAllAct)
+        self.toolBar.addAction(acts["undo"])
+        self.toolBar.addAction(acts["redo"])
         self.toolBar.addSeparator()
-        self.toolBar.addAction(self.mainTreeView.undoAct)
-        self.toolBar.addAction(self.mainTreeView.redoAct)
-        self.toolBar.addAction(self.mainTreeView.editCreateInDialogAct)
-        self.toolBar.addAction(self.mainTreeView.addAct)
-        # Actions that features registered for the toolbar (ui/actions.py)
+        self.toolBar.addAction(acts["add"])
+        self.toolBar.addAction(acts["edit"])
+        self.toolBar.addAction(acts["delete"])
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(acts["back"])
+        self.toolBar.addAction(acts["forward"])
+        # What features registered for the bar (ui/actions.py). Nothing does
+        # now: a button with only a text, such as Paste above, is in the Edit
+        # menu, and a feature that wants a button gives it an icon.
         for action in self.mainTreeView.registeredActions.toolbar_actions:
             self.toolBar.addAction(action)
 
@@ -423,6 +474,37 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
         self.selectionDock.hide()
 
+    def initDocks(self):
+        """Puts the three panels of the bottom into one strip of tabs.
+
+        They used to sit side by side, and three open panels cut each other's
+        buttons and headers. Now they share the place, with a tab each, and
+        any of them can still be dragged out to float. The user's arrangement
+        is saved and restored (see `applyLastSessionDocks`).
+        """
+        self.setTabPosition(
+            QtCore.Qt.DockWidgetArea.BottomDockWidgetArea,
+            QTabWidget.TabPosition.North,
+        )
+        validationDock = self.validationController.dock
+        self.tabifyDockWidget(validationDock, self.filesDock)
+        self.tabifyDockWidget(self.filesDock, self.selectionDock)
+        # Hidden until asked for, and tabifying shows the dock of the first tab.
+        for dock in (validationDock, self.filesDock, self.selectionDock):
+            dock.hide()
+        # A panel opens at a height that leaves the trees most of the window.
+        self.resizeDocks(
+            [validationDock], [DOCK_HEIGHT], QtCore.Qt.Orientation.Vertical
+        )
+
+    def updateEmptyState(self, *_):
+        """Shows the start instead of the tree and the tabs while no package is open."""
+        empty = self.packTreeModel.rowCount() == 0
+        self.emptyState.setVisible(empty)
+        self.mainTreeView.setVisible(not empty)
+        self.emptyDetail.setVisible(empty)
+        self.splitterTabWidgets.setVisible(not empty)
+
     def onFilesCopied(self, plan):
         """Tell the user what a paste did with the files of the objects"""
         message = plan.summary()
@@ -459,6 +541,13 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
 
         self.packTreeModel.rowsRemoved.connect(self.onPackRowsRemoved)
+        for signal in (
+            self.packTreeModel.rowsInserted,
+            self.packTreeModel.rowsRemoved,
+            self.packTreeModel.modelReset,
+        ):
+            signal.connect(self.updateEmptyState)
+        self.updateEmptyState()
 
     def onEditModeChanged(self, editing: bool):
         """Show the mode in the menu and in the status bar"""
@@ -509,7 +598,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             return
         openedPackages = self.packTreeModel.openedPacks()
         for tabWidget in list(TabWidget.openedTabWidgets):
-            tabWidget.removeTabsOfClosedPackages(openedPackages)
+            # The tab widget of a window that is gone is no more.
+            if not sip.isdeleted(tabWidget):
+                tabWidget.removeTabsOfClosedPackages(openedPackages)
 
     def toggleThemeSlot(self):
         action = self.sender()
@@ -571,6 +662,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.applyLastSessionMainWindowSize()
         self.applyLastSessionOrientation()
         self.applyLastSessionLayouts()
+        self.applyLastSessionDocks()
         self.applyLastSessionTreeFontSizes()
         self.applyLastSessionTreeStates()
 
@@ -748,13 +840,20 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             widths = [left.width(), right.width()]
         else:
             # A first run, or sizes of an earlier release: the new default.
-            widths = list(
-                zone_widths(
-                    self.width(),
-                    self.toolBar.sizeHint().width() + TOOLBAR_ROOM,
-                )
-            )
+            # The command bar is over the whole window, so it asks for no room.
+            widths = list(zone_widths(self.width()))
         self.splitter.setSizes(widths)
+
+    def applyLastSessionDocks(self):
+        """Puts the panels where the last session left them.
+
+        A state of another version, or none, leaves the panels tabbed and
+        hidden, as `initDocks` made them. The command bar is part of the state,
+        so a bar that was hidden stays hidden.
+        """
+        state = AppSettings.DOCK_STATE.value()
+        if state:
+            self.restoreState(state, DOCKS_LAYOUT_VERSION)
 
     def applyLastSessionOrientation(self):
         orientation = AppSettings.ORIENTATION.value()
@@ -816,6 +915,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             PACK_TREE_HEADER_LAYOUT_VERSION
         )
         AppSettings.ZONES_LAYOUT.setValue(ZONES_LAYOUT_VERSION)
+        # The version goes in the state, and a state of another one is refused.
+        AppSettings.DOCK_STATE.setValue(self.saveState(DOCKS_LAYOUT_VERSION))
         AppSettings.FONTSIZE_LAYOUT.setValue(FONT_SIZE_LAYOUT_VERSION)
         # AppSettings.DEFAULT_NEW_FILETYPE_FILTER.setValue(self.packTreeView.defaultNewFileType)
 

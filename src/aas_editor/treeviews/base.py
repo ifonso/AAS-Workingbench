@@ -163,6 +163,10 @@ class HeaderView(QHeaderView):
         self.setSectionsMovable(True)
         self.setStretchLastSection(True)
         self.setFixedHeight(TOOLBARS_HEIGHT)
+        # The labels read from the left, as the cells under them do.
+        self.setDefaultAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
 
         # Natural order is the default: the user sorts by clicking a column.
         self.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
@@ -208,7 +212,7 @@ class HeaderView(QHeaderView):
     def initShowSectionActs(self):
         sections = self.count()
         for section in range(sections):
-            sectionName = self.text(section)
+            sectionName = self.label(section)
             sectionShown = not self.isSectionHidden(section)
             act = QAction(
                 sectionName,
@@ -281,6 +285,18 @@ class HeaderView(QHeaderView):
             self.hideSection(section)
 
     def text(self, section):
+        """The name of a column, which code and saved lists find it by."""
+        model = self.model()
+        if isinstance(model, QAbstractItemModel):
+            name = model.headerData(
+                section, self.orientation(), COLUMN_NAME_ROLE
+            )
+            if name is None:
+                name = model.headerData(section, self.orientation())
+            return name
+
+    def label(self, section):
+        """What the header says for a column, in the words of the editor."""
         if isinstance(self.model(), QAbstractItemModel):
             return self.model().headerData(section, self.orientation())
 

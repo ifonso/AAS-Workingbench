@@ -17,6 +17,7 @@ from collections.abc import MutableMapping
 
 from basyx.aas.model import (
     AASConstraintViolation,
+    AbstractObjectStore,
     Identifiable,
     LangStringSet,
     NamespaceSet,
@@ -612,9 +613,29 @@ class StandardTable(QAbstractItemModel):
             if marks.is_new(node.obj):
                 return MARK_NEW
             node = node.parent()
-        if marks.is_changed(item.obj):
+        if self._rowChanged(item, marks):
             return MARK_CHANGED
         return None
+
+    @staticmethod
+    def _rowChanged(item: StandardItem, marks) -> bool:
+        """Tell whether the row changed since the save, by what it shows.
+
+        The shells, submodels, and concept descriptions of a package share one
+        object store, and a mark on the store says that something in it
+        changed, not which of the three rows. Such a row changed when one of
+        its own objects did, or one was taken out of it.
+        """
+        package = getattr(item, "package", None)
+        store = getattr(package, "objStore", None)
+        if getattr(item, "isNode", False) and item.obj is store:
+            return any(
+                marks.is_changed(child.obj) or marks.is_new(child.obj)
+                for child in item.children()
+            ) or any(
+                item.acceptsChild(obj) for obj in marks.removed_from(store)
+            )
+        return marks.is_changed(item.obj)
 
     def _getFont(self, index: QModelIndex):
         """Return the font of a cell: regular, and underlined only for a link.
@@ -1087,10 +1108,13 @@ class StandardTable(QAbstractItemModel):
             for item in list(self._allItems()):
                 if item is self._rootItem:
                     continue
+                # The rows of the package and of its object store (the shells,
+                # submodels, and concept descriptions) read the marks of what
+                # is below them, so any mark may change them.
                 if (
                     everything
                     or id(item.obj) in wanted
-                    or isinstance(item.obj, Package)
+                    or isinstance(item.obj, (Package, AbstractObjectStore))
                 ):
                     index = self._indexOf(item)
                     if index is not None:

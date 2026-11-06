@@ -32,6 +32,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0025](0025-design-tokens-and-theme-architecture.md) | One table of design tokens makes the style sheet, the palette, and the colors of text | Accepted |
 | [0026](0026-forms-read-in-words-of-the-metamodel.md) | Forms read in the words of the metamodel, and adding to a list starts with its entry | Accepted |
 | [0027](0027-bundled-font-and-themed-icons.md) | Inter is bundled, and icons are SVG files that an engine colors by token | Accepted |
+| [0028](0028-main-window-layout.md) | One command bar acts on the focused view, the bottom panels share a strip of tabs, and the start is a panel in place of the tree | Accepted |
 | [0029](0029-validation-runs-while-the-panel-is-hidden.md) | The rules run while the Validation panel is hidden, so that the status bar can count. Reopens a point of 0015 | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
