@@ -199,3 +199,182 @@ def _describe(pasted: Iterable[PastedItem]) -> str:
     if len(copies) == 1:
         return f"Paste {describe(copies[0])}"
     return f"Paste {len(copies)} items"
+
+
+@dataclass(frozen=True, eq=False)
+class ShellPastePlan:
+    """What a paste into a shell would do, found without changing anything.
+
+    Attributes:
+        shell: The shell that gets the references.
+        container: Where new submodels go, the object store of the package.
+        copies: The submodels to add to the package. Each gets a reference.
+        references: The references to add to the shell, including those to
+            the copies, in the order they were pasted.
+        already_linked: References that the shell holds already. They are
+            skipped (F-EDT-08 AC11).
+        dangling: Added references whose submodel is nowhere to be found, so
+            they point at nothing until the submodel is added.
+        description: Text for the undo step.
+    """
+
+    shell: model.AssetAdministrationShell
+    container: object
+    copies: tuple[PastedItem, ...]
+    references: tuple["model.ModelReference[model.Submodel]", ...]
+    already_linked: tuple["model.ModelReference[model.Submodel]", ...]
+    dangling: tuple["model.ModelReference[model.Submodel]", ...]
+    description: str
+
+    @property
+    def is_empty(self) -> bool:
+        """Whether the paste would change nothing."""
+        return not self.references
+
+
+def _submodel_reference(
+    item: object,
+) -> "model.ModelReference[model.Submodel] | None":
+    if not isinstance(item, model.ModelReference):
+        return None
+    reference = cast("model.ModelReference[model.Submodel]", item)
+    first = reference.key[0]
+    if first.type is not model.KeyTypes.SUBMODEL or len(reference.key) != 1:
+        return None
+    return reference
+
+
+def plan_paste_into_shell(
+    shell: model.AssetAdministrationShell,
+    items: Sequence[object],
+    objects: model.AbstractObjectStore[str, model.Identifiable],
+    keep_ids: bool = False,
+    source_objects: model.AbstractObjectStore[str, model.Identifiable]
+    | None = None,
+) -> ShellPastePlan:
+    """Plans pasting Submodels or references to Submodels into a shell.
+
+    A pasted Submodel is copied into the package under a new id, unless it was
+    cut and its id is free (D13), and the shell gets a reference to the copy.
+    A pasted reference is added as it is when the shell does not hold it
+    already. If the package lacks the Submodel it points at but the package
+    the reference was copied from has it, that Submodel is copied too, with its
+    id, so the reference does not dangle (F-EDT-08 AC12).
+
+    Args:
+        shell: The shell to paste into.
+        items: Submodels, and references to a Submodel, from the buffer.
+        objects: The object store of the package.
+        keep_ids: True for a cut, which keeps ids that are free.
+        source_objects: The object store of the package the items were copied
+            from, if it is another one.
+
+    Returns:
+        The plan.
+
+    Raises:
+        PasteError: If nothing is to be pasted or an item is neither a
+            Submodel nor a reference to one.
+    """
+    if not items:
+        raise PasteError("There is nothing to paste")
+    taken = {obj.id for obj in objects}
+    submodels: list[model.Referable] = []
+    references: list[model.ModelReference[model.Submodel]] = []
+    skipped: list[model.ModelReference[model.Submodel]] = []
+    dangling: list[model.ModelReference[model.Submodel]] = []
+    carried: list[model.Submodel] = []
+    for item in items:
+        if isinstance(item, model.Submodel):
+            submodels.append(item)
+            continue
+        reference = _submodel_reference(item)
+        if reference is None:
+            raise PasteError(
+                "Only Submodels and references to Submodels can be pasted into "
+                "an AAS"
+            )
+        if reference in shell.submodel or reference in references:
+            skipped.append(reference)
+            continue
+        id_ = reference.key[0].value
+        if id_ not in taken:
+            origin = (
+                source_objects.get(id_) if source_objects is not None else None
+            )
+            if isinstance(origin, model.Submodel):
+                carried.append(origin)
+                taken.add(id_)
+            else:
+                dangling.append(reference)
+        references.append(reference)
+    copies: list[PastedItem] = []
+    if carried:
+        # A reference names its Submodel by id, so the copy must keep it.
+        carry_plan = plan_paste(
+            objects,
+            carried,
+            keep_ids=True,
+            taken_ids=taken - {obj.id for obj in carried},
+        )
+        copies.extend(carry_plan.items)
+    if submodels:
+        plan = plan_paste(
+            objects, submodels, keep_ids=keep_ids, taken_ids=taken
+        )
+        copies.extend(plan.items)
+        references.extend(
+            cast(
+                "model.ModelReference[model.Submodel]",
+                model.ModelReference.from_referable(item.copy),  # pyright: ignore[reportUnknownMemberType]
+            )
+            for item in plan.items
+        )
+    return ShellPastePlan(
+        shell,
+        objects,
+        tuple(copies),
+        tuple(references),
+        tuple(skipped),
+        tuple(dangling),
+        _describe_shell_paste(references, copies),
+    )
+
+
+def _describe_shell_paste(
+    references: Sequence[object], copies: Sequence[PastedItem]
+) -> str:
+    if len(references) == 1 and len(copies) == 1:
+        return f"Paste {describe(copies[0].copy)}"
+    return f"Paste {len(references)} Submodel reference" + (
+        "s" if len(references) != 1 else ""
+    )
+
+
+def shell_paste_commands(
+    observer: ModelChangeObserver, plan: ShellPastePlan
+) -> list[Command]:
+    """Builds the commands for a paste into a shell. Push them in one group.
+
+    The Submodels go into the package first, then the references into the
+    shell, so every reference resolves as soon as it exists.
+    """
+    commands: list[Command] = [
+        AddMember(
+            observer,
+            plan.container,
+            item.copy,
+            description=f"Paste {describe(item.copy)}",
+        )
+        for item in plan.copies
+    ]
+    commands.extend(
+        AddMember(
+            observer,
+            plan.shell.submodel,
+            reference,
+            description=f"Link {describe(plan.shell)}",
+        )
+        for reference in plan.references
+    )
+    return commands

@@ -345,3 +345,14 @@ class TestExplain:
 
         assert rule in explain(error.value)
         assert "\n" not in explain(error.value)
+
+
+class TestExplainEmptyReference:
+    def test_a_reference_without_keys_says_what_to_do(self) -> None:
+        with pytest.raises(ValueError) as error:
+            model.ExternalReference(())
+
+        text = explain(error.value)
+
+        assert "at least one key" in text
+        assert "choose the target" in text

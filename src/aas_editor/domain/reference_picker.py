@@ -185,6 +185,18 @@ def _label_of(target: model.Referable) -> str:
     return "/".join(path[1:])
 
 
+def _root_order(root: model.Identifiable) -> tuple[int, str]:
+    rank = {
+        model.AssetAdministrationShell: 0,
+        model.Submodel: 1,
+        ConceptDescription: 2,
+    }
+    for cls, number in rank.items():
+        if isinstance(root, cls):
+            return number, _label_of(root).lower()
+    return len(rank), _label_of(root).lower()
+
+
 def candidates(
     objects: Iterable[model.Identifiable],
     classes: TargetClasses = ANYTHING,
@@ -204,7 +216,9 @@ def candidates(
     """
     wanted = text.strip().lower()
     found: list[Candidate] = []
-    for root in objects:
+    # Shells, submodels and concept descriptions live in sets, so their order
+    # changes from run to run. The list shows them in a fixed one.
+    for root in sorted(objects, key=_root_order):
         owner = ""
         for target in (root, *descendants(root)):
             if target is not root:
@@ -287,6 +301,9 @@ def reference_to(target: model.Referable, as_model: bool) -> model.Reference:
         ) from error
 
 
+_NO_KEYS = "A reference must have at least one key!"
+
+
 def explain(error: BaseException) -> str:
     """Turns the refusal of the SDK into a sentence for the user.
 
@@ -297,7 +314,13 @@ def explain(error: BaseException) -> str:
     Returns:
         The message, which names the rule, without the traceback.
     """
-    return " ".join(str(error).split())
+    text = " ".join(str(error).split())
+    if text == _NO_KEYS:
+        return (
+            "A reference needs at least one key. Add a key, or choose the "
+            "target from the package."
+        )
+    return text
 
 
 class ReferenceState(enum.Enum):

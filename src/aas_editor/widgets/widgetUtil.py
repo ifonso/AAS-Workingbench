@@ -11,7 +11,12 @@ from inspect import isabstract
 from typing import Union
 
 from PyQt6.QtWidgets import QWidget
-from basyx.aas.model import LangStringSet, ModelReference
+from basyx.aas.model import (
+    ExternalReference,
+    LangStringSet,
+    ModelReference,
+    Reference,
+)
 
 import aas_editor.widgets as widgets
 import aas_editor.widgets.editWidgets
@@ -138,6 +143,23 @@ class InputWidgetUtil:
             widget = widgets.editWidgets.TypedValueInputWidget(
                 objTypeHint, **kwargs
             )
+        elif objTypeHint is Reference:
+            # The user chooses external or model, and can pick the target.
+            from aas_editor.ui.reference_fields import ReferenceGroupBox
+
+            widget = ReferenceGroupBox(
+                inheritors(objTypeHint),
+                defType=DEFAULT_INHERITOR.get(objTypeHint, None),
+                **kwargs,
+            )
+        elif issubtype(objTypeHint, ModelReference):
+            from aas_editor.ui.reference_fields import ModelReferenceField
+
+            widget = ModelReferenceField(objTypeHint, **kwargs)
+        elif objTypeHint is ExternalReference:
+            from aas_editor.ui.reference_fields import ExternalReferenceField
+
+            widget = ExternalReferenceField(objTypeHint, **kwargs)
         elif isabstract(objTypeHint) and not isIterableType(objTypeHint):
             objTypes = inheritors(objTypeHint)
             kwargs["defType"] = DEFAULT_INHERITOR.get(objTypeHint, None)
