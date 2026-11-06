@@ -356,6 +356,10 @@ class TypeStyle:
     weight: int
 
 
+FONT_FAMILY: Final = "Inter"
+"""The family of the bundled font that all text is set in (see ADR 0027)."""
+
+
 TYPE_RAMP: Final = {
     "caption": TypeStyle(12, 16, 400),
     "body": TypeStyle(13, 18, 400),

@@ -8,19 +8,9 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPixmap, QFont
-from PyQt6.QtSvg import QSvgRenderer
 
 from aas_editor.settings.colors import LIGHT_BLUE
-
-ICON_COLOR = QColor(
-    LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 225
-)
-ICON_COLOR_ACTIVE = QColor(
-    LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 255
-)
-ICON_COLOR_DISABLED = QColor(
-    LIGHT_BLUE.red(), LIGHT_BLUE.green(), LIGHT_BLUE.blue(), 50
-)
+from aas_editor.ui.theme.icons import tabler_icon
 
 
 def getCharsIcon(
@@ -79,144 +69,51 @@ def getCharsIcon(
     return QIcon(pixmap)
 
 
-def transform_svg_to_icon(
-    target_icon: QIcon,
-    file_path,
-    color_normal=ICON_COLOR,
-    color_active=ICON_COLOR_ACTIVE,
-    color_disabled=ICON_COLOR_DISABLED,
-):
-    """
-    Create a QIcon from an SVG file with customizable colors for normal, active, and disabled states.
-
-    Args:
-        file_path (str): Path to the SVG file.
-        color_normal (QColor): Color for the normal state.
-        color_active (QColor): Color for the active state.
-        color_disabled (QColor): Color for the disabled state.
-
-    Returns:
-        QIcon: An icon with different colors for each state.
-    """
-
-    def render_svg_with_color(file_path, color):
-        """Render an SVG file with a specific color."""
-        renderer = QSvgRenderer(file_path)
-        pixmap = QPixmap(renderer.defaultSize())
-        pixmap.fill(QColor("transparent"))  # Transparent background
-        painter = QPainter(pixmap)
-        renderer.render(painter)
-        painter.setCompositionMode(
-            QPainter.CompositionMode.CompositionMode_SourceIn
-        )  # Apply color
-        painter.fillRect(pixmap.rect(), color)
-        painter.end()
-        return pixmap
-
-    # Create pixmaps for each state
-    pixmap_normal = render_svg_with_color(file_path, color_normal)
-    pixmap_active = render_svg_with_color(file_path, color_active)
-    pixmap_disabled = render_svg_with_color(file_path, color_disabled)
-
-    # Create a QIcon and add the pixmaps for each state
-    target_icon.addPixmap(pixmap_normal, QIcon.Mode.Normal)  # Normal state
-    target_icon.addPixmap(pixmap_active, QIcon.Mode.Active)  # Active state
-    target_icon.addPixmap(
-        pixmap_disabled, QIcon.Mode.Disabled
-    )  # Disabled state
-
-    return target_icon
-
-
-EXIT_ICON = QIcon()
-NEW_PACK_ICON = QIcon()
-OPEN_ICON = QIcon()
-OPEN_DRAG_ICON = QIcon()
-SAVE_ICON = QIcon()
-SAVE_ALL_ICON = QIcon()
-SETTINGS_ICON = QIcon()
-COPY_ICON = QIcon()
-PASTE_ICON = QIcon()
-CUT_ICON = QIcon()
-ADD_ICON = QIcon()
-DEL_ICON = QIcon()
-UPDATE_ICON = QIcon()
-EDIT_ICON = QIcon()
-EDIT_JSON_ICON = QIcon()
-UNDO_ICON = QIcon()
-REDO_ICON = QIcon()
-FORWARD_ICON = QIcon()
-BACK_ICON = QIcon()
-SPLIT_VERT_ICON = QIcon()
-SPLIT_HORIZ_ICON = QIcon()
-ZOOM_IN_ICON = QIcon()
-ZOOM_OUT_ICON = QIcon()
-NEXT_ICON = QIcon()
-PREV_ICON = QIcon()
-FILTER_ICON = QIcon()
-REGEX_ICON = QIcon()
-CASE_ICON = QIcon()
-CLOSE_ICON = QIcon()
-EXPAND_ALL_ICON = QIcon()
-COLLAPSE_ALL_ICON = QIcon()
-AUTOSCROLL_TO_SRC_ICON = QIcon()
-AUTOSCROLL_FROM_SRC_ICON = QIcon()
-FILE_ICON = QIcon()
-MIME_PDF_ICON = QIcon()
-MIME_IMAGE_ICON = QIcon()
-MIME_TEXT_ICON = QIcon()
-INFO_ICON = QIcon()
+# The action icons are Tabler icons (MIT) that draw in a color of the theme in
+# use, and so follow a switch of theme and a high resolution screen. They are
+# made at import, which needs no QApplication. A new icon of an action is one
+# more line here, with a file of `icons/tabler`.
+EXIT_ICON = tabler_icon("logout")
+NEW_PACK_ICON = tabler_icon("folder-plus")
+OPEN_ICON = tabler_icon("folder-open")
+OPEN_DRAG_ICON = tabler_icon("external-link")
+SAVE_ICON = tabler_icon("device-floppy")
+SAVE_ALL_ICON = tabler_icon("stack-2")
+SETTINGS_ICON = tabler_icon("settings")
+COPY_ICON = tabler_icon("copy")
+PASTE_ICON = tabler_icon("clipboard")
+CUT_ICON = tabler_icon("cut")
+ADD_ICON = tabler_icon("plus")
+DEL_ICON = tabler_icon("trash")
+UPDATE_ICON = tabler_icon("refresh")
+EDIT_ICON = tabler_icon("pencil")
+EDIT_JSON_ICON = tabler_icon("json")
+UNDO_ICON = tabler_icon("arrow-back-up")
+REDO_ICON = tabler_icon("arrow-forward-up")
+FORWARD_ICON = tabler_icon("arrow-right")
+BACK_ICON = tabler_icon("arrow-left")
+SPLIT_VERT_ICON = tabler_icon("layout-columns")
+SPLIT_HORIZ_ICON = tabler_icon("layout-rows")
+ZOOM_IN_ICON = tabler_icon("zoom-in")
+ZOOM_OUT_ICON = tabler_icon("zoom-out")
+NEXT_ICON = tabler_icon("arrow-down")
+PREV_ICON = tabler_icon("arrow-up")
+FILTER_ICON = tabler_icon("filter")
+REGEX_ICON = tabler_icon("regex")
+CASE_ICON = tabler_icon("letter-case")
+CLOSE_ICON = tabler_icon("x")
+EXPAND_ALL_ICON = tabler_icon("arrows-vertical")
+COLLAPSE_ALL_ICON = tabler_icon("fold")
+AUTOSCROLL_TO_SRC_ICON = tabler_icon("focus-2")
+AUTOSCROLL_FROM_SRC_ICON = tabler_icon("current-location")
+FILE_ICON = tabler_icon("file")
+MIME_PDF_ICON = tabler_icon("file-type-pdf")
+MIME_IMAGE_ICON = tabler_icon("photo")
+MIME_TEXT_ICON = tabler_icon("file-text")
+INFO_ICON = tabler_icon("info-circle")
 
 MIME_TYPE_ICON_DICT = {
     "application/pdf": MIME_PDF_ICON,
     "image": MIME_IMAGE_ICON,
     "text": MIME_TEXT_ICON,
 }
-
-ICONS_SVG = {
-    EXIT_ICON: "exit-to-app.svg",
-    NEW_PACK_ICON: "folder-plus.svg",
-    OPEN_ICON: "folder-open.svg",
-    OPEN_DRAG_ICON: "open-in-app.svg",
-    SAVE_ICON: "content-save.svg",
-    SAVE_ALL_ICON: "content-save-all.svg",
-    SETTINGS_ICON: "cog.svg",
-    COPY_ICON: "content-copy.svg",
-    PASTE_ICON: "content-paste.svg",
-    CUT_ICON: "content-cut.svg",
-    ADD_ICON: "plus-circle.svg",
-    DEL_ICON: "delete.svg",
-    UPDATE_ICON: "update.svg",
-    EDIT_ICON: "table-edit.svg",
-    EDIT_JSON_ICON: "playlist-edit.svg",
-    UNDO_ICON: "undo.svg",
-    REDO_ICON: "redo.svg",
-    FORWARD_ICON: "arrow-right-circle.svg",
-    BACK_ICON: "arrow-left-circle.svg",
-    SPLIT_VERT_ICON: "arrow-split-vertical.svg",
-    SPLIT_HORIZ_ICON: "arrow-split-horizontal.svg",
-    ZOOM_IN_ICON: "magnify-plus.svg",
-    ZOOM_OUT_ICON: "magnify-minus.svg",
-    NEXT_ICON: "arrow-down.svg",
-    PREV_ICON: "arrow-up.svg",
-    FILTER_ICON: "filter.svg",
-    REGEX_ICON: "regex.svg",
-    CASE_ICON: "format-letter-case.svg",
-    CLOSE_ICON: "close.svg",
-    EXPAND_ALL_ICON: "arrow-expand-vertical.svg",
-    COLLAPSE_ALL_ICON: "arrow-collapse-vertical.svg",
-    AUTOSCROLL_TO_SRC_ICON: "package-down.svg",
-    AUTOSCROLL_FROM_SRC_ICON: "package-up.svg",
-    FILE_ICON: "file.svg",
-    MIME_PDF_ICON: "file-pdf-box.svg",
-    MIME_IMAGE_ICON: "file-image.svg",
-    MIME_TEXT_ICON: "file-document.svg",
-    INFO_ICON: "info.svg",
-}
-
-
-def initialize_all_icons():
-    from aas_editor.settings.app_settings import ICONS_FOLDER
-
-    for icon, svg_file in ICONS_SVG.items():
-        transform_svg_to_icon(icon, str(ICONS_FOLDER / svg_file))
