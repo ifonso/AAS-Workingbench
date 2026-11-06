@@ -35,6 +35,7 @@ from aas_editor.application.font_sizes import migrated_font_size
 from aas_editor.application.header_state import restorable_state
 from aas_editor.domain.design_tokens import parse_density
 from aas_editor.domain.window_layout import DEFAULT_SIZE
+from aas_editor.domain.window_layout import saved_orientation
 from aas_editor.domain.window_layout import window_size
 from aas_editor.domain.window_layout import zone_widths
 from aas_editor.ui.command_bar import FocusedViewActions
@@ -835,14 +836,24 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             AppSettings.ZONES_LAYOUT.value(),
             ZONES_LAYOUT_VERSION,
         )
+        stacked = self.splitter.orientation() == QtCore.Qt.Orientation.Vertical
         if saved:
             left, right = saved
-            widths = [left.width(), right.width()]
+            # The sizes of a splitter run along it: heights, if the zones are
+            # one above the other.
+            sizes = (
+                [left.height(), right.height()]
+                if stacked
+                else [left.width(), right.width()]
+            )
+        elif stacked:
+            # No saved heights: the splitter keeps the halves it starts with.
+            return
         else:
             # A first run, or sizes of an earlier release: the new default.
             # The command bar is over the whole window, so it asks for no room.
-            widths = list(zone_widths(self.width()))
-        self.splitter.setSizes(widths)
+            sizes = list(zone_widths(self.width()))
+        self.splitter.setSizes(sizes)
 
     def applyLastSessionDocks(self):
         """Puts the panels where the last session left them.
@@ -856,8 +867,18 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.restoreState(state, DOCKS_LAYOUT_VERSION)
 
     def applyLastSessionOrientation(self):
-        orientation = AppSettings.ORIENTATION.value()
-        self.setOrientation(orientation)
+        """Puts the two zones side by side or one above the other, as saved.
+
+        A first run, and a value that is no orientation, leave the layout that
+        the window starts with.
+        """
+        if not AppSettings.ORIENTATION.isSaved():
+            return
+        saved = saved_orientation(AppSettings.ORIENTATION.value())
+        if saved == "horizontal":
+            self.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        elif saved == "vertical":
+            self.setOrientation(QtCore.Qt.Orientation.Vertical)
 
     def applyLastSessionMainWindowSize(self):
         saved = AppSettings.SIZE.value() if AppSettings.SIZE.isSaved() else None

@@ -260,7 +260,9 @@ class Setting:
 class AppSettings:
     THEME = Setting("theme", DEFAULT_THEME, str)
     SIZE = Setting("size", DEFAULT_MAINWINDOW_SIZE)
-    ORIENTATION = Setting("orientation", QtCore.Qt.Orientation.Vertical, int)
+    # Read without a type: the store gives back the Qt enumeration, and a cast
+    # to int fails for a value that is no number. `saved_orientation` reads it.
+    ORIENTATION = Setting("orientation", QtCore.Qt.Orientation.Horizontal)
     LEFT_ZONE_SIZE = Setting("leftZoneSize", QSize(300, 624))
     RIGHT_ZONE_SIZE = Setting("rightZoneSize", QSize(300, 624))
     AAS_FILES_TO_OPEN_ON_START = Setting("openedAasFiles", set())
