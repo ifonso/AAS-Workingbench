@@ -1,0 +1,122 @@
+AAS Workingbench
+================
+
+AAS Workingbench is licensed under the GNU General Public License,
+version 3. The license text is in the file LICENSE.
+
+This project is a fork of AAS Manager (https://github.com/rwth-iat/aas_manager),
+which is also licensed under the GNU General Public License, version 3. Parts
+of the source code carry the copyright notice of Igor Garmaev, the author of
+AAS Manager. Those notices stay in the files.
+
+This file lists third-party material that the repository contains or that the
+software installs. It is for information. The license of each item applies to
+that item, and nothing here changes or replaces it. Where the license of an
+item is not named here, read the item's own files.
+
+
+Not affiliated and not endorsed
+-------------------------------
+
+This project is not affiliated with, sponsored by, or endorsed by the
+organizations that publish the standards, specifications, templates and
+dictionaries named below, or by the authors of the software named below.
+Their names are used only to say what the software works with.
+
+The Asset Administration Shell, its specifications, and the names of
+organizations, standards and products named in this project belong to their
+respective owners. This includes, without limitation, the Industrial Digital
+Twin Association (IDTA), Plattform Industrie 4.0, the International
+Electrotechnical Commission (IEC), ECLASS, and Eclipse BaSyx. Names and marks
+are the property of their owners.
+
+
+Specifications and templates
+----------------------------
+
+Submodel templates (src/aas_editor/submodel_templates/)
+    The folder holds submodel templates and their specification documents as
+    published by the IDTA in https://github.com/admin-shell-io/submodel-templates.
+    That repository states the license Creative Commons Attribution 4.0
+    International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/.
+    The copyright in each template remains with the IDTA and the authors named
+    in the template. The files are included to be opened and used as
+    templates by the editor. Each template folder has its own README.md and
+    specification document, which name its version and origin.
+
+AAS metamodel schema (aas_test_engines/data/file/3.0.yml)
+    A JSON schema of the metamodel of the Asset Administration Shell, in YAML.
+    The repository does not record where the file came from. The metamodel
+    specification is published by the IDTA and Plattform Industrie 4.0 in
+    https://github.com/admin-shell-io/aas-specs-metamodel, which states the
+    license CC BY 4.0.
+
+Measurement units
+    The specification of measurement units is published in
+    https://github.com/admin-shell-io/aas-specs-measurement-units, which
+    states the license CC BY 4.0.
+
+Dictionaries (ECLASS, IEC Common Data Dictionary, and others)
+    The software does not ship a global dictionary as such. The submodel
+    templates above may refer to dictionary entries or hold some, and a
+    package that a user opens, or a dictionary that a user loads or imports,
+    may contain such content. The license of that content stays with its
+    owner, and this project grants no rights over it. The user is responsible
+    for the license of the dictionaries and data that the user loads.
+
+
+Software included in the repository
+-----------------------------------
+
+aas-test-engines (aas_test_engines/ and the installed package)
+    The installed package states the Apache License 2.0,
+    https://github.com/admin-shell-io/aas-test-engines. The folder
+    aas_test_engines/ holds data files that the editor ships with the
+    stand-alone build: the schema above, and an HTML template that the
+    installed package also has. The folder has no license file of its own.
+
+Breeze stylesheets (src/aas_editor/themes/dark.qss and light.qss)
+    MIT License. The headers of both files name Colin Duquesnoy and Alex Huszagh
+    as the authors, and hold the license text. The stylesheets are based on the
+    Breeze color scheme, and are not affiliated with KDE. The generated
+    breeze_resources.py holds the compiled resources of the theme folders. The
+    other files in src/aas_editor/themes/, such as grey.qss and default.qss,
+    state no license of their own.
+
+Icons (src/aas_editor/icons/)
+    The application icons and logos are part of the AAS Manager code base.
+    Several file names, such as content-copy.svg and arrow-expand-vertical.svg,
+    match the Material Design Icons set. The origin and license of the icons
+    are not recorded in the repository.
+
+
+Software that the editor installs
+---------------------------------
+
+The following packages are installed from PyPI by "uv sync", and are not
+modified or copied into this repository. Each has its own license, which the
+package carries. The licenses below are the ones that the package metadata
+gave for the locked versions on 2026-11-06.
+
+    PyQt6, PyQt6-WebEngine, PyQt6-QScintilla   GNU GPL v3 (Riverbank Computing)
+    basyx-python-sdk                           MIT (Eclipse BaSyx; the editor
+                                               installs the fork
+                                               rwth-iat/basyx-python-sdk at a
+                                               pinned commit)
+    openpyxl, toml, pytz                       MIT
+    langchain, langchain-community             MIT
+    jsonschema                                 MIT
+    pypdf                                      BSD-3-Clause
+    sentence-transformers                      Apache License 2.0
+    torch                                      BSD-style and other licenses,
+                                               listed in its metadata
+    faiss-cpu                                  MIT and BSD-3-Clause
+    PyInstaller (build only)                   GPL v2 or later with an
+                                               exception for the programs it
+                                               builds
+
+The full list, with versions, is in uv.lock. The license of a package that is
+not named here is in the package.
+
+The stand-alone executable that "pyinstaller" builds bundles these packages.
+Whoever distributes it must meet the terms of their licenses.
