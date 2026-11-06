@@ -240,8 +240,19 @@ I found no cause for which failsafe mode loses nothing, so no package leaves the
 
 Two quieter findings make D6 safer, and are not a reduction:
 
-- The SDK logs every object it drops at warning or error level. A later change can use those records to tell the user what is missing, instead of saying that something may be.
-- An AASX with two parts that hold the same id skips the second object **without a log line**, in strict mode as well. This is from reading `_read_aas_part_into`, which does `continue` for an id already read. It was not probed, and the editor cannot see this loss.
+- The SDK logs every object it drops at error level. WP13 uses those records to tell the user what is missing (below), instead of saying that something may be.
+- An AASX with two parts that hold the same id skips the second object **without a log line**, in strict mode as well. WP13 probed it with an AASX of two parts: the first object is kept, the second is gone, and nothing is logged. None of the 132 templates has one. `_TolerantReader` now notes the objects of each part, reports a second object that differs from the first, and marks the package as partial.
+
+### What the editor says about it
+
+Every one of the 49 packages now has a report of what failsafe mode left out, and the 83 others have none (`tests/medium/test_load_report_corpus.py`).
+The 49 reports hold 200 records: 91 objects (87 concept descriptions, 3 submodels, 1 shell), 26 elements, and 83 details such as a text, a reference or an embedded data specification.
+No record is a remark about content that was kept, and none is unclassified.
+
+The test counts the `idShort` entries in the XML of each file and in the objects that were loaded, and compares the difference with the entries below the places that the report names.
+They are equal for all 132 templates, so the report says neither less nor more than what the SDK dropped.
+Two corrections to the estimate of WP12, which found 37 of the 49 short: the SDK invents a name (`generated_submodel_list_hack_...`) for each list item that has none, and some templates have an empty `<idShort/>`. Without them 45 of the 49 load fewer entries than their file has, and 4 do not, because they lose only texts, references and similar details, or a shell with no idShort.
+The Bill of Materials extension templates load 20 of 40, because one submodel is gone (the defect is a supplemental semantic id without a semantic id, AASd-118), and the Hierarchical Structures template 3 of 13, because one entity with its statements is gone (AASd-014).
 
 | | Strict | Failsafe |
 |---|---|---|
