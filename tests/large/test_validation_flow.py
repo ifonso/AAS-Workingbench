@@ -192,6 +192,6 @@ def test_read_mode_hides_the_null_rows_of_a_tab_and_edit_mode_shows_them(
     in_read_mode = names()
     edit_mode().set_editing(True)
 
-    assert "id_short" in in_read_mode
+    assert "idShort" in in_read_mode
     assert set(in_read_mode) < set(in_edit_mode)
     assert names() == in_edit_mode
