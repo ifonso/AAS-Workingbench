@@ -122,7 +122,7 @@ def sync_id_short_commands(
     """
     if isinstance(target, ConceptDescription):
         return _fill_concept(observer, target, target.id_short, language, False)
-    concept = _concept_of(ReferenceIndex(objects), target)
+    concept = concept_of(ReferenceIndex(objects), target)
     if concept is None or not target.id_short:
         return []
     return _fill_concept(observer, concept, target.id_short, language, True)
@@ -167,9 +167,20 @@ def _fill_concept(
     return commands
 
 
-def _concept_of(
+def concept_of(
     index: ReferenceIndex, target: model.Referable
 ) -> ConceptDescription | None:
+    """Finds the concept description that the semantic id of an object names.
+
+    Args:
+        index: The index of the package.
+        target: An element, submodel, or anything else with a `semantic_id`.
+
+    Returns:
+        The first description that has the id of one of the keys of the
+        semantic id, or None if there is no semantic id or no such
+        description.
+    """
     reference = cast(
         "model.Reference | None", getattr(target, "semantic_id", None)
     )

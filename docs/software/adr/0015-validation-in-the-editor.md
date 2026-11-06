@@ -1,4 +1,4 @@
-# ADR 0014: The rules run in the dock, in hints, and in the save gate, and the marker follows the stack
+# ADR 0015: The rules run in the dock, in hints, and in the save gate, and the marker follows the stack
 
 **Status:** Accepted
 

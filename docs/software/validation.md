@@ -48,7 +48,7 @@ These are the refusals that `application/save.py` already makes with the same `d
 `save_check_for` maps a report to a `SaveCheck`: blocking findings are blockers, and the other errors are the warnings that the user may confirm.
 `SaveGate.check` merges it with `check_save`. The two file rules are left out of the merge, because `check_save` blocks them with the target format in mind (a JSON target needs no stored file). The other errors are asked about once for each package and session: the same rule, place and message do not ask again after "Save anyway", and a new or changed error does. The warnings of `check_save` (D7) ask on every save.
 
-Six bundled templates have one-letter idShorts, so a save asks once. This fits D5, which wants errors shown and not skipped, and it stops a user who cannot fix a template from confirming 120 errors on every save ([ADR 0014](adr/0014-validation-in-the-editor.md)).
+Six bundled templates have one-letter idShorts, so a save asks once. This fits D5, which wants errors shown and not skipped, and it stops a user who cannot fix a template from confirming 120 errors on every save ([ADR 0015](adr/0015-validation-in-the-editor.md)).
 
 A control character in the value of a Property (`AASd-130`) does not block: the XML writer of the SDK raises `ValueError` for it, which the save flow reports with the target untouched, and JSON writes it.
 
