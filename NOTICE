@@ -69,17 +69,19 @@ Software included in the repository
 -----------------------------------
 
 aas-test-engines (aas_test_engines/ and the installed package)
-    Apache License 2.0, https://github.com/admin-shell-io/aas-test-engines.
-    The folder aas_test_engines/ holds data files (the schema above and an
-    HTML template, which the installed package also has) that the editor
-    ships with the stand-alone build.
+    The installed package states the Apache License 2.0,
+    https://github.com/admin-shell-io/aas-test-engines. The folder
+    aas_test_engines/ holds data files that the editor ships with the
+    stand-alone build: the schema above, and an HTML template that the
+    installed package also has. The folder has no license file of its own.
 
-Breeze stylesheets (src/aas_editor/themes/dark.qss, light.qss, grey.qss and the
-generated breeze_resources.py)
-    MIT License. The header of dark.qss names Colin Duquesnoy (2013-2014) and
-    Alex Huszagh (2015-2016) as the authors, and the file holds the license
-    text. The stylesheets are based on the Breeze color scheme, and are not
-    affiliated with KDE.
+Breeze stylesheets (src/aas_editor/themes/dark.qss and light.qss)
+    MIT License. The headers of both files name Colin Duquesnoy and Alex Huszagh
+    as the authors, and hold the license text. The stylesheets are based on the
+    Breeze color scheme, and are not affiliated with KDE. The generated
+    breeze_resources.py holds the compiled resources of the theme folders. The
+    other files in src/aas_editor/themes/, such as grey.qss and default.qss,
+    state no license of their own.
 
 Icons (src/aas_editor/icons/)
     The application icons and logos are part of the AAS Manager code base.
