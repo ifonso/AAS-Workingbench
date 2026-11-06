@@ -24,6 +24,7 @@ Feature IDs such as `F-NAV-02` refer to them.
 ## Roadmap
 
 Phases 1 to 5 follow the build order the design documents suggest.
+The current focus is the editing scope of phases 1 and 2, as described in the [V1 editor plan](../planning/v1-editor-plan.md).
 
 | Phase | Goal | Features |
 |---|---|---|
@@ -36,7 +37,7 @@ Phases 1 to 5 follow the build order the design documents suggest.
 
 ### Decisions needed before phase 1
 
-1. **Metamodel target:** stay on V3.1, or move to V3.2. See [ADR 0004](adr/0004-basyx-sdk-pin.md).
+1. **Metamodel target:** decided: V3.1.x. See [ADR 0005](adr/0005-metamodel-and-validation.md).
 2. **F-SHL-03 (AnyUI):** the original uses a declarative UI so desktop and web can share panels. Decide whether to adopt something similar, or build directly on Qt.
 3. **F-CMP-03 (web edition):** decide whether it is in scope. The layered architecture keeps this possible, but it is a large effort.
 
@@ -101,7 +102,7 @@ Treat `Partial` as "something exists", and confirm the details when starting eac
 | F-EDT-06 | Common attribute modules | P0 | Partial | Through the generic editors |
 | F-EDT-07 | Qualifiers and Extensions | P1 | Partial | Through the generic editors |
 | F-EDT-08 | Copy, paste, and reorder | P0 | Partial | Copy, cut, paste, and undo. Reorder not confirmed. |
-| F-EDT-09 | Multi-element editing | P1 | Not found | |
+| F-EDT-09 | Multi-element editing | P1 | Partial | Multi-select with bulk cut, copy, and delete |
 | F-EDT-10 | Supplementary files | P1 | Partial | `StoredFile` in `package.py` |
 | F-EDT-11 | References, semantics, lookups | P1 | Partial | Reference links open in tabs, with no lookup |
 
