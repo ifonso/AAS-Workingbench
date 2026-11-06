@@ -353,7 +353,7 @@ class TestSavedState:
         # which the save gate asks about (D5).
         monkeypatch.setattr(
             "aas_editor.treeviews.treeview_pack.confirm_save",
-            lambda check, parent=None: True,
+            lambda check, parent=None, extra=None: True,
         )
 
     def test_package_is_clean_after_a_save_and_changed_after_undoing_it(

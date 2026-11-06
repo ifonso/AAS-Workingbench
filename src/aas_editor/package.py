@@ -8,6 +8,7 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
+import base64
 import hashlib
 import io
 import json
@@ -37,6 +38,8 @@ from aas_editor.application.editing import edit_mode
 from aas_editor.application.edits import link_submodels
 from aas_editor.application.save import SaveOptions
 from aas_editor.application.validation import SaveGate
+from aas_editor.domain.file_references import file_references
+from aas_editor.domain.file_references import unreferenced_files
 from aas_editor.infrastructure.package_io import (
     PackageParts,
     read_package,
@@ -44,6 +47,10 @@ from aas_editor.infrastructure.package_io import (
 )
 from aas_editor.settings.defaults import DEFAULT_COMPLETIONS
 from aas_editor.settings.app_settings import AppSettings
+
+
+# The end of the name of the file that keeps stored files next to a recovery.
+EXTRA_FILES_SUFFIX = ".files.json"
 
 
 class Package:
@@ -163,16 +170,24 @@ class Package:
 
     def _file_hashes(self) -> dict:
         return {
-            name: self.fileStore.get_sha256(name) for name in self.fileStore
+            name: (
+                self.fileStore.get_sha256(name),
+                self.fileStore.get_content_type(name),
+            )
+            for name in self.fileStore
         }
 
     def session_file_names(self) -> list:
         """Names of the supplementary files that are new or changed since open."""
         return [
             name
-            for name, digest in self._file_hashes().items()
-            if self._loadedFileHashes.get(name) != digest
+            for name, state in self._file_hashes().items()
+            if self._loadedFileHashes.get(name) != state
         ]
+
+    def files_changed(self) -> bool:
+        """True if files were added, removed, renamed, or changed since open."""
+        return self._file_hashes() != self._loadedFileHashes
 
     def write(self, file: Union[str, Path, None] = None):
         """Writes the package, all or nothing.
@@ -218,13 +233,15 @@ class Package:
         # reloads the files from the original. Files added during the session
         # exist nowhere else, so then the recovery is a complete AASX instead.
         rec_path = None
-        if self.session_file_names():
+        if self.files_changed():
             rec_path = self._write_aasx_recovery(recovery_dir / f"{stem}.aasx")
+        wrote_aasx = rec_path is not None
         if rec_path is None:
             rec_path = self._write_json_recovery(recovery_dir, stem)
         # The other kind of recovery file is stale now.
         other = ".json" if rec_path.suffix == ".aasx" else ".aasx"
         (recovery_dir / f"{stem}{other}").unlink(missing_ok=True)
+        self._write_extra_files(recovery_dir, stem, wrote_aasx)
 
         # Meta is written last: find_recovery_files() only offers entries with a
         # meta file, so an incomplete recovery is never presented for restoring.
@@ -253,6 +270,49 @@ class Package:
             )
             return None
         return rec_path
+
+    def _write_extra_files(
+        self, recovery_dir: Path, stem: str, wrote_aasx: bool
+    ) -> None:
+        """Writes the stored files that the recovery itself does not carry.
+
+        The SDK writes into an AASX only the files that a File element or a
+        thumbnail refers to, so a file that nothing refers to yet would be
+        lost. When no AASX could be written, the files that are new or changed
+        since open are kept here instead. They go to a file of their own, next
+        to the recovery, and are read again by `restore_from_recovery`.
+        """
+        extras_path = recovery_dir / f"{stem}{EXTRA_FILES_SUFFIX}"
+        if wrote_aasx:
+            names = unreferenced_files(
+                file_references(self.objStore), list(self.fileStore)
+            )
+        else:
+            names = self.session_file_names()
+        if not names or not self.files_changed():
+            extras_path.unlink(missing_ok=True)
+            return
+        entries = []
+        for name in names:
+            content = io.BytesIO()
+            self.fileStore.write_file(name, content)
+            entries.append(
+                {
+                    "name": name,
+                    "content_type": self.fileStore.get_content_type(name),
+                    "data": base64.b64encode(content.getvalue()).decode(
+                        "ascii"
+                    ),
+                }
+            )
+        tmp_path = recovery_dir / f"{stem}.files.tmp.json"
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump({"files": entries}, f)
+            os.replace(tmp_path, extras_path)
+        except Exception:
+            tmp_path.unlink(missing_ok=True)
+            raise
 
     def _write_json_recovery(self, recovery_dir: Path, stem: str) -> Path:
         rec_path = recovery_dir / f"{stem}.json"
@@ -296,7 +356,14 @@ class Package:
         file = self.file if for_file is None else Path(for_file)
         stem = self._recovery_stem(file)
         self.recoveryWritten = False
-        for suffix in (".json", ".aasx", ".meta.json", ".tmp.json"):
+        for suffix in (
+            ".json",
+            ".aasx",
+            ".meta.json",
+            ".tmp.json",
+            EXTRA_FILES_SUFFIX,
+            ".files.tmp.json",
+        ):
             candidate = recovery_dir / f"{stem}{suffix}"
             candidate.unlink(missing_ok=True)
 
@@ -326,7 +393,10 @@ class Package:
                     pack.missingFiles = original.missing_files
                 # Whatever differs from the original on disk is new.
                 pack._loadedFileHashes = {
-                    name: original.files.get_sha256(name)
+                    name: (
+                        original.files.get_sha256(name),
+                        original.files.get_content_type(name),
+                    )
                     for name in original.files
                 }
             else:
@@ -334,7 +404,33 @@ class Package:
                     "Original AASX missing, supplementary files not recovered: %s",
                     pack.file,
                 )
+            pack._restore_extra_files(recovery)
         return pack
+
+    def _restore_extra_files(self, recovery: Path) -> None:
+        """Adds the files that were kept next to the recovery file."""
+        extras_path = recovery.parent / f"{recovery.stem}{EXTRA_FILES_SUFFIX}"
+        try:
+            with open(extras_path, encoding="utf-8") as f:
+                entries = json.load(f)["files"]
+        except FileNotFoundError:
+            return
+        except (OSError, ValueError, KeyError):
+            logging.warning(
+                "Extra files of the recovery are unreadable: %s",
+                extras_path,
+                exc_info=True,
+            )
+            return
+        for entry in entries:
+            name = entry["name"]
+            if name in self.fileStore:
+                self.fileStore.delete_file(name)
+            self.fileStore.add_file(
+                name,
+                io.BytesIO(base64.b64decode(entry["data"])),
+                entry["content_type"],
+            )
 
     @staticmethod
     def _recovery_was_partial(recovery: Path) -> bool:

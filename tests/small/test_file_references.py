@@ -11,6 +11,7 @@ from aas_editor.domain.file_references import FileReference
 from aas_editor.domain.file_references import file_references
 from aas_editor.domain.file_references import is_package_path
 from aas_editor.domain.file_references import missing_files
+from aas_editor.domain.file_references import references_in
 from aas_editor.domain.file_references import unreferenced_files
 
 
@@ -95,7 +96,11 @@ def test_file_references_lists_default_thumbnail_of_shell() -> None:
 
     assert references == [
         FileReference(
-            "/aasx/files/asset.png", shell.id, "Default thumbnail", False
+            "/aasx/files/asset.png",
+            shell.id,
+            "Default thumbnail",
+            False,
+            attribute="path",
         )
     ]
 
@@ -136,3 +141,51 @@ def test_unreferenced_files_selects_stored_files_nothing_refers_to() -> None:
     )
 
     assert unreferenced == ["/aasx/c.pdf", "/aasx/files/b.pdf"]
+
+
+def test_references_in_an_element_include_nested_files_and_annotations() -> (
+    None
+):
+    annotation = make_file_element("Note", "/aasx/files/note.txt")
+    group = make_collection(
+        "Group",
+        [
+            make_file_element("Inner", "/aasx/files/inner.pdf"),
+            make_annotated_relationship(annotations=(annotation,)),
+            make_file_element("Url", "https://example.com/a.pdf"),
+        ],
+    )
+
+    references = references_in(group)
+
+    assert sorted((ref.path, ref.in_annotation) for ref in references) == [
+        ("/aasx/files/inner.pdf", False),
+        ("/aasx/files/note.txt", True),
+    ]
+    assert {ref.owner_id for ref in references} == {""}
+
+
+def test_references_in_a_submodel_tell_the_owner_and_the_holder() -> None:
+    element = make_file_element("Doc", "/aasx/files/doc.pdf")
+    submodel = make_submodel(elements=[make_collection("G", [element])])
+
+    (reference,) = references_in(element)
+
+    assert reference.owner_id == submodel.id
+    assert reference.holder is element
+    assert reference.attribute == "value"
+    assert references_in(submodel)[0].holder is element
+
+
+def test_a_thumbnail_reference_knows_its_asset_information() -> None:
+    resource = model.Resource("/aasx/files/asset.png")
+    shell = make_shell(
+        asset_information=make_asset_information(default_thumbnail=resource)
+    )
+
+    (reference,) = file_references([shell])
+
+    assert reference.is_thumbnail
+    assert reference.holder is resource
+    assert reference.attribute == "path"
+    assert reference.asset_information is shell.asset_information

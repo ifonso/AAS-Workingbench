@@ -12,6 +12,7 @@ import logging
 import webbrowser
 from pathlib import Path
 
+from PyQt6 import QtCore
 from PyQt6.QtCore import QModelIndex, QTimer, pyqtSignal
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -26,6 +27,8 @@ from aas_editor.utils.recovery import (
     cleanup_recovery_dir,
 )
 from aas_editor.application.editing import edit_mode
+from aas_editor.application.file_transfer import transfer_reports
+from aas_editor.ui.package_files import PackageFilesDock
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
 from aas_editor.settings.icons import EXIT_ICON, SETTINGS_ICON, NEW_PACK_ICON
@@ -67,6 +70,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             "Welcome",
         )
 
+        self.initPackageFiles()
         self.initActions()
         self.initMenu()
         self.initToolbars()
@@ -272,6 +276,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuAppearance.addAction(self.setHOrientationAct)
         self.menuAppearance.addAction(self.setVOrientationAct)
         self.menuView.addAction(self.menuAppearance.menuAction())
+        self.menuView.addSection("Panels")
+        self.menuView.addAction(self.filesDock.toggleViewAction())
         self.menuView.addSection("AAS file view")
         self.menuView.addAction(self.mainTreeView.zoomInAct)
         self.menuView.addAction(self.mainTreeView.zoomOutAct)
@@ -341,8 +347,36 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         if root is not None:
             yield from recurse(root)
 
+    def currentPackage(self):
+        """The package of the current row, or the only open package"""
+        package = self.mainTreeView.currentIndex().data(PACKAGE_ROLE)
+        if package is None:
+            packages = self.packTreeModel.openedPacks()
+            package = next(iter(packages)) if len(packages) == 1 else None
+        return package
+
+    def initPackageFiles(self):
+        """The panel of the supplementary files, and what feeds it"""
+        self.filesDock = PackageFilesDock(self.currentPackage, self)
+        self.addDockWidget(
+            QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, self.filesDock
+        )
+        self.mainTreeView.packageFilesRequested.connect(
+            self.filesDock.show_package
+        )
+        transfer_reports.subscribe(self.onFilesCopied)
+
+    def onFilesCopied(self, plan):
+        """Tell the user what a paste did with the files of the objects"""
+        message = plan.summary()
+        if message:
+            self.statusBar().showMessage(message, 15000)
+
     def buildHandlers(self):
         self.mainTabWidget.currItemChanged.connect(self.onCurrTabItemChanged)
+        self.mainTreeView.selectionModel().currentChanged.connect(
+            lambda *_: self.filesDock.panel.follow_current_package()
+        )
         self.mainTreeView.selectionModel().currentChanged.connect(
             self.onSelectedPackItemChanged
         )

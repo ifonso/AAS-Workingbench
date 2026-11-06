@@ -214,6 +214,8 @@ class ObjGroupBox(GroupBox):
     def getInputWidget(self, param: str, val, **kwargs) -> QWidget:
         paramTypeHint = self.reqParamsDict[param]
         print(f"Getting widget for param: {param} of type: {paramTypeHint}")
+        # A parameter named by the caller takes a text of several lines.
+        kwargs["multiline"] = param in kwargs.get("multilineParams", ())
         widget = InputWidgetUtil.getInputWidget(
             paramTypeHint, objVal=val, **kwargs
         )
@@ -531,6 +533,8 @@ class LangStringSetGroupBox(IterableGroupBox):
     def __init__(self, objTypeHint, **kwargs):
         self.langStringTypeHint = objTypeHint
         objTypeHint = Dict[str, str]
+        # The text of a language may have line breaks, its language may not.
+        kwargs["multilineParams"] = {"value"}
         super().__init__(objTypeHint, **kwargs)
 
     def getPreObj(self):

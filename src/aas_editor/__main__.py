@@ -38,6 +38,10 @@ def main():
 
     register_blob_actions()
 
+    from aas_editor.ui.file_actions import register_file_actions
+
+    register_file_actions()
+
     from aas_editor.editorApp import EditorApp as CurrentApp
     from aas_editor.ui.reference_actions import register_reference_actions
 
@@ -51,6 +55,10 @@ def main():
     from aas_editor.ui.paste_actions import register_paste_actions
 
     register_paste_actions()
+
+    from aas_editor.ui.conversion_actions import register_conversion_actions
+
+    register_conversion_actions()
 
     # Check if a file path is provided as an argument
     fileToOpen = sys.argv[1] if len(sys.argv) > 1 else None

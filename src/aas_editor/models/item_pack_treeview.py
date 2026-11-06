@@ -30,6 +30,13 @@ class PackTreeViewItem(StandardItem):
     # The rows are the elements of the object, in the order of the object.
     supportsIncrementalRows = True
 
+    @property
+    def repopulatesOnChange(self) -> bool:
+        # The rows of the file store are stand-ins for names in the container.
+        # A command that adds, removes, renames, or replaces a file reports the
+        # container, and the rows are read from it again.
+        return isinstance(self.obj, DictSupplementaryFileContainer)
+
     def __init__(self, obj, parent, **kwargs):
         super().__init__(obj, parent=parent, **kwargs)
         if obj is None and parent is None:
