@@ -11,6 +11,8 @@ stored. `ReferenceChange` says which stored reference becomes which, and
   which is replaced as a whole by a copy with the new reference.
 """
 
+from collections.abc import Callable
+from collections.abc import Iterable
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -23,7 +25,11 @@ from aas_editor.application.commands import Command
 from aas_editor.application.edits import RemoveMember
 from aas_editor.application.edits import ReplaceMember
 from aas_editor.application.edits import SetAttribute
+from aas_editor.domain.references import ReferenceIndex
 from aas_editor.domain.references import ReferenceSlot
+from aas_editor.domain.references import is_model_reference
+from aas_editor.domain.references import map_keys
+from aas_editor.domain.references import starts_with
 
 
 @dataclass(frozen=True, eq=False)
@@ -146,3 +152,75 @@ def _rebuilt_specific_asset_id(
         semantic_id,
         supplemental,
     )
+
+
+@dataclass(frozen=True)
+class KeyRename:
+    """A new value for the last key of a path.
+
+    Attributes:
+        path: The key values from an identifiable down to an element, as
+            `aas_editor.domain.references.path_of` gives them.
+        new_value: The value for the key at the end of the path: the new
+            idShort of the element, or its new position in a list.
+    """
+
+    path: tuple[str, ...]
+    new_value: str
+
+
+def rewrite_keys(
+    index: ReferenceIndex, renames: Iterable[KeyRename]
+) -> tuple[tuple[ReferenceChange, ...], tuple[ReferenceSlot, ...]]:
+    """Finds the references to change when elements get other keys.
+
+    Several renames can affect one reference, such as the position of a list
+    and of a list inside it. Each reference is rewritten once, with all of
+    them: the deepest path first, so the paths of the others still match.
+
+    Args:
+        index: The index of the package, before anything changed.
+        renames: The new key values.
+
+    Returns:
+        The changes, and the references that would break a rule of
+        references with the new keys. None is expected.
+    """
+    by_slot: dict[int, tuple[ReferenceSlot, list[KeyRename]]] = {}
+    for rename in renames:
+        for usage in index.through(rename.path):
+            by_slot.setdefault(id(usage.slot), (usage.slot, []))[1].append(
+                rename
+            )
+    changes: list[ReferenceChange] = []
+    failed: list[ReferenceSlot] = []
+    for slot, own in by_slot.values():
+        after = slot.reference
+        try:
+            for rename in sorted(own, key=lambda item: -len(item.path)):
+                after = map_keys(after, _swap_for(rename))
+        except model.AASConstraintViolation:
+            failed.append(slot)
+            continue
+        if after is not slot.reference:
+            changes.append(ReferenceChange(slot, after))
+    return tuple(changes), tuple(failed)
+
+
+def _swap_for(
+    rename: KeyRename,
+) -> Callable[[model.Reference, int, model.Key], model.Key]:
+    last = len(rename.path) - 1
+
+    def swap(
+        reference: model.Reference, position: int, key: model.Key
+    ) -> model.Key:
+        if (
+            position == last
+            and is_model_reference(reference)
+            and starts_with(reference, rename.path)
+        ):
+            return model.Key(key.type, rename.new_value)
+        return key
+
+    return swap

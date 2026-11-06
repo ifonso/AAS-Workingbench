@@ -412,6 +412,9 @@ class ReferenceIndex:
     @property
     def slots(self) -> tuple[ReferenceSlot, ...]:
         """Every stored reference in the package, in document order."""
+        return self._build()
+
+    def _build(self) -> tuple[ReferenceSlot, ...]:
         if self._slots is None:
             self._slots = tuple(
                 slot for obj in self.objects for slot in iter_slots(obj)
@@ -525,11 +528,12 @@ class ReferenceIndex:
                 typed = _model_reference(node)
                 if typed is not None and self.resolve(typed) is None:
                     found.append(
-                        DanglingReference(slot, typed, self._why(typed))
+                        DanglingReference(slot, typed, self.why(typed))
                     )
         return found
 
-    def _why(self, reference: model.ModelReference[Any]) -> str:
+    def why(self, reference: model.ModelReference[Any]) -> str:
+        """Says why a model reference does not resolve, as a sentence."""
         first = reference.key[0].value
         if first not in self._by_id:
             return f"No object has the id '{first}'"
@@ -544,15 +548,29 @@ class ReferenceIndex:
                     yield slot, node
             return
         path = path_of(target)
-        if path is None:
-            return
-        for slot, node, position in self._by_value.get(path[0], ()):
-            if (
-                position == 0
-                and _model_reference(node) is not None
-                and starts_with(node, path)
-            ):
-                yield slot, node
+        if path is not None:
+            for usage in self.through(path):
+                yield usage.slot, usage.reference
+
+    def through(self, path: Sequence[str]) -> list[Usage]:
+        """Finds the model references whose keys begin with a path.
+
+        Args:
+            path: The key values from an identifiable down to an element, as
+                `path_of` gives them.
+
+        Returns:
+            The references that go through the element or end at it, with the
+            reference of the chain that matched.
+        """
+        self._build()
+        return [
+            Usage(slot, node)
+            for slot, node, position in self._by_value.get(path[0], ())
+            if position == 0
+            and _model_reference(node) is not None
+            and starts_with(node, path)
+        ]
 
 
 def is_model_reference(reference: model.Reference) -> bool:

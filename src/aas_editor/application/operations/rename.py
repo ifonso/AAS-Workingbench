@@ -30,8 +30,10 @@ from aas_editor.application.commands import CommandGroup
 from aas_editor.application.edits import ReplaceMember
 from aas_editor.application.edits import SetAttribute
 from aas_editor.application.edits import describe
+from aas_editor.application.operations.references import KeyRename
 from aas_editor.application.operations.references import ReferenceChange
 from aas_editor.application.operations.references import reference_commands
+from aas_editor.application.operations.references import rewrite_keys
 from aas_editor.domain import ordering
 from aas_editor.domain.ids import fix_id_short
 from aas_editor.domain.ids import id_short_prefix
@@ -43,7 +45,6 @@ from aas_editor.domain.references import Usage
 from aas_editor.domain.references import is_model_reference
 from aas_editor.domain.references import map_keys
 from aas_editor.domain.references import path_of
-from aas_editor.domain.references import starts_with
 
 # The longest id the SDK accepts (Identifier).
 MAX_ID_LENGTH = 2048
@@ -216,8 +217,8 @@ def plan_rename_id_short(
     changes: tuple[ReferenceChange, ...] = ()
     failed: tuple[ReferenceSlot, ...] = ()
     if path is not None:
-        changes, failed = _id_short_changes(
-            ReferenceIndex(objects), target, path, new_id_short
+        changes, failed = rewrite_keys(
+            ReferenceIndex(objects), [KeyRename(path, new_id_short)]
         )
     return RenamePlan(
         target, "id_short", target.id_short, new_id_short, changes, failed
@@ -386,29 +387,6 @@ def _id_changes(
 
     if old_id == new_id:
         return (), ()
-    usages = index.usages_of([target], include_inside=True)
-    return _rewrite(_slots_of(usages), swap)
-
-
-def _id_short_changes(
-    index: ReferenceIndex,
-    target: model.Referable,
-    path: tuple[str, ...],
-    new_id_short: str,
-) -> tuple[tuple[ReferenceChange, ...], tuple[ReferenceSlot, ...]]:
-    last = len(path) - 1
-
-    def swap(
-        reference: model.Reference, position: int, key: model.Key
-    ) -> model.Key:
-        if (
-            position == last
-            and is_model_reference(reference)
-            and starts_with(reference, path)
-        ):
-            return model.Key(key.type, new_id_short)
-        return key
-
     usages = index.usages_of([target], include_inside=True)
     return _rewrite(_slots_of(usages), swap)
 
