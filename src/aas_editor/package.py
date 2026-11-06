@@ -146,7 +146,7 @@ class Package:
             if self._loadedFileHashes.get(name) != digest
         ]
 
-    def write(self, file: str = None):
+    def write(self, file: Union[str, Path, None] = None):
         """Writes the package, all or nothing.
 
         The target is replaced only when the whole package was written, and
