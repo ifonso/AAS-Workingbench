@@ -141,7 +141,7 @@ infrastructure ──────┘
 
 ### Undo, the saved state, and Read mode
 
-- Every package has one `CommandStack`, `Package.commandStack`. Undo and redo of a view act on the package of its current item, or on the package of its tab.
+- Every package has one `CommandStack`, `Package.commandStack`. Undo and redo of a view act on the package of its current item, or on the package of its tab. The package tree uses the only open package when nothing is selected.
   The history keeps 10000 steps.
 - The models make the commands: `setData` for edits, `addItem` for adds, and `clearRows` for deletes, which includes clearing an attribute to its default.
   Nothing else changes the objects of a package. A new feature creates a command in `application/edits.py` or next to its own logic, and pushes it on the stack.
