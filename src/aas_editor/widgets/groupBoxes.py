@@ -16,11 +16,14 @@ from PyQt6.QtCore import pyqtSignal, Qt, QTimer
 from PyQt6.QtWidgets import (
     QGroupBox,
     QFormLayout,
+    QLabel,
     QWidget,
     QPushButton,
     QDialog,
 )
 from basyx.aas.model import (
+    Entity,
+    EntityType,
     LangStringSet,
     ModelReference,
     MultiLanguageProperty,
@@ -57,7 +60,11 @@ from aas_editor.utils.util_type import (
     getArgs,
 )
 from aas_editor.utils.util import isValOk4Typehint
+from aas_editor.application.hints import hints_mode
 from aas_editor.domain.language_tags import check_language_tags
+from aas_editor.domain.validation.field_checks import (
+    entity_global_asset_id_problem,
+)
 from aas_editor.ui.inline_hints import attach_inline_hint
 from aas_editor.domain.typed_values import check_new_object
 from aas_editor.widgets.editWidgets import (
@@ -189,6 +196,7 @@ class ObjGroupBox(GroupBox):
         self.reqParamsDict = dict(sortedReqInitParamsTypehints)
         self.kwargs = kwargs.copy() if kwargs else {}
         self.initLayout()
+        self._initNotice()
 
     def initLayout(self):
         if self.reqParamsDict:
@@ -249,6 +257,14 @@ class ObjGroupBox(GroupBox):
             paramTypeHint, objVal=val, **kwargs
         )
         self.paramWidgets[param] = widget
+        if self.objTypeHint is Entity and param in (
+            "entity_type",
+            "global_asset_id",
+        ):
+            signal = getattr(widget.widget, "currentIndexChanged", None) or (
+                widget.widget.textChanged
+            )
+            signal.connect(self._refreshNotice)
         # Advice under the fields that the rules know, while hints mode is on
         attach_inline_hint(
             getattr(self.objTypeHint, "__name__", ""), param, widget
@@ -312,6 +328,59 @@ class ObjGroupBox(GroupBox):
                 )
                 self._linkedWidgets[widget] = contentTypeWidget
 
+    def _initNotice(self):
+        """Add the line that asks a new self-managed entity for its asset id.
+
+        It sits under the row of the global asset id, which is a button until
+        the user creates the field, and follows the type and the text
+        (F-EDT-04 AC17).
+        """
+        self.noticeLabel = None
+        if self.objTypeHint is not Entity or "entity_type" not in (
+            self.reqParamsDict
+        ):
+            return
+        label = QLabel(self)
+        label.setWordWrap(True)
+        label.setStyleSheet("font-style: italic;")
+        self.noticeLabel = label
+        row = self._rowOfParam("global_asset_id")
+        self.layout().insertRow(
+            row + 1 if row is not None else self.layout().rowCount(), label
+        )
+        self._refreshNotice()
+
+    def _rowOfParam(self, param: str):
+        layout = self.layout()
+        title = self.getWidgetTitle(param)
+        for row in range(layout.rowCount()):
+            item = layout.itemAt(row, QFormLayout.ItemRole.LabelRole)
+            if item is not None and getattr(item.widget(), "text", None):
+                if item.widget().text() == title:
+                    return row
+        return None
+
+    def _refreshNotice(self, *_):
+        """Show or hide the entity notice for the current type and text."""
+        label = getattr(self, "noticeLabel", None)
+        if label is None:
+            return
+        typeWidget = self.paramWidgets.get("entity_type")
+        textWidget = self.paramWidgets.get("global_asset_id")
+        selfManaged = (
+            typeWidget is not None
+            and typeWidget.widget.currentData()
+            is EntityType.SELF_MANAGED_ENTITY
+        )
+        text = textWidget.widget.text() if textWidget is not None else ""
+        problem = (
+            entity_global_asset_id_problem(selfManaged, text)
+            if hints_mode().is_on
+            else None
+        )
+        label.setText(problem or "")
+        label.setVisible(problem is not None)
+
     def getWidgetTitle(self, param: str):
         title = param.strip("_")
         if param not in self.defaultParams:
@@ -372,6 +441,7 @@ class ObjGroupBox(GroupBox):
                 widgetRow, self.getWidgetTitle(paramName), btn
             )
             self.delInputWidget(widget)
+        self._refreshNotice()
         self.layout().update()
 
     def findWidgetRow(self, widget: QWidget):

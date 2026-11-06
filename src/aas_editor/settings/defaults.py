@@ -17,6 +17,8 @@
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
 from basyx.aas.model import (
+    Entity,
+    EntityType,
     Key,
     KeyTypes,
     File,
@@ -90,6 +92,8 @@ DEFAULTS = {
         "type_value_list_element": Property,
         "value_type_list_element": String,
     },
+    # The original makes a new entity self-managed (F-EDT-04 AC17).
+    Entity: {"entity_type": EntityType.SELF_MANAGED_ENTITY},
 }
 
 

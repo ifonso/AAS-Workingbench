@@ -35,11 +35,25 @@ def bar(qapp: object, qtbot: QtBot):
     return widget
 
 
+def _described(referable):
+    """Gives a Referable the texts that the notices about them ask for."""
+    referable.display_name = model.MultiLanguageNameType(
+        {"en": "Pump", "de": "Pumpe"}
+    )
+    referable.description = model.MultiLanguageTextType(
+        {"en": "A pump", "de": "Eine Pumpe"}
+    )
+    return referable
+
+
 @pytest.fixture
 def shown_package(views):
+    """A property in a submodel, both with names and descriptions in two
+    languages, so that no hint is about them until a test makes one."""
+
     class Shown:
-        element = make_property("Pump")
-        submodel = make_submodel(elements=[element])
+        element = _described(make_property("Pump"))
+        submodel = _described(make_submodel(elements=[element]))
         package = views().open_package(submodel)
 
     return Shown

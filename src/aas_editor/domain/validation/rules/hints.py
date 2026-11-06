@@ -15,6 +15,9 @@ from basyx.aas import model
 
 from aas_editor.domain.validation.context import ValidationContext
 from aas_editor.domain.validation.field_checks import copy_name_problem
+from aas_editor.domain.validation.field_checks import (
+    entity_global_asset_id_problem,
+)
 from aas_editor.domain.validation.field_checks import global_asset_id_problem
 from aas_editor.domain.validation.field_checks import key_value_problem
 from aas_editor.domain.validation.findings import Finding
@@ -26,6 +29,11 @@ CATEGORY_DEPRECATED = "EDT-HINT-CATEGORY"
 COPY_NAME = "EDT-HINT-COPY-NAME"
 ASSET_ID_EMPTY = "EDT-HINT-ASSET-ID-EMPTY"
 ASSET_ID_DUPLICATE = "EDT-HINT-ASSET-ID-DUPLICATE"
+ENTITY_GLOBAL_ID = "EDT-HINT-ENTITY-GLOBAL-ID"
+DISPLAY_NAME_MISSING = "EDT-HINT-DISPLAY-NAME-MISSING"
+DISPLAY_NAME_ONE_LANGUAGE = "EDT-HINT-DISPLAY-NAME-ONE-LANGUAGE"
+DESCRIPTION_MISSING = "EDT-HINT-DESCRIPTION-MISSING"
+DESCRIPTION_ONE_LANGUAGE = "EDT-HINT-DESCRIPTION-ONE-LANGUAGE"
 
 
 def key_whitespace(context: ValidationContext) -> Iterator[Finding]:
@@ -121,6 +129,88 @@ def duplicate_asset_id(context: ValidationContext) -> Iterator[Finding]:
             )
 
 
+def entity_global_id(context: ValidationContext) -> Iterator[Finding]:
+    """Finds a self-managed entity without a global asset id (F-EDT-04 AC17).
+
+    Its specific asset ids satisfy AASd-014, so the SDK accepts the entity. The
+    original still asks for the global one.
+    """
+    for referable in context.referables:
+        if not isinstance(referable, model.Entity):
+            continue
+        problem = entity_global_asset_id_problem(
+            referable.entity_type is model.EntityType.SELF_MANAGED_ENTITY,
+            referable.global_asset_id,
+        )
+        if problem is not None:
+            yield Finding(
+                ENTITY_GLOBAL_ID,
+                Severity.INFO,
+                problem,
+                referable,
+                referable,
+                "global_asset_id",
+            )
+
+
+def display_name_missing(context: ValidationContext) -> Iterator[Finding]:
+    """Finds a Referable without a display name (F-EDT-06 AC1)."""
+    for referable in context.referables:
+        if not referable.display_name:
+            yield Finding(
+                DISPLAY_NAME_MISSING,
+                Severity.INFO,
+                "The use of a display name is recommended to express a "
+                "human readable name for the Referable in multiple languages",
+                referable,
+                referable,
+                "display_name",
+            )
+
+
+def display_name_one_language(context: ValidationContext) -> Iterator[Finding]:
+    """Finds a display name in one language only (F-EDT-06 AC1)."""
+    for referable in context.referables:
+        if referable.display_name and len(referable.display_name) < 2:
+            yield Finding(
+                DISPLAY_NAME_ONE_LANGUAGE,
+                Severity.INFO,
+                "Consider having a display name in multiple languages",
+                referable,
+                referable,
+                "display_name",
+            )
+
+
+def description_missing(context: ValidationContext) -> Iterator[Finding]:
+    """Finds a Referable without a description (F-EDT-06 AC1)."""
+    for referable in context.referables:
+        if not referable.description:
+            yield Finding(
+                DESCRIPTION_MISSING,
+                Severity.INFO,
+                "The use of a description is recommended, to let the "
+                "consumer of a Referable understand the nature of it",
+                referable,
+                referable,
+                "description",
+            )
+
+
+def description_one_language(context: ValidationContext) -> Iterator[Finding]:
+    """Finds a description in one language only (F-EDT-06 AC1)."""
+    for referable in context.referables:
+        if referable.description and len(referable.description) < 2:
+            yield Finding(
+                DESCRIPTION_ONE_LANGUAGE,
+                Severity.INFO,
+                "Consider having a description in multiple languages",
+                referable,
+                referable,
+                "description",
+            )
+
+
 def _shells(
     context: ValidationContext,
 ) -> Iterator[model.AssetAdministrationShell]:
@@ -159,5 +249,36 @@ HINT_RULES = (
         "A global asset id is used once",
         "F-EDT-02 AC9: two shells for one asset id are probably a mistake.",
         duplicate_asset_id,
+    ),
+    Rule(
+        ENTITY_GLOBAL_ID,
+        "A self-managed entity has a global asset id",
+        "F-EDT-04 AC17: the original asks a self-managed entity for the "
+        "global identifier of its asset.",
+        entity_global_id,
+    ),
+    Rule(
+        DISPLAY_NAME_MISSING,
+        "A Referable has a display name",
+        "F-EDT-06 AC1: a display name is recommended.",
+        display_name_missing,
+    ),
+    Rule(
+        DISPLAY_NAME_ONE_LANGUAGE,
+        "A display name has several languages",
+        "F-EDT-06 AC1: a display name in one language only.",
+        display_name_one_language,
+    ),
+    Rule(
+        DESCRIPTION_MISSING,
+        "A Referable has a description",
+        "F-EDT-06 AC1: a description is recommended.",
+        description_missing,
+    ),
+    Rule(
+        DESCRIPTION_ONE_LANGUAGE,
+        "A description has several languages",
+        "F-EDT-06 AC1: a description in one language only.",
+        description_one_language,
     ),
 )
