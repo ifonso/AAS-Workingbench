@@ -19,6 +19,7 @@ import unicodedata
 import uuid
 
 from basyx.aas import model
+from basyx.aas.model.concept import ConceptDescription
 
 # The longest idShort the SDK accepts (NameType).
 MAX_ID_SHORT_LENGTH = 128
@@ -48,7 +49,7 @@ _PREFIXES: tuple[tuple[type, str], ...] = (
     (model.SubmodelElementList, "SML"),
     (model.Submodel, "SM"),
     (model.AssetAdministrationShell, "AAS"),
-    (model.ConceptDescription, "CD"),
+    (ConceptDescription, "CD"),
 )
 _DEFAULT_PREFIX = "Id"
 
