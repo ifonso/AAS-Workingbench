@@ -2,7 +2,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/rwth-iat/aas_manager">
-    <img src="aas_editor/icons/full_logo3.svg" alt="Logo" width="240" height="80">
+    <img src="src/aas_editor/icons/full_logo3.svg" alt="Logo" width="240" height="80">
   </a>
   <p align="center">
     AAS Manager is a free, open source, cross-platform visual viewer/editor based on <a href="https://www.riverbankcomputing.com/software/pyqt/"><strong>PyQt</strong></a> Framework and <a href="https://github.com/eclipse-basyx/basyx-python-sdk"><strong>Eclipse BaSyx Python SDK</strong></a>
@@ -37,28 +37,25 @@ https://www.plattform-i40.de/PI40/Redaktion/EN/Downloads/Publikation/Details_of_
 You can find binaries of the editor for Windows or Linux systems in [the releases](https://github.com/rwth-iat/aas_manager/releases).
 
 ### Development version
-1. Clone the repo
-   ```sh
-   git clone https://github.com/rwth-iat/aas_manager.git
-   ```
-2. Install requirements
-   ```sh
-   pip install .
-   ```
-   Note: If errors occur, try installing the packages one by one in the same order like in dependencies in `pyproject.toml` file.
-  
-   **Linux Dependencies:**
-   On some Linux distributions, you may encounter PyQt5-related errors when running the application. If this happens, you'll need to install missing system dependencies. See issue [#38](https://github.com/rwth-iat/aas_manager/issues/38) for detailed instructions and solutions.
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
 
-3. Run ``main.py`` file
+```sh
+git clone -c core.longpaths=true https://github.com/ifonso/AAS-Workingbench.git
+cd AAS-Workingbench
+uv sync --locked
+uv run python -m aas_editor
+```
 
-OR
+To build a stand-alone executable in `dist/`, run:
 
-3. Freeze an application into stand-alone executable
-   ```sh
-   pyinstaller aas_manager.spec
-   ```
-4. Run the executable in ``dist`` folder
+```sh
+uv run --group build pyinstaller aas_manager.spec
+```
+
+On some Linux distributions, you may need to install missing system dependencies for Qt. See issue [#38](https://github.com/rwth-iat/aas_manager/issues/38).
+
+## Documentation
+See [docs/](docs/README.md) for architecture, the roadmap to feature parity with AASX Package Explorer, and contribution guides. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 GPLv3. See [LICENSE](LICENSE).
