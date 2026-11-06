@@ -87,6 +87,11 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/operations/` | The plans and commands that keep references intact: `rename.py`, `delete.py`, `fix.py`, and `references.py`, which turns reference changes into commands. |
 | `ui/reference_dialogs.py` | The dialogs for renames, deletes and repairs: the preview of references, the rename dialog with Fix and Generate, and the delete dialog with the usages. |
 | `ui/reference_actions.py`, `ui/delete_flow.py` | The actions Rename id, Rename idShort, Sync idShort and Fix References, and the questions that come before a delete. |
+| `domain/clipboard_json.py` | AAS objects as the SDK's JSON for the system clipboard, and back, with `ClipboardError` for anything that is no valid AAS object. Also the copy that a paste inserts. |
+| `application/operations/move.py` | `plan_move` and `move_commands`: the new order for the moved members, and the keys that references through list items get (see [Structure operations](#structure-operations)). |
+| `application/operations/paste.py` | `plan_paste` and `paste_commands`: copies with a free idShort or a new id, inserted at a position. |
+| `application/operations/companions.py` | `gather_companions`, `plan_concepts`, `concept_commands`, and `retarget_semantic_ids`: what goes with a copy between packages. |
+| `ui/move_actions.py`, `ui/paste_actions.py`, `ui/paste_dialogs.py` | The move and paste actions and the questions of a paste between packages. |
 
 ### How saving works
 
@@ -237,6 +242,17 @@ register_action(
 - The tree views ask through `ui/delete_flow.prepare_delete` before they delete the selected rows. The item models send an id or idShort typed in a cell through `ui/reference_actions.rename_command`, so a cell edit and the Rename action take the same path.
 - `register_reference_actions()` adds the actions to the registry. `__main__.py` calls it before the first view exists.
 - A feature that moves or replaces elements must keep references right in the same step. For positions in a list, use `rewrite_keys` with a `KeyRename` for each item that moved.
+
+### Structure operations
+
+[ADR 0010](adr/0010-natural-order-in-trees.md) records the order of the trees.
+
+- **Order.** `ReorderMembers` (in `application/edits.py`) puts a `NamespaceSet` or a list into a new order and reports `Change.moved` for each member that changed its row, lowest final row first, so a model that moves one row at a time ends in the new order. `domain.containers.reorder_members` does the work through `domain.ordering.reorder`. Shells, submodels, concept descriptions and the references of a shell live in sets and cannot move (D16).
+- **Moves.** `plan_move(container, selected, kind, objects)` returns a `MovePlan`, or None when the order would not change. For several selected members of one container, up and down move them as a block where they can, and top and end keep their order among themselves. For a `SubmodelElementList` the plan holds `rewrite_keys` changes with a `KeyRename` for every item whose position changed, and `move_commands` builds the reorder followed by `reference_commands`. Push them in one group.
+- **The tree shows the order.** `SearchProxyModel` is in the natural order unless the user clicked a header (`sort(-1)`): a level with a saved order compares source rows, other levels are sorted by name. A move resets a sorted header. The header neither starts sorted nor restores a sort.
+- **Paste.** `plan_paste(container, items, index, keep_ids, taken_ids)` clones the items through `domain.clipboard_json.clone`, so the buffer can be pasted again and nothing keeps a parent. An idShort is made free with `unique_id_short`, and an identifiable gets `new_identifier()` unless it is a cut that can keep its id. `ui/paste_actions.py` reads the buffer, `TreeClipboard.objects`, where text on the system clipboard that is AAS JSON has already become objects (`TreeView._appendClipboardText`). The existing Paste uses `pasteCopyFor` for the same naming.
+- **Between packages.** `TreeClipboard.source` is the package a copy came from. A paste into another package calls `gather_companions` (the concept descriptions of the semantic ids of the items and of everything below them) and `plan_concepts` (add, reuse when the JSON is equal, conflict otherwise), asks through `ui/paste_dialogs.py`, and puts `concept_commands` in the same group as the paste. A description added under a new id is followed by `retarget_semantic_ids` on the copies before they are inserted. `Companions` is the place to add other things that travel with a copy, such as supplementary files.
+- **Actions.** `register_move_actions()` and `register_paste_actions()` add `structure.move_*`, `structure.paste_*` and `structure.clear_buffer`. The tree views refresh the enabled states when the selection, the rows, or the buffer change.
 
 ### Working with legacy code
 

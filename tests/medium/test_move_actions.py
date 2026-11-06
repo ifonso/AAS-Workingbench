@@ -329,3 +329,29 @@ def test_undo_of_a_delete_from_an_unordered_set_returns_to_the_sorted_place(
 
     assert deleted == ["Aaa", "Zzz"]
     assert shown() == ["Aaa", "Submodel", "Zzz"]
+
+
+def test_clicking_the_header_cycles_ascending_descending_and_natural(
+    moves,
+) -> None:
+    lab = moves(make_property("Z"), make_property("A"), make_property("M"))
+    header = lab.view.header()
+    seen = []
+
+    for _ in range(3):
+        header.sectionClicked.emit(0)
+        seen.append(lab.rows())
+
+    assert seen == [["A", "M", "Z"], ["Z", "M", "A"], ["Z", "A", "M"]]
+
+
+def test_a_restored_header_state_does_not_bring_back_a_sort(moves) -> None:
+    lab = moves(make_property("Z"), make_property("A"))
+    header = lab.view.header()
+    header.sectionClicked.emit(0)
+    state = header.saveState()
+
+    header.restoreState(state)
+
+    assert header.sortIndicatorSection() == -1
+    assert lab.rows() == ["Z", "A"]
