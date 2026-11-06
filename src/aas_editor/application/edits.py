@@ -19,6 +19,7 @@ Example:
 from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import MutableMapping
+from collections.abc import Sequence
 import io
 from typing import Any
 from typing import cast
@@ -303,6 +304,61 @@ class RemoveMember(Command):
         self._observer.notify(
             _member_added(self._container, self._member, self._position)
         )
+
+
+class ReorderMembers(Command):
+    """Puts the members of an ordered container into another order (D16)."""
+
+    def __init__(
+        self,
+        observer: ModelChangeObserver,
+        container: object,
+        order: Sequence[object],
+        description: str | None = None,
+    ) -> None:
+        """Creates the command without changing anything.
+
+        Args:
+            observer: Where to report the change.
+            container: A `NamespaceSet` or a list.
+            order: Every member of the container once, in the new order.
+            description: Text for Undo and Redo.
+        """
+        self.description = description or "Move"
+        self._observer = observer
+        self._container = container
+        self._order = list(order)
+        self._previous: list[Any] = []
+
+    @property
+    def is_noop(self) -> bool:
+        """Whether the container has this order already."""
+        current = containers.members_in_order(self._container)
+        return len(current) == len(self._order) and all(
+            old is new for old, new in zip(current, self._order, strict=True)
+        )
+
+    def apply(self) -> None:
+        """Reorders the container, and reports each member that moved."""
+        self._previous = containers.members_in_order(self._container)
+        containers.reorder_members(self._container, self._order)
+        self._report(self._previous, self._order)
+
+    def revert(self) -> None:
+        """Puts the previous order back."""
+        containers.reorder_members(self._container, self._previous)
+        self._report(self._order, self._previous)
+
+    def _report(self, before: Sequence[object], after: Sequence[object]) -> None:
+        # Placing each member at its final row, lowest row first, gives the
+        # final order in a model that moves one row at a time.
+        old_index = {id(member): n for n, member in enumerate(before)}
+        for new, member in enumerate(after):
+            old = old_index[id(member)]
+            if old != new:
+                self._observer.notify(
+                    Change.moved(self._container, member, old, new)
+                )
 
 
 class ReplaceMember(Command):

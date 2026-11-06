@@ -203,6 +203,52 @@ def replace_member(container: object, old: object, new: object) -> None:
         raise TypeError(f"Cannot replace in a {type(container).__name__}")
 
 
+def members_in_order(container: object) -> list[Any]:
+    """Returns the members of an ordered container, as a new list.
+
+    Args:
+        container: A `NamespaceSet` or a list (also the SDK's
+            `ConstrainedList`).
+
+    Raises:
+        TypeError: If the container has no order that is saved.
+    """
+    if isinstance(container, model.NamespaceSet) or is_list_like(container):
+        return _members(container)
+    raise TypeError(f"A {type(container).__name__} has no order")
+
+
+def reorder_members(container: object, order: list[Any]) -> None:
+    """Puts the members of an ordered container into a new order.
+
+    Args:
+        container: A `NamespaceSet` or a list (also the SDK's
+            `ConstrainedList`).
+        order: Every member exactly once, in the new order. Members are
+            compared by identity.
+
+    Raises:
+        TypeError: If the container has no order that is saved.
+        ValueError: If `order` is not a permutation of the members. Nothing
+            changes then.
+        Exception: Whatever the SDK raises for a refused member, after the
+            previous order was put back.
+    """
+    if isinstance(container, model.NamespaceSet):
+        ordering.reorder(cast("model.NamespaceSet[Any]", container), order)
+        return
+    if is_list_like(container):
+        items = cast("MutableSequence[Any]", container)
+        current = _members(container)
+        if len(current) != len(order) or {id(m) for m in current} != {
+            id(m) for m in order
+        }:
+            raise ValueError("Order must list every member exactly once")
+        items[:] = order
+        return
+    raise TypeError(f"A {type(container).__name__} has no order")
+
+
 def _add_pair(
     mapping: MutableMapping[Any, Any], pair: object, index: int | None
 ) -> int:
