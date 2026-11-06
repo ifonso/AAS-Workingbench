@@ -778,21 +778,30 @@ class TreeView(BasicTreeView):
         self.attrsMenu.addAction(self.editAct)
         self.attrsMenu.addAction(self.editCreateInDialogAct)
         self.attrsMenu.addAction(self.addAct)
-        self.attrsMenu.addAction(self.updateAct)
         self.attrsMenu.addSeparator()
         self.attrsMenu.addAction(self.undoAct)
         self.attrsMenu.addAction(self.redoAct)
         self.registeredActions.add_to_menu(self.attrsMenu)
         self.attrsMenu.addSeparator()
-        self.attrsMenu.addAction(self.zoomInAct)
-        self.attrsMenu.addAction(self.zoomOutAct)
-        self.attrsMenu.addSeparator()
-        self.initMenuFolding()
-        self.attrsMenu.addSeparator()
-        self.initMenuOpenIn()
+        self.initMenuView()
 
-    def initMenuFolding(self):
-        foldingMenu = self.attrsMenu.addMenu("Folding")
+    def initMenuView(self):
+        """Add the entries that only change what the view shows.
+
+        Zoom, Update, Folding and Open in are about the view and not about the
+        element, so they share one entry. The actions are the same objects as
+        before, and their shortcuts belong to the view, not to the menu.
+        """
+        self.viewMenu = self.attrsMenu.addMenu("View")
+        self.viewMenu.addAction(self.zoomInAct)
+        self.viewMenu.addAction(self.zoomOutAct)
+        self.viewMenu.addAction(self.updateAct)
+        self.viewMenu.addSeparator()
+        self.initMenuFolding(self.viewMenu)
+        self.initMenuOpenIn(self.viewMenu)
+
+    def initMenuFolding(self, parentMenu: QMenu):
+        foldingMenu = parentMenu.addMenu("Folding")
         foldingMenu.addAction(self.collapseAct)
         foldingMenu.addAction(self.collapseRecAct)
         foldingMenu.addAction(self.collapseAllAct)
@@ -800,10 +809,10 @@ class TreeView(BasicTreeView):
         foldingMenu.addAction(self.expandRecAct)
         foldingMenu.addAction(self.expandAllAct)
 
-    def initMenuOpenIn(self):
-        openInMenu = self.attrsMenu.addMenu("Open in...")
+    def initMenuOpenIn(self, parentMenu: QMenu):
+        self.openInMenu = parentMenu.addMenu("Open in...")
         for act in self.openInActs:
-            openInMenu.addAction(act)
+            self.openInMenu.addAction(act)
 
     def openMenu(self, point):
         self.pasteAct.setEnabled(
@@ -981,6 +990,16 @@ class TreeView(BasicTreeView):
             bool(index.flags() & Qt.ItemFlag.ItemIsEditable)
         )
         self.editAct.setEnabled(self.isEditableInsideCell(index))
+
+    def canAddTo(self, index: QModelIndex) -> bool:
+        """Tell whether something can be added below the item, in any mode.
+
+        The Add action is off in Read mode, but it still applies. The entries
+        that only make sense for an item that takes new children are hidden
+        from the menu when this is False, which is not the same as being off.
+        """
+        obj = index.data(OBJECT_ROLE)
+        return bool(ClassesInfo.addActText(type(obj))) or isIterable(obj)
 
     def updateAddActs(self, index: QModelIndex):
         obj = index.data(OBJECT_ROLE)

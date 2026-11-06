@@ -45,7 +45,7 @@ def _rows(attrs: Any) -> dict[str, Any]:
 def test_an_item_shows_its_position_and_no_idshort(lab: Any) -> None:
     rows = _rows(_item_tab(lab, 1))
 
-    assert "id_short" not in rows
+    assert "idShort" not in rows
     assert rows["index"].data(Qt.ItemDataRole.DisplayRole) == "1"
 
 
@@ -57,7 +57,7 @@ def test_an_element_that_is_no_item_still_shows_its_idshort(
     rows = _rows(lab.attrs())
 
     assert "index" not in rows
-    assert rows["id_short"].data(Qt.ItemDataRole.DisplayRole) == ELEMENT_ID
+    assert rows["idShort"].data(Qt.ItemDataRole.DisplayRole) == ELEMENT_ID
 
 
 def test_the_position_cannot_be_edited(lab: Any) -> None:

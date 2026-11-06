@@ -45,6 +45,7 @@ This page describes the code as it is today, and the structure that new code sho
 2. `models/` wraps the objects in tree items. Selecting one opens its attributes in a tab, shown by `AttrsTreeView`.
 3. Attributes and editors come from **runtime type introspection**: `utils/util_type.py` and `getAttrTypeHint` read the type hints of BaSyx classes.
    This is why the editor handles new SDK attributes with little code, and also why it relies heavily on SDK internals.
+   What a tab shows is not the introspected name: `domain/attribute_vocabulary.py` gives the name of the metamodel, the type, and the description of each attribute. The editor still edits by the name of the SDK, which `NAME_ROLE` holds, and a test fails for an attribute without an entry.
 4. Edits go through the model, which turns each one into a command and pushes it on the undo history of the package.
    A command changes the BaSyx objects and reports the change to the package's change observer, so that the models of all tabs show the same objects again (see [Change observer and commands](#change-observer-and-commands)).
    The package counts as changed while its history differs from the saved state.
@@ -139,6 +140,9 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/operations/copy_shell.py` | `plan_copy_shell` and `copy_shell_commands`: an AAS with its global asset id and Submodels under new ids, and the references between the copies. |
 | `ui/selection_panel.py` | The Selection dock below the package tree. Its buttons are the actions of the tree view. |
 | `ui/location_actions.py`, `ui/shell_copy_actions.py` | Push location and Pop location, and Copy AAS with new Submodel ids. Registered by `__main__.py`. |
+| `domain/attribute_vocabulary.py` | For each attribute of each class: the name of the metamodel (`displayName`), the name of its type (`list of Qualifier`), and a short description from Part 1. Keyed by class name and found along the base classes. `attribute_info`, `metamodel_name`, and `entries` (see [ADR 0022](adr/0022-attribute-vocabulary.md)). |
+| `domain/attribute_display.py` | What a tab reads for a value that Python would show badly: `value_type_name` (`xs:double`), `type_column_text`, `value_text` (`(not set)`, `(empty)`), and `entry_label`, the name of an entry of a list. |
+| `application/header_state.py` | `restorable_state`: a saved header state is restored only for the version of the layout that it was made for. |
 
 ### Supplementary files
 

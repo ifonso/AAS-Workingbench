@@ -65,11 +65,19 @@ WINDOW_TITLE = (
 )
 
 TOOLBARS_HEIGHT = 30
-ATTR_COLUMN_WIDTH = 200
-# What users edit is the value, so it gets room before the type and the type
-# hint, which only describe it. The type hint takes what is left.
-VALUE_COLUMN_WIDTH = 380
-TYPE_COLUMN_WIDTH = 130
+# The default columns of the attributes of an object fit a tab of the default
+# window with its tree on the left, which is about 600 pixels wide. The longest
+# metamodel name, supplementalSemanticId, and the longest type, `list of
+# EmbeddedDataSpecification`, are cut with an ellipsis and read in the tooltip.
+ATTR_COLUMN_WIDTH = 180
+# What users edit is the value, so it gets the room that is left: it stretches
+# between the name and the type.
+VALUE_COLUMN_WIDTH = 260
+TYPE_COLUMN_WIDTH = 140
+# Raise it when the default columns of the attribute tabs change. A saved
+# header state of another version is not restored, so the new default shows
+# once, and what the user changes later is kept (see application/header_state).
+TAB_HEADER_LAYOUT_VERSION = 2
 PACK_TREE_OBJECT_COLUMN_WIDTH = 480
 
 DEFAULT_MAINWINDOW_SIZE = QSize(1194, 624)
@@ -120,6 +128,9 @@ DEFAULT_COLUMNS_IN_DETAILED_INFO = (
     TYPE_COLUMN_NAME,
     TYPEHINT_COLUMN_NAME,
 )
+# What the header of an attribute tab says. The last column shows the type that
+# the Python SDK declares, which is hidden unless a user asks for it.
+COLUMNS_IN_ATTRIBUTE_TABS = ("Attribute", "Value", "Type", "Python type")
 DEFAULT_COLUMNS_IN_PACKS_TABLE = (
     OBJECT_COLUMN_NAME,
     OBJECT_VALUE_COLUMN_NAME,
@@ -186,6 +197,8 @@ class AppSettings:
     PACKTREEVIEW_HEADER_STATE = Setting("packTreeViewHeaderState", None)
     PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE = CUSTOM_COLUMN_LISTS_FILE
     TABTREEVIEW_HEADER_STATE = Setting("tabTreeViewHeaderState", None)
+    # The layout that the saved state of the tab header was made for.
+    TABTREEVIEW_HEADER_LAYOUT = Setting("tabTreeViewHeaderLayout", 0, int)
 
     DEFAULT_NEW_FILETYPE = Setting(
         name="defaultNewFileType",

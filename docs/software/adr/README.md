@@ -24,6 +24,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0017](0017-presets-and-the-pattern-language.md) | Presets are SDK JSON files, and bulk changes use a small pattern language | Accepted |
 | [0018](0018-load-report.md) | A package that opens in failsafe mode lists what the SDK left out | Accepted |
 | [0020](0020-selection-locations-and-clipboard.md) | A selection moves as a block, and the panel, locations, and clipboard fallback that go with it | Accepted |
+| [0022](0022-attribute-vocabulary.md) | Tabs name attributes with a vocabulary of the metamodel, and show what the editor edits unchanged | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.
