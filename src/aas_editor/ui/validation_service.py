@@ -14,6 +14,7 @@ bulk delete, is followed by one run. Nothing runs while no view listens.
 from typing import Protocol
 import weakref
 
+from PyQt6 import sip
 from PyQt6.QtCore import QObject
 from PyQt6.QtCore import QTimer
 from PyQt6.QtCore import pyqtSignal
@@ -120,11 +121,11 @@ class ValidationService(QObject):
         """Tells the service that a view no longer wants the report."""
         self._listeners.pop(id(owner), None)
         if not self._listeners:
-            self._timer.stop()
+            self._stop_timer()
 
     def refresh(self) -> None:
         """Runs the rules now, and tells the listeners."""
-        self._timer.stop()
+        self._stop_timer()
         if not self._listeners:
             return
         package = self._package()
@@ -147,8 +148,14 @@ class ValidationService(QObject):
 
     def _schedule(self) -> None:
         self._stale = True
-        if self._listeners:
+        if self._listeners and not sip.isdeleted(self._timer):
             self._timer.start()
+
+    def _stop_timer(self) -> None:
+        # When the application closes, Qt can destroy the timer before the
+        # views say that they stopped listening.
+        if not sip.isdeleted(self._timer):
+            self._timer.stop()
 
 
 _services: weakref.WeakKeyDictionary[ValidatedPackage, ValidationService] = (
