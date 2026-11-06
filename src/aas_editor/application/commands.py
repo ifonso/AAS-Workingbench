@@ -1,4 +1,4 @@
-"""Undoable edits, in one history for each package (decision D9).
+"""Undoable edits, in one history for each package (decisions D9 and D18).
 
 A `Command` holds the BaSyx objects it changes, not rows or indexes of a view.
 Each open tab has its own item model, so a row number or a persistent model
@@ -8,6 +8,10 @@ A command also reports what it did to a `ModelChangeObserver`, in `apply` and
 in `revert`, so every view updates itself. Position matters: a command that
 removes an object remembers where it was, and its `revert` puts it back there
 with `aas_editor.domain.ordering`.
+
+The stack refuses every change while reading is on (D18): a push, an undo, and
+a redo raise `ReadOnlyError`. The concrete commands for the edits of the
+editor are in `aas_editor.application.edits`.
 
 Example:
     A command that adds an element at a position::
@@ -45,6 +49,14 @@ import contextlib
 
 from aas_editor.application.listeners import Listeners
 from aas_editor.application.listeners import Subscription
+
+
+# The most steps a package keeps. It is high enough that nobody reaches it.
+PACKAGE_HISTORY_LIMIT = 10_000
+
+
+class ReadOnlyError(RuntimeError):
+    """A change was attempted while only reading is allowed (D18)."""
 
 
 class Command(abc.ABC):
@@ -124,10 +136,23 @@ class CommandStack:
         limit: The most steps kept. The oldest are dropped first.
     """
 
-    def __init__(self, limit: int = 100) -> None:
+    def __init__(
+        self,
+        limit: int = 100,
+        is_editing: Callable[[], bool] | None = None,
+    ) -> None:
+        """Creates an empty history.
+
+        Args:
+            limit: The most steps to keep.
+            is_editing: Tells whether changes are allowed right now. The
+                stack asks before every push, undo, and redo, and raises
+                `ReadOnlyError` when it says no. None allows everything.
+        """
         if limit < 1:
             raise ValueError(f"Limit must be at least 1: {limit}")
         self.limit = limit
+        self._is_editing = is_editing
         self._done: list[Command] = []
         self._undone: list[Command] = []
         self._open_groups: list[CommandGroup] = []
@@ -146,8 +171,10 @@ class CommandStack:
             command: The edit to make.
 
         Raises:
+            ReadOnlyError: If changes are not allowed. Nothing happens.
             Exception: Whatever `command.apply` raises. Nothing is recorded.
         """
+        self._require_editing()
         command.apply()
         if self._open_groups:
             self._open_groups[-1].append(command)
@@ -210,10 +237,12 @@ class CommandStack:
 
         Raises:
             RuntimeError: If there is nothing to undo, or a group is open.
+            ReadOnlyError: If changes are not allowed.
             Exception: Whatever `revert` raises. The step stays recorded.
         """
         if not self.can_undo:
             raise RuntimeError("Nothing to undo")
+        self._require_editing()
         self._done[-1].revert()
         self._undone.append(self._done.pop())
         self._listeners.notify()
@@ -223,10 +252,12 @@ class CommandStack:
 
         Raises:
             RuntimeError: If there is nothing to redo, or a group is open.
+            ReadOnlyError: If changes are not allowed.
             Exception: Whatever `apply` raises. The step stays undone.
         """
         if not self.can_redo:
             raise RuntimeError("Nothing to redo")
+        self._require_editing()
         self._undone[-1].apply()
         self._done.append(self._undone.pop())
         self._listeners.notify()
@@ -241,6 +272,21 @@ class CommandStack:
             raise RuntimeError("Cannot mark the state as saved inside a group")
         self._saved_depth = len(self._done)
         self._listeners.notify()
+
+    def mark_unsaved(self) -> None:
+        """Remembers that the current state differs from the saved one.
+
+        For content that has changes without a step to show for them, such as
+        a package restored after a crash. Undo and redo cannot reach the saved
+        state again, until the next `mark_saved`.
+        """
+        self._saved_depth = None
+        self._listeners.notify()
+
+    @property
+    def can_edit(self) -> bool:
+        """Whether changes are allowed right now."""
+        return self._is_editing is None or self._is_editing()
 
     @property
     def is_clean(self) -> bool:
@@ -274,6 +320,12 @@ class CommandStack:
             A handle that stops the callbacks.
         """
         return self._listeners.subscribe(listener)
+
+    def _require_editing(self) -> None:
+        if not self.can_edit:
+            raise ReadOnlyError(
+                "Read mode is on: switch to Edit mode to change the package"
+            )
 
     def _record(self, step: Command) -> None:
         if self._saved_depth is not None and self._saved_depth > len(
