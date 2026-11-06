@@ -50,8 +50,6 @@ def view_support(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     from aas_editor.ui.save_warnings import IssuesDialog
     from aas_editor.widgets.messsageBoxes import ErrorMessageBox
 
-    # Reading the submodel templates from disk is slow and irrelevant here.
-    monkeypatch.setattr(PackTreeView, "scanFolderForExistFiles", lambda s: None)
     # The settings file of the user must not change what a save writes.
     monkeypatch.setattr(Package, "writeJsonInAasx", False)
     monkeypatch.setattr(Package, "writePrettyJson", True)

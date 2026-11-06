@@ -148,7 +148,6 @@ def tree_view(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
     from aas_editor.treeviews.treeview_pack import PackTreeView
 
-    monkeypatch.setattr(PackTreeView, "scanFolderForExistFiles", lambda s: None)
     # The user agrees to open a package that fails strict reading.
     monkeypatch.setattr(
         QMessageBox, "exec", lambda box: QMessageBox.StandardButton.Yes

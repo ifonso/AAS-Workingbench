@@ -168,7 +168,6 @@ def views(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     from aas_editor.treeviews.treeview_pack import PackTreeView
     from aas_editor.widgets.messsageBoxes import ErrorMessageBox
 
-    monkeypatch.setattr(PackTreeView, "scanFolderForExistFiles", lambda s: None)
     errors: list[str] = []
 
     def fake_exec(box: ErrorMessageBox) -> int:
