@@ -285,6 +285,9 @@ def test_save_keeps_shell_references_when_submodel_is_not_linked(
 # ---------------------------------------------------------------------------
 
 
+# The source package is written with the SDK, which duplicates the part. That
+# is the situation under test, and it warns.
+@pytest.mark.filterwarnings("ignore:Duplicate name:UserWarning")
 def test_save_does_not_duplicate_part_when_thumbnail_is_default_thumbnail(
     qapp: object, tmp_path: Path
 ) -> None:
@@ -399,3 +402,57 @@ def test_recovery_keeps_thumbnail_when_package_has_one(
 
     assert restored.thumbnail is not None
     assert restored.thumbnail.data == b"\x89PNGsmall"
+
+
+# ---------------------------------------------------------------------------
+# The object store follows edits of an id (D10)
+# ---------------------------------------------------------------------------
+
+
+def test_object_store_finds_submodel_by_new_id_when_id_was_edited(
+    qapp: object, aasx_file: Path
+) -> None:
+    package = Package(aasx_file)
+    submodel = next(iter(package.submodels))
+    old_id = submodel.id
+
+    submodel.id = "urn:uuid:11111111-1111-4111-8111-111111111111"
+
+    assert (
+        package.objStore.get_item(
+            "urn:uuid:11111111-1111-4111-8111-111111111111"
+        )
+        is submodel
+    )
+    with pytest.raises(KeyError):
+        package.objStore.get_item(old_id)
+
+
+def test_object_store_refuses_second_submodel_when_id_is_taken_by_edit(
+    qapp: object, aasx_file: Path
+) -> None:
+    package = Package(aasx_file)
+    submodel = next(iter(package.submodels))
+    submodel.id = "urn:uuid:11111111-1111-4111-8111-111111111111"
+
+    with pytest.raises(KeyError):
+        package.add(
+            model.Submodel(id_="urn:uuid:11111111-1111-4111-8111-111111111111")
+        )
+
+
+def test_save_writes_new_id_when_id_was_edited(
+    qapp: object, aasx_file: Path, tmp_path: Path
+) -> None:
+    package = Package(aasx_file)
+    shell_ids = {shell.id for shell in package.shells}
+    submodel = next(iter(package.submodels))
+    submodel.id = "urn:uuid:11111111-1111-4111-8111-111111111111"
+
+    package.write(tmp_path / "saved.json")
+
+    reloaded = Package(tmp_path / "saved.json")
+    assert "urn:uuid:11111111-1111-4111-8111-111111111111" in {
+        obj.id for obj in reloaded.submodels
+    }
+    assert {shell.id for shell in reloaded.shells} == shell_ids
