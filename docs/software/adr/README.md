@@ -17,6 +17,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0010](0010-validation-findings.md) | Validation rules report findings, and a partial load stays partial | Accepted |
 | [0011](0011-natural-order-in-trees.md) | Trees show the saved order, and the others are sorted by name | Accepted |
 | [0012](0012-replacing-an-element-shows-what-is-lost.md) | Replacing an element builds a new one, shows what is lost, and keeps the references | Accepted |
+| [0013](0013-supplementary-files.md) | Stored files change with their references, and never overwrite | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.
