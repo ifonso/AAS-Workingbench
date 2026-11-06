@@ -25,6 +25,7 @@ from aas_editor.application.operations.bulk_move import plan_bulk_move
 from aas_editor.application.operations.move import MoveKind
 from aas_editor.domain import containers
 from aas_editor.domain import ordering
+from aas_editor.domain.selection import has_mixed_variable_directions
 from aas_editor.settings.app_settings import OBJECT_ROLE
 from aas_editor.settings.icons import NEXT_ICON
 from aas_editor.settings.icons import PREV_ICON
@@ -90,7 +91,13 @@ def _selection(context: ActionContext) -> list[tuple[object, object]] | None:
 def _enabled(kind: MoveKind):
     def check(context: ActionContext) -> bool:
         found = _selection(context)
-        return found is not None and can_bulk_move(found, kind)
+        # Package Explorer offers no move for variables of different
+        # directions (F-EDT-09 AC19). Cut and Copy stay.
+        return (
+            found is not None
+            and not has_mixed_variable_directions(m for _, m in found)
+            and can_bulk_move(found, kind)
+        )
 
     return check
 

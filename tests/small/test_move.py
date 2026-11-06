@@ -45,14 +45,14 @@ class TestNewOrder:
             (MoveKind.TO_TOP, "C", "C A B D"),
             (MoveKind.TO_END, "B", "A C D B"),
             (MoveKind.UP, "BC", "B C A D"),
-            (MoveKind.UP, "AC", "A C B D"),
+            (MoveKind.UP, "AC", "A B C D"),
             (MoveKind.DOWN, "BC", "A D B C"),
-            (MoveKind.DOWN, "BD", "A C B D"),
+            (MoveKind.DOWN, "BD", "A B C D"),
             (MoveKind.TO_TOP, "BD", "B D A C"),
             (MoveKind.TO_END, "AC", "B D A C"),
         ],
     )
-    def test_the_selection_moves_as_a_block_where_it_can(
+    def test_the_selection_moves_as_a_block_or_not_at_all(
         self, kind: MoveKind, selected: str, expected: str
     ) -> None:
         items = [make_property(n) for n in "ABCD"]
@@ -61,6 +61,40 @@ class TestNewOrder:
         result = new_order(items, chosen, kind)
 
         assert " ".join(i.id_short for i in result) == expected
+
+    @pytest.mark.parametrize(
+        ("kind", "selected", "expected"),
+        [
+            # F-EDT-09 AC3: indices 2 and 4 of 6 end at 1 and 2.
+            (MoveKind.UP, "CE", "A C E B D F"),
+            # F-EDT-09 AC4: the first selected row is at the top, no change.
+            (MoveKind.UP, "AD", "A B C D E F"),
+            (MoveKind.UP, "ABE", "A B C D E F"),
+            # Down is the mirror: the block ends one place below the last row.
+            (MoveKind.DOWN, "BD", "A C E B D F"),
+            (MoveKind.DOWN, "CF", "A B C D E F"),
+            (MoveKind.DOWN, "AB", "C A B D E F"),
+            # Selected rows keep their order in the container.
+            (MoveKind.TO_TOP, "FC", "C F A B D E"),
+            (MoveKind.TO_END, "DB", "A C E F B D"),
+        ],
+    )
+    def test_selected_rows_become_adjacent_as_in_package_explorer(
+        self, kind: MoveKind, selected: str, expected: str
+    ) -> None:
+        items = [make_property(n) for n in "ABCDEF"]
+        chosen = [i for i in items if i.id_short in selected]
+
+        result = new_order(items, chosen, kind)
+
+        assert " ".join(i.id_short for i in result) == expected
+
+    def test_a_move_that_changes_nothing_is_not_possible(self) -> None:
+        items = [make_property(n) for n in "ABCDEF"]
+        top = [items[0], items[3]]
+
+        assert not can_move(items, top, MoveKind.UP)
+        assert can_move(items, top, MoveKind.DOWN)
 
 
 class TestCanMove:

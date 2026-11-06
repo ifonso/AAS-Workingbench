@@ -160,7 +160,7 @@ def test_several_rows_move_together_as_one_undo_step(moves) -> None:
     lab.view.onUndo()
 
     assert not steps_before
-    assert moved == ["B", "A", "D", "C"]
+    assert moved == ["B", "D", "A", "C"]
     assert _ids(lab.submodel.submodel_element) == list("ABCD")
     assert not lab.package.commandStack.can_undo
 
@@ -355,3 +355,96 @@ def test_a_restored_header_state_does_not_bring_back_a_sort(moves) -> None:
 
     assert header.sortIndicatorSection() == -1
     assert lab.rows() == ["Z", "A"]
+
+
+def _operation_lab(moves):
+    return moves(
+        make_operation(
+            input_variables=[make_property("I1"), make_property("I2")],
+            output_variables=[make_property("O1")],
+        )
+    )
+
+
+def _refresh(lab) -> None:
+    lab.view.updateActions(lab.view.currentIndex())
+
+
+def test_variables_of_one_direction_keep_move_and_delete(moves) -> None:
+    lab = _operation_lab(moves)
+    lab.select(("Operation", "input_variable", "I2"))
+    _refresh(lab)
+
+    assert lab.enabled("structure.move_up")
+    assert lab.view.delClearAct.isEnabled()
+
+
+def test_variables_of_mixed_directions_get_neither_move_nor_delete(
+    moves,
+) -> None:
+    lab = _operation_lab(moves)
+    lab.select(
+        ("Operation", "input_variable", "I2"),
+        ("Operation", "output_variable", "O1"),
+    )
+    _refresh(lab)
+
+    offered = {
+        "move": [
+            lab.enabled(f"structure.move_{kind}")
+            for kind in ("up", "down", "top", "end")
+        ],
+        "delete": lab.view.delClearAct.isEnabled(),
+        "delete shown": lab.view.delClearAct.isVisible(),
+        "cut": lab.view.cutAct.isEnabled(),
+        "copy": lab.view.copyAct.isEnabled(),
+    }
+
+    assert offered == {
+        "move": [False] * 4,
+        "delete": False,
+        "delete shown": False,
+        "cut": True,
+        "copy": True,
+    }
+
+
+def test_delete_comes_back_when_the_selection_is_one_direction_again(
+    moves,
+) -> None:
+    lab = _operation_lab(moves)
+    lab.select(
+        ("Operation", "input_variable", "I2"),
+        ("Operation", "output_variable", "O1"),
+    )
+    _refresh(lab)
+    lab.select(("Operation", "input_variable", "I2"))
+    _refresh(lab)
+
+    assert lab.view.delClearAct.isEnabled()
+    assert lab.view.delClearAct.isVisible()
+
+
+def test_a_move_up_makes_rows_two_and_four_adjacent_at_one_and_two(
+    moves,
+) -> None:
+    lab = moves(*(make_property(n) for n in "ABCDEF"))
+    lab.select(("C",), ("E",))
+
+    lab.act("structure.move_up")
+
+    assert _ids(lab.submodel.submodel_element) == list("ACEBDF")
+
+
+def test_a_move_up_does_nothing_when_the_first_selected_row_is_on_top(
+    moves,
+) -> None:
+    lab = moves(*(make_property(n) for n in "ABCDEF"))
+    lab.select(("A",), ("D",))
+
+    enabled = lab.enabled("structure.move_up")
+    lab.view.registeredActions.find("structure.move_up").trigger()
+
+    assert not enabled
+    assert _ids(lab.submodel.submodel_element) == list("ABCDEF")
+    assert not lab.package.commandStack.can_undo
