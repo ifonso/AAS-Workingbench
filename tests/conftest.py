@@ -61,6 +61,16 @@ def edit_mode_on() -> Iterator[None]:
     edit_mode().set_editing(True)
 
 
+@pytest.fixture(autouse=True)
+def hints_mode_on() -> Iterator[None]:
+    """Starts every test with hints on, which is global state of the editor."""
+    from aas_editor.application.hints import hints_mode
+
+    hints_mode().set_on(True)
+    yield
+    hints_mode().set_on(True)
+
+
 @pytest.fixture(scope="session")
 def qapp() -> Iterator[QApplication]:
     """Provides the session-wide QApplication.

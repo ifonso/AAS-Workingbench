@@ -40,6 +40,7 @@ from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
 from aas_editor.utils.util import toggleStylesheet
 from aas_editor.treeviews.base import HeaderView
+from aas_editor.ui.validation_window import install_validation
 
 
 class EditorApp(QMainWindow, design.Ui_MainWindow):
@@ -70,6 +71,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.initMenu()
         self.initToolbars()
         self.buildHandlers()
+        # The validation dock and hints mode (WP5b).
+        self.validationController = install_validation(self)
         self.restoreSettingsFromLastSession()
         set_crash_callback(self._save_recovery_files)
 
