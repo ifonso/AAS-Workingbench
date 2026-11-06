@@ -265,7 +265,7 @@ All ─ WP12
 | WP3a | `refactor/model-change-observer` | Done |
 | WP3b | `feat/command-undo` | Done |
 | WP4 | `feat/reference-integrity` | Done |
-| WP5a | `feat/validation-rules` | Not started |
+| WP5a | `feat/validation-rules` | Done |
 | WP5b | `feat/validation-ui` | Not started |
 | WP6 | `feat/structure-operations` | Not started |
 | WP7 | `feat/create-and-reference-flows` | Not started |

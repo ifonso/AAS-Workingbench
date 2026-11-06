@@ -66,7 +66,7 @@ Treat `Partial` as "something exists", and confirm the details when starting eac
 | F-PKG-01 | Package lifecycle | P0 | Present | New, open, recent, save, save as, close, crash recovery |
 | F-PKG-02 | AASX format | P0 | Present | Through BaSyx adapters, in `package.py` |
 | F-PKG-03 | Auxiliary package | P1 | Not found | |
-| F-PKG-04 | Check, validate, and fix | P1 | Partial | Validation through `aas-test-engines`, with no fixes |
+| F-PKG-04 | Check, validate, and fix | P1 | Partial | 20 rules over BaSyx objects for V3.1 (`domain/validation`, `application/validation.py`), and validation through `aas-test-engines` (V3.0). Each rule has an id and a severity, and the findings have the element to go to. The dock, the save gate, and the fixes are WP5b and later. See [Validation](validation.md). |
 | F-PKG-05 | Finalize and verify | P1 | Not found | |
 
 ### Repositories and API

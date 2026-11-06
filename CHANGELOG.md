@@ -44,6 +44,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Sync idShort copies the idShort of an element to the concept description of its semantic id, where that has no idShort or short name.
 - An invalid idShort, or one that a sibling has, gets a suggestion such as `My_motor` or `Name_1`, which the user can accept.
 - A test that reads every class of the SDK and fails when the walk over references misses a reference field.
+- Validation rules over the objects of a package, in `aas_editor.domain.validation`: 20 rules for the constraints of metamodel V3.1 that the SDK does not enforce (AASd-002, 005, 006, 007, 020, 109, 116, 118, 119, 129, 130, 133), and for duplicate ids, dangling references, missing and unreferenced files, values that do not fit their type, a Range with min above max, and language tags. `validate_package` in `aas_editor.application.validation` runs them in about 45 ms for the largest bundled template. A one-letter idShort is an error, as the metamodel pattern needs two characters, although the SDK accepts it and six bundled templates use it. There is no window for the rules yet.
+- A table in `docs/software/validation.md` of which constraints the SDK enforces, which a rule enforces, and which neither can, with a probe of the SDK for each, and what the rules find in the 132 bundled templates.
+- A test that pins why 49 of the 132 bundled templates open only in failsafe mode, counted by cause.
 
 ### Changed
 
@@ -113,6 +116,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 - The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
 - A string with line breaks is shown in a value line but cannot be typed there.
+- 49 of the 132 bundled templates open only in failsafe mode, and so can only be saved with Save As. Their packages have defects that the SDK refuses to read: 30 share an id between objects, and the others break constraints such as AASd-014, 021, 022, 109, 123 or 131. No reader option can keep that content, so the rule stays. See [the causes](docs/software/validation.md#why-49-of-the-132-templates-open-only-in-failsafe-mode).
+- The validation rules check what the SDK leaves open, and cannot check AASd-012, or AASd-006 and AASd-007 when `valueId` points outside the package. Saving does not run them yet.
 
 ## 0.4.13 - 2026-08-28
 
