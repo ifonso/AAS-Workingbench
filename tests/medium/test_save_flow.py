@@ -6,6 +6,7 @@ written. Modal dialogs are replaced by functions that record what they show.
 """
 
 from collections.abc import Callable
+from collections.abc import Iterator
 from pathlib import Path
 
 from PyQt6.QtCore import QModelIndex
@@ -15,7 +16,10 @@ from PyQt6.QtWidgets import QWidget
 import pytest
 from pytestqt.qtbot import QtBot
 
+from aas_editor.domain.validation import Finding
+
 from tests.factories import make_file_element
+from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_store
 from tests.factories import make_submodel
@@ -492,3 +496,114 @@ def test_confirm_save_is_false_when_user_cancels(
     confirmed = confirm_save(SaveCheck(warnings=(SaveIssue("Dropped."),)))
 
     assert confirmed is False
+
+
+# ---------------------------------------------------------------------------
+# The errors of the validation rules (D5)
+# ---------------------------------------------------------------------------
+
+
+def _package_with_one_letter_id_short(tmp_path: Path):
+    from aas_editor.package import Package
+
+    submodel = make_submodel(elements=[make_property("X", "1")])
+    source = write_aasx(
+        tmp_path / "rules.aasx",
+        make_store(make_shell(submodels=[submodel]), submodel),
+    )
+    return Package(source)
+
+
+def test_save_asks_with_the_rules_that_the_package_breaks(
+    view_support, tmp_path: Path
+) -> None:
+    package = _package_with_one_letter_id_short(tmp_path)
+    view = view_support.open_package(package)
+    view_support.shown_dialogs.accept = False
+
+    saved = view.savePack(package)
+
+    assert saved is False
+    ((title, texts),) = view_support.shown_dialogs.shown
+    assert title == "Save package"
+    assert texts[0] == "AASd-002: idShort matches the pattern (1 found)"
+    assert texts[1].startswith("    Property 'X' of Submodel 'Submodel'")
+
+
+def test_save_writes_the_package_when_the_user_confirms_the_errors(
+    view_support, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+
+    package = _package_with_one_letter_id_short(tmp_path)
+    view = view_support.open_package(package)
+    view_support.shown_dialogs.accept = True
+
+    saved = view.savePack(package)
+
+    assert saved is True
+    submodel = next(iter(Package(tmp_path / "rules.aasx").submodels))
+    assert submodel.get_referable("X").value == "1"
+
+
+def test_save_asks_about_the_same_errors_only_once(
+    view_support, tmp_path: Path
+) -> None:
+    package = _package_with_one_letter_id_short(tmp_path)
+    view = view_support.open_package(package)
+    view_support.shown_dialogs.accept = True
+
+    first = view.savePack(package)
+    second = view.savePack(package)
+
+    assert (first, second) == (True, True)
+    assert len(view_support.shown_dialogs.shown) == 1
+
+
+def test_save_does_not_ask_when_the_package_only_has_warnings(
+    view_support, tmp_path: Path
+) -> None:
+    import basyx.aas.model as model
+
+    from aas_editor.package import Package
+
+    dangling = model.ReferenceElement(
+        "Link",
+        value=model.ModelReference(
+            (model.Key(model.KeyTypes.SUBMODEL, "urn:gone"),), model.Submodel
+        ),
+    )
+    submodel = make_submodel(elements=[dangling])
+    source = write_aasx(
+        tmp_path / "warn.aasx",
+        make_store(make_shell(submodels=[submodel]), submodel),
+    )
+    package = Package(source)
+    view = view_support.open_package(package)
+
+    saved = view.savePack(package)
+
+    assert saved is True
+    assert view_support.shown_dialogs.shown == []
+
+
+def test_save_still_works_when_a_rule_raises(
+    view_support, tmp_path: Path
+) -> None:
+    from aas_editor.application.validation import SaveGate
+    from aas_editor.domain.validation import Rule
+
+    def broken(context: object) -> Iterator[Finding]:
+        raise RuntimeError("defect in the rule")
+        yield
+
+    package = _package_with_one_letter_id_short(tmp_path)
+    package.saveGate = SaveGate(
+        rules=(Rule("TEST-BROKEN", "Broken", "test", broken),)
+    )
+    view = view_support.open_package(package)
+
+    saved = view.savePack(package)
+
+    assert saved is True
+    assert view_support.shown_dialogs.shown == []

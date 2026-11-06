@@ -162,6 +162,25 @@ class SaveCheck:
     warnings: tuple[SaveIssue, ...] = ()
 
 
+class SaveChecker(Protocol):
+    """Finds what would stop a save or be lost by it."""
+
+    def __call__(
+        self, source: SaveSource, target: Path, options: SaveOptions
+    ) -> SaveCheck:
+        """Checks a save.
+
+        Args:
+            source: The content to save.
+            target: The file to save to.
+            options: The settings that change the output.
+
+        Returns:
+            The blockers and the warnings.
+        """
+        ...
+
+
 class SaveStatus(Enum):
     """How a save ended."""
 
@@ -295,6 +314,7 @@ def save(
     options: SaveOptions,
     writer: PackageWriter,
     confirm: Callable[[SaveCheck], bool],
+    checker: SaveChecker = check_save,
 ) -> SaveOutcome:
     """Checks a save, asks the user about warnings, and writes.
 
@@ -306,6 +326,8 @@ def save(
             fails.
         confirm: Called with the check when there are warnings and no
             blockers. Returns True to save anyway.
+        checker: Makes the check. `check_save` by default. The save gate
+            passes one that adds the findings of the validation rules (D5).
 
     Returns:
         The status. The writer was called only if it is `SAVED`.
@@ -313,7 +335,7 @@ def save(
     Raises:
         TypeError: If the extension of the target is not supported.
     """
-    check = check_save(source, target, options)
+    check = checker(source, target, options)
     if check.blockers:
         return SaveOutcome(SaveStatus.REFUSED, check)
     if check.warnings and not confirm(check):

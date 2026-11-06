@@ -103,7 +103,8 @@ def confirm_save(check: SaveCheck, parent: QWidget | None = None) -> bool:
     """
     dialog = IssuesDialog(
         "Save package",
-        "Saving this package drops content. Do you want to save anyway?",
+        "Saving this package drops content, or the package breaks rules of "
+        "the metamodel. Do you want to save anyway?",
         check.warnings,
         accept_text="Save anyway",
         parent=parent,

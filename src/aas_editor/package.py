@@ -35,6 +35,7 @@ from aas_editor.application.commands import PACKAGE_HISTORY_LIMIT
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.edits import link_submodels
 from aas_editor.application.save import SaveOptions
+from aas_editor.application.validation import SaveGate
 from aas_editor.infrastructure.package_io import (
     PackageParts,
     read_package,
@@ -53,6 +54,8 @@ class Package:
         self.commandStack = CommandStack(
             PACKAGE_HISTORY_LIMIT, lambda: edit_mode().is_editing
         )
+        # The questions of a save, and the errors the user confirmed (D5).
+        self.saveGate = SaveGate()
         self.objStore = SetIdentifiableStore()
         self.fileStore = DictSupplementaryFileContainer()
         # Parts of the file that the object store and file store do not hold.

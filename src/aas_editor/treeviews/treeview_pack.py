@@ -924,7 +924,10 @@ class PackTreeView(TreeView):
                 target,
                 pack.save_options(),
                 write_package,
-                lambda check: confirm_save(check, self),
+                lambda check: pack.saveGate.confirm(
+                    check, lambda asked: confirm_save(asked, self)
+                ),
+                pack.saveGate.check,
             )
             if outcome.status is SaveStatus.REFUSED:
                 show_save_refused(outcome.check, self)
