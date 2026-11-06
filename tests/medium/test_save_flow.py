@@ -492,3 +492,104 @@ def test_confirm_save_is_false_when_user_cancels(
     confirmed = confirm_save(SaveCheck(warnings=(SaveIssue("Dropped."),)))
 
     assert confirmed is False
+
+
+def _press_extra(dialog) -> None:
+    dialog.extra_button.click()
+
+
+def test_a_refused_save_offers_to_repair_dangling_file_paths(
+    qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.application.save import DANGLING_FILES
+    from aas_editor.application.save import SaveCheck
+    from aas_editor.application.save import SaveIssue
+    from aas_editor.ui.save_warnings import show_save_refused
+
+    _answer(monkeypatch, _press_extra)
+    repaired: list[bool] = []
+    check = SaveCheck(blockers=(SaveIssue("Dangling.", (), DANGLING_FILES),))
+
+    show_save_refused(check, None, lambda: repaired.append(True))
+
+    assert repaired == [True]
+
+
+def test_a_refused_save_without_a_file_problem_has_no_repair_button(
+    qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.application.save import SaveCheck
+    from aas_editor.application.save import SaveIssue
+    from aas_editor.ui.save_warnings import show_save_refused
+
+    buttons: list[object] = []
+    _answer(monkeypatch, lambda dialog: buttons.append(dialog.extra_button))
+
+    show_save_refused(
+        SaveCheck(blockers=(SaveIssue("Other."),)), None, lambda: None
+    )
+
+    assert buttons == [None]
+
+
+def test_the_warning_about_unreferenced_files_offers_to_show_the_files(
+    qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.application.save import SaveCheck
+    from aas_editor.application.save import SaveIssue
+    from aas_editor.application.save import UNREFERENCED_FILES
+    from aas_editor.ui.save_warnings import confirm_save
+
+    _answer(monkeypatch, _press_extra)
+    shown: list[bool] = []
+    check = SaveCheck(
+        warnings=(SaveIssue("Unused.", ("/a.txt",), UNREFERENCED_FILES),)
+    )
+
+    confirmed = confirm_save(check, None, lambda: shown.append(True))
+
+    assert confirmed is False
+    assert shown == [True]
+
+
+def test_saving_a_package_with_a_dangling_file_opens_the_repair_on_request(
+    view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.ui.file_controller import FileController
+    from aas_editor.ui.save_warnings import IssuesDialog
+
+    source = write_package_with_missing_file(tmp_path / "dangling.aasx")
+    before = source.read_bytes()
+    package = Package(source)
+    view = view_support.open_package(package)
+    repairs: list[object] = []
+
+    def record(controller: FileController) -> None:
+        repairs.append(controller)
+
+    monkeypatch.setattr(FileController, "repair_dangling", record)
+    monkeypatch.setattr(IssuesDialog, "exec", _press_extra)
+
+    saved = view.savePack(package)
+
+    assert saved is False
+    assert len(repairs) == 1
+    assert source.read_bytes() == before
+
+
+def test_saving_a_package_with_an_unused_file_can_show_the_files_first(
+    view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.ui.save_warnings import IssuesDialog
+
+    package = _package_with_unreferenced_file(tmp_path)
+    view = view_support.open_package(package)
+    requested: list[object] = []
+    view.packageFilesRequested.connect(requested.append)
+    monkeypatch.setattr(IssuesDialog, "exec", _press_extra)
+
+    saved = view.savePack(package)
+
+    assert saved is False
+    assert requested == [package]

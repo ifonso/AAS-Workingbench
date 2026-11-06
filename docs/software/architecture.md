@@ -82,19 +82,46 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/list_children.py` | What a new child of a SubmodelElementList gets from the list: its type, value type, and semantic id. |
 | `ui/value_editor.py` | `ValueTypeBox`, `ValueLineEdit`, `ValueEdit`, `BinaryEdit`, and `ValueEditDialog`. They only show the rules of the domain modules (see [Entering values](#entering-values)). |
 | `ui/blob_actions.py` | The context menu actions that load and save the bytes of a Blob. Registered by `__main__.py` with `register_blob_actions`. |
+| `domain/replacement.py` | What replacing an element by a new one would do: `ReplacementPlan` with the new element, the `Loss` list, notes, and where the items went. Found without changing anything. |
+| `domain/element_copy.py` | Copies of elements without their parent, the attributes all elements share, and how to write a value for a message. |
+| `domain/conversion.py` | Which element types convert to which, and what each conversion keeps and loses (see [Replacing an element](#replacing-an-element)). |
+| `domain/list_settings.py` | What a `SubmodelElementList` fixes, choosing settings from items, and the rebuild of a list with other settings. |
+| `application/operations/replace.py` | `ReplaceElement` and `replacement_command`: the swap, and the updates to the references through the element, as one undo step. |
+| `ui/conversion_actions.py` | The context menu actions "Convert to another element type..." and "Change list settings...". Registered by `__main__.py` with `register_conversion_actions`. |
+| `ui/replacement_dialogs.py` | The dialog that lists what is lost, the chooser of the type, and the dialog of the list settings. |
 | `domain/ids.py` | Generated ids (`urn:uuid:`, D14), numbered idShorts for copies (D13), and `fix_id_short`, which turns any text into a valid idShort. |
 | `domain/references.py` | Finds every place where an AAS object stores a reference (`iter_slots`), and `ReferenceIndex`, which tells duplicate ids, the usages of an object, and dangling references (see [Reference integrity](#reference-integrity)). |
 | `application/operations/` | The plans and commands that keep references intact: `rename.py`, `delete.py`, `fix.py`, and `references.py`, which turns reference changes into commands. |
 | `ui/reference_dialogs.py` | The dialogs for renames, deletes and repairs: the preview of references, the rename dialog with Fix and Generate, and the delete dialog with the usages. |
 | `ui/reference_actions.py`, `ui/delete_flow.py` | The actions Rename id, Rename idShort, Sync idShort and Fix References, and the questions that come before a delete. |
+| `domain/part_names.py` | The names of stored files: checks a name as an OPC part name that cannot leave the package, makes a name from a folder and a local file name, finds names that are the same part (case-blind), numbers a taken name, and guesses the media type (`application/octet-stream` when unknown). |
+| `application/supplementary_files.py` | The stored files and what refers to them. The commands `AddFile`, `RemoveFile`, `RenameFile`, and `ReplaceFile`, and the operations that group them with the changes to File elements and the thumbnail: add, rename, move, remove, create and edit text, link, and find dangling references. |
+| `application/file_transfer.py` | Brings the files of copied objects along when they are pasted into another package: plans the copies, reuses identical files, numbers a taken name, and updates the pasted paths. Also remembers the package that was copied from. |
+| `ui/file_controller.py` | What the user can do with the files of one package: asks through `ui/file_dialogs.py`, runs the operations on the history of the package, and shows why something was refused. Also asks about the references of files that the package tree deletes. |
+| `ui/file_dialogs.py` | The pickers, the questions, the text editor, and the list of dangling references. |
+| `ui/package_files.py` | The Package files panel and its dock. |
+| `ui/file_actions.py` | The context menu actions for stored files, File elements, and the default thumbnail. Registered by `__main__.py` with `register_file_actions`. |
 | `domain/validation/` | The rules over BaSyx objects: `rules/` has 20 rules in six modules, `context.py` walks the package once for all of them, `engine.validate` runs them, `findings.py` has `Finding` and `ValidationReport`, and `coverage.py` records for each constraint whether the SDK, a rule, or neither enforces it (see [Validation](#validation)). |
 | `application/validation.py` | `validate_package(source)` runs the rules on anything that has `objects` and `files`, such as the result of `Package.save_source()`. `save_check_for(report)` maps a report to the blockers and warnings of a save (D5). |
 | `domain/clipboard_json.py` | AAS objects as the SDK's JSON for the system clipboard, and back, with `ClipboardError` for anything that is no valid AAS object. Also the copy that a paste inserts. |
 | `application/operations/move.py` | `plan_move` and `move_commands`: the new order for the moved members, and the keys that references through list items get (see [Structure operations](#structure-operations)). |
 | `application/operations/paste.py` | `plan_paste` and `paste_commands`: copies with a free idShort or a new id, inserted at a position. |
-| `application/operations/companions.py` | `gather_companions`, `plan_concepts`, `concept_commands`, and `retarget_semantic_ids`: what goes with a copy between packages. |
+| `application/operations/companions.py` | `gather_companions`, `plan_concepts`, `concept_commands`, and `retarget_semantic_ids`: what goes with a copy between packages. It lists the file references of the copies too. |
 | `ui/move_actions.py`, `ui/paste_actions.py`, `ui/paste_dialogs.py` | The move and paste actions and the questions of a paste between packages. |
 
+### Supplementary files
+
+[ADR 0013](adr/0013-supplementary-files.md) records the SDK findings and the decisions.
+
+- **Where it is in the interface.** The package tree already lists the stored files below `fileStore`. Their context menu has the actions, the same functions are buttons of the Package files panel (View > Panels), and File elements and shells have the picker in their context menu (D15).
+- **One group for a file and its references.** Rename and Move change the name in the container and every File element, annotation, and thumbnail that has the old name, so one undo restores both. `FileReference` holds the object that has the path (`holder`), the attribute (`value` of a File, `path` of a Resource), and for a thumbnail its AssetInformation.
+- **Nothing is overwritten.** A new file with a taken name gets a numbered name, an identical file is reused, and a rename onto a taken name is refused. Names that differ only in case are taken.
+- **Names come from the file being edited,** so they are checked by `part_names.validate` when a file is added, created, renamed, or moved. A name that could leave the package is refused with a reason.
+- **The tree follows the container.** A command reports `Change.changed` for the container, and the item of the file store reads its rows again (`PackTreeViewItem.repopulatesOnChange`).
+- **Deleting a stored file in the tree** goes through `PackTreeView.prepareDelete` (the usages question of the delete flow), then the model removes the file with `RemoveFile`.
+- **Copying to another package.** `TreeClipboard.source` records the package at copy time, and the clipboard hands it to `copy_source`. The paste actions (above, below, into) ask `gather_companions` for the file references of the copies and add the commands of `transfer_commands` to the paste group. The older Paste goes through `StandardTable.addItem`, which wraps the add with `with_copied_files`. Both add the files and update the pasted paths in the same undo step, and the window shows what was copied or numbered in the status bar.
+- **Save.** `check_save` returns the dangling Files as a blocker with the code `DANGLING_FILES`, and the stored files that nothing refers to as a warning with `UNREFERENCED_FILES`. The dialogs offer "Repair file references..." and "Show package files...".
+- **Crash recovery.** When any stored file differs from the opened state, the recovery is an AASX. The files that nothing refers to cannot be in it, so they are written to `<stem>.files.json` next to it, and `restore_from_recovery` reads them again.
 ### How saving works
 
 1. `PackTreeView.savePack` builds a `SaveSource` from the `Package` with `Package.save_source()`, and calls `application.save.save`.
@@ -106,7 +133,7 @@ The SDK does not say what failsafe mode skipped, so every such package counts.
 
 Saving does not add Submodel references to the first AAS (D8). `Package.all_submodels_to_aas` is an explicit action in the context menu.
 
-Crash recovery writes the objects as JSON. When files were added since the package was opened, it writes a complete AASX instead, so that restoring keeps them.
+Crash recovery writes the objects as JSON. When files were added, removed, renamed, or changed since the package was opened, it writes a complete AASX instead, so that restoring keeps them. Files that nothing refers to go to a `.files.json` beside it (see [Supplementary files](#supplementary-files)).
 
 ## Target structure
 
@@ -190,7 +217,28 @@ infrastructure ──────┘
 - **Bytes.** `BytesEdit` is the `BinaryEdit` with the interface of the generated forms. It replaced the editor of Python literals. It suggests the media type of a loaded file to the `content_type` widget of the form.
 - **Languages.** The model checks a language entry before it replaces one (`StandardTable._checkedMember`), and `LangStringSetGroupBox` checks all entries of a form.
 - **Children of a list.** `TreeView._applyListChildDefaults` is the one place where the add dialog of a SubmodelElementList is given the type, the value type, and the semantic id of the list, with `domain.list_children.child_defaults`.
+- **Several lines.** `ValueEdit` shows a `MultiLineTextEdit` for an `xs:string`, and a line for every other type. The generated forms give the text of each language of a `LangStringSet` the same box, through the `multilineParams` argument that reaches the leaf widgets. The box returns the exact text it was given until the user edits it, and keeps Windows line breaks. A cell of a view is still one line.
+- **Items of a list.** `ListIndexItem` shows the position of an item in a read-only `index` row, read from the list whenever it is shown, in place of the generated idShort.
 - **Testing the forms.** `tests/medium/forms.py` drives the generated dialogs by parameter name and stands in for `exec`, so that tests make elements through the real dialogs. The parametrized test in `tests/medium/test_element_types.py` compares the form and the attribute list of each of the 14 element types with the constructor of the class, so that an attribute that a new SDK adds fails it.
+
+### Replacing an element
+
+[ADR 0012](adr/0012-replacing-an-element-shows-what-is-lost.md) records the decisions. The SDK cannot change the class of an element, or what a list fixes, so both build a new element through its constructor and swap it in place.
+
+1. `plan_conversion` or `plan_list_rebuild` makes a plan: the preview of the new element, what it lacks (`losses`), and where each direct item went (`child_keys`).
+2. `plan_reference_updates` finds the model references through the element with the `ReferenceIndex`. They get the key type and target class of the new element, and the new position or idShort of an item. References into items that are gone are listed, and stay.
+3. The user sees the losses and the orphaned references, with Cancel as the default. A plan without either asks nothing.
+4. `replacement_command` is one step: the reference commands first, then `ReplaceElement`, which builds the element again, so that its items carry the updated references, and swaps it with `containers.replace_member`. The position stays, and undo gives back the old element itself.
+
+| Group | Types | Carried over |
+|---|---|---|
+| Value elements | Property, Range, MultiLanguageProperty, File, Blob | The value as text. Property and Range keep the value type for each other. A Range gives its `min` and takes `min` and `max` from one value. A MultiLanguageProperty gives one text (English if present). A File's path is the text of a Blob, or the content of the stored file. |
+| Reference elements | ReferenceElement, RelationshipElement, AnnotatedRelationshipElement | `first` (the `value` of a ReferenceElement), and `second` between relationships. |
+| Containers | SubmodelElementCollection, SubmodelElementList, Entity, Operation | The items, as copies. A list takes the most common type, value type, and semantic id and keeps the items that fit. An Operation takes all items as input variables. An Entity is a CoManagedEntity. |
+| Capability | Capability | Only the shared attributes, both ways. |
+| BasicEventElement | BasicEventElement | Only the shared attributes. It converts to every type, but no type converts to it. |
+
+Every pair carries the shared attributes: idShort, display name, category, description, semantic id, supplemental semantic ids, qualifiers, extensions, and embedded data specifications. Any pair across groups carries nothing else, and lists everything specific as lost. An item of a list does not convert, because the list fixes its type (AASd-108), and the annotations of a relationship convert to data elements only.
 
 ### Registering an action
 

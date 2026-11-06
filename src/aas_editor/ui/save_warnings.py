@@ -4,6 +4,7 @@ The decisions are made in `aas_editor.application.save`. This module only shows
 them, and returns the answer of the user.
 """
 
+from collections.abc import Callable
 from collections.abc import Sequence
 
 from PyQt6.QtWidgets import QDialog
@@ -13,8 +14,10 @@ from PyQt6.QtWidgets import QListWidget
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.application.save import DANGLING_FILES
 from aas_editor.application.save import SaveCheck
 from aas_editor.application.save import SaveIssue
+from aas_editor.application.save import UNREFERENCED_FILES
 from aas_editor.domain.parts import MissingFile
 
 # How many paths the dialog about missing files lists.
@@ -39,6 +42,8 @@ class IssuesDialog(QDialog):
         accept_text: str | None = None,
         cancel_text: str = "Cancel",
         parent: QWidget | None = None,
+        extra_text: str | None = None,
+        on_extra: Callable[[], None] | None = None,
     ) -> None:
         """Builds the dialog.
 
@@ -51,6 +56,11 @@ class IssuesDialog(QDialog):
             cancel_text: The text of the button that cancels. The default
                 button, so that Enter never goes on.
             parent: The parent widget.
+            extra_text: The text of a third button that helps to fix the
+                issues, such as "Repair file references...". None for none.
+            on_extra: Called when that button is pressed. The dialog then
+                closes as cancelled, so that nothing is saved before the user
+                looked at the result of the repair.
         """
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -85,45 +95,89 @@ class IssuesDialog(QDialog):
             self.buttons.accepted.connect(self.accept)
             self.buttons.rejected.connect(self.reject)
 
+        self.extra_button = None
+        if extra_text is not None and on_extra is not None:
+            self.extra_button = self.buttons.addButton(
+                extra_text, QDialogButtonBox.ButtonRole.ActionRole
+            )
+            if self.extra_button is not None:
+                self.extra_button.setAutoDefault(False)
+                self.extra_button.clicked.connect(
+                    lambda: self._run_extra(on_extra)
+                )
+
         layout = QVBoxLayout(self)
         layout.addWidget(self.summary_label)
         layout.addWidget(self.issues_list)
         layout.addWidget(self.buttons)
 
+    def _run_extra(self, action: Callable[[], None]) -> None:
+        self.reject()
+        action()
 
-def confirm_save(check: SaveCheck, parent: QWidget | None = None) -> bool:
+
+def _has_code(issues: Sequence[SaveIssue], code: str) -> bool:
+    return any(issue.code == code for issue in issues)
+
+
+def confirm_save(
+    check: SaveCheck,
+    parent: QWidget | None = None,
+    show_files: Callable[[], None] | None = None,
+) -> bool:
     """Asks whether to save although the save drops content.
 
     Args:
         check: The result of the check, with warnings.
         parent: The parent widget.
+        show_files: Shows the files of the package. When the warnings are
+            about files that nothing refers to, the dialog offers a button
+            that cancels the save and calls it, so the user can link the
+            files first.
 
     Returns:
         True if the user chose to save anyway.
     """
+    offer_files = show_files is not None and _has_code(
+        check.warnings, UNREFERENCED_FILES
+    )
     dialog = IssuesDialog(
         "Save package",
         "Saving this package drops content. Do you want to save anyway?",
         check.warnings,
         accept_text="Save anyway",
         parent=parent,
+        extra_text="Show package files..." if offer_files else None,
+        on_extra=show_files if offer_files else None,
     )
     dialog.exec()
     return dialog.result() == QDialog.DialogCode.Accepted.value
 
 
-def show_save_refused(check: SaveCheck, parent: QWidget | None = None) -> None:
+def show_save_refused(
+    check: SaveCheck,
+    parent: QWidget | None = None,
+    repair_files: Callable[[], None] | None = None,
+) -> None:
     """Tells the user why a package cannot be saved.
 
     Args:
         check: The result of the check, with blockers.
         parent: The parent widget.
+        repair_files: Opens the repair of the file references. When a File
+            points to a file that is not in the package, the dialog offers a
+            button for it.
     """
+    offer_repair = repair_files is not None and _has_code(
+        check.blockers, DANGLING_FILES
+    )
     IssuesDialog(
         "Package cannot be saved",
         "The package was not saved, and nothing was changed.",
         check.blockers,
         parent=parent,
+        extra_text="Repair file references..." if offer_repair else None,
+        on_extra=repair_files if offer_repair else None,
     ).exec()
 
 
