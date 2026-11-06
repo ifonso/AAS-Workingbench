@@ -174,7 +174,6 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The preview of a stored image or document opens in a splitter, with a third of the tab and at least 360 pixels for the attributes. A tab too narrow for both starts with the preview dragged shut, and the user opens it by dragging the handle. A share that the user dragged is kept for the next file. Before, the preview took half of the tab.
 - The columns of the tabs are saved with the version of their layout. A state that an earlier release saved is not restored, so the new default shows once, and what the user changes later is kept. Before, the saved state hid every new default.
 - A new AAS has the asset kind Instance. Package Explorer makes NotApplicable there, Type in another place, and says in its own notice that Instance is the usual choice (F-EDT-02 AC1, [ADR 0019](docs/software/adr/0019-defaults-and-notices-of-new-objects.md)).
-- The category is shown read-only, and only when it has content (F-EDT-06 AC16). A tab and the package tree refuse to set or change it, and say that it is deprecated. Delete removes it, as one undo step, and a new element has no category row. Before, it was editable, and an empty row was there to create it.
 
 ### Fixed
 
@@ -261,7 +260,6 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Hints cover the cases that the rules and eleven hint rules know. The notices of Package Explorer about missing semantic ids, and the hints for the Qualifier and data specification sections, are not done.
 - A row of a language list cannot hold an empty text, because the SDK refuses one (and an empty list). "Create w/ default" and the default languages give rows that wait for text in the dialog, and a row that stays empty is left out. The original keeps an empty entry in the model.
 - The asset kind `Batch` is a literal of metamodel V3.2, which the SDK does not have. A file that has it is refused as a whole, and in failsafe mode the shell is left out and the package is partial (F-EDT-02 AC11).
-- The dialog that makes an element still has a field for the category, because the SDK takes it in the constructor. The tabs and the package tree show it read-only afterwards.
 - An attribute row that holds a text or number is not coloured as changed, because a mark names an object and Python shares texts. The object above it is marked.
 - The Validation dock lists the package check, not the hints. Fixing a finding (F-PKG-04 Fix) is not done beyond Fix References.
 - The rules run in the thread of the UI. A package ten times the size of the largest template would take about half a second after each pause in editing.

@@ -316,18 +316,7 @@ def _operation() -> Case:
 
 def _capability() -> Case:
     def edit(lab: Any, attrs: Any) -> None:
-        # The category is read-only in a tab, so the edit is made as a command.
-        from aas_editor.application.changes import observer_for
-        from aas_editor.application.edits import SetAttribute
-
-        lab.stack.push(
-            SetAttribute(
-                observer_for(lab.package),
-                lab.element(),
-                "category",
-                "PARAMETER",
-            )
-        )
+        assert lab.set(attrs, "category", "PARAMETER")
 
     def edited(element: model.Capability) -> None:
         assert element.category == "PARAMETER"
@@ -541,10 +530,6 @@ def test_form_and_attributes_have_every_attribute_of_the_class(
             ) or ClassesInfo.addType(element_type), (
                 f"{element_type.__name__}.{attribute} cannot be added to"
             )
-        elif attribute == "category":
-            # Deprecated: a row only for a category that has content, and
-            # never in an element that was just made (F-EDT-06 AC16).
-            assert attribute not in rows
         else:
             assert attribute in rows, (
                 f"{element_type.__name__}.{attribute} is not in the attributes"

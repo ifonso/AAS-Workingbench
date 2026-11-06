@@ -68,10 +68,10 @@ A control character in the value of a Property (`AASd-130`) does not block: the 
 | `AASd-118` | Error | A supplemental semantic id needs a semantic id | Refused on add and on clear, accepted when an object is made with a supplemental id only |
 | `AASd-119` | Error | A template qualifier on a submodel needs kind Template | Not checked |
 | `AASd-129` | Error | A template qualifier on an element needs a template submodel | Not checked |
-| `AASc-3a-004` | Error | A description of the category PROPERTY or VALUE has an IEC 61360 data type of its group (14 types) | Part 3a. Not checked |
-| `AASc-3a-005` | Error | The category REFERENCE has the data type STRING, IRI or IRDI | Part 3a. Not checked |
-| `AASc-3a-006` | Error | The category DOCUMENT has the data type FILE, BLOB or HTML | Part 3a. Not checked |
-| `AASc-3a-007` | Error | The category QUALIFIER_TYPE has a data type | Part 3a. Not checked |
+| `AASc-3a-004` | Error | A description of the category PROPERTY or VALUE has an IEC 61360 data type of its group (14 types) | Part 3a |
+| `AASc-3a-005` | Error | The category REFERENCE has the data type STRING, IRI or IRDI | Part 3a |
+| `AASc-3a-006` | Error | The category DOCUMENT has the data type FILE, BLOB or HTML | Part 3a |
+| `AASc-3a-007` | Error | The category QUALIFIER_TYPE has a data type | Part 3a |
 | `AASd-130` | Error | A string value has only XML characters | Checked for names, texts and ids, not for values |
 | `AASd-133` | Error | An external subject id is an external reference | Not checked |
 | `EDT-DANGLING-REFERENCE` | Warning | A model reference with no target in the package | Not the SDK's job. An external reference never counts. |

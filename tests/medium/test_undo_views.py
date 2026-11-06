@@ -620,17 +620,17 @@ class TestOtherTabsKeepTheirState:
         shown.open_package(make_submodel(elements=[_collection()]))
         acting = shown.attrs_view("submodels", "Submodel", "Collection", "y")
         following = shown.attrs_view("submodels", "Submodel", "Collection", "y")
-        following.setCurrentIndex(_row_named(following, "value"))
+        following.setCurrentIndex(_row_named(following, "category"))
 
         acting._setItemData(
-            _row_named(acting, "value").siblingAtColumn(1), "Changed", EDIT
+            _row_named(acting, "category").siblingAtColumn(1), "Parameter", EDIT
         )
 
         assert (
             following.currentIndex()
             .siblingAtColumn(0)
             .data(Qt.ItemDataRole.DisplayRole)
-            == "value"
+            == "category"
         )
 
 

@@ -45,7 +45,6 @@ from aas_editor.domain.concepts import SemanticHolder
 from aas_editor.domain.concepts import children_of
 from aas_editor.domain.concepts import holders_of
 from aas_editor.domain.concepts import new_empty_concept
-from aas_editor.domain.data_specifications import DEFAULT_LANGUAGE
 from aas_editor.domain.data_specifications import Iec61360Draft
 from aas_editor.domain.data_specifications import build_content
 from aas_editor.domain.data_specifications import build_record
