@@ -134,9 +134,13 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - "Paste qualifier from clipboard into this qualifier" in the context menu of a qualifier row (F-EDT-07 AC5). The type, value type, value, value id, and semantic ids are taken over in one undo step. The kind stays, as in the original. A type that another qualifier has is refused (AASd-021), and so is text that is no qualifier, with the reason.
 - Tests for the output variables and the in/out variables of an Operation: a variable goes into the list it was added under only (F-EDT-04 AC18), for each of the three lists.
 - Tests that deleting the last specific asset id of a shell leaves no list in the file, and that the last asset id of a shell without a global asset id stays (F-EDT-02 AC13).
+- Three new themes in View, Choose Theme: Fluent light, Fluent dark, and Fluent, follow the system. They are made from one table of colors, so every pair of text and surface has at least 4.5 to 1 and every icon and input edge at least 3 to 1, and a test measures them all. The old themes stay for now.
 
 ### Changed
 
+- A first run, with no saved theme, opens in the new light theme (off-white and grey surfaces, blue accent). Before it opened in `grey`. A saved choice is kept. A saved theme name that no theme has also gives the new light theme.
+- The theme entries in View, Choose Theme show a check mark at the theme that is on.
+- The text of problems and advisories in dialogs, and the recovery warning, read the colors of the theme in use, so they have enough contrast on the light and the dark themes.
 - Move up, down, to top, and to end now work on a selection across several collections, lists, or submodels. Each selected element moves within its own container, as one undo step, and references through moved list items follow once for all of them. Before, the actions were off for such a selection.
 - Concept descriptions in the tree are listed by name ignoring case, and descriptions with the same name, such as those without an idShort, by id. Before, the order of equal names followed the set of the SDK and changed between runs, and a lowercase name came after every capital.
 - The project is now managed only with uv, including CI and release builds, and `uv.lock` pins all dependencies.

@@ -514,6 +514,10 @@ Proposed only, none added now:
 
 [ADR 0024](../software/adr/0024-package-tree-vocabulary-and-layout.md) is kept: vocabulary, context menu sections, and one line for several hints. Its figure of 790 pixels for the toolbar stops mattering once the bar is global, and the versions go up as it foresaw.
 
+### Progress
+
+- **D, done** on `feat/design-tokens`: tokens, generated style sheet, palette, and theme manager, with Fusion, as `fluent-light`, `fluent-dark`, and `fluent-system` in the theme list. The light theme is the default of a first run. `ui/colors.py` reads the tokens. [ADR 0025](../software/adr/0025-design-tokens-and-theme-architecture.md).
+
 ## 7. Decisions for the owner
 
 | # | Decision | Recommendation | Cost of the recommendation |
