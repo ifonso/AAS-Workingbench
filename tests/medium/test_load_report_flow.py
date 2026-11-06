@@ -161,7 +161,8 @@ def tree_view(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     qtbot.addWidget(window)
     view = PackTreeView(window)
     view.setModelWithProxy(table)
-    return view
+    # The window owns the view, so it must live as long as the test does.
+    yield view
 
 
 def test_opening_a_package_in_failsafe_mode_shows_what_was_left_out(
