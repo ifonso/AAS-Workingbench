@@ -123,7 +123,11 @@ class TestCreateShell:
         assert enabled
         assert shell.id_short == "Pump"
         assert shell.id.startswith("urn:uuid:")
+        # Instance, where Package Explorer makes NotApplicable (ADR 0019).
         assert shell.asset_information.asset_kind is model.AssetKind.INSTANCE
+        from aas_editor.settings.app_settings import OBJECT_ROLE
+
+        assert lab.view.currentIndex().data(OBJECT_ROLE) is shell
         assert shell.asset_information.global_asset_id.startswith("urn:uuid:")
         reloaded = lab.reloaded()
         assert reloaded.get_item(
@@ -284,6 +288,9 @@ class TestCreateSubmodel:
         assert seen == [lab.shell]
         assert submodel.id_short == "Nameplate"
         assert submodel.kind is model.ModellingKind.INSTANCE
+        from aas_editor.settings.app_settings import OBJECT_ROLE
+
+        assert lab.view.currentIndex().data(OBJECT_ROLE) is submodel
         assert len(lab.shell.submodel) == 2
         assert (
             lab.reloaded().get_item(lab.shell.id).submodel == lab.shell.submodel

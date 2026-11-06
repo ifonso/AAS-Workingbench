@@ -214,6 +214,12 @@ def _add_note(form: Form) -> None:
     form.type_text("value", "text")
 
 
+def _add_result(form: Form) -> None:
+    form.choose_type(model.Property)
+    form.type_text("id_short", "Result")
+    form.type_text("value", "42")
+
+
 def _collection() -> Case:
     def edit(lab: Any, attrs: Any) -> None:
         lab.add(_add_note, *ELEMENT_PATH)
@@ -296,10 +302,12 @@ def _entity() -> Case:
 def _operation() -> Case:
     def edit(lab: Any, attrs: Any) -> None:
         lab.add(_add_note, *ELEMENT_PATH, "input_variable")
+        lab.add(_add_result, *ELEMENT_PATH, "output_variable")
 
     def edited(element: model.Operation) -> None:
         assert [v.id_short for v in element.input_variable] == ["Note"]
-        assert len(element.output_variable) == 0
+        assert [v.id_short for v in element.output_variable] == ["Result"]
+        assert len(element.in_output_variable) == 0
 
     return Case(
         model.Operation, lambda form: None, lambda element: None, edit, edited
@@ -452,6 +460,39 @@ def test_element_is_made_edited_undone_saved_and_read_again(
         lab.stack.undo()
     assert snapshot(lab.package.objStore) == empty
     assert "generated_submodel_list_hack_" not in edited
+
+
+@pytest.mark.parametrize(
+    "list_name", ["input_variable", "output_variable", "in_output_variable"]
+)
+def test_a_variable_goes_into_the_list_it_was_added_under_only(
+    lab_class, list_name: str
+) -> None:
+    from tests.factories import make_operation
+
+    operation = make_operation(ELEMENT_ID)
+    lab = lab_class(operation)
+    empty = snapshot(lab.package.objStore)
+
+    lab.add(_add_note, *ELEMENT_PATH, list_name)
+    added = snapshot(lab.package.objStore)
+    held = {
+        name: [v.id_short for v in getattr(operation, name)]
+        for name in (
+            "input_variable",
+            "output_variable",
+            "in_output_variable",
+        )
+    }
+    reloaded = lab.save_and_reload()
+    lab.stack.undo()
+
+    assert held == {
+        name: ["Note"] if name == list_name else [] for name in held
+    }
+    assert reloaded == added
+    assert snapshot(lab.package.objStore) == empty
+    assert not lab.stack.can_undo
 
 
 def _constructor_parameters(element_type: type) -> list[str]:
