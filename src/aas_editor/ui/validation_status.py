@@ -122,9 +122,12 @@ class ValidationStatus(QWidget):
     def _enter(self, service: ValidationService) -> None:
         self._service = service
         service.report_changed.connect(self._update)
-        token = self._token
-        self.destroyed.connect(lambda: service.stop_listening(token))
-        service.listen(token, with_hints=hints_mode().is_on)
+        # No hook on `destroyed` here: Python code that runs while Qt deletes
+        # the widget can be interrupted by the garbage collector, which freed
+        # widgets under it and crashed the large main window test. The window
+        # lives as long as the application, and a closed package is left in
+        # `set_package(None)`.
+        service.listen(self._token, with_hints=hints_mode().is_on)
 
     def _leave(self) -> None:
         service, self._service = self._service, None
