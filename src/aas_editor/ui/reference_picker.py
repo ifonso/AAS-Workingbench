@@ -14,6 +14,7 @@ from collections.abc import Sequence
 
 from basyx.aas import model
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QCheckBox
 from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QDialog
 from PyQt6.QtWidgets import QDialogButtonBox
@@ -32,7 +33,8 @@ from aas_editor.domain.reference_picker import ReferenceRule
 from aas_editor.domain.reference_picker import ReferenceTargetError
 from aas_editor.domain.reference_picker import TargetClasses
 from aas_editor.domain.reference_picker import TargetFilter
-from aas_editor.domain.reference_picker import candidates
+from aas_editor.domain.reference_picker import PickerSource
+from aas_editor.domain.reference_picker import candidates_in
 from aas_editor.domain.reference_picker import reference_to
 from aas_editor.domain.references import describe_reference
 
@@ -70,6 +72,8 @@ class ReferencePickerDialog(QDialog):
         rule: ReferenceRule,
         as_model: bool | None = None,
         parent: QWidget | None = None,
+        others: Sequence[PickerSource] = (),
+        package_name: str = "",
     ) -> None:
         """Builds the dialog.
 
@@ -82,12 +86,19 @@ class ReferencePickerDialog(QDialog):
                 accepts both, because Package Explorer's "Add existing"
                 gives a global reference by default.
             parent: The parent widget.
+            others: The other open packages, which may hold the target too
+                (F-EDT-11 AC1). A reference to something there is an external
+                reference to its id, or a model reference through its path.
+            package_name: The name of the package that is edited, to tell it
+                from the others in the list.
         """
         super().__init__(parent)
         self.setWindowTitle(TITLE)
         # The text of the kinds is a sentence, and the types are long words.
         self.setMinimumSize(720, 420)
         self._objects = list(objects)
+        self._others = tuple(others)
+        self._package_name = package_name or "This package"
         self._rule = rule
         self._chosen: Candidate | None = None
 
@@ -115,7 +126,10 @@ class ReferencePickerDialog(QDialog):
         self.search_box.setClearButtonEnabled(True)
 
         self.tree = QTreeWidget(self)
-        self.tree.setHeaderLabels(["Name", "Type", "Belongs to"])
+        labels = ["Name", "Type", "Belongs to"]
+        if self._others:
+            labels.append("Package")
+        self.tree.setHeaderLabels(labels)
         self.tree.setRootIsDecorated(False)
         self.tree.setUniformRowHeights(True)
         self.tree.setColumnWidth(0, 240)
@@ -126,6 +140,9 @@ class ReferencePickerDialog(QDialog):
                 1, QHeaderView.ResizeMode.ResizeToContents
             )
 
+        self.others_box = QCheckBox("Also list the other open packages", self)
+        self.others_box.setChecked(True)
+        self.others_box.setVisible(bool(self._others))
         self.preview = QLabel(self)
         self.preview.setWordWrap(True)
         self.preview.setTextInteractionFlags(
@@ -143,8 +160,12 @@ class ReferencePickerDialog(QDialog):
         layout = QVBoxLayout(self)
         if self.kind_box.count() > 1:
             layout.addWidget(self.kind_box)
+        else:
+            # Not in the layout, so it would sit in the corner of the dialog.
+            self.kind_box.hide()
         layout.addWidget(self.filter_box)
         layout.addWidget(self.search_box)
+        layout.addWidget(self.others_box)
         layout.addWidget(self.tree)
         layout.addWidget(self.preview)
         layout.addWidget(self.buttons)
@@ -152,6 +173,7 @@ class ReferencePickerDialog(QDialog):
         self.kind_box.currentIndexChanged.connect(self._reload)
         self.filter_box.currentIndexChanged.connect(self._reload)
         self.search_box.textChanged.connect(self._reload)
+        self.others_box.toggled.connect(self._reload)
         self.tree.currentItemChanged.connect(self._on_current_changed)
         self.tree.itemDoubleClicked.connect(self._on_double_clicked)
         self._reload()
@@ -198,7 +220,7 @@ class ReferencePickerDialog(QDialog):
     def _reload(self) -> None:
         classes = self._classes()
         found = (
-            candidates(self._objects, classes, self.search_box.text())
+            candidates_in(self._sources(), classes, self.search_box.text())
             if classes
             else []
         )
@@ -210,11 +232,21 @@ class ReferencePickerDialog(QDialog):
             ]
         self.tree.clear()
         for entry in found:
-            item = QTreeWidgetItem([entry.label, entry.kind, entry.owner])
+            columns = [entry.label, entry.kind, entry.owner]
+            if self._others:
+                columns.append(entry.package)
+            item = QTreeWidgetItem(columns)
             item.setData(0, _CANDIDATE_ROLE, entry)
             self.tree.addTopLevelItem(item)
         self._chosen = None
         self._update_preview()
+
+    def _sources(self) -> list[PickerSource]:
+        """The packages that the list covers now: this one, and the others."""
+        if not self._others:
+            return [PickerSource("", tuple(self._objects))]
+        main = PickerSource(self._package_name, tuple(self._objects))
+        return [main, *(self._others if self.others_box.isChecked() else ())]
 
     def _on_current_changed(
         self, current: QTreeWidgetItem | None, _previous: object
@@ -242,9 +274,13 @@ class ReferencePickerDialog(QDialog):
             self.preview.setText(str(error))
             ok_button.setEnabled(False)
             return
-        self.preview.setText(
-            f"{type(reference).__name__}: {describe_reference(reference)}"
-        )
+        text = f"{type(reference).__name__}: {describe_reference(reference)}"
+        if self._others and self._chosen.package != self._package_name:
+            text += (
+                f"\nThe target is in the package {self._chosen.package}, "
+                "not in this one."
+            )
+        self.preview.setText(text)
         ok_button.setEnabled(True)
 
     @property
