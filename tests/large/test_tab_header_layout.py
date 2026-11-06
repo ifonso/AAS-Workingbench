@@ -94,7 +94,13 @@ def test_a_state_that_was_saved_without_a_layout_is_not_restored_either(
 
     state = _state_with_a_dragged_attribute_column(qtbot, monkeypatch)
 
-    window = _window(qtbot, monkeypatch, {"tabTreeViewHeaderState": state})
+    # The layout version an old session never wrote reads as its default. The
+    # settings file may hold a newer one, from an earlier test.
+    window = _window(
+        qtbot,
+        monkeypatch,
+        {"tabTreeViewHeaderState": state, "tabTreeViewHeaderLayout": 0},
+    )
 
     assert _header(window).sectionSize(ATTRIBUTE_COLUMN) == ATTR_COLUMN_WIDTH
     _close(window)
