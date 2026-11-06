@@ -323,30 +323,41 @@ def iter_slots(root: model.Identifiable) -> Iterator[ReferenceSlot]:
             continue
         seen.add(id(owner))
         pending: list[tuple[object, model.Referable, object | None]] = []
+        owner_type = type(owner)
         for name, value in vars(owner).items():
             if name in _NOT_CONTENT:
                 continue
-            attribute = _public_name(type(owner), name)
-            if isinstance(value, model.Reference):
+            kind = _kind_of_value(value)
+            if kind is _Kind.OTHER:
+                continue
+            attribute = _public_name(owner_type, name)
+            if kind is _Kind.REFERENCE:
                 yield ReferenceSlot(
-                    owner, attribute, value, None, owner_container, anchor, root
+                    owner,
+                    attribute,
+                    cast("model.Reference", value),
+                    None,
+                    owner_container,
+                    anchor,
+                    root,
                 )
-            elif isinstance(value, _CONTAINERS):
+            elif kind is _Kind.CONTAINER:
                 container = cast("object", value)
                 for member in cast("Iterable[object]", value):
-                    if isinstance(member, model.Reference):
+                    member_kind = _kind_of_value(member)
+                    if member_kind is _Kind.REFERENCE:
                         yield ReferenceSlot(
                             owner,
                             attribute,
-                            member,
+                            cast("model.Reference", member),
                             container,
                             owner_container,
                             anchor,
                             root,
                         )
-                    elif _is_content(member):
+                    elif member_kind is _Kind.CONTENT:
                         pending.append(_child(member, anchor, container))
-            elif _is_content(value):
+            else:
                 pending.append(_child(value, anchor, None))
         stack.extend(reversed(pending))
 
@@ -502,6 +513,8 @@ class ReferenceIndex:
                     (id(slot), id(node)),
                     Usage(slot, node),
                 )
+        if not found:
+            return []
         order = {id(slot): number for number, slot in enumerate(slots)}
         return sorted(
             found.values(),
@@ -630,14 +643,38 @@ def _child(
     return obj, new_anchor, container
 
 
-def _is_content(value: object) -> bool:
-    """Tells whether an object can hold references, and so must be walked."""
-    if isinstance(value, (str, bytes, int, float, type, enum.Enum, model.Key)):
-        return False
-    if isinstance(value, (Mapping, model.Reference)):
-        return False
-    module = type(value).__module__
-    return module.startswith(_MODEL_MODULE) and module != _DATATYPES_MODULE
+class _Kind(enum.Enum):
+    """How the walk treats the value of an attribute."""
+
+    REFERENCE = enum.auto()
+    CONTAINER = enum.auto()
+    CONTENT = enum.auto()
+    OTHER = enum.auto()
+
+
+def _kind_of_value(value: object) -> _Kind:
+    return _kind_of(type(value))
+
+
+@functools.cache
+def _kind_of(cls: type) -> _Kind:
+    """Tells what the walk does with values of a class.
+
+    The answer depends on the class only, so it is looked up once. Checking an
+    abstract class with `isinstance` is slow, and the walk checks every value.
+    """
+    if issubclass(cls, model.Reference):
+        return _Kind.REFERENCE
+    if issubclass(cls, _CONTAINERS):
+        return _Kind.CONTAINER
+    if issubclass(
+        cls, (str, bytes, int, float, type, enum.Enum, model.Key, Mapping)
+    ):
+        return _Kind.OTHER
+    module = cls.__module__
+    if module.startswith(_MODEL_MODULE) and module != _DATATYPES_MODULE:
+        return _Kind.CONTENT
+    return _Kind.OTHER
 
 
 def _model_reference(
@@ -648,6 +685,7 @@ def _model_reference(
     return None
 
 
+@functools.cache
 def _public_name(cls: type, name: str) -> str:
     if name.startswith("_") and hasattr(cls, name[1:]):
         return name[1:]

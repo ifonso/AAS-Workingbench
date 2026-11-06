@@ -13,8 +13,10 @@ from tests.serialization import snapshot
 from aas_editor.application.changes import ModelChangeObserver
 from aas_editor.application.commands import CommandStack
 from aas_editor.application.operations.delete import DeletePlan
+from aas_editor.application.operations.delete import DeletePrompt
 from aas_editor.application.operations.delete import delete_commands
 from aas_editor.application.operations.delete import plan_delete
+from aas_editor.application.operations.delete import prompt_for
 from aas_editor.domain.references import ReferenceIndex
 
 
@@ -378,3 +380,28 @@ class TestListItems:
         )
 
         assert linked.list_link.value is None
+
+
+class TestPrompt:
+    def test_usages_are_always_shown(self) -> None:
+        linked = make_linked()
+        plan = plan_delete(linked.store, [linked.concept])
+
+        assert prompt_for(plan) is DeletePrompt.USAGES
+        assert prompt_for(plan, skip_confirmation=True) is DeletePrompt.USAGES
+
+    def test_a_destructive_delete_asks_unless_the_question_is_skipped(
+        self,
+    ) -> None:
+        linked = make_linked()
+        linked.shell.submodel.clear()
+        plan = plan_delete(linked.store, [linked.other])
+
+        assert prompt_for(plan) is DeletePrompt.CONFIRM
+        assert prompt_for(plan, skip_confirmation=True) is DeletePrompt.NONE
+
+    def test_a_plain_delete_asks_nothing(self) -> None:
+        linked = make_linked()
+        plan = plan_delete(linked.store, [linked.pointer])
+
+        assert prompt_for(plan) is DeletePrompt.NONE

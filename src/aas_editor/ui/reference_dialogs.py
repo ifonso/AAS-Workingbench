@@ -11,6 +11,7 @@ from collections.abc import Sequence
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QAbstractItemView
+from PyQt6.QtWidgets import QButtonGroup
 from PyQt6.QtWidgets import QDialog
 from PyQt6.QtWidgets import QDialogButtonBox
 from PyQt6.QtWidgets import QHeaderView
@@ -350,6 +351,10 @@ class DeleteDialog(QDialog):
         self.keep_button = QRadioButton(
             "Delete and leave the references. They point at nothing."
         )
+        # The group makes the two exclusive, whatever their parent is.
+        self._choices = QButtonGroup(self)
+        self._choices.addButton(self.remove_button)
+        self._choices.addButton(self.keep_button)
         self.remove_button.setChecked(True)
         self.remove_button.setEnabled(bool(plan.removals))
         if not plan.removals:
