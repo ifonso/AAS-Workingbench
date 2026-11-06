@@ -119,9 +119,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
 
         self.testEnginesToolDialogAct = QAction(
-            "AAS Test tool",
+            "AAS Test tool (V3.0)",
             self,
-            statusTip="Open AAS Test Engines tool",
+            statusTip="Open AAS Test Engines tool, which checks Metamodel V3.0",
             triggered=lambda: AasTestEnginesToolDialog(self).exec(),
         )
 
