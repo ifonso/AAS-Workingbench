@@ -603,8 +603,8 @@ def ask_concept_order(
     label, accepted = QInputDialog.getItem(
         parent,
         ORDER_TITLE,
-        "List the concept descriptions by (the view only, the file keeps no "
-        "order for them):",
+        "List the concept descriptions by (this changes the view only, and "
+        "Sort concept descriptions in the file... writes the order):",
         labels,
         orders.index(current),
         False,
