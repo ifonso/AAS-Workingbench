@@ -135,6 +135,10 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Tests for the output variables and the in/out variables of an Operation: a variable goes into the list it was added under only (F-EDT-04 AC18), for each of the three lists.
 - Tests that deleting the last specific asset id of a shell leaves no list in the file, and that the last asset id of a shell without a global asset id stays (F-EDT-02 AC13).
 - Three new themes in View, Choose Theme: Fluent light, Fluent dark, and Fluent, follow the system. They are made from one table of colors, so every pair of text and surface has at least 4.5 to 1 and every icon and input edge at least 3 to 1, and a test measures them all. The old themes stay for now.
+- A command palette on **Ctrl+K** (Navigate menu): one field over the actions of the menus, the context menu and the package tree, with their keys. A command that cannot run now is listed after the others with the reason when it is known, such as "Read mode is on", and the commands used last come first and are remembered between sessions. A name that is typed also finds the shells, submodels, concept descriptions and elements of the open packages, and picking one selects it in the tree. It is painted from the design tokens, so it follows the theme ([UI and UX plan](docs/planning/ui-ux-plan.md), phase I, U4).
+- The status bar counts the errors, the warnings and the hints of the current package, such as "1 error, 2 warnings" and "6 hints", and keeps the counts right while the Validation panel is hidden. A click on the errors and warnings opens the panel. The hints are counted apart, because the panel does not list them (phase J, U3). The rules now run while the panel is hidden, which reopens a point of ADR 0015: [ADR 0029](docs/software/adr/0029-validation-runs-while-the-panel-is-hidden.md) has the measurement on the largest bundled package, 55 ms for a run.
+- **F8** and **Shift+F8** (Navigate menu) go to the next and the previous error or warning of the current package, errors first, wrapping around. The element of the finding becomes the current row of the tree, the status bar says which finding it is, and the panel selects it when it is open. Hints are not part of the walk.
+- A click on the bar of hints above the attributes of a tab opens its first error or warning in the Validation panel, which clears a filter that hides it. A bar that has only hints does not link, and says so in its tooltip.
 
 ### Changed
 
@@ -196,6 +200,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - A preview that is dragged shut, or that did not fit a narrow tab, has a button "Show preview of the file" in the tab.
 - The attribute column of a tab keeps `embeddedDataSpecifications` and `supplementalSemanticId` whole, and the type column keeps `MultiLanguageNameType`, measured with the font of the tab. A narrow tab gives them a share of its width, so the value keeps room. The address line of a tab takes what the buttons leave, so they are no longer cut into a "..." menu in a window of the default size.
 - The hints bar shows two or more hints on one line that names their rules, with the sentences in a tooltip. One hint, errors and warnings keep their sentence. The findings are the same.
+- The bar of hints and the Validation panel say what a hint is. A hint that a hint rule gives the severity of a warning is now called "Hint" in the bar, and not "Warning", because the panel does not list it. The tooltip of the bar says that errors and warnings break the rules of the specification and hints are advice, the line for the rest no longer sends the user to the panel, and the panel has a line that hints are not listed in it, so that "No findings" next to a hint is no longer a riddle.
+- The columns of the Validation panel share the room that is left, so that the message stays in view in a narrow dock, and no header is cut.
+- The wait of the validation service after a change grows with the cost of the last run (at least five times as long, and at least 250 ms), so that a very large package does not make the window stop after every edit.
 
 ### Fixed
 

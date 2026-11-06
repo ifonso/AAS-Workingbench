@@ -34,6 +34,8 @@ check = save_check_for(report)
 `anchor` is `None` for a finding about the package, such as a file that nothing refers to.
 The dock lists them with severity, rule, location and message, filters by severity and by rule, and selects the `anchor` on a double click. `ValidationReport.of(findings)` sorts errors first and keeps the document order within a severity, but the order inside a severity follows an unordered set for shells, submodels, and descriptions.
 
+**Counts, F8 and hints (phase J):** the status bar counts the errors, warnings and hints of the current package while the dock is hidden ([ADR 0029](adr/0029-validation-runs-while-the-panel-is-hidden.md)). Errors and warnings are the findings of `ALL_RULES`, which the dock lists. A hint is a finding of `HINT_RULES`, whatever severity the rule gives it (eleven rules, five of them warnings), and the dock does not list it, so a package can show "No findings" in the dock and a hint in the bar of a tab. `application.validation.count_findings` and `is_listed` draw that line. F8 and Shift+F8 go through the errors and then the warnings of the report, and select the element of each in the tree.
+
 ### Severity and the save gate (D5)
 
 | Severity | Meaning | Gate |
