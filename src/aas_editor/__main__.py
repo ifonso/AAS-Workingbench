@@ -38,6 +38,10 @@ def main():
 
     register_blob_actions()
 
+    from aas_editor.ui.file_actions import register_file_actions
+
+    register_file_actions()
+
     from aas_editor.editorApp import EditorApp as CurrentApp
     from aas_editor.ui.reference_actions import register_reference_actions
 

@@ -61,6 +61,7 @@ import aas_editor.widgets.messsageBoxes
 from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import CommandStack, ReadOnlyError
 from aas_editor.application.editing import edit_mode
+from aas_editor.application.file_transfer import copy_source
 from aas_editor.domain.list_children import child_defaults
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.utils.util_type import getTypeName
@@ -271,6 +272,8 @@ class TreeClipboard:
     def clear(self):
         self.objects.clear()
         self.objStrings.clear()
+        # The files that the copied objects refer to are no longer wanted.
+        copy_source.forget()
 
     def append(self, obj, objRepr: str = None):
         self.objects.append(obj)
@@ -1106,9 +1109,20 @@ class TreeView(BasicTreeView):
         text2copy = index.data(Qt.ItemDataRole.DisplayRole)
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
+        self.rememberCopySource(index)
         clipboard = QApplication.clipboard()
         clipboard.setText(text2copy, QClipboard.Mode.Clipboard)
         self.pasteAct.setEnabled(self.canEdit() and self.isPasteOk(index))
+
+    @staticmethod
+    def rememberCopySource(index: QModelIndex):
+        """Remember the files of the package that was copied from.
+
+        Pasting into another package brings the files along.
+        """
+        package = index.data(PACKAGE_ROLE)
+        if package is not None:
+            copy_source.remember(package.fileStore)
 
     def onMultipleItemsCopy(self, indexes: List[QModelIndex]):
         # Get top level indexes
@@ -1127,6 +1141,8 @@ class TreeView(BasicTreeView):
         )
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
+        if top_same_level_indexes:
+            self.rememberCopySource(top_same_level_indexes[0])
         clipboard = QApplication.clipboard()
         clipboard.setText(
             self.treeClipboard.objStrings[-1], QClipboard.Mode.Clipboard

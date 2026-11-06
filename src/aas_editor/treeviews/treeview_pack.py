@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt6 import QtCore
-from PyQt6.QtCore import Qt, QModelIndex, QSettings, QPoint
+from PyQt6.QtCore import Qt, QModelIndex, QSettings, QPoint, pyqtSignal
 from PyQt6.QtGui import (
     QDropEvent,
     QDragEnterEvent,
@@ -102,7 +102,8 @@ from aas_editor.application.commands import ReadOnlyError
 from aas_editor.application.editing import edit_mode
 from aas_editor.treeviews.base import HeaderView, TreeView
 from aas_editor.ui.actions import ViewKind
-from aas_editor.ui.file_controller import prepare_file_delete
+from aas_editor.application.file_transfer import copy_source
+from aas_editor.ui.file_controller import FileController, prepare_file_delete
 from aas_editor.ui.save_warnings import (
     confirm_save,
     show_missing_files,
@@ -226,9 +227,12 @@ class PackTreeView(TreeView):
     EMPTY_VIEW_MSG = "Drop AAS files here"
     EMPTY_VIEW_ICON = OPEN_DRAG_ICON
     viewKind = ViewKind.PACKAGES
+    # A dialog asked to show the files of a package.
+    packageFilesRequested = pyqtSignal(object)
 
     def __init__(self, parent=None, **kwargs):
         self.copyBufferObjStores = dict()
+        self.copyBufferFiles = dict()
         self.scanFolderForExistFiles()
         super(PackTreeView, self).__init__(
             parent,
@@ -266,7 +270,13 @@ class PackTreeView(TreeView):
                 elif fileType == ".aasx":
                     # Failsafe, as before. The tolerant reader also closes
                     # the file and opens templates with missing files.
-                    objStore = read_package(smFile, failsafe=True).objects
+                    parts = read_package(smFile, failsafe=True)
+                    objStore = parts.objects
+                    # The files of the template come along with a submodel
+                    # that is copied from it.
+                    self.copyBufferFiles[
+                        smFile.relative_to(sm_templates_path)
+                    ] = parts.files
                 else:
                     raise TypeError("Wrong file type:", smFile.suffix)
                 # Save path to the file relative to the submodel folder
@@ -465,6 +475,7 @@ class PackTreeView(TreeView):
                         triggered=lambda: self.onAddExistingSubmodelPushed(),
                     )
                     existSubmodelAct.setData(obj)
+                    existSubmodelAct.setProperty("copyBufferKey", str(file))
                     copyExistSubmodelActs.append(existSubmodelAct)
             existSubmodelCopyActsFromFiles[file] = copyExistSubmodelActs
         return existSubmodelCopyActsFromFiles
@@ -473,11 +484,23 @@ class PackTreeView(TreeView):
         action = self.sender()
         if action:
             submodel = copy.deepcopy(action.data())
-            self.pasteSubmodel(submodel)
+            key = action.property("copyBufferKey")
+            files = next(
+                (
+                    store
+                    for file, store in self.copyBufferFiles.items()
+                    if str(file) == key
+                ),
+                None,
+            )
+            self.pasteSubmodel(submodel, files)
 
-    def pasteSubmodel(self, submodel: Submodel):
+    def pasteSubmodel(self, submodel: Submodel, files=None):
+        """Paste a submodel. The files it refers to are in ``files``."""
         self.treeClipboard.clear()
         self.treeClipboard.append(submodel)
+        if files is not None:
+            copy_source.remember(files)
         self.onPaste()
 
     def onEditCreate(self, objVal=None, index=QModelIndex()) -> bool:
@@ -831,16 +854,11 @@ class PackTreeView(TreeView):
                 return
 
     def addFileWithDialog(self, parent: QModelIndex):
-        opened = False
-        file = ""
-        while not opened:
-            file, _ = QFileDialog.getOpenFileName(self, "Add file", file)
-            if file:
-                storedFile = StoredFile(filePath=file)
-                opened = self._setItemData(parent, storedFile, ADD_ITEM_ROLE)
-            else:
-                # cancel pressed
-                return
+        # The name is checked, a taken name is never overwritten, and the add
+        # is one undoable step.
+        package = parent.data(PACKAGE_ROLE)
+        if package is not None:
+            FileController(package, self).add_from_disk()
 
     def openPack(self, file: str) -> Optional[Package]:
         try:
@@ -925,10 +943,16 @@ class PackTreeView(TreeView):
                 target,
                 pack.save_options(),
                 write_package,
-                lambda check: confirm_save(check, self),
+                lambda check: confirm_save(
+                    check, self, lambda: self.packageFilesRequested.emit(pack)
+                ),
             )
             if outcome.status is SaveStatus.REFUSED:
-                show_save_refused(outcome.check, self)
+                show_save_refused(
+                    outcome.check,
+                    self,
+                    lambda: FileController(pack, self).repair_dangling(),
+                )
                 return False
             if outcome.status is SaveStatus.CANCELLED:
                 return False
