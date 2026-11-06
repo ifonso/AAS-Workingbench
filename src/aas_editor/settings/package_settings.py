@@ -37,6 +37,15 @@ CLASSES_INFO[Package] = {
         "fileStore",
         "commandStack",
         "recoveryWritten",
+        # The program's own state, which the tab of a package showed as a
+        # list of Python objects and flags.
+        "changeMarks",
+        "objStore",
+        "saveGate",
+        "sortKeysInJson",
+        "writeJsonInAasx",
+        "writePrettyJson",
+        "sourceFile",
     ),
     ADD_ACT_AAS_TXT: "Add package",
     ADD_TYPE: Package,
