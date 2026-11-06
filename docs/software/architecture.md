@@ -75,6 +75,13 @@ These modules exist today. Each layer is created by the first work package that 
 | `infrastructure/package_io.py` | Reads and writes AASX, JSON and XML through BaSyx. A write goes to a temporary file with `failsafe=False` and replaces the target in one step. It does not import `Package`. |
 | `ui/save_warnings.py` | The dialogs for blockers, warnings, and missing files. They show decisions that `application/save.py` made. |
 | `ui/actions.py` | The registry where features add actions to the context menus and the toolbar (see [Registering an action](#registering-an-action)). |
+| `domain/value_types.py` | Parses, formats, and checks text for each of the 31 XSD value types, using `from_xsd` and `xsd_repr` of the SDK and the checks it lacks. Also converts a value through its text, and checks the limits of a Range. |
+| `domain/typed_values.py` | The rules for the attributes that follow a `value_type` (Property, Range, Qualifier, Extension): text becomes a value, a Range keeps min at or below max, and a change of the type plans the converted values or refuses. Also recognizes the type hints of values and value types. |
+| `domain/language_tags.py` | Checks that a language tag is well-formed BCP 47, with the reason when it is not. Standard library only, and the same syntax as the SDK. |
+| `domain/blob_content.py` | Shows the bytes of a Blob as text or as hex, and reads them back. Keeps Windows line breaks. |
+| `domain/list_children.py` | What a new child of a SubmodelElementList gets from the list: its type, value type, and semantic id. |
+| `ui/value_editor.py` | `ValueTypeBox`, `ValueLineEdit`, `ValueEdit`, `BinaryEdit`, and `ValueEditDialog`. They only show the rules of the domain modules (see [Entering values](#entering-values)). |
+| `ui/blob_actions.py` | The context menu actions that load and save the bytes of a Blob. Registered by `__main__.py` with `register_blob_actions`. |
 
 ### How saving works
 
@@ -125,7 +132,7 @@ infrastructure ──────┘
 | `application/changes.py` | Application | `Change` (added, removed, moved, changed), `ModelChangeObserver`, and `observer_for(package)`. |
 | `domain/containers.py` | Domain | Adding, removing, and replacing members of the containers of BaSyx objects (namespace sets, lists, sets, and mappings), and telling the position, so that a command can put a member back. |
 | `application/commands.py` | Application | `Command`, `CommandGroup`, and `CommandStack` with undo, redo, atomic groups, a saved-state marker, and the read gate. |
-| `application/edits.py` | Application | The commands of the editor: `SetAttribute`, `AddMember`, `RemoveMember`, `ReplaceMember`, `AddSupplementaryFile`, and `link_submodels`. |
+| `application/edits.py` | Application | The commands of the editor: `SetAttribute`, `SetValueType`, `AddMember`, `RemoveMember`, `ReplaceMember`, `AddSupplementaryFile`, and `link_submodels`. |
 | `application/editing.py` | Application | `EditMode`, the global switch between Edit and Read mode (D18). |
 | `application/listeners.py` | Application | The callback list behind all of them. It holds bound methods weakly. |
 
@@ -161,6 +168,17 @@ infrastructure ──────┘
   The views also disable the editing actions, and the models drop `ItemIsEditable`, so nothing can be edited inline.
 - A tab closes when the object it shows is no longer part of its package, and also when its package is closed.
   The last tab of the main window is emptied instead.
+
+### Entering values
+
+[ADR 0008](adr/0008-values-follow-their-type.md) records the decisions.
+
+- **One place parses text.** `StandardTable.attributeCommand` is where the models turn an edit of an attribute into a command. For a Property, Range, Qualifier, or Extension it calls `typed_values.prepare_edit`, so text is parsed for the `value_type` of the object, and a change of the `value_type` becomes a `SetValueType` command that converts the values with it. A refusal is an `InvalidValueError` with a message for the user. `setData` shows the message as it is, without a traceback, like those of `ReadOnlyError` and `AASConstraintViolation` (the tuple `REFUSALS`).
+- **The editors pass text.** A cell of a value uses `ValueLineEdit` (the delegate asks the model for the object and attribute of the cell with `EDIT_TARGET_ROLE`). The Edit/Create action of a value or of the bytes of a Blob opens a `ValueEditDialog`, chosen by `value_dialog_args`. The generated forms get `TypedValueInputWidget` for a hint of `ValueDataType`, and `ValueTypeInputWidget` for `DataTypeDefXsd`, from `InputWidgetUtil`. `ObjGroupBox.linkValueWidgets` connects the value widget to the widget of the type, or to a type that the form hides.
+- **Bytes.** `BytesEdit` is the `BinaryEdit` with the interface of the generated forms. It replaced the editor of Python literals. It suggests the media type of a loaded file to the `content_type` widget of the form.
+- **Languages.** The model checks a language entry before it replaces one (`StandardTable._checkedMember`), and `LangStringSetGroupBox` checks all entries of a form.
+- **Children of a list.** `TreeView._applyListChildDefaults` is the one place where the add dialog of a SubmodelElementList is given the type, the value type, and the semantic id of the list, with `domain.list_children.child_defaults`.
+- **Testing the forms.** `tests/medium/forms.py` drives the generated dialogs by parameter name and stands in for `exec`, so that tests make elements through the real dialogs. The parametrized test in `tests/medium/test_element_types.py` compares the form and the attribute list of each of the 14 element types with the constructor of the class, so that an attribute that a new SDK adds fails it.
 
 ### Registering an action
 

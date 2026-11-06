@@ -27,6 +27,16 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - An Edit mode and a Read mode in the View menu. Edit mode is the default. In Read mode every change, including undo and redo, is refused with a message, the editing actions are disabled, and nothing can be edited in a cell.
 - A registry for actions in `aas_editor.ui.actions`, so that features add actions to the context menus and the toolbar without changing the tree views. See the [architecture guide](docs/software/architecture.md#registering-an-action).
 - A tab whose object was deleted, in another tab or by undo, now closes, and so does a tab of a closed package.
+- Values follow their value type. Typing `12` into an `xs:int` Property gives an `xs:int`, and `abc` is refused with a message such as "'abc' is not a valid xs:int: it must be a whole number such as 12 or -3". This holds in cells, in the dialog for one value, and in the add and edit forms, for Property, Range, Qualifier, and Extension. All 31 XSD types work, including dates, durations, and integers beyond 64 bits. The text is checked as you type.
+- The value type is chosen from a list of `xs:` names. Before, the form listed Python classes.
+- A Range refuses a minimum above its maximum, in cells and in dialogs.
+- Changing the value type converts the value through its text in one undo step, such as `"12"` as `xs:string` to the `xs:int` 12. If the value does not fit, the change is refused and nothing changes. A Property in a list that fixes the value type cannot leave it.
+- A Blob editor that shows the content as text when it is UTF-8 text, and as hex otherwise, with loading from a file, saving to a file, and the media type of a loaded file. The bytes stay exactly as they were until you edit them, and a Windows text keeps its line breaks. Content above 1 MiB is not shown, and can still be saved and replaced. Typing a Python literal such as `b'text'` is no longer needed.
+- The context menu of a Blob has "Load Blob content from file..." and "Save Blob content to file...". Saving also works in Read mode.
+- Language tags of display names, descriptions, and MultiLanguageProperty values are checked for BCP 47. A malformed tag, an empty text, or a language used twice is refused with the reason, such as "use a hyphen, not an underscore, as in en-US". The list of languages offers 13 codes instead of 5.
+- Adding to a SubmodelElementList opens a dialog for the type of the list, with the value type of the list fixed and the semantic id of the list filled in. Before, any type could be chosen, and the SDK refused the wrong ones afterwards.
+- The form of a new SubmodelElementList offers only element types that can be made, and shows `order_relevant` ticked, as the SDK default is true.
+- Every attribute of the 14 submodel element types can be reached in the form and in the tab, including `direction`, `state`, `messageTopic`, `messageBroker`, `lastUpdate`, `minInterval`, and `maxInterval` of a BasicEventElement, which the original editor lacks.
 
 ### Changed
 
@@ -58,6 +68,16 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Entering the text "None" in an attribute set it to nothing. The text is now kept, and a real clear still works with Delete.
 - A value that did not fit a Property, such as text for an integer, silently changed its `value_type`. The edit is now refused with an error.
 - Clearing a mandatory attribute, such as `asset_information` of a shell, left an invalid object or crashed the application. It is now refused with an error.
+- Typing a value into a Property that had none, or into a date or a number beyond 32 bits, failed or was refused. The cell editor limited whole numbers to 32 bits.
+- Deleting a supplemental semantic id failed with "Unknown parent object type", and the semantic id stays untouched, which the original editor got wrong. Deleting a selected row in a tab deleted once for each cell of the row, so it could delete the next entries too.
+- Editing the minimum or maximum interval of a BasicEventElement in a dialog raised an error.
+- Editing a language entry to a language that another entry has failed with a traceback. It is refused with a message.
+- The type of the children of a list could be chosen from classes that cannot be made.
+
+### Known limits
+
+- The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
+- A string with line breaks is shown in a value line but cannot be typed there.
 - The Blob editor ran the entered text as Python code. It now accepts only a bytes literal such as `b'text'`.
 - A failure while saving, such as an unwritable folder, closed the application. It now shows an error.
 - The AAS Test tool could not check an AASX file, because it opened the file as text. It now opens files in binary mode.

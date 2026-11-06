@@ -97,9 +97,9 @@ Treat `Partial` as "something exists", and confirm the details when starting eac
 | F-EDT-01 | Editor framework | P0 | Partial | Generic editors generated from type hints |
 | F-EDT-02 | Environment, AAS, AssetInformation | P0 | Partial | Through the generic editors |
 | F-EDT-03 | Submodel and SubmodelRef | P0 | Partial | Through the generic editors |
-| F-EDT-04 | SubmodelElements | P0 | Partial | Through the generic editors |
+| F-EDT-04 | SubmodelElements | P0 | Partial | All 14 types are made, edited, undone, saved, and reloaded in a test. Values follow `valueType` (31 XSD types), a Range checks min and max, a Blob has a text and hex editor with file load and save, a list asks for its type first, and every attribute of BasicEventElement is editable. Later work packages: Refactor (WP8b), move (WP6), ConceptDescription buttons (WP10). |
 | F-EDT-05 | ConceptDescription and IEC 61360 | P0 | Partial | Through the generic editors |
-| F-EDT-06 | Common attribute modules | P0 | Partial | Through the generic editors |
+| F-EDT-06 | Common attribute modules | P0 | Partial | Through the generic editors. Language tags are checked (BCP 47), and deleting a supplemental semantic id leaves the semantic id alone. Hints, Fix, Sync, and Generate belong to later work packages (WP4, WP5b). |
 | F-EDT-07 | Qualifiers and Extensions | P1 | Partial | Through the generic editors |
 | F-EDT-08 | Copy, paste, and reorder | P0 | Partial | Copy, cut, paste, and undo, with one history for each package. Cut removes the source from every kind of parent. Reorder not confirmed. |
 | F-EDT-09 | Multi-element editing | P1 | Partial | Multi-select with bulk cut, copy, and delete |
