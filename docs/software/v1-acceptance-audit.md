@@ -76,7 +76,7 @@ The defects, with the test that failed first:
 | Part 2 | F-EDT-01 AC8: after a delete the tree selected the parent, not the previous sibling. | The sibling above, or the parent for the first row. |
 | Part 2 | F-EDT-01 AC14: a hint rule that raised reached only the Validation dock, and not the tab where the hints are. | The bar lists the failure with every object. |
 | Part 2 | F-EDT-11 AC7: undo of an edit of the supplemental semantic ids left the new reference in, because the SDK refills that list in place. | `SetAttribute` keeps a copy of such a list. |
-| Part 2, not fixed | A File or Blob made without a content type is written without one, and no rule reports it, but V3.1 requires `contentType`. The SDK refuses `""`, so the editor cannot start with the value of the table. | Open: a rule, or a required field in the dialog. |
+| Part 2, checked and no defect | A File or Blob made without a content type is written without one. This is valid: `contentType` is optional for both in Part 1 V3.1.2 (`0..1`), and `AasCore.Aas3_1` has it nullable. |
 
 One item was not a defect.
 A shell with no `idShort` (the Bill of Materials report) is read, shown by its type name, saved and read again (`test_objects_without_id_short.py`): the report counts `idShort` entries, and such a shell has none, so it is not lost.

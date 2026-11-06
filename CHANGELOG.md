@@ -294,7 +294,6 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - A concept description cannot have a data specification of another kind, because the SDK has only the IEC 61360 content. An element's idShort is never empty in a submodel (AASd-117), so the original's "take the idShort from the description" has no case. The SDK cannot hold a blank qualifier, extension or data specification record, so no preset has one to replace.
 - SAMM descriptions are recognized (identification first, no hint for a missing data specification, the structured order), and not modeled: the elements are edited as the extension that holds them. Concept descriptions from ECLASS are not done.
 - The embedded display of a concept description in the tab of an element is read-only. Edit the description in its own tab, which the button of the display opens.
-- A File or a Blob that is made without a content type has none, and is saved without one. V3.1 requires it, the SDK refuses an empty text for it, and no rule reports the missing value.
 - The keys of the shortcuts are not pressed in a test, because the offscreen platform has no active window and Qt then sends no shortcut. Each gesture is checked to belong to one action of the view.
 
 ## 0.4.13 - 2026-08-28
