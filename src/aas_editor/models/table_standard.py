@@ -47,6 +47,7 @@ from aas_editor.application.edits import (
 from aas_editor.application.listeners import Subscription
 from aas_editor.domain.containers import is_list_like
 from aas_editor.domain.language_tags import check_language_tag
+from aas_editor.domain.list_settings import fixed_attribute_hint
 from aas_editor.domain.typed_values import (
     is_value_attr,
     is_value_type_attr,
@@ -702,7 +703,7 @@ class StandardTable(QAbstractItemModel):
             # children of a SubmodelElementList.
             raise InvalidValueError(
                 f"'{name}' cannot be changed after the "
-                f"{type(owner).__name__} is made. Make a new one"
+                f"{type(owner).__name__} is made. {fixed_attribute_hint(owner)}"
             )
         observer = self._observerFor(index)
         if is_value_type_attr(owner, name):

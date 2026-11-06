@@ -98,6 +98,24 @@ class ListSettings:
         )
 
 
+def fixed_attribute_hint(owner: object) -> str:
+    """Tells the user what to do about an attribute the SDK fixes.
+
+    Args:
+        owner: The object whose attribute cannot be set.
+
+    Returns:
+        A sentence for a list, which has an action to rebuild it, and for
+        every other object the advice to make a new one.
+    """
+    if isinstance(owner, model.SubmodelElementList):
+        return (
+            "Choose 'Change list settings...' in the context menu of the "
+            "list to rebuild it"
+        )
+    return "Make a new one"
+
+
 def settings_of(item_list: "model.SubmodelElementList[Any]") -> ListSettings:
     """Reads what a list fixes."""
     return ListSettings(
@@ -350,6 +368,7 @@ __all__ = [
     "build_list",
     "derive_settings",
     "detect_settings",
+    "fixed_attribute_hint",
     "plan_list_rebuild",
     "settings_of",
 ]

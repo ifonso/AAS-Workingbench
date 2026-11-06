@@ -152,11 +152,33 @@ class ReplaceElement(Command):
         self._observer.notify(Change.changed(self._container))
 
 
+class ReplacementStep(CommandGroup):
+    """The swap of an element and the updates of its references, as one step."""
+
+    def __init__(
+        self, description: str, commands: list[Command], swap: ReplaceElement
+    ) -> None:
+        """Creates the step from commands that include the swap.
+
+        Args:
+            description: Text for Undo and Redo.
+            commands: The commands in the order to apply them.
+            swap: The command in `commands` that swaps the element.
+        """
+        super().__init__(description, commands)
+        self._swap = swap
+
+    @property
+    def new(self) -> model.SubmodelElement | None:
+        """The new element, once the step was applied."""
+        return self._swap.new
+
+
 def replacement_command(
     observer: ModelChangeObserver,
     plan: ReplacementPlan,
     updates: ReferenceUpdates,
-) -> Command:
+) -> ReplacementStep:
     """Builds the one step that swaps the element and updates the references.
 
     The references change first, so that the copies of the items carry the new
@@ -176,11 +198,9 @@ def replacement_command(
     sets = ordering.namespace_sets_of(plan.source)
     if not sets:
         raise KeyError(f"{plan.source!r} is not held by any container")
-    commands = [
-        *reference_commands(observer, updates.changes),
-        ReplaceElement(observer, sets[0], plan),
-    ]
-    return CommandGroup(plan.description, commands)
+    swap = ReplaceElement(observer, sets[0], plan)
+    commands = [*reference_commands(observer, updates.changes), swap]
+    return ReplacementStep(plan.description, commands, swap)
 
 
 class _Rewriter:
