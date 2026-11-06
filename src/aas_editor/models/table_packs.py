@@ -10,13 +10,17 @@
 
 from typing import Any, Union, Iterable
 
-from basyx.aas.model import NamespaceSet
 from PyQt6.QtCore import QModelIndex, Qt
 from PyQt6.QtGui import QFont
 
-from aas_editor.domain import ordering
+from aas_editor.application.commands import Command
+from aas_editor.application.edits import (
+    AddMember,
+    AddSupplementaryFile,
+    SetAttribute,
+)
 from aas_editor.models import StandardTable, PackTreeViewItem
-from aas_editor.package import Package
+from aas_editor.package import Package, StoredFile
 from aas_editor.settings.app_settings import (
     PACKAGE_ROLE,
     DEFAULT_FONT,
@@ -72,54 +76,74 @@ class PacksTable(StandardTable):
             self.watchPackage(obj)
         return itemIndex
 
-    def editItem(self, index: QModelIndex, value):
+    def editCommand(self, index: QModelIndex, value) -> Command | None:
         if index.data(COLUMN_NAME_ROLE) not in DEFAULT_COLUMNS_IN_PACKS_TABLE:
-            parentObj = index.data(OBJECT_ROLE)
-            objName = index.data(COLUMN_NAME_ROLE)
+            owner = index.data(OBJECT_ROLE)
+            attribute = index.data(COLUMN_NAME_ROLE)
             try:
                 typehint = getAttrTypeHint(
-                    type(parentObj), objName, delOptional=False
+                    type(owner), attribute, delOptional=False
                 )
             except KeyError:
                 typehint = None
-            self._checkClearable(objName, typehint, value)
-            oldValue = getattr(parentObj, objName)
-            self._setAttribute(parentObj, objName, value)
-            return value, oldValue
-        else:
-            return super().editItem(index, value)
+            self._checkClearable(attribute, typehint, value)
+            command = SetAttribute(
+                self._observerFor(index), owner, attribute, value, origin=self
+            )
+            return None if command.is_noop else command
+        return super().editCommand(index, value)
 
     def _changedObject(self, index: QModelIndex):
         if index.data(COLUMN_NAME_ROLE) not in DEFAULT_COLUMNS_IN_PACKS_TABLE:
             return index.data(OBJECT_ROLE)
         return super()._changedObject(index)
 
-    def _addItemObjToParentObj(
+    def _addCommand(
         self,
         obj: Union[Package, "SubmodelElement", Iterable],
         parent: QModelIndex,
         row: int = None,
-    ):
+    ) -> Command | None:
         parentObj = parent.data(OBJECT_ROLE)
         parentObjCls = type(parentObj)
         parentName = parent.data(NAME_ROLE)
         if isinstance(obj, Package):
             return None
         elif parentName in ClassesInfo.packViewAttrs(Package):
-            package: Package = parent.data(PACKAGE_ROLE)
-            package.add(obj)
-            return package.objStore
+            return self._addToPackageCommand(parent, obj)
         elif ClassesInfo.changedParentObject(parentObjCls):  # FIXME: Refactor
-            parentObj = getattr(
+            container = getattr(
                 parentObj, ClassesInfo.changedParentObject(parentObjCls)
             )
-            if isinstance(parentObj, NamespaceSet) and row is not None:
-                ordering.insert_at(parentObj, obj, row)
-            else:
-                parentObj.add(obj)
-            return parentObj
+            return AddMember(self._observerFor(parent), container, obj, row)
         else:
-            return super()._addItemObjToParentObj(obj, parent, row)
+            return super()._addCommand(obj, parent, row)
+
+    def _addToPackageCommand(self, parent: QModelIndex, obj) -> Command:
+        """Return the command that adds an object or a file to the package"""
+        package: Package = parent.data(PACKAGE_ROLE)
+        observer = self._observerFor(parent)
+        if not isinstance(obj, StoredFile):
+            return AddMember(observer, package.objStore, obj)
+        store = package.fileStore
+        state = obj.storeState()
+
+        def follow(name: str | None):
+            # The object that the tree shows is the one the user passed in.
+            if name is None:
+                obj.setFileStore(*state)
+            else:
+                obj.setFileStore(name, store)
+
+        return AddSupplementaryFile(
+            observer,
+            store,
+            obj.name,
+            obj.value,
+            obj.mime_type,
+            obj,
+            follow,
+        )
 
     def _getKwargsForItemInit(
         self, obj: Union[Package, "SubmodelElement", Iterable], parent

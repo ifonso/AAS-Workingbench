@@ -34,6 +34,7 @@ from PyQt6.QtCore import (
     qDebug,
     qCritical,
     QAbstractItemModel,
+    QTimer,
 )
 from PyQt6.QtGui import (
     QPixmap,
@@ -65,6 +66,9 @@ from PyQt6.QtWidgets import (
     QStyledItemDelegate,
 )
 
+from basyx.aas.model import Identifiable, Referable
+
+from aas_editor.application.changes import Change, ChangeKind, observer_for
 from aas_editor.settings.app_settings import *
 from aas_editor.settings.icons import (
     FORWARD_ICON,
@@ -371,6 +375,24 @@ class TabBar(QTabBar):
         self.menu.exec(self.mapToGlobal(point))
 
 
+def isAttachedTo(obj, package) -> bool:
+    """Tell whether an object that a tab shows is still part of the package.
+
+    An element is part of it when the chain of its parents ends at an
+    Identifiable that the package holds. Things that are not AAS objects of a
+    package, like the stores, count as part of it.
+    """
+    top = obj
+    while getattr(top, "parent", None) is not None:
+        top = top.parent
+    if isinstance(top, Identifiable):
+        try:
+            return package.objStore.get_item(top.id) is top
+        except KeyError:
+            return False
+    return not isinstance(top, Referable)
+
+
 class TabWithTreeView(QWidget):
     currItemChanged = pyqtSignal(["QModelIndex"])
 
@@ -384,6 +406,10 @@ class TabWithTreeView(QWidget):
         super(TabWithTreeView, self).__init__(parent)
         self.tabWidget = parent
         self.icon = QIcon()
+        # The package of the shown object, and the follow-up of its changes
+        self.package = None
+        self._changeSubscription = None
+        self._staleCheckPending = False
         self.initActions()
 
         self.pathToolBar = ToolBar(self)
@@ -558,6 +584,7 @@ class TabWithTreeView(QWidget):
         self.packItem = QPersistentModelIndex(packItem.siblingAtColumn(0))
 
         self.packItemObj = self.packItem.data(OBJECT_ROLE)
+        self._followPackage(self.packItem.data(PACKAGE_ROLE))
         self.updateMediaWidget()
         self.pathLine.setText(getTreeItemPath(self.packItem))
         self.objTypeLine.setText(getTypeName(type(self.packItemObj)))
@@ -577,6 +604,45 @@ class TabWithTreeView(QWidget):
         ) if self.prevItems else self.backAct.setDisabled(True)
         if state:
             self.attrsTreeView.header().restoreState(state)
+
+    def _followPackage(self, package):
+        """Learn about the removal of the object that the tab shows"""
+        if package is self.package:
+            return
+        if self._changeSubscription is not None:
+            self._changeSubscription.cancel()
+            self._changeSubscription = None
+        self.package = package
+        if package is not None:
+            self._changeSubscription = observer_for(package).subscribe(
+                self.onModelChange
+            )
+
+    def onModelChange(self, change: Change):
+        if change.kind in (ChangeKind.REMOVED, ChangeKind.CHANGED):
+            try:
+                self._scheduleStaleCheck()
+            except RuntimeError:
+                # The tab was deleted, and the subscription outlived it.
+                pass
+
+    def _scheduleStaleCheck(self):
+        # The change is still being made, and other models still have to
+        # follow it. The tab closes afterwards.
+        if not self._staleCheckPending:
+            self._staleCheckPending = True
+            QTimer.singleShot(0, self.closeIfStale)
+
+    def isStale(self) -> bool:
+        """Whether the object of the tab was deleted from its package"""
+        if self.package is None or self.packItemObj is None:
+            return False
+        return not isAttachedTo(self.packItemObj, self.package)
+
+    def closeIfStale(self):
+        self._staleCheckPending = False
+        if self.isStale() and self.tabWidget is not None:
+            self.tabWidget.closeStaleTab(self)
 
     def updateMediaWidget(self):
         if self.packItem.data(IS_MEDIA_ROLE):
@@ -828,10 +894,20 @@ class TabWidget(QTabWidget):
         if not self.unclosable and not self.count():
             self.deleteLater()
 
-    def removePackTab(self, packItem: QModelIndex):
+    def closeStaleTab(self, tab: "TabWithTreeView"):
+        """Close a tab whose object is gone, or empty the last tab"""
+        index = self.indexOf(tab)
+        if index < 0:
+            return
+        if self.unclosable and self.count() == 1:
+            tab.openEmptyItem()
+        else:
+            self.removeTab(index)
+
+    def removeTabsOfClosedPackages(self, openedPackages):
+        """Close the tabs that show objects of a package that is not open"""
         for tabIndex in range(self.count() - 1, -1, -1):
-            tab: TabWithTreeView = self.widget(tabIndex)
-            if QModelIndex(tab.packItem).siblingAtColumn(
-                0
-            ) == packItem.siblingAtColumn(0):
-                self.removeTab(tabIndex)
+            tab = self.widget(tabIndex)
+            package = getattr(tab, "package", None)
+            if package is not None and package not in openedPackages:
+                self.closeStaleTab(tab)

@@ -11,8 +11,9 @@
 import copy
 import logging
 import traceback
-from collections import namedtuple, deque
 from typing import Any, Callable, Iterable, Union, AbstractSet, List
+
+from collections.abc import MutableMapping
 
 from basyx.aas.model import NamespaceSet, Referable
 from PyQt6.QtCore import (
@@ -23,12 +24,20 @@ from PyQt6.QtCore import (
     QItemSelection,
     QSize,
     QPersistentModelIndex,
+    pyqtSignal,
 )
 from PyQt6.QtGui import QFont
 
 from aas_editor.application.changes import Change, ChangeKind, observer_for
+from aas_editor.application.commands import Command, ReadOnlyError
+from aas_editor.application.editing import edit_mode
+from aas_editor.application.edits import (
+    AddMember,
+    RemoveMember,
+    ReplaceMember,
+    SetAttribute,
+)
 from aas_editor.application.listeners import Subscription
-from aas_editor.domain import ordering
 from aas_editor.models import StandardItem
 from aas_editor.package import Package
 from aas_editor.settings.app_settings import (
@@ -46,9 +55,6 @@ from aas_editor.settings.app_settings import (
     TYPE_COLUMN,
     TYPE_CHECK_ROLE,
     TYPE_ROLE,
-    UNDO_ROLE,
-    REDO_ROLE,
-    MAX_UNDOS,
     UPDATE_ROLE,
     TYPE_HINT_COLUMN,
     COLUMN_NAME_ROLE,
@@ -63,21 +69,21 @@ from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import getArgs, isIterable
 
-SetDataItem = namedtuple("SetDataItem", ("index", "value", "role"))
-
 
 class StandardTable(QAbstractItemModel):
     currFont = QFont(DEFAULT_FONT)
+
+    # The undo history or the saved state of a package that the model shows
+    # changed, so views refresh their actions and the modified flag.
+    historyChanged = pyqtSignal()
 
     def __init__(self, columns=("Item",), rootItem: StandardItem = None):
         super(StandardTable, self).__init__()
         self._rootItem = rootItem
         self._columns = columns
         self.lastErrorMsg = ""
-        self.undo: deque[SetDataItem] = deque(maxlen=MAX_UNDOS)
-        self.redo: List[SetDataItem] = []
         self.changedItems: List[QModelIndex] = []
-        self._changeSubscriptions: dict[int, Subscription] = {}
+        self._changeSubscriptions: dict[int, tuple[Subscription, ...]] = {}
 
     def index(
         self, row: int, column: int = 0, parent: QModelIndex = QModelIndex()
@@ -132,11 +138,11 @@ class StandardTable(QAbstractItemModel):
         if index.column() in (TYPE_COLUMN, TYPE_HINT_COLUMN):
             return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
-        return (
-            Qt.ItemFlag.ItemIsEditable
-            | Qt.ItemFlag.ItemIsEnabled
-            | Qt.ItemFlag.ItemIsSelectable
-        )
+        flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+        # Read mode (D18): nothing is edited, not even inline.
+        if edit_mode().is_editing:
+            flags |= Qt.ItemFlag.ItemIsEditable
+        return flags
 
     def hasChildren(self, parent: QModelIndex = ...) -> bool:
         return True if self.rowCount(parent) else False
@@ -222,14 +228,20 @@ class StandardTable(QAbstractItemModel):
     ):
         """Add obj to the parent object and show it as a row of the parent.
 
+        An AAS object is added by a command, so that the add can be undone and
+        every model that shows the parent follows it. Opening a package is no
+        edit and has no command.
+
         :param row: position among the siblings, None appends
+        :return: the index of the new row, invalid if it is not shown
         """
         parent = parent.siblingAtColumn(0)
-        container = self._addItemObjToParentObj(obj, parent, row)
-        itemInitKwargs = self._getKwargsForItemInit(obj, parent)
-        itemIndex = self._addItem(parent, itemInitKwargs, row)
-        self._publishAdded(parent, container, obj)
-        return itemIndex
+        command = self._addCommand(obj, parent, row)
+        if command is None:
+            itemInitKwargs = self._getKwargsForItemInit(obj, parent)
+            return self._addItem(parent, itemInitKwargs, row)
+        self._run(parent, command)
+        return self._indexShowing(parent, obj)
 
     def _getKwargsForItemInit(
         self, obj: Union[Package, "SubmodelElement", Iterable], parent
@@ -241,49 +253,68 @@ class StandardTable(QAbstractItemModel):
         }
         return kwargs
 
-    def _addItemObjToParentObj(
+    def _addCommand(
         self,
         obj: Union[Package, "SubmodelElement", Iterable],
         parent: QModelIndex,
         row: int = None,
-    ):
-        """Add obj to the object of the parent item.
+    ) -> Command | None:
+        """Return the command that adds obj to the object of the parent item.
 
         :param row: position in the parent object, None appends
-        :return: the container that obj was added to
+        :return: the command, or None if obj is no AAS object to add, like a
+            package that is opened
+        :raise AttributeError: if the object of the parent cannot take obj
         """
         parentObj = parent.data(OBJECT_ROLE)
-        if isinstance(parentObj, NamespaceSet) and row is not None:
-            ordering.insert_at(parentObj, obj, row)
-        elif isinstance(parentObj, AbstractSet):
-            parentObj.add(obj)
-        elif isinstance(parentObj, list):
-            if row is None:
-                parentObj.append(obj)
-            else:
-                parentObj.insert(row, obj)
-        elif isinstance(parentObj, dict):
-            parentObj[obj.key] = obj.value
-        else:
-            raise AttributeError(
-                f"Object couldn't be added: parent obj type is not appendable: {type(parentObj)}"
-            )
-        return parentObj
+        if isinstance(parentObj, MutableMapping):
+            return self._addEntryCommand(parent, parentObj, obj)
+        if isinstance(parentObj, (AbstractSet, list)):
+            return AddMember(self._observerFor(parent), parentObj, obj, row)
+        raise AttributeError(
+            f"Object couldn't be added: parent obj type is not appendable: {type(parentObj)}"
+        )
+
+    def _addEntryCommand(
+        self, parent: QModelIndex, mapping: MutableMapping, entry: DictItem
+    ) -> Command:
+        observer = self._observerFor(parent)
+        if entry.key in mapping:
+            # The entry replaces the one with the same key, as it always did.
+            old = DictItem(entry.key, mapping[entry.key])
+            return ReplaceMember(observer, mapping, old, entry)
+        return AddMember(observer, mapping, entry)
 
     def _addItem(self, parent: QModelIndex, itemInitKwargs, row: int = None):
+        """Show a new row without changing any AAS object."""
         (item,) = self.insertItems(
             parent, row, lambda: self.itemTyp(**itemInitKwargs)
         )
-        itemIndex = self.index(item.row(), 0, parent)
-        self.undo.append(
-            SetDataItem(
-                index=QPersistentModelIndex(itemIndex),
-                value=NOT_GIVEN,
-                role=CLEAR_ROW_ROLE,
-            )
-        )
-        self.redo.clear()
-        return itemIndex
+        return self.index(item.row(), 0, parent)
+
+    def _indexShowing(self, parent: QModelIndex, obj) -> QModelIndex:
+        """Return the index of the row of the parent that shows obj"""
+        child = self._childShowing(self.objByIndex(parent), obj)
+        if child is None:
+            return QModelIndex()
+        return self.index(child.row(), 0, parent)
+
+    def _observerFor(self, index: QModelIndex):
+        """Return the observer of the package behind an item"""
+        package = self._packageOf(index)
+        if package is None:
+            raise AttributeError("The item belongs to no package")
+        return observer_for(package)
+
+    def _run(self, index: QModelIndex, command: Command):
+        """Apply a command by pushing it on the stack of the package.
+
+        :raise ReadOnlyError: in read mode
+        """
+        package = self._packageOf(index)
+        if package is None:
+            raise AttributeError("The item belongs to no package")
+        package.commandStack.push(command)
 
     def insertItems(
         self,
@@ -412,10 +443,6 @@ class StandardTable(QAbstractItemModel):
             return Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         if role == DATA_CHANGE_FAILED_ROLE:
             return self.lastErrorMsg
-        if role == UNDO_ROLE:
-            return self.undo
-        if role == REDO_ROLE:
-            return self.redo
         if role == COLUMN_NAME_ROLE:
             column = index.column()
             return self._columns[column]
@@ -494,8 +521,6 @@ class StandardTable(QAbstractItemModel):
         if not index.isValid() and role not in (
             Qt.ItemDataRole.FontRole,
             ADD_ITEM_ROLE,
-            UNDO_ROLE,
-            REDO_ROLE,
         ):
             return QVariant()
         elif role == Qt.ItemDataRole.FontRole:
@@ -510,117 +535,89 @@ class StandardTable(QAbstractItemModel):
             try:
                 self.addItem(value, index)
                 return True
+            except ReadOnlyError as e:
+                self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
-                self.lastErrorMsg = f"Error occurred while adding item to {index.data(NAME_ROLE)}: {e}\n\n{tb}"
-                logging.exception(self.lastErrorMsg)
-                self.dataChanged.emit(index, index, [DATA_CHANGE_FAILED_ROLE])
+                self._reportFailure(
+                    index,
+                    f"Error occurred while adding item to {index.data(NAME_ROLE)}: {e}\n\n{tb}",
+                    log=True,
+                )
         elif role == CLEAR_ROW_ROLE:
             try:
                 parent = index.parent()
                 self.clearRow(index.row(), parent, value)
-                self.dataChanged.emit(parent, parent)
                 return True
+            except ReadOnlyError as e:
+                self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
-                self.lastErrorMsg = f"{index.data(NAME_ROLE)} could not be deleted or set to default: {e}\n\n{tb}"
-                self.dataChanged.emit(index, index, [DATA_CHANGE_FAILED_ROLE])
+                self._reportFailure(
+                    index,
+                    f"{index.data(NAME_ROLE)} could not be deleted or set to default: {e}\n\n{tb}",
+                )
         elif role == Qt.ItemDataRole.EditRole:
             try:
-                changedObj = self._changedObject(index)
-                newValue, oldValue = self.editItem(index, value)
-                self.setChanged(index)
-                self.update(index)
-                self._publish(index, Change.changed(changedObj, origin=self))
-                self.undo.append(
-                    SetDataItem(
-                        index=QPersistentModelIndex(index),
-                        value=oldValue,
-                        role=role,
-                    )
-                )
-                self.redo.clear()
+                command = self.editCommand(index, value)
+                if command is not None:
+                    self._run(index, command)
+                    # The command named this model as the origin of its first
+                    # report, so the model shows the edit by itself.
+                    self._syncAfterEdit(index, command)
+                    self.setChanged(index)
+                    self.update(index)
                 return True
+            except ReadOnlyError as e:
+                self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
-                self.lastErrorMsg = f"Error occurred while setting {getattr(self.objByIndex(index), 'objectName', 'UNKNOWN_OBJECT')}: {e}\n\n{tb}"
-                self.dataChanged.emit(index, index, [DATA_CHANGE_FAILED_ROLE])
-        elif role == UNDO_ROLE:
-            if value == NOT_GIVEN and self.undo:
-                lastUndo: SetDataItem = self.undo.pop()
-                tempRedoList = self.redo
-                self.redo = []
-                if self.setData(*lastUndo):
-                    self.redo = tempRedoList
-                    self.redo.append(self.undo.pop())
-                    return True
-            elif isIterable(value):
-                self.undo = deque(value)
-                return True
-        elif role == REDO_ROLE:
-            if value == NOT_GIVEN and self.redo:
-                lastRedo: SetDataItem = self.redo.pop()
-                tempRedoList = self.redo
-                self.redo = []
-                if self.setData(*lastRedo):
-                    self.redo = tempRedoList
-                    return True
-            elif isIterable(value):
-                self.redo = list(value)
-                return True
+                self._reportFailure(
+                    index,
+                    f"Error occurred while setting {getattr(self.objByIndex(index), 'objectName', 'UNKNOWN_OBJECT')}: {e}\n\n{tb}",
+                )
         elif role == UPDATE_ROLE:
             self.update(index)
         else:
             raise ValueError(f"Unknown role: {role}")
         return False
 
-    def editItem(self, index: QModelIndex, value):
-        # Only a real None clears a value. The text "None" is ordinary text.
-        newValue = value
-        item = self.objByIndex(index)
-        self._checkClearable(item.objName, item.typehint, newValue)
+    def _reportFailure(self, index: QModelIndex, message: str, log=False):
+        """Remember why a change failed, and tell the views"""
+        self.lastErrorMsg = message
+        if log:
+            logging.error(message)
+        self.dataChanged.emit(index, index, [DATA_CHANGE_FAILED_ROLE])
 
-        parentObj = self._changedObject(index)
+    def editCommand(self, index: QModelIndex, value) -> Command | None:
+        """Return the command that sets the value of the item.
 
-        if isinstance(parentObj, list):
-            oldValue = item.obj
-            objIndex = parentObj.index(item.obj)
-            parentObj[objIndex] = newValue
-            item.obj = newValue
-        elif isinstance(parentObj, NamespaceSet):
-            oldValue = item.obj
-            # The replacement takes the place of the old element (D19).
-            ordering.replace_item(parentObj, item.obj, newValue)
-            item.obj = newValue
-        elif isinstance(parentObj, AbstractSet):
-            oldValue = item.obj
-            parentObj.remove(item.obj)
-            parentObj.add(newValue)
-            item.obj = newValue
-        elif isinstance(item.obj, DictItem):
-            oldValue: DictItem = item.obj
-            item.obj = newValue
-            if newValue.key != oldValue.key:
-                parentObj.pop(oldValue.key)
-            parentObj.update([item.obj])
-        else:
-            oldValue = getattr(parentObj, item.objName)
-            # A value the SDK rejects, such as text for an integer Property,
-            # raises here and the edit is refused. The value_type stays as it is.
-            self._setAttribute(parentObj, item.objName, newValue)
-            item.obj = getattr(parentObj, item.objName)
-        return newValue, oldValue
-
-    @staticmethod
-    def _setAttribute(obj, name: str, value):
-        """Set an attribute, keeping the position when an idShort is renamed.
-
-        The SDK moves a renamed element to the end of its namespace.
+        :return: the command, or None if the item already has the value
+        :raise ValueError: if a mandatory attribute would be cleared
         """
-        if name == "id_short" and isinstance(obj, Referable):
-            ordering.set_id_short(obj, value)
-        else:
-            setattr(obj, name, value)
+        item = self.objByIndex(index)
+        # Only a real None clears a value. The text "None" is ordinary text.
+        self._checkClearable(item.objName, item.typehint, value)
+
+        container = self._changedObject(index)
+        observer = self._observerFor(index)
+        if isinstance(container, (list, AbstractSet, MutableMapping)):
+            # The edited item is a member of the container, not an attribute.
+            return ReplaceMember(
+                observer, container, item.obj, value, origin=self
+            )
+        command = SetAttribute(
+            observer, container, item.objName, value, origin=self
+        )
+        return None if command.is_noop else command
+
+    def _syncAfterEdit(self, index: QModelIndex, command: Command):
+        """Make the item show the object that the edit made of it"""
+        item = self.objByIndex(index)
+        if isinstance(command, ReplaceMember):
+            item.obj = command.new
+        elif isinstance(command, SetAttribute) and item.objName == command.name:
+            item.obj = getattr(command.owner, command.name)
 
     def _changedObject(self, index: QModelIndex):
         """Return the object that an edit of the item changes.
@@ -703,7 +700,11 @@ class StandardTable(QAbstractItemModel):
         parent: QModelIndex = ...,
         defaultVal=NOT_GIVEN,
     ) -> bool:
-        """Delete rows if they are children of Iterable else set to Default"""
+        """Delete rows if they are children of Iterable else set to Default
+
+        Each deleted object is removed by a command, which remembers its
+        position. The views follow the change that the command reports.
+        """
         parentItem = self.objByIndex(parent)
         parentObj = parentItem.data(OBJECT_ROLE)
 
@@ -718,48 +719,24 @@ class StandardTable(QAbstractItemModel):
 
         for currRow in range(row + count - 1, row - 1, -1):
             child = parentItem.children()[currRow]
-            if isinstance(parentObj, (list, dict, AbstractSet)):
-                if isinstance(parentObj, list):
-                    oldValue = parentObj.pop(currRow)
-                elif isinstance(parentObj, dict):
-                    oldValue: DictItem = child.data(OBJECT_ROLE)
-                    parentObj.pop(oldValue.key)
-                elif isinstance(parentObj, AbstractSet):
-                    parentObj.discard(child.obj)
-                    oldValue = child.obj
-                else:
-                    raise TypeError(
-                        f"Unknown parent object type: "
-                        f"object could not be deleted or set to default: "
-                        f"{type(parentObj)}"
-                    )
-                self.removeRow(currRow, parent)
-                self._publishRemoved(parent, parentObj, oldValue, currRow)
-                self.undo.append(
-                    SetDataItem(
-                        index=QPersistentModelIndex(parent),
-                        value=oldValue,
-                        role=ADD_ITEM_ROLE,
-                    )
+            if isinstance(parentObj, (list, MutableMapping, AbstractSet)):
+                # A mapping member is a pair, and the item shows it as such.
+                self._run(
+                    parent,
+                    RemoveMember(
+                        self._observerFor(parent), parentObj, child.obj
+                    ),
                 )
-                self.redo.clear()
             else:
                 if not defaultVal == NOT_GIVEN:
                     index = self.index(currRow, 0, parent)
                     self.setData(index, defaultVal, Qt.ItemDataRole.EditRole)
                 elif isinstance(child.obj, Package):
-                    # close package
+                    # Closing a package is not an edit and cannot be undone
+                    # (D9). Its history ends with it.
                     oldValue = child.obj
                     self.removeRow(currRow, parent)
                     self.unwatchPackage(oldValue)
-                    self.undo.append(
-                        SetDataItem(
-                            index=QPersistentModelIndex(parent),
-                            value=oldValue,
-                            role=ADD_ITEM_ROLE,
-                        )
-                    )
-                    self.redo.clear()
                 else:
                     raise TypeError(
                         f"Unknown parent object type: "
@@ -780,19 +757,23 @@ class StandardTable(QAbstractItemModel):
         """Follow the changes that are reported for the objects of a package.
 
         The model then shows what other models, such as the ones of other tabs,
-        change in the package.
+        change in the package. It also reports changes of the undo history and
+        the saved state with `historyChanged`.
         """
         if package is None or id(package) in self._changeSubscriptions:
             return
-        self._changeSubscriptions[id(package)] = observer_for(
-            package
-        ).subscribe(self.onModelChange)
+        self._changeSubscriptions[id(package)] = (
+            observer_for(package).subscribe(self.onModelChange),
+            package.commandStack.subscribe(self._onHistoryChanged),
+        )
 
     def unwatchPackage(self, package: Package):
         """Stop following the changes of a package, for example once closed."""
-        subscription = self._changeSubscriptions.pop(id(package), None)
-        if subscription:
+        for subscription in self._changeSubscriptions.pop(id(package), ()):
             subscription.cancel()
+
+    def _onHistoryChanged(self):
+        self.historyChanged.emit()
 
     def onModelChange(self, change: Change):
         """Show a change that the model has not made itself.
@@ -904,39 +885,3 @@ class StandardTable(QAbstractItemModel):
             return index.data(PACKAGE_ROLE)
         except AttributeError:
             return None
-
-    def _publish(self, index: QModelIndex, change: Change):
-        """Report a change to the other models of the package of an item"""
-        package = self._packageOf(index)
-        if package is not None:
-            observer_for(package).notify(change)
-
-    def _publishAdded(self, parent: QModelIndex, container, obj):
-        if container is None:
-            return
-        if isinstance(container, dict):
-            change = Change.changed(container, origin=self)
-        else:
-            change = Change.added(
-                container, obj, self._positionIn(container, obj), self
-            )
-        self._publish(parent, change)
-
-    def _publishRemoved(self, parent: QModelIndex, container, obj, row: int):
-        if isinstance(container, dict) or isinstance(obj, DictItem):
-            change = Change.changed(container, origin=self)
-        else:
-            change = Change.removed(container, obj, row, self)
-        self._publish(parent, change)
-
-    @staticmethod
-    def _positionIn(container, obj):
-        """Return the position of obj in an ordered container, else None"""
-        if isinstance(container, AbstractSet) and not isinstance(
-            container, NamespaceSet
-        ):
-            return None
-        for position, member in enumerate(container):
-            if member is obj:
-                return position
-        return None

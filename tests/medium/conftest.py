@@ -4,9 +4,11 @@ from collections.abc import Iterator
 
 from basyx.aas import model
 from PyQt6.QtCore import QAbstractItemModel
+from PyQt6.QtCore import QItemSelectionModel
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import Qt
 from PyQt6.QtTest import QAbstractItemModelTester
+from PyQt6.QtWidgets import QWidget
 import pytest
 from pytestqt.qtbot import QtBot
 
@@ -131,3 +133,86 @@ def model_support(
 ) -> Iterator[ModelSupport]:
     """Provides builders and contract checks for the item models."""
     yield ModelSupport(qtbot, qtlog)
+
+
+@pytest.fixture
+def views(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
+    """Builds the package tree view and the views of tabs over packages."""
+    from aas_editor.models import PackTreeViewItem
+    from aas_editor.models import PacksTable
+    from aas_editor.package import Package
+    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
+    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_editor.treeviews.treeview_pack import PackTreeView
+    from aas_editor.widgets.messsageBoxes import ErrorMessageBox
+
+    monkeypatch.setattr(PackTreeView, "scanFolderForExistFiles", lambda s: None)
+    errors: list[str] = []
+
+    def fake_exec(box: ErrorMessageBox) -> int:
+        errors.append(box.text())
+        return 0
+
+    monkeypatch.setattr(ErrorMessageBox, "exec", fake_exec)
+    holders: list[QWidget] = []
+
+    class Views:
+        shown_errors = errors
+
+        def __init__(self) -> None:
+            self.window = QWidget()
+            qtbot.addWidget(self.window)
+            columns = list(DEFAULT_COLUMNS_IN_PACKS_TABLE)
+            columns.extend(EXTENDED_COLUMNS_IN_PACK_TABLE)
+            self.table = PacksTable(columns, PackTreeViewItem(None, None))
+            self.view = PackTreeView(self.window)
+            self.view.setModelWithProxy(self.table)
+            self.view.expandAll()
+            holders.append(self.window)
+
+        def open_package(self, *objects: model.Identifiable) -> object:
+            package = Package()
+            for obj in objects:
+                package.add(obj)
+            self.table.addItem(package)
+            self.view.expandAll()
+            return package
+
+        def index(self, *names: str, package: int = 0) -> QModelIndex:
+            """Finds an index of the package tree view by a path of names."""
+            proxy = self.view.model()
+            index = proxy.index(package, 0)
+            for name in names:
+                for row in range(proxy.rowCount(index)):
+                    child = proxy.index(row, 0, index)
+                    if child.data(NAME_ROLE) == name:
+                        index = child
+                        break
+                else:
+                    raise LookupError(name)
+            return index
+
+        def select(self, *indexes: QModelIndex) -> None:
+            selection = self.view.selectionModel()
+            selection.clear()
+            for index in indexes:
+                selection.select(
+                    index, QItemSelectionModel.SelectionFlag.Select
+                )
+            selection.setCurrentIndex(
+                indexes[-1], QItemSelectionModel.SelectionFlag.NoUpdate
+            )
+
+        def attrs_view(self, *names: str, package: int = 0):
+            """Opens the attributes of an item in a view, as a tab does."""
+            from aas_editor.treeviews.treeview_detailed import AttrsTreeView
+
+            holder = QWidget()
+            qtbot.addWidget(holder)
+            holders.append(holder)
+            attrs = AttrsTreeView(holder)
+            attrs.newPackItem(self.index(*names, package=package))
+            return attrs
+
+    return Views

@@ -35,6 +35,8 @@ CLASSES_INFO[Package] = {
         "concept_descriptions",
         "others",
         "fileStore",
+        "commandStack",
+        "recoveryWritten",
     ),
     ADD_ACT_AAS_TXT: "Add package",
     ADD_TYPE: Package,

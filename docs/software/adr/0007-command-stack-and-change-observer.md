@@ -24,10 +24,14 @@ Probes against the pinned SDK showed that the order of a `NamespaceSet` survives
 - **Commands address AAS objects by identity.** A command holds the BaSyx objects it changes, never a row or a model index. One `CommandStack` for each package, in `aas_editor.application.commands`, with atomic nested groups for cascades and a saved-state marker. The marker stays dirty when the saved state can no longer be reached, for example after undo followed by a new edit.
 - **Commands report to a `ModelChangeObserver`.** `aas_editor.application.changes` defines four kinds of change: added, removed, moved, and changed. Each names the object, and for added, removed, and moved ones the container and position. Commands report in both `apply` and `revert`. An observer belongs to a package, found with `observer_for(package)`.
 - **Qt models subscribe.** `StandardTable` follows the observer and updates the items that show the changed object. A change carries an `origin`, so the model that made it, and already updated itself, ignores it. Pack tree items add, remove, and move rows one by one. Detail items read their rows again, because their names contain list positions.
+- **The editor's edits are the commands in `aas_editor.application.edits`.** They work with `aas_editor.domain.containers`, which adds, removes, and replaces members of namespace sets, lists, sets, and mappings, and tells their position. A command that removes a member remembers where it was.
+- **The stack is the one source of truth for the dirty flag.** `Package.changed` is true while the history is not at the saved state. A successful save marks it, a failed or refused save does not, and a state without steps, such as a package restored after a crash, is marked unsaved.
+- **The stack refuses changes in Read mode (D18).** `aas_editor.application.editing` holds the global switch, and the stack raises `ReadOnlyError` for a push, an undo, and a redo.
+- **A command may name the model that pushes it as the origin of its first report**, so that this model updates itself in place and keeps the state of its view. Undo and redo report without an origin, and every model, including that one, follows.
 - **Order lives in `aas_editor.domain.ordering`.** It snapshots and restores namespace order, inserts and moves members, replaces a member in place, and renames an idShort without moving the element (D19). Every change rolls back when the SDK refuses an object.
 - Both new layers import no Qt, and `tests/medium/test_layers.py` checks that.
 
-The legacy mutation paths in the models report their changes to the observer already, so tabs resync today. They still keep the old undo deques. Replacing them with commands is the next work package.
+Before this change, the legacy mutation paths of the models reported their changes to the observer but kept their own undo deques. All of them are commands now, and the deques are gone.
 
 ## Consequences
 
@@ -37,6 +41,9 @@ The legacy mutation paths in the models report their changes to the observer alr
 - `SubmodelElementList` reorders regenerate its hidden idShorts. They are never serialized, so this is harmless.
 - Rows of the models are still QObject children. Insertion and moves reparent the following siblings, which costs time linear in the number of siblings.
 - Subscribers are held weakly when they are bound methods, so models do not stay alive because of a subscription.
+- A set has no position, so undoing the delete of a shell, a Submodel, or a reference shows its row at the end, and the saved file does not depend on it.
+- A mapping such as a `LangStringSet` is restored in its order by taking out and adding again the entries that follow.
+- Opening and closing a package are not edits, so undo cannot bring back a closed package (D9).
 
 ## Alternatives considered
 

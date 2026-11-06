@@ -25,6 +25,7 @@ from aas_editor.utils.recovery import (
     delete_recovery_file,
     cleanup_recovery_dir,
 )
+from aas_editor.application.editing import edit_mode
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
 from aas_editor.settings.icons import EXIT_ICON, SETTINGS_ICON, NEW_PACK_ICON
@@ -34,6 +35,7 @@ from aas_editor.tools.aas_test.aas_test_engines_tool import (
     AasTestEnginesToolDialog,
 )
 from aas_editor.widgets import AddressLine
+from aas_editor.widgets.tab import TabWidget
 from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
 from aas_editor.utils.util import toggleStylesheet
@@ -87,6 +89,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self._recoveryStatusLabel.setStyleSheet("color: #c0392b;")
         self._recoveryStatusLabel.hide()
         self.statusBar().addPermanentWidget(self._recoveryStatusLabel)
+        self._modeStatusLabel = QLabel()
+        self._modeStatusLabel.hide()
+        self.statusBar().addPermanentWidget(self._modeStatusLabel)
         if fileToOpen:
             self.openAASFile(fileToOpen)
         else:
@@ -166,6 +171,29 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                 )
             )
 
+        # Edit and Read mode (D18): one switch for all open packages
+        self.editModeAct = QAction(
+            "Edit mode",
+            self,
+            checkable=True,
+            checked=edit_mode().is_editing,
+            statusTip="Packages can be changed",
+            triggered=lambda: edit_mode().set_editing(True),
+        )
+        self.readModeAct = QAction(
+            "Read mode",
+            self,
+            checkable=True,
+            checked=not edit_mode().is_editing,
+            statusTip="Packages can only be looked at, not changed",
+            triggered=lambda: edit_mode().set_editing(False),
+        )
+        self.modeActs = QActionGroup(self)
+        self.modeActs.setExclusive(True)
+        self.modeActs.addAction(self.editModeAct)
+        self.modeActs.addAction(self.readModeAct)
+        edit_mode().subscribe(self.onEditModeChanged)
+
         self.setHOrientationAct = QAction(
             "Horizontal",
             self,
@@ -225,6 +253,10 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuFile.addAction(self.exitAct)
 
         self.menuView = QMenu("&View", self.menubar)
+        self.menuView.addSection("Mode")
+        self.menuView.addAction(self.editModeAct)
+        self.menuView.addAction(self.readModeAct)
+        self.menuView.addSection("Appearance")
         self.menuChooseTheme = QMenu("Choose Theme", self.menuView)
         for themeAct in self.themeActs:
             self.menuChooseTheme.addAction(themeAct)
@@ -289,6 +321,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.toolBar.addAction(self.mainTreeView.redoAct)
         self.toolBar.addAction(self.mainTreeView.editCreateInDialogAct)
         self.toolBar.addAction(self.mainTreeView.addAct)
+        # Actions that features registered for the toolbar (ui/actions.py)
+        for action in self.mainTreeView.registeredActions.toolbar_actions:
+            self.toolBar.addAction(action)
 
     @staticmethod
     def iterItems(root):
@@ -326,7 +361,14 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.mainTabWidget.openItemInNewWindow
         )
 
-        self.packTreeModel.rowsRemoved.connect(self.mainTabWidget.removePackTab)
+        self.packTreeModel.rowsRemoved.connect(self.onPackRowsRemoved)
+
+    def onEditModeChanged(self, editing: bool):
+        """Show the mode in the menu and in the status bar"""
+        self.editModeAct.setChecked(editing)
+        self.readModeAct.setChecked(not editing)
+        self._modeStatusLabel.setText("" if editing else "Read mode")
+        self._modeStatusLabel.setVisible(not editing)
 
     def onCurrTabItemChanged(self, item: QModelIndex):
         if self.mainTreeView.autoScrollFromSrcAct.isChecked():
@@ -343,12 +385,17 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         if not self.mainTreeView.autoScrollToSrcAct.isChecked():
             self.mainTabWidget.openItemInNewTab(item)
 
-    def removeTabsOfClosedRows(
-        self, parent: QModelIndex, first: int, last: int
-    ):
-        for row in range(first, last):
-            packItem = self.packTreeModel.index(row, 0, parent)
-            self.mainTabWidget.removePackTab(packItem)
+    def onPackRowsRemoved(self, parent: QModelIndex, first: int, last: int):
+        """Close the tabs of a package that was closed.
+
+        Only the rows at the top of the tree are packages. Objects that were
+        deleted inside a package close their own tabs (see TabWithTreeView).
+        """
+        if parent.isValid():
+            return
+        openedPackages = self.packTreeModel.openedPacks()
+        for tabWidget in list(TabWidget.openedTabWidgets):
+            tabWidget.removeTabsOfClosedPackages(openedPackages)
 
     def toggleThemeSlot(self):
         action = self.sender()
@@ -443,7 +490,6 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                         self.openAASFile(file)
                     else:
                         self.mainTreeView.add_pack_to_tree(pack)
-                        self.packTreeModel.setData(QModelIndex(), [], UNDO_ROLE)
                         # Restored content is unsaved until the user writes it back
                         pack.changed = True
                         self.setWindowModified(True)
@@ -472,9 +518,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         for pkg in self.packTreeModel.openedPacks():
             # Per-package flag: the window modified flag is shared and gets reset
             # whenever any package is saved or closed
-            if pkg.changed and pkg.file and pkg.file.exists():
+            if pkg.changed or pkg.recoveryWritten:
                 try:
-                    pkg.write_recovery(RECOVERY_DIR)
+                    pkg.update_recovery(RECOVERY_DIR)
                 except Exception:
                     # Never let a failed recovery write abort the crash handler or the
                     # timer, but log it: a silent failure means the user believes they
@@ -509,7 +555,6 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             pack = self.mainTreeView.openPack(filePath)
         except OSError:
             pass
-        self.packTreeModel.setData(QModelIndex(), [], UNDO_ROLE)
         return pack  # None if the file could not be opened
 
     def applyLastSessionTreeStates(self):

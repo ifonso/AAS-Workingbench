@@ -45,8 +45,9 @@ This page describes the code as it is today, and the structure that new code sho
 2. `models/` wraps the objects in tree items. Selecting one opens its attributes in a tab, shown by `AttrsTreeView`.
 3. Attributes and editors come from **runtime type introspection**: `utils/util_type.py` and `getAttrTypeHint` read the type hints of BaSyx classes.
    This is why the editor handles new SDK attributes with little code, and also why it relies heavily on SDK internals.
-4. Edits go through the model, which supports undo and redo, and mark the package as changed.
-   The model reports each edit, addition, and deletion to the package's change observer, so that the models of other tabs show the same objects again (see [Change observer and commands](#change-observer-and-commands)).
+4. Edits go through the model, which turns each one into a command and pushes it on the undo history of the package.
+   A command changes the BaSyx objects and reports the change to the package's change observer, so that the models of all tabs show the same objects again (see [Change observer and commands](#change-observer-and-commands)).
+   The package counts as changed while its history differs from the saved state.
 5. Crash recovery writes changed packages to `settings/recovery/`, and the next start offers to restore them.
 
 ### Known structural problems
@@ -73,6 +74,7 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/save.py` | The save flow. `check_save` returns blockers (no way around them) and warnings (save anyway), and `save` writes only when there are no blockers and the user confirms the warnings. It takes a `SaveSource` protocol and explicit `SaveOptions`, never `Package` or `AppSettings`. |
 | `infrastructure/package_io.py` | Reads and writes AASX, JSON and XML through BaSyx. A write goes to a temporary file with `failsafe=False` and replaces the target in one step. It does not import `Package`. |
 | `ui/save_warnings.py` | The dialogs for blockers, warnings, and missing files. They show decisions that `application/save.py` made. |
+| `ui/actions.py` | The registry where features add actions to the context menus and the toolbar (see [Registering an action](#registering-an-action)). |
 
 ### How saving works
 
@@ -121,8 +123,11 @@ infrastructure ──────┘
 |---|---|---|
 | `domain/ordering.py` | Domain | Snapshot and restore of the order of a `NamespaceSet`, inserting, moving, and replacing members, and renaming an idShort without moving the element. Every change rolls back when the SDK refuses an object. |
 | `application/changes.py` | Application | `Change` (added, removed, moved, changed), `ModelChangeObserver`, and `observer_for(package)`. |
-| `application/commands.py` | Application | `Command`, `CommandGroup`, and `CommandStack` with undo, redo, atomic groups, and a saved-state marker. |
-| `application/listeners.py` | Application | The callback list behind both. It holds bound methods weakly. |
+| `domain/containers.py` | Domain | Adding, removing, and replacing members of the containers of BaSyx objects (namespace sets, lists, sets, and mappings), and telling the position, so that a command can put a member back. |
+| `application/commands.py` | Application | `Command`, `CommandGroup`, and `CommandStack` with undo, redo, atomic groups, a saved-state marker, and the read gate. |
+| `application/edits.py` | Application | The commands of the editor: `SetAttribute`, `AddMember`, `RemoveMember`, `ReplaceMember`, `AddSupplementaryFile`, and `link_submodels`. |
+| `application/editing.py` | Application | `EditMode`, the global switch between Edit and Read mode (D18). |
+| `application/listeners.py` | Application | The callback list behind all of them. It holds bound methods weakly. |
 
 ### Change observer and commands
 
@@ -134,8 +139,67 @@ infrastructure ──────┘
   Items of the package tree add, remove, and move rows one by one, and items of the attribute tabs read their rows again.
 - A model that made a change itself passes itself as `origin`, so it does not update twice.
 
-The legacy mutation paths in `table_standard.py` (`setData` for edits, `addItem`, and `clearRows`) report their changes already, so tabs stay in sync.
-Moving them to commands, and the undo behavior that comes with it, is a separate work package.
+### Undo, the saved state, and Read mode
+
+- Every package has one `CommandStack`, `Package.commandStack`. Undo and redo of a view act on the package of its current item, or on the package of its tab. The package tree uses the only open package when nothing is selected.
+  The history keeps 10000 steps.
+- The models make the commands: `setData` for edits, `addItem` for adds, and `clearRows` for deletes, which includes clearing an attribute to its default.
+  Nothing else changes the objects of a package. A new feature creates a command in `application/edits.py` or next to its own logic, and pushes it on the stack.
+- Several changes that belong together are one step with `stack.group(...)`.
+  Deleting or pasting several selected rows, adding several entries, and linking all Submodels to the AAS are each one step. A group that fails undoes what it did.
+- A command reports in `apply` and in `revert`, so a model has one way to follow a change, whether it came from an edit, an undo, or a redo.
+  The model that pushes an edit passes itself as the `origin` of the first report, and updates itself, so that its own tab keeps the expanded rows and the current row.
+  A view also puts back the expanded rows and the current row after a model read the rows below an item again.
+  A view moves its current row only for the action it ran itself, so a tab that follows another tab keeps its place.
+- A delete restores the position of the member. A set has no position, and the rows of such a container are added at the end.
+- Dirty state comes from `stack.is_clean`: `Package.changed` is true while the history is not at the saved state.
+  A successful save calls `mark_saved`, and a failed or refused save does not. Editing after an undo of a saved step leaves the package changed for good, until the next save.
+  Content that differs from its file without a step, such as a package restored after a crash, is marked with `mark_unsaved`.
+  Crash recovery uses the same flag, and removes the recovery file once undo returns to the saved state.
+- Closing a package, and opening one, are not edits and have no step (D9).
+- Read mode (D18): the `EditMode` switch, in the View menu, starts in Edit mode. In Read mode the stack raises `ReadOnlyError` for a push, an undo, and a redo, and the views show its message.
+  The views also disable the editing actions, and the models drop `ItemIsEditable`, so nothing can be edited inline.
+- A tab closes when the object it shows is no longer part of its package, and also when its package is closed.
+  The last tab of the main window is emptied instead.
+
+### Registering an action
+
+A feature adds an action to the context menu of the tree views, and to the toolbar, without editing `treeview_pack.py` or `base.py`.
+Describe the action with an `ActionSpec` and register it when your module is imported:
+
+```python
+from aas_editor.application.changes import observer_for
+from aas_editor.application.edits import SetAttribute
+from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_editor.ui.actions import ActionContext, ActionSpec, ViewKind
+from aas_editor.ui.actions import register_action
+
+
+def mark_as_parameter(context: ActionContext) -> None:
+    element = context.index.data(OBJECT_ROLE)
+    # One step in the history of the package. Read mode refuses it.
+    context.push(
+        SetAttribute(
+            observer_for(context.package), element, "category", "PARAMETER"
+        )
+    )
+
+
+register_action(
+    ActionSpec(
+        action_id="example.mark_as_parameter",
+        text="Mark as parameter",
+        run=mark_as_parameter,
+        is_enabled=lambda context: context.index.isValid(),
+        views=ViewKind.PACKAGES,  # or DETAILS, or ANY
+        toolbar=True,
+    )
+)
+```
+
+- Every tree view builds an action for each spec that fits its kind of view when it is created. Register before the first view exists, for example by importing your module in the composition root, `__main__.py`, after its existing imports.
+- `is_enabled` is asked whenever the current item changes. `mutates` is true by default, and then the action is also disabled in Read mode and in views that do not allow editing.
+- `ActionContext` has the view, the current index, the selection, the package, and its stack. `toolbar=True` adds the action to the main toolbar, and `order` sorts the actions.
 
 ### Working with legacy code
 

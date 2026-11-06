@@ -222,3 +222,65 @@ class TestCleanup:
 
     def test_cleanup_missing_dir_is_noop(self, tmp_path: Path) -> None:
         cleanup_recovery_dir(tmp_path / "nope")  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Recovery follows the dirty state of the undo history
+# ---------------------------------------------------------------------------
+
+
+class TestUpdateRecovery:
+    @pytest.fixture
+    def edited(self, qapp: object, json_file: Path, tmp_path: Path):
+        from aas_editor.application.changes import observer_for
+        from aas_editor.application.edits import SetAttribute
+
+        package = Package(json_file)
+        submodel = next(iter(package.submodels))
+        package.commandStack.push(
+            SetAttribute(observer_for(package), submodel, "category", "Edited")
+        )
+        return package, tmp_path / "recovery"
+
+    def test_a_package_with_unsaved_changes_gets_a_recovery_file(
+        self, edited
+    ) -> None:
+        package, recovery_dir = edited
+
+        package.update_recovery(recovery_dir)
+
+        assert package.recovery_path(recovery_dir).exists()
+
+    def test_recovery_file_is_removed_when_undo_reaches_the_saved_state(
+        self, edited
+    ) -> None:
+        package, recovery_dir = edited
+        package.update_recovery(recovery_dir)
+
+        package.commandStack.undo()
+        package.update_recovery(recovery_dir)
+
+        assert not package.recovery_path(recovery_dir).exists()
+        assert not list(recovery_dir.glob("*.meta.json"))
+
+    def test_recovery_file_is_written_again_when_the_step_is_redone(
+        self, edited
+    ) -> None:
+        package, recovery_dir = edited
+        package.update_recovery(recovery_dir)
+        package.commandStack.undo()
+        package.update_recovery(recovery_dir)
+
+        package.commandStack.redo()
+        package.update_recovery(recovery_dir)
+
+        assert package.recovery_path(recovery_dir).exists()
+
+    def test_a_clean_package_writes_no_recovery_file(
+        self, qapp: object, json_file: Path, tmp_path: Path
+    ) -> None:
+        package = Package(json_file)
+
+        package.update_recovery(tmp_path)
+
+        assert not list(tmp_path.glob("*"))

@@ -24,7 +24,7 @@ from basyx.aas.model import Referable
 
 from aas_editor.tools.import_feature.import_settings import MAPPING_ATTR
 from aas_editor.tools.import_feature.import_util_classes import PreObjectImport
-from aas_editor.models import DetailedInfoItem, DetailedInfoTable, SetDataItem
+from aas_editor.models import DetailedInfoItem, DetailedInfoTable
 from aas_editor.settings.app_settings import (
     PACKAGE_ROLE,
     NAME_ROLE,
@@ -121,25 +121,5 @@ class DetailedInfoImportTable(DetailedInfoTable):
                 if attr not in mapping or childPath[-1] == attr:
                     mapping[attr] = preObject.getMapping()
                 mapping = mapping[attr]
-
-        if preObject and result:
-            if role == Qt.ItemDataRole.EditRole:
-                self.undo.pop()
-                self.undo.append(
-                    SetDataItem(
-                        index=QPersistentModelIndex(index),
-                        value=preObject,
-                        role=role,
-                    )
-                )
-            elif role == CLEAR_ROW_ROLE:
-                self.undo.pop()
-                self.undo.append(
-                    SetDataItem(
-                        index=QPersistentModelIndex(index),
-                        value=preObject,
-                        role=ADD_ITEM_ROLE,
-                    )
-                )
 
         return result

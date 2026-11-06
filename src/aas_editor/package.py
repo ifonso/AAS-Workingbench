@@ -29,6 +29,11 @@ from basyx.aas.model import (
     ModelReference,
 )
 
+from aas_editor.application.changes import observer_for
+from aas_editor.application.commands import CommandStack
+from aas_editor.application.commands import PACKAGE_HISTORY_LIMIT
+from aas_editor.application.editing import edit_mode
+from aas_editor.application.edits import link_submodels
 from aas_editor.application.save import SaveOptions
 from aas_editor.infrastructure.package_io import (
     PackageParts,
@@ -42,6 +47,12 @@ from aas_editor.settings.app_settings import AppSettings
 class Package:
     def __init__(self, file: Union[str, Path] = "", failsafe=False):
         """:raise TypeError if file has wrong file type"""
+        # The undo history of the package, and the state that was saved last.
+        # It refuses changes while the editor is in Read mode (D18).
+        self.recoveryWritten = False
+        self.commandStack = CommandStack(
+            PACKAGE_HISTORY_LIMIT, lambda: edit_mode().is_editing
+        )
         self.objStore = SetIdentifiableStore()
         self.fileStore = DictSupplementaryFileContainer()
         # Parts of the file that the object store and file store do not hold.
@@ -62,7 +73,6 @@ class Package:
             self._read(failsafe)
         for obj in self.objStore:
             DEFAULT_COMPLETIONS[Key]["value"].append(obj.id)
-        self._changed = False
 
     @property
     def file(self):
@@ -74,12 +84,24 @@ class Package:
 
     @property
     def changed(self) -> bool:
-        """True if the package holds modifications which are not written to its file yet."""
-        return self._changed
+        """True if the package holds modifications which are not written to its file yet.
+
+        It follows the undo history: undoing back to the saved state makes the
+        package unchanged, and an edit after that makes it changed again.
+        """
+        return not self.commandStack.is_clean
 
     @changed.setter
     def changed(self, value: bool):
-        self._changed = bool(value)
+        """Mark the package as saved (False), or as changed without a step to undo (True).
+
+        The second form is for content that differs from its file for other
+        reasons, like a package restored after a crash.
+        """
+        if value:
+            self.commandStack.mark_unsaved()
+        else:
+            self.commandStack.mark_saved()
 
     @property
     def writeJsonInAasx(self):
@@ -245,12 +267,29 @@ class Package:
             raise
         return rec_path
 
+    def update_recovery(self, recovery_dir: Path) -> None:
+        """Keep the recovery file as current as the unsaved state.
+
+        A package with unsaved changes gets a recovery file. One that is clean
+        again, because the user saved or undid everything back to the saved
+        state, loses it, so that the next start does not offer to restore
+        changes that were taken back.
+        """
+        if self.changed:
+            if self.file and self.file.exists():
+                self.write_recovery(recovery_dir)
+                self.recoveryWritten = True
+        elif self.recoveryWritten:
+            self.delete_recovery(recovery_dir)
+            self.recoveryWritten = False
+
     def delete_recovery(
         self, recovery_dir: Path, for_file: Path = None
     ) -> None:
         # for_file lets callers target a previous path (e.g. after Save-As mutated self.file)
         file = self.file if for_file is None else Path(for_file)
         stem = self._recovery_stem(file)
+        self.recoveryWritten = False
         for suffix in (".json", ".aasx", ".meta.json", ".tmp.json"):
             candidate = recovery_dir / f"{stem}{suffix}"
             candidate.unlink(missing_ok=True)
@@ -305,13 +344,17 @@ class Package:
 
         Saving no longer does this on its own (D8). It is an explicit action.
 
+        All references are one step in the undo history.
+
         :return: the number of references that were added
         """
         for shell in self.shells:
-            before = len(shell.submodel)
-            for submodel in self.submodels:
-                shell.submodel.add(ModelReference.from_referable(submodel))
-            return len(shell.submodel) - before
+            return link_submodels(
+                self.commandStack,
+                observer_for(self),
+                shell,
+                list(self.submodels),
+            )
         return 0
 
     @property
@@ -352,6 +395,10 @@ class Package:
             yield file
 
     def add(self, obj):
+        """Put an object or a file in the package, without an undo step.
+
+        For building a package. The editor adds through commands.
+        """
         if isinstance(obj, StoredFile):
             newName = self.fileStore.add_file(
                 name=obj.name, file=obj.file(), content_type=obj.mime_type
@@ -444,6 +491,10 @@ class StoredFile:
             with open(self._filePath, "rb") as f:
                 file_content = io.BytesIO(f.read())
         return file_content
+
+    def storeState(self):
+        """Return the name and the store, to put them back with setFileStore"""
+        return self._name, self._fileStore
 
     def setFileStore(
         self, name: str, fileStore: DictSupplementaryFileContainer
