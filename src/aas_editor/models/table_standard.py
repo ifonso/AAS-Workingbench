@@ -15,7 +15,12 @@ from typing import Any, Callable, Iterable, Union, AbstractSet, List
 
 from collections.abc import MutableMapping
 
-from basyx.aas.model import NamespaceSet, Referable
+from basyx.aas.model import (
+    AASConstraintViolation,
+    LangStringSet,
+    NamespaceSet,
+    Referable,
+)
 from PyQt6.QtCore import (
     QAbstractItemModel,
     QVariant,
@@ -36,8 +41,16 @@ from aas_editor.application.edits import (
     RemoveMember,
     ReplaceMember,
     SetAttribute,
+    SetValueType,
 )
 from aas_editor.application.listeners import Subscription
+from aas_editor.domain.language_tags import check_language_tag
+from aas_editor.domain.typed_values import (
+    is_value_attr,
+    is_value_type_attr,
+    prepare_edit,
+)
+from aas_editor.domain.value_types import InvalidValueError
 from aas_editor.models import StandardItem
 from aas_editor.package import Package
 from aas_editor.settings.app_settings import (
@@ -68,6 +81,11 @@ from aas_editor.utils.util import actualizeAASParents
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import getArgs, isIterable
+
+
+# Why a change is refused, in words the user can read. A view shows the message
+# of such an error as it is, without the traceback of an unexpected failure.
+REFUSALS = (ReadOnlyError, InvalidValueError, AASConstraintViolation)
 
 
 class StandardTable(QAbstractItemModel):
@@ -535,7 +553,7 @@ class StandardTable(QAbstractItemModel):
             try:
                 self.addItem(value, index)
                 return True
-            except ReadOnlyError as e:
+            except REFUSALS as e:
                 self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
@@ -549,7 +567,7 @@ class StandardTable(QAbstractItemModel):
                 parent = index.parent()
                 self.clearRow(index.row(), parent, value)
                 return True
-            except ReadOnlyError as e:
+            except REFUSALS as e:
                 self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
@@ -568,7 +586,7 @@ class StandardTable(QAbstractItemModel):
                     self.setChanged(index)
                     self.update(index)
                 return True
-            except ReadOnlyError as e:
+            except REFUSALS as e:
                 self._reportFailure(index, str(e))
             except Exception as e:
                 tb = traceback.format_exc()
@@ -600,16 +618,53 @@ class StandardTable(QAbstractItemModel):
         self._checkClearable(item.objName, item.typehint, value)
 
         container = self._changedObject(index)
-        observer = self._observerFor(index)
         if isinstance(container, (list, AbstractSet, MutableMapping)):
             # The edited item is a member of the container, not an attribute.
             return ReplaceMember(
-                observer, container, item.obj, value, origin=self
+                self._observerFor(index),
+                container,
+                item.obj,
+                self._checkedMember(container, value),
+                origin=self,
             )
-        command = SetAttribute(
-            observer, container, item.objName, value, origin=self
-        )
+        return self.attributeCommand(index, container, item.objName, value)
+
+    def attributeCommand(
+        self, index: QModelIndex, owner, name: str, value
+    ) -> Command | None:
+        """Return the command that sets an attribute of an object.
+
+        The values of a Property, a Range, a Qualifier, and an Extension follow
+        their value type, so text is parsed for it, and a change of the type
+        converts the values with it.
+
+        :return: the command, or None if the attribute has the value already
+        :raise InvalidValueError: if the value does not fit the value type
+        """
+        observer = self._observerFor(index)
+        if is_value_type_attr(owner, name):
+            typeCommand = SetValueType(observer, owner, value, origin=self)
+            return None if typeCommand.is_noop else typeCommand
+        if is_value_attr(owner, name):
+            value = prepare_edit(owner, name, value)
+        command = SetAttribute(observer, owner, name, value, origin=self)
         return None if command.is_noop else command
+
+    @staticmethod
+    def _checkedMember(container, value):
+        """Return the member to put into a container, or refuse it.
+
+        :raise InvalidValueError: if the language of a text is no language tag
+        """
+        if isinstance(container, LangStringSet) and isinstance(value, DictItem):
+            problem = check_language_tag(value.key)
+            if problem:
+                raise InvalidValueError(problem)
+            if not value.value:
+                raise InvalidValueError(
+                    f"The text for the language '{value.key}' cannot be empty"
+                )
+        return value
 
     def _syncAfterEdit(self, index: QModelIndex, command: Command):
         """Make the item show the object that the edit made of it"""
@@ -618,6 +673,16 @@ class StandardTable(QAbstractItemModel):
             item.obj = command.new
         elif isinstance(command, SetAttribute) and item.objName == command.name:
             item.obj = getattr(command.owner, command.name)
+        elif isinstance(command, SetValueType) and item.objName == "value_type":
+            item.obj = command.value_type
+            self._syncValueRows(item, command)
+
+    def _syncValueRows(self, item: StandardItem, command: SetValueType):
+        """Show the values that a change of the value type converted"""
+        for sibling in item.parent().children():
+            if sibling.objName in command.value_names:
+                sibling.obj = getattr(command.owner, sibling.objName)
+                self._emitRowChanged(self._indexOf(sibling))
 
     def _changedObject(self, index: QModelIndex):
         """Return the object that an edit of the item changes.

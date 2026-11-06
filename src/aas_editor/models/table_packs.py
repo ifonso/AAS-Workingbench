@@ -87,10 +87,7 @@ class PacksTable(StandardTable):
             except KeyError:
                 typehint = None
             self._checkClearable(attribute, typehint, value)
-            command = SetAttribute(
-                self._observerFor(index), owner, attribute, value, origin=self
-            )
-            return None if command.is_noop else command
+            return self.attributeCommand(index, owner, attribute, value)
         return super().editCommand(index, value)
 
     def _changedObject(self, index: QModelIndex):
