@@ -214,7 +214,7 @@ def members_in_order(container: object) -> list[Any]:
         TypeError: If the container has no order that is saved.
     """
     if isinstance(container, model.NamespaceSet) or is_list_like(container):
-        return _members(container)
+        return _members(cast("object", container))
     raise TypeError(f"A {type(container).__name__} has no order")
 
 

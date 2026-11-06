@@ -9,6 +9,8 @@ A tree that a user sorted by a column hides the order of the package, so a
 move first puts the tree back to the natural order (decision D16).
 """
 
+from typing import Any
+
 from basyx.aas import model
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import Qt
@@ -31,10 +33,6 @@ from aas_editor.ui.actions import ActionSpec
 from aas_editor.ui.actions import ViewKind
 from aas_editor.ui.actions import default_registry
 from aas_editor.ui.actions import register_action
-
-_CTRL_SHIFT = (
-    Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
-)
 
 
 def selected_rows(context: ActionContext) -> list[QModelIndex]:
@@ -98,26 +96,21 @@ def _enabled(kind: MoveKind):
 
 def _natural_order(context: ActionContext) -> None:
     """Shows the order of the package, if the user sorted the tree."""
-    header = context.view.header()
+    header: Any = context.view.header()
     if header is not None and header.sortIndicatorSection() >= 0:
         header.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
-        sections = getattr(header, "currSortSection", None)
-        if sections is not None:
+        if hasattr(header, "currSortSection"):
             header.currSortSection = -1
 
 
 def _runner(kind: MoveKind):
     def run(context: ActionContext) -> None:
         found = _selection(context)
-        if found is None or context.package is None:
+        package: Any = context.package
+        if found is None or package is None:
             return
         container, members = found
-        plan = plan_move(
-            container,
-            members,
-            kind,
-            context.package.objStore,  # pyright: ignore[reportAttributeAccessIssue]
-        )
+        plan = plan_move(container, members, kind, package.objStore)
         if plan is None:
             return
         _natural_order(context)
@@ -137,17 +130,13 @@ def _runner(kind: MoveKind):
     return run
 
 
-def _key(key: Qt.Key) -> QKeySequence:
-    return QKeySequence(_CTRL_SHIFT | key)
-
-
 _SPECS = (
-    (MoveKind.UP, "structure.move_up", "Move up", Qt.Key.Key_Up, 300, True),
+    (MoveKind.UP, "structure.move_up", "Move up", "Up", 300, True),
     (
         MoveKind.DOWN,
         "structure.move_down",
         "Move down",
-        Qt.Key.Key_Down,
+        "Down",
         301,
         True,
     ),
@@ -155,7 +144,7 @@ _SPECS = (
         MoveKind.TO_TOP,
         "structure.move_top",
         "Move to top",
-        Qt.Key.Key_Home,
+        "Home",
         302,
         False,
     ),
@@ -163,7 +152,7 @@ _SPECS = (
         MoveKind.TO_END,
         "structure.move_end",
         "Move to end",
-        Qt.Key.Key_End,
+        "End",
         303,
         False,
     ),
@@ -192,7 +181,7 @@ def register_move_actions() -> None:
                     if kind is MoveKind.DOWN
                     else None
                 ),
-                shortcut=_key(key),
+                shortcut=QKeySequence(f"Ctrl+Shift+{key}"),
                 status_tip=f"{text} within the list of the selected element",
                 toolbar=toolbar,
                 order=order,

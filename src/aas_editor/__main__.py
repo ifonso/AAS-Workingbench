@@ -48,6 +48,10 @@ def main():
 
     register_move_actions()
 
+    from aas_editor.ui.paste_actions import register_paste_actions
+
+    register_paste_actions()
+
     # Check if a file path is provided as an argument
     fileToOpen = sys.argv[1] if len(sys.argv) > 1 else None
 

@@ -77,9 +77,13 @@ def load_objects(text: str) -> list[model.Referable]:
     try:
         loaded = json.loads(text, cls=StrictAASFromJsonDecoder)
     except json.JSONDecodeError as error:
-        raise ClipboardError(f"The clipboard text is not valid JSON: {error}") from error
+        raise ClipboardError(
+            f"The clipboard text is not valid JSON: {error}"
+        ) from error
     except RecursionError as error:
-        raise ClipboardError("The clipboard JSON is nested too deeply") from error
+        raise ClipboardError(
+            "The clipboard JSON is nested too deeply"
+        ) from error
     except (
         KeyError,
         TypeError,
@@ -90,8 +94,9 @@ def load_objects(text: str) -> list[model.Referable]:
         raise ClipboardError(
             f"The clipboard JSON is not a valid AAS object: {error}"
         ) from error
-    entries = loaded if isinstance(loaded, list) else [loaded]
-    objects = cast("list[Any]", entries)
+    objects = cast(
+        "list[Any]", loaded if isinstance(loaded, list) else [loaded]
+    )
     if not objects:
         raise ClipboardError("The clipboard JSON holds no object")
     if not all(isinstance(entry, model.Referable) for entry in objects):

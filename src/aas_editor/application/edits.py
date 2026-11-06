@@ -349,7 +349,9 @@ class ReorderMembers(Command):
         containers.reorder_members(self._container, self._previous)
         self._report(self._order, self._previous)
 
-    def _report(self, before: Sequence[object], after: Sequence[object]) -> None:
+    def _report(
+        self, before: Sequence[object], after: Sequence[object]
+    ) -> None:
         # Placing each member at its final row, lowest row first, gives the
         # final order in a model that moves one row at a time.
         old_index = {id(member): n for n, member in enumerate(before)}

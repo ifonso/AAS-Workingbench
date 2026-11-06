@@ -78,7 +78,9 @@ class TestElements:
         stack = CommandStack()
         buffer = [make_property("B"), make_property("C")]
 
-        _paste(stack, submodel, plan_paste(submodel.submodel_element, buffer, 0))
+        _paste(
+            stack, submodel, plan_paste(submodel.submodel_element, buffer, 0)
+        )
         stack.undo()
 
         assert _ids(submodel.submodel_element) == ["A"]

@@ -69,9 +69,7 @@ class TestCanMove:
         first = next(iter(submodel.submodel_element))
 
         assert not can_move(submodel.submodel_element, [first], MoveKind.UP)
-        assert not can_move(
-            submodel.submodel_element, [first], MoveKind.TO_TOP
-        )
+        assert not can_move(submodel.submodel_element, [first], MoveKind.TO_TOP)
         assert can_move(submodel.submodel_element, [first], MoveKind.DOWN)
 
     def test_a_member_of_another_container_cannot_move(self) -> None:
@@ -172,7 +170,9 @@ class TestMoveCommands:
 
 
 class TestReferencesThroughListItems:
-    def _build(self) -> tuple[model.Submodel, model.SubmodelElementList, model.Submodel]:
+    def _build(
+        self,
+    ) -> tuple[model.Submodel, model.SubmodelElementList, model.Submodel]:
         items = [
             make_property("a", "1"),
             make_property("b", "2"),

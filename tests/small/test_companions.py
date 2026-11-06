@@ -13,15 +13,11 @@ from aas_editor.application.operations.companions import ConceptChoice
 from aas_editor.application.operations.companions import concept_commands
 from aas_editor.application.operations.companions import gather_companions
 from aas_editor.application.operations.companions import plan_concepts
-from aas_editor.application.operations.companions import (
-    retarget_semantic_ids,
-)
+from aas_editor.application.operations.companions import retarget_semantic_ids
 
 
 def _concept(id_: str, short: str, category: str | None = None):
-    return model.ConceptDescription(
-        id_=id_, id_short=short, category=category
-    )
+    return model.ConceptDescription(id_=id_, id_short=short, category=category)
 
 
 def _with_semantics(id_short: str, concept_id: str) -> model.Property:
@@ -127,13 +123,9 @@ def test_a_conflict_is_kept_or_added_under_a_new_id() -> None:
 
 
 def test_copies_are_pointed_at_the_description_under_its_new_id() -> None:
-    element = make_collection(
-        "C", [_with_semantics("in", "urn:cd:x")]
-    )
+    element = make_collection("C", [_with_semantics("in", "urn:cd:x")])
     element.semantic_id = make_external_reference("urn:cd:x")
-    element.supplemental_semantic_id.append(
-        make_external_reference("urn:cd:x")
-    )
+    element.supplemental_semantic_id.append(make_external_reference("urn:cd:x"))
 
     changed = retarget_semantic_ids([element], {"urn:cd:x": "urn:cd:y"})
 

@@ -153,9 +153,7 @@ def _plan_elements(
         )
     in_list = isinstance(container, model.OrderedNamespaceSet)
     taken: set[str] = {
-        member.id_short
-        for member in container
-        if member.id_short is not None
+        member.id_short for member in container if member.id_short is not None
     }
     pasted: list[PastedItem] = []
     for item in items:

@@ -215,9 +215,7 @@ def test_read_mode_disables_the_moves_and_refuses_them(moves) -> None:
     assert _ids(lab.submodel.submodel_element) == ["A", "B"]
 
 
-def test_list_items_move_and_references_to_them_follow(
-    moves, tmp_path
-) -> None:
+def test_list_items_move_and_references_to_them_follow(moves, tmp_path) -> None:
     items = [make_property("a", "1"), make_property("b", "2")]
     holder = make_submodel(id_="urn:holder", id_short="Holder")
     lab = moves(make_list("List", items), extra=(holder,))
@@ -233,9 +231,7 @@ def test_list_items_move_and_references_to_them_follow(
     reloaded = lab.saved(tmp_path)
     from aas_editor.package import Package
 
-    other = Package(tmp_path / "moved.aasx").objStore.get_item(
-        "urn:holder"
-    )
+    other = Package(tmp_path / "moved.aasx").objStore.get_item("urn:holder")
     target = other.get_referable("ToA").value
     resolved = target.resolve(Package(tmp_path / "moved.aasx").objStore)
     assert [m.value for m in reloaded.get_referable("List").value] == [
@@ -245,9 +241,7 @@ def test_list_items_move_and_references_to_them_follow(
     assert target.key[-1].value == "1"
     assert resolved.value == "1"
     lab.view.onUndo()
-    assert (
-        holder.get_referable("ToA").value.key[-1].value == "0"
-    )
+    assert holder.get_referable("ToA").value.key[-1].value == "0"
 
 
 @pytest.mark.parametrize("kind", ["operation", "entity", "annotation"])
@@ -261,7 +255,9 @@ def test_other_ordered_members_move_and_save_in_order(
         path = ("Operation", "input_variable")
         read = lambda sm: _ids(sm.get_referable("Operation").input_variable)  # noqa: E731
     elif kind == "entity":
-        parent = make_entity(statements=[make_property("S1"), make_property("S2")])
+        parent = make_entity(
+            statements=[make_property("S1"), make_property("S2")]
+        )
         path = ("Entity",)
         read = lambda sm: _ids(sm.get_referable("Entity").statement)  # noqa: E731
     else:
@@ -283,7 +279,9 @@ def test_other_ordered_members_move_and_save_in_order(
 
 
 def test_collection_children_move(moves, tmp_path) -> None:
-    lab = moves(make_collection("Coll", [make_property("x"), make_property("y")]))
+    lab = moves(
+        make_collection("Coll", [make_property("x"), make_property("y")])
+    )
     lab.select(("Coll", "y"))
 
     lab.act("structure.move_top")
@@ -310,7 +308,10 @@ def test_undo_of_a_delete_from_an_unordered_set_returns_to_the_sorted_place(
 
     monkeypatch.setattr(reference_dialogs, "confirm_delete", lambda *a: True)
     other = make_submodel(id_="urn:other", id_short="Zzz")
-    lab = moves(make_property("A"), extra=(other, make_submodel(id_="urn:a", id_short="Aaa")))
+    lab = moves(
+        make_property("A"),
+        extra=(other, make_submodel(id_="urn:a", id_short="Aaa")),
+    )
     proxy = lab.view.model()
     node = lab.shown.index("submodels")
     target = lab.shown.index("submodels", "Submodel")

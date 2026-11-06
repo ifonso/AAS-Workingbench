@@ -31,6 +31,7 @@ import enum
 from typing import cast
 
 from basyx.aas import model
+from basyx.aas.model.concept import ConceptDescription
 
 from aas_editor.application.changes import ModelChangeObserver
 from aas_editor.application.commands import Command
@@ -55,7 +56,7 @@ class Companions:
             objects and of everything below them refer to, each once.
     """
 
-    concept_descriptions: tuple[model.ConceptDescription, ...] = ()
+    concept_descriptions: tuple[ConceptDescription, ...] = ()
 
     @property
     def is_empty(self) -> bool:
@@ -81,7 +82,7 @@ class ConceptConflict:
         existing: The description of the target with the same id.
     """
 
-    source: model.ConceptDescription
+    source: ConceptDescription
     existing: model.Identifiable
 
 
@@ -95,8 +96,8 @@ class ConceptPlan:
         conflicts: Descriptions that need a decision.
     """
 
-    to_add: tuple[model.ConceptDescription, ...]
-    reused: tuple[model.ConceptDescription, ...]
+    to_add: tuple[ConceptDescription, ...]
+    reused: tuple[ConceptDescription, ...]
     conflicts: tuple[ConceptConflict, ...]
 
 
@@ -116,7 +117,7 @@ def gather_companions(
         description of the package is skipped.
     """
     index = ReferenceIndex(source_objects)
-    found: dict[str, model.ConceptDescription] = {}
+    found: dict[str, ConceptDescription] = {}
     for obj in objects:
         # iter_slots only reads attributes, so an element without an
         # identifiable above it is walked as well.
@@ -125,7 +126,7 @@ def gather_companions(
                 continue
             for key in slot.reference.key:
                 for candidate in index.with_id(key.value):
-                    if isinstance(candidate, model.ConceptDescription):
+                    if isinstance(candidate, ConceptDescription):
                         found.setdefault(candidate.id, candidate)
     return Companions(tuple(found.values()))
 
@@ -144,14 +145,14 @@ def plan_concepts(
         The plan. Nothing changes.
     """
     index = ReferenceIndex(target_objects)
-    to_add: list[model.ConceptDescription] = []
-    reused: list[model.ConceptDescription] = []
+    to_add: list[ConceptDescription] = []
+    reused: list[ConceptDescription] = []
     conflicts: list[ConceptConflict] = []
     for concept in companions.concept_descriptions:
         (existing, *_) = index.with_id(concept.id) or (None,)
         if existing is None:
             to_add.append(concept)
-        elif isinstance(existing, model.ConceptDescription) and (
+        elif isinstance(existing, ConceptDescription) and (
             dump_objects([existing]) == dump_objects([concept])
         ):
             reused.append(concept)
@@ -187,7 +188,7 @@ def concept_commands(
         commands.append(AddMember(observer, store, copied))
     for conflict in plan.conflicts:
         if choices.get(conflict.source.id) is ConceptChoice.ADD_WITH_NEW_ID:
-            copied = cast("model.ConceptDescription", clone(conflict.source))
+            copied = cast("ConceptDescription", clone(conflict.source))
             copied.id = new_identifier()
             renamed[conflict.source.id] = copied.id
             commands.append(AddMember(observer, store, copied))
@@ -229,8 +230,6 @@ def retarget_semantic_ids(
             if slot.container is None:
                 setattr(slot.owner, slot.field, after)
             else:
-                containers.replace_member(
-                    slot.container, slot.reference, after
-                )
+                containers.replace_member(slot.container, slot.reference, after)
             changed += 1
     return changed
