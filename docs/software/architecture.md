@@ -82,6 +82,13 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/list_children.py` | What a new child of a SubmodelElementList gets from the list: its type, value type, and semantic id. |
 | `ui/value_editor.py` | `ValueTypeBox`, `ValueLineEdit`, `ValueEdit`, `BinaryEdit`, and `ValueEditDialog`. They only show the rules of the domain modules (see [Entering values](#entering-values)). |
 | `ui/blob_actions.py` | The context menu actions that load and save the bytes of a Blob. Registered by `__main__.py` with `register_blob_actions`. |
+| `domain/replacement.py` | What replacing an element by a new one would do: `ReplacementPlan` with the new element, the `Loss` list, notes, and where the items went. Found without changing anything. |
+| `domain/element_copy.py` | Copies of elements without their parent, the attributes all elements share, and how to write a value for a message. |
+| `domain/conversion.py` | Which element types convert to which, and what each conversion keeps and loses (see [Replacing an element](#replacing-an-element)). |
+| `domain/list_settings.py` | What a `SubmodelElementList` fixes, choosing settings from items, and the rebuild of a list with other settings. |
+| `application/operations/replace.py` | `ReplaceElement` and `replacement_command`: the swap, and the updates to the references through the element, as one undo step. |
+| `ui/conversion_actions.py` | The context menu actions "Convert to another element type..." and "Change list settings...". Registered by `__main__.py` with `register_conversion_actions`. |
+| `ui/replacement_dialogs.py` | The dialog that lists what is lost, the chooser of the type, and the dialog of the list settings. |
 | `domain/ids.py` | Generated ids (`urn:uuid:`, D14), numbered idShorts for copies (D13), and `fix_id_short`, which turns any text into a valid idShort. |
 | `domain/references.py` | Finds every place where an AAS object stores a reference (`iter_slots`), and `ReferenceIndex`, which tells duplicate ids, the usages of an object, and dangling references (see [Reference integrity](#reference-integrity)). |
 | `application/operations/` | The plans and commands that keep references intact: `rename.py`, `delete.py`, `fix.py`, and `references.py`, which turns reference changes into commands. |
@@ -183,7 +190,28 @@ infrastructure ──────┘
 - **Bytes.** `BytesEdit` is the `BinaryEdit` with the interface of the generated forms. It replaced the editor of Python literals. It suggests the media type of a loaded file to the `content_type` widget of the form.
 - **Languages.** The model checks a language entry before it replaces one (`StandardTable._checkedMember`), and `LangStringSetGroupBox` checks all entries of a form.
 - **Children of a list.** `TreeView._applyListChildDefaults` is the one place where the add dialog of a SubmodelElementList is given the type, the value type, and the semantic id of the list, with `domain.list_children.child_defaults`.
+- **Several lines.** `ValueEdit` shows a `MultiLineTextEdit` for an `xs:string`, and a line for every other type. The generated forms give the text of each language of a `LangStringSet` the same box, through the `multilineParams` argument that reaches the leaf widgets. The box returns the exact text it was given until the user edits it, and keeps Windows line breaks. A cell of a view is still one line.
+- **Items of a list.** `ListIndexItem` shows the position of an item in a read-only `index` row, read from the list whenever it is shown, in place of the generated idShort.
 - **Testing the forms.** `tests/medium/forms.py` drives the generated dialogs by parameter name and stands in for `exec`, so that tests make elements through the real dialogs. The parametrized test in `tests/medium/test_element_types.py` compares the form and the attribute list of each of the 14 element types with the constructor of the class, so that an attribute that a new SDK adds fails it.
+
+### Replacing an element
+
+[ADR 0010](adr/0010-replacing-an-element-shows-what-is-lost.md) records the decisions. The SDK cannot change the class of an element, or what a list fixes, so both build a new element through its constructor and swap it in place.
+
+1. `plan_conversion` or `plan_list_rebuild` makes a plan: the preview of the new element, what it lacks (`losses`), and where each direct item went (`child_keys`).
+2. `plan_reference_updates` finds the model references through the element with the `ReferenceIndex`. They get the key type and target class of the new element, and the new position or idShort of an item. References into items that are gone are listed, and stay.
+3. The user sees the losses and the orphaned references, with Cancel as the default. A plan without either asks nothing.
+4. `replacement_command` is one step: the reference commands first, then `ReplaceElement`, which builds the element again, so that its items carry the updated references, and swaps it with `containers.replace_member`. The position stays, and undo gives back the old element itself.
+
+| Group | Types | Carried over |
+|---|---|---|
+| Value elements | Property, Range, MultiLanguageProperty, File, Blob | The value as text. Property and Range keep the value type for each other. A Range gives its `min` and takes `min` and `max` from one value. A MultiLanguageProperty gives one text (English if present). A File's path is the text of a Blob, or the content of the stored file. |
+| Reference elements | ReferenceElement, RelationshipElement, AnnotatedRelationshipElement | `first` (the `value` of a ReferenceElement), and `second` between relationships. |
+| Containers | SubmodelElementCollection, SubmodelElementList, Entity, Operation | The items, as copies. A list takes the most common type, value type, and semantic id and keeps the items that fit. An Operation takes all items as input variables. An Entity is a CoManagedEntity. |
+| Capability | Capability | Only the shared attributes, both ways. |
+| BasicEventElement | BasicEventElement | Only the shared attributes. It converts to every type, but no type converts to it. |
+
+Every pair carries the shared attributes: idShort, display name, category, description, semantic id, supplemental semantic ids, qualifiers, extensions, and embedded data specifications. Any pair across groups carries nothing else, and lists everything specific as lost. An item of a list, and nothing in a list, converts, because the list fixes its type (AASd-108), and the annotations of a relationship convert to data elements only.
 
 ### Registering an action
 

@@ -270,7 +270,7 @@ All ─ WP12
 | WP6 | `feat/structure-operations` | Not started |
 | WP7 | `feat/create-and-reference-flows` | Not started |
 | WP8a | `feat/value-editors` | Done |
-| WP8b | `feat/element-conversion` | Not started |
+| WP8b | `feat/element-conversion` | Done |
 | WP9 | `feat/supplementary-files` | Not started |
 | WP10 | `feat/concept-descriptions` | Not started |
 | WP11 | `feat/bulk-editing-and-presets` | Not started |
