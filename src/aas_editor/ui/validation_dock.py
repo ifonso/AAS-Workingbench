@@ -49,10 +49,10 @@ SEVERITY_LABELS = {
     Severity.WARNING: "Warning",
     Severity.INFO: "Info",
 }
-_PLURALS = {
-    Severity.ERROR: "errors",
-    Severity.WARNING: "warnings",
-    Severity.INFO: "hints",
+_COUNT_WORDS = {
+    Severity.ERROR: ("error", "errors"),
+    Severity.WARNING: ("warning", "warnings"),
+    Severity.INFO: ("hint", "hints"),
 }
 _ICONS = {
     Severity.ERROR: QStyle.StandardPixmap.SP_MessageBoxCritical,
@@ -233,6 +233,10 @@ class ValidationDock(QDockWidget):
         if vertical is not None:
             vertical.hide()
         if header is not None:
+            for column in (SEVERITY_COLUMN, RULE_COLUMN, LOCATION_COLUMN):
+                header.setSectionResizeMode(
+                    column, QHeaderView.ResizeMode.ResizeToContents
+                )
             header.setSectionResizeMode(
                 MESSAGE_COLUMN, QHeaderView.ResizeMode.Stretch
             )
@@ -368,7 +372,7 @@ class ValidationDock(QDockWidget):
         if report.is_clean:
             return "No findings"
         parts = [
-            f"{len(found)} {_PLURALS[severity]}"
+            f"{len(found)} {_COUNT_WORDS[severity][len(found) != 1]}"
             for severity in Severity
             if (found := report.with_severity(severity))
         ]
