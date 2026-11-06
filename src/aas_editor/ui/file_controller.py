@@ -330,6 +330,36 @@ class FileController:
         )
         return ok
 
+    def remove_many(self, names: Sequence[str]) -> bool:
+        """Removes several stored files as one step, asking once.
+
+        One question covers the references to all of them. Cancelling it
+        removes nothing, and one undo brings every file back with the paths
+        that were cleared (F-EDT-09 AC18).
+
+        Returns:
+            True if the files were removed.
+        """
+        chosen = list(names)
+        if not chosen:
+            return False
+        try:
+            prepared = prepare_file_delete(self._package, chosen, self._parent)
+        except DeleteCancelled:
+            return False
+
+        def work() -> None:
+            with self.stack.group(prepared.description):
+                for command in prepared.commands:
+                    self.stack.push(command)
+                for name in chosen:
+                    self.stack.push(
+                        files.RemoveFile(self.observer, self.store, name)
+                    )
+
+        ok, _ = self._attempt(work)
+        return ok
+
     def removal_choice(self, name: str) -> ReferenceChoice | None:
         """Asks what to do with the references to a file about to go.
 

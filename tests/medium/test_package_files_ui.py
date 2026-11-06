@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 from basyx.aas import model
 import pytest
+from PyQt6.QtWidgets import QTableWidgetSelectionRange
 from tests.factories import make_asset_information
 from tests.factories import make_file_element
 from tests.factories import make_shell
@@ -356,6 +357,50 @@ def test_removing_a_file_nothing_refers_to_asks_nothing(
     assert UNUSED not in world.package.fileStore
 
 
+def test_several_files_are_removed_as_one_step_with_one_question(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    questions: list[int] = []
+
+    def ask(references, parent=None):
+        questions.append(len(references))
+        return file_dialogs.ReferenceAnswer.CLEAR
+
+    monkeypatch.setattr(file_dialogs, "ask_remove_references", ask)
+
+    assert controller.remove_many([DOC, NOTE, UNUSED])
+
+    assert sorted(world.package.fileStore) == [THUMB]
+    assert world.document.value is None and world.note.value is None
+    assert questions == [2]
+    world.package.commandStack.undo()
+    assert sorted(world.package.fileStore) == sorted(FILES)
+    assert (world.document.value, world.note.value) == (DOC, NOTE)
+    assert not world.package.commandStack.can_undo
+
+
+def test_cancelling_the_question_for_several_files_keeps_all_of_them(
+    world, controller
+) -> None:
+    world.answers.references = world.answers.references.CANCEL
+
+    assert not controller.remove_many([DOC, UNUSED])
+
+    assert sorted(world.package.fileStore) == sorted(FILES)
+    assert not world.package.commandStack.can_undo
+
+
+def test_leaving_the_paths_removes_only_the_files(world, controller) -> None:
+    world.answers.references = world.answers.references.LEAVE
+
+    assert controller.remove_many([DOC, NOTE])
+
+    assert (world.document.value, world.note.value) == (DOC, NOTE)
+    assert sorted(world.package.fileStore) == sorted([UNUSED, THUMB])
+
+
 def test_saving_a_file_to_disk_writes_its_bytes(
     world, controller, tmp_path: Path
 ) -> None:
@@ -597,6 +642,52 @@ def test_the_panel_buttons_work_on_the_selected_file(
     qtbot.waitUntil(lambda: "/aasx/files/renamed.txt" in _rows(panel))
 
     assert world.note.value == "/aasx/files/renamed.txt"
+
+
+def test_the_panel_removes_several_selected_files_at_once(
+    world, panel, qtbot
+) -> None:
+    names = sorted(FILES)
+    panel.table.clearSelection()
+    panel.table.setRangeSelected(
+        QTableWidgetSelectionRange(names.index(DOC), 0, names.index(DOC), 3),
+        True,
+    )
+    panel.table.setRangeSelected(
+        QTableWidgetSelectionRange(
+            names.index(UNUSED), 0, names.index(UNUSED), 3
+        ),
+        True,
+    )
+    selected = panel.selected_names()
+    single_only = [
+        button.isEnabled()
+        for button in (panel.rename_button, panel.edit_button)
+    ]
+
+    panel.remove_button.click()
+    qtbot.waitUntil(lambda: UNUSED not in _rows(panel))
+
+    assert sorted(selected) == sorted([DOC, UNUSED])
+    assert single_only == [False, False]
+    assert sorted(world.package.fileStore) == sorted([NOTE, THUMB])
+    world.package.commandStack.undo()
+    assert sorted(world.package.fileStore) == sorted(FILES)
+
+
+def test_the_selected_files_stay_selected_when_the_list_refreshes(
+    world, panel
+) -> None:
+    names = sorted(FILES)
+    for name in (NOTE, THUMB):
+        index = names.index(name)
+        panel.table.setRangeSelected(
+            QTableWidgetSelectionRange(index, 0, index, 3), True
+        )
+
+    panel.refresh()
+
+    assert sorted(panel.selected_names()) == sorted([NOTE, THUMB])
 
 
 def test_the_edit_button_is_for_text_files_only(world, panel) -> None:
