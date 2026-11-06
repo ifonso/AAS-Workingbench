@@ -118,7 +118,6 @@ def test_an_element_is_converted_and_a_list_rebuilt_then_undone_and_saved(
     original = snapshot(package.objStore)
     footprint = _footprint(package)
     date = footprint.get_referable("PublicationDate")
-    published = date.value
     position = list(footprint.value).index(date)
 
     _trigger(view, "conversion.convert", *PCF, "PublicationDate")
