@@ -101,7 +101,7 @@ Treat `Partial` as "something exists", and confirm the details when starting eac
 | F-EDT-05 | ConceptDescription and IEC 61360 | P0 | Partial | Through the generic editors |
 | F-EDT-06 | Common attribute modules | P0 | Partial | Through the generic editors |
 | F-EDT-07 | Qualifiers and Extensions | P1 | Partial | Through the generic editors |
-| F-EDT-08 | Copy, paste, and reorder | P0 | Partial | Copy, cut, paste, and undo. Reorder not confirmed. |
+| F-EDT-08 | Copy, paste, and reorder | P0 | Partial | Copy, cut, paste, and undo, with one history for each package. Cut removes the source from every kind of parent. Reorder not confirmed. |
 | F-EDT-09 | Multi-element editing | P1 | Partial | Multi-select with bulk cut, copy, and delete |
 | F-EDT-10 | Supplementary files | P1 | Partial | `StoredFile` in `package.py` |
 | F-EDT-11 | References, semantics, lookups | P1 | Partial | Reference links open in tabs, with no lookup |
@@ -126,7 +126,7 @@ Treat `Partial` as "something exists", and confirm the details when starting eac
 These have no direct equivalent in the P0 and P1 list, so keep them while working toward parity:
 
 - Crash recovery
-- Undo and redo
+- Undo and redo, with one history for each package that restores the position of what was deleted
 - Excel import with mappings
 - LLM-assisted Handover Documentation
 - Validation with AAS Test Engines

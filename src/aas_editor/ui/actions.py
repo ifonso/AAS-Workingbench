@@ -7,18 +7,25 @@ created, shows the ones that fit it, enables them with the rule of the spec,
 and disables the ones that change a package while the editor is in Read mode.
 
 Example:
-    Registering an action that moves the current element to the top::
+    Registering an action that sets the category of the current element::
 
-        def move_to_top(context: ActionContext) -> None:
+        def mark_as_parameter(context: ActionContext) -> None:
             element = context.index.data(OBJECT_ROLE)
-            context.push(MoveMember(observer_for(context.package), ...))
+            context.push(
+                SetAttribute(
+                    observer_for(context.package),
+                    element,
+                    "category",
+                    "PARAMETER",
+                )
+            )
 
 
         register_action(
             ActionSpec(
-                action_id="structure.move_to_top",
-                text="Move to top",
-                run=move_to_top,
+                action_id="example.mark_as_parameter",
+                text="Mark as parameter",
+                run=mark_as_parameter,
                 is_enabled=lambda context: context.index.isValid(),
                 views=ViewKind.PACKAGES,
                 toolbar=True,
@@ -26,7 +33,7 @@ Example:
         )
 
     The module that registers must be imported before the first view is
-    created, for example from `aas_editor/ui/__init__.py`.
+    created, for example by the composition root, `__main__.py`.
 """
 
 from collections.abc import Callable

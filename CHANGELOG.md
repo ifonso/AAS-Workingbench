@@ -21,6 +21,12 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The context menu action "Add references to all Submodels to the first AAS", which saving did on its own before.
 - Files under the annotations of an annotated relationship are read from an AASX. The SDK skipped them.
 - The round-trip test now covers the bundled AASX templates, and compares thumbnail, properties and zip entries. A sample runs by default, and `AAS_CORPUS_TEMPLATES=all` runs every template.
+- Undo and redo for every edit, add, delete, and paste, with one history of 10000 steps for each package. Undo and redo act on the package of the current item or tab, and show the step in their text, such as "Undo Delete Pump".
+- Undo gives back the position of what was deleted, such as an element in the middle of a collection, or a language entry in a description.
+- Deleting, cutting, or pasting several selected rows is one undo step, and so is linking all Submodels to the AAS.
+- An Edit mode and a Read mode in the View menu. Edit mode is the default. In Read mode every change, including undo and redo, is refused with a message, the editing actions are disabled, and nothing can be edited in a cell.
+- A registry for actions in `aas_editor.ui.actions`, so that features add actions to the context menus and the toolbar without changing the tree views. See the [architecture guide](docs/software/architecture.md#registering-an-action).
+- A tab whose object was deleted, in another tab or by undo, now closes, and so does a tab of a closed package.
 
 ### Changed
 
@@ -39,6 +45,10 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Save All, and Save and Close All, skip packages without changes.
 - Crash recovery writes a complete AASX when files were added since the package was opened.
 - The package uses `SetIdentifiableStore` instead of the deprecated `SetObjectStore`.
+- The modified marker of a package follows its undo history. Undoing back to the saved state clears it, undoing a saved edit sets it again, and a failed or refused save leaves it set.
+- Crash recovery removes the recovery file of a package once undo has brought the package back to its saved state.
+- Closing a package, and opening one, are no longer steps of an undo history.
+- Adding a reference that a shell has already, or an entry with a key that a mapping has, replaces nothing silently. A reference is refused with an error, and an entry replaces the old one as an edit that can be undone.
 
 ### Fixed
 
@@ -60,11 +70,16 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Crash recovery lost files that were added since the package was opened, and the thumbnail and properties of the original.
 - Renaming an idShort, or replacing an element, moved it to the end of its parent in the saved file. It now keeps its position.
 - An edit, an added element, or a deleted element in one tab did not show in other tabs that show the same object. They now update.
+- Undo of a delete put the element at the end of its parent instead of its position.
+- Deleting a child closed the tab of its container, because the tabs were compared with the parent of the deleted rows.
+- A tab moved its current row to the last inserted row when another tab added a row, and could lose its current row when another tab changed the object. A tab now moves only for what its own user did.
+- A tab that showed an object deleted in another tab stayed open and out of date.
 
 ### Removed
 
 - `Guidelines.md`, replaced by `docs/contributing/style-guide.md`.
 - The setting "Automatically add refs of existing submodels to AAS when saving file". Saving no longer links Submodels to the first AAS, and it was on by default.
+- The undo list of 10 steps in each tab. The history of a package replaces it.
 
 ## 0.4.13 - 2026-08-28
 

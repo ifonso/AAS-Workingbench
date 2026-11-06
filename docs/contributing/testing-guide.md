@@ -140,6 +140,8 @@ These checks matter most for parity work:
   Set `AAS_CORPUS_TEMPLATES=all` to run all 132. The default run covers 31 templates in about 7 seconds, and all 132 take about 22 seconds.
   To add packages outside the repository, set `AAS_CORPUS_ROOT` to the folder that contains `Requester_screwing.aasx` and `package-explorer/src`.
   Without it, the local mode is skipped. Packages that the SDK cannot read, such as metamodel V2 files, are skipped with the reason.
+- **Comparing state:** compare packages with `tests.serialization.snapshot`, which serializes the objects with the SDK and sorts what is unordered, so that a test of undo does not depend on the attributes it remembers to check.
+  `tests/medium/conftest.py` offers `model_support` for the models, and `views` for the package tree and the attribute views.
 - **Factories:** build objects with the helpers in `tests/factories.py` (`from tests.factories import make_property`), not by hand in each test.
   `tests/package_factories.py` builds packages that a normal writer does not make: a File without a stored file, and a File under an annotation.
 - **Sample packages:** use the IDTA templates in `tests/data/`. Add a small new file there only if no existing file covers the case.
