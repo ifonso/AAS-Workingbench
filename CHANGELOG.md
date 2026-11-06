@@ -73,12 +73,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Editing the minimum or maximum interval of a BasicEventElement in a dialog raised an error.
 - Editing a language entry to a language that another entry has failed with a traceback. It is refused with a message.
 - The type of the children of a list could be chosen from classes that cannot be made.
-
-### Known limits
-
-- The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
-- A string with line breaks is shown in a value line but cannot be typed there.
-- The Blob editor ran the entered text as Python code. It now accepts only a bytes literal such as `b'text'`.
+- The Blob editor ran the entered text as Python code. It now shows the content as text or hex, and nothing is run.
 - A failure while saving, such as an unwritable folder, closed the application. It now shows an error.
 - The AAS Test tool could not check an AASX file, because it opened the file as text. It now opens files in binary mode.
 - `testEditCreate` hung the large tests because a modal dialog blocked it. The large tests now stub modal dialogs.
@@ -100,6 +95,11 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - `Guidelines.md`, replaced by `docs/contributing/style-guide.md`.
 - The setting "Automatically add refs of existing submodels to AAS when saving file". Saving no longer links Submodels to the first AAS, and it was on by default.
 - The undo list of 10 steps in each tab. The history of a package replaces it.
+
+### Known limits
+
+- The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
+- A string with line breaks is shown in a value line but cannot be typed there.
 
 ## 0.4.13 - 2026-08-28
 
