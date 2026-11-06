@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import QInputDialog
 from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import Command
 from aas_editor.application.commands import ReadOnlyError
+from aas_editor.application.edits import AddMember
 from aas_editor.application.edits import RemoveMember
 from aas_editor.application.operations import concepts as ops
 from aas_editor.application.operations import data_specs
@@ -43,6 +44,7 @@ from aas_editor.domain.concept_order import ranks_for
 from aas_editor.domain.concepts import SemanticHolder
 from aas_editor.domain.concepts import children_of
 from aas_editor.domain.concepts import holders_of
+from aas_editor.domain.concepts import new_empty_concept
 from aas_editor.domain.data_specifications import DEFAULT_LANGUAGE
 from aas_editor.domain.data_specifications import Iec61360Draft
 from aas_editor.domain.data_specifications import build_content
@@ -62,6 +64,7 @@ from aas_editor.ui.actions import register_action
 from aas_editor.ui.delete_flow import DeleteCancelled
 from aas_editor.ui.delete_flow import prepare_delete
 from aas_editor.ui.iec61360_dialog import ask_iec61360
+from aas_editor.ui.tree_navigation import select_object
 from aas_editor.ui.value_list_dialog import ask_value_list
 
 TITLE = concept_dialogs.TITLE
@@ -155,12 +158,19 @@ def _can_hold_semantics(context: ActionContext) -> bool:
     return _has_package(context) and bool(_holder_roots(context))
 
 
-def _has_semantic_id(context: ActionContext) -> bool:
-    roots = _holder_roots(context)
-    return (
-        _has_package(context)
-        and len(roots) == 1
-        and getattr(roots[0], "semantic_id", None) is not None
+def _is_single_holder(context: ActionContext) -> bool:
+    """Tells whether one submodel or element is selected.
+
+    The action that creates a description for its semantic id is on for any
+    such row, also one with no semantic id, and says why it cannot work then
+    (F-EDT-11 AC16). Off in the menu it said nothing.
+    """
+    return _has_package(context) and len(_holder_roots(context)) == 1
+
+
+def _can_create_empty(context: ActionContext) -> bool:
+    return _has_package(context) and (
+        _in_concept_area(context) or bool(_holder_roots(context))
     )
 
 
@@ -216,7 +226,7 @@ def _run_create_from_semantic_id(context: ActionContext) -> None:
         _all_objects(context), roots, adaptive=True, below=False
     )
     if not plan.new:
-        _show(context, _why_nothing_created(plan))
+        _show(context, _why_nothing_created(plan, roots))
         return
     commands = ops.create_commands(
         observer_for(context.package), _store(context), plan
@@ -224,7 +234,9 @@ def _run_create_from_semantic_id(context: ActionContext) -> None:
     _push(context, f"Create concept description {plan.new[0].id}", commands)
 
 
-def _why_nothing_created(plan: ops.CreatePlan) -> str:
+def _why_nothing_created(
+    plan: ops.CreatePlan, roots: list[model.Referable]
+) -> str:
     if plan.existing:
         concept = plan.existing[0][1]
         return (
@@ -237,7 +249,11 @@ def _why_nothing_created(plan: ops.CreatePlan) -> str:
             "The id of the semantic id belongs to "
             f"{describe_object(other)}, which is not a concept description."
         )
-    return "The selection has no semantic id, so there is nothing to create."
+    name = describe_object(roots[0]) if roots else "the selection"
+    return (
+        "Cannot create a concept description because no valid semantic id is "
+        f"present in {name}."
+    )
 
 
 def _run_create_from_all(context: ActionContext) -> None:
@@ -255,6 +271,23 @@ def _run_create_from_all(context: ActionContext) -> None:
         observer_for(context.package), _store(context), plan
     )
     _push(context, f"Create {len(plan.new)} concept descriptions", commands)
+
+
+def _run_create_empty(context: ActionContext) -> None:
+    """Adds a description with a generated id, and selects it.
+
+    The semantic id of a selected element stays as it is (F-EDT-11 AC15).
+    Assign concept description puts the new description in it afterwards.
+    """
+    concept = new_empty_concept()
+    command = AddMember(
+        observer_for(context.package),
+        _store(context),
+        concept,
+        description="Create empty concept description",
+    )
+    if _push(context, command.description, [command]):
+        select_object(context.view, concept, context.package)
 
 
 def _run_from_pairs(context: ActionContext) -> None:
@@ -656,7 +689,7 @@ _SPECS = (
         "concepts.create",
         "Create concept description from semantic id",
         _run_create_from_semantic_id,
-        _has_semantic_id,
+        _is_single_holder,
         400,
         "Add a concept description for the semantic id of this element",
     ),
@@ -667,6 +700,14 @@ _SPECS = (
         _has_children,
         401,
         "Add a concept description for each semantic id below, that has none",
+    ),
+    _spec(
+        "concepts.create_empty",
+        "Create empty concept description",
+        _run_create_empty,
+        _can_create_empty,
+        400,
+        "Add a concept description with a generated id and nothing else",
     ),
     _spec(
         "concepts.assign",

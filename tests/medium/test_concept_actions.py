@@ -216,13 +216,22 @@ class TestCreateFromSemanticId:
         lab.stack.undo()
         assert _concept_ids(lab.store) == []
 
-    def test_it_is_disabled_for_an_element_without_semantic_id(
+    def test_an_element_without_semantic_id_says_why_nothing_is_created(
         self, concepts
     ) -> None:
         lab = self._lab(concepts)
         lab.select((*SUBMODEL, "Plain"))
 
-        assert not lab.enabled("concepts.create")
+        enabled = lab.act("concepts.create")
+
+        assert enabled
+        assert lab.messages[-1].startswith(
+            "Cannot create a concept description because no valid semantic "
+            "id is present in"
+        )
+        assert "Plain" in lab.messages[-1]
+        assert _concept_ids(lab.store) == []
+        assert not lab.stack.can_undo
 
     def test_an_id_of_another_kind_of_object_is_explained(
         self, concepts
