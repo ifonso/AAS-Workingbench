@@ -25,7 +25,7 @@
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
 from PyQt6 import QtCore
-from PyQt6.QtCore import Qt, QModelIndex
+from PyQt6.QtCore import QItemSelectionModel, Qt, QModelIndex
 from PyQt6.QtWidgets import QAbstractScrollArea, QHeaderView
 
 import aas_editor.widgets as widgets
@@ -150,11 +150,22 @@ class AttrsTreeView(TreeView):
         # update edit action
         valColIndex = index.siblingAtColumn(VALUE_COLUMN)
         if valColIndex.flags() & Qt.ItemFlag.ItemIsEditable:
-            self.setCurrentIndex(valColIndex)
+            self._moveCurrentTo(valColIndex)
             self.editCreateInDialogAct.setEnabled(True)
         if self.isEditableInsideCell(valColIndex):
-            self.setCurrentIndex(valColIndex)
+            self._moveCurrentTo(valColIndex)
             self.editAct.setEnabled(True)
+
+    def _moveCurrentTo(self, index: QModelIndex):
+        """Make the cell current without changing what is selected.
+
+        The actions are refreshed whenever the selection changes, and
+        `setCurrentIndex` would select the cell alone, so a selection of
+        several rows could never be kept.
+        """
+        self.selectionModel().setCurrentIndex(
+            index, QItemSelectionModel.SelectionFlag.NoUpdate
+        )
 
     def onAddAct(self, parent: QModelIndex = None):
         try:
