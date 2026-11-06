@@ -135,7 +135,8 @@ class HeaderView(QHeaderView):
         self.setStretchLastSection(True)
         self.setFixedHeight(TOOLBARS_HEIGHT)
 
-        self.sortIndicatorChanged.connect(lambda a, b: print(a, b))
+        # Natural order is the default: the user sorts by clicking a column.
+        self.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
         self.currSortSection = self.sortIndicatorSection()
         self.currOrder = self.sortIndicatorOrder()
 
@@ -158,8 +159,13 @@ class HeaderView(QHeaderView):
     def restoreState(
         self, state: typing.Union[QtCore.QByteArray, bytes, bytearray]
     ) -> bool:
-        super(HeaderView, self).restoreState(state)
+        result = super(HeaderView, self).restoreState(state)
+        # A sort is not restored. The order of the tree is the saved order of
+        # the package until the user sorts again.
+        self.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
+        self.currSortSection = -1
         self.updateMenu()
+        return result
 
     def updateMenu(self):
         self.updateShowSectionActs()
@@ -790,6 +796,10 @@ class TreeView(BasicTreeView):
         self.model().dataChanged.connect(self.onDataChanged)
         self.model().rowsInserted.connect(self.onRowsInserted)
         self.model().rowsRemoved.connect(self.onRowsRemoved)
+        # Move up and down depend on the place of the rows and the selection.
+        self.model().rowsMoved.connect(self.onRowsMoved)
+        self.model().layoutChanged.connect(self.onRowsMoved)
+        self.selectionModel().selectionChanged.connect(self.onRowsMoved)
         history = getattr(self.sourceModel(), "historyChanged", None)
         if history is not None:
             history.connect(self.onHistoryChanged)
@@ -896,6 +906,9 @@ class TreeView(BasicTreeView):
             self.setCurrentIndex(self.model().index(last, 0, parent))
         elif self._intent == "delete":
             self.setCurrentIndex(parent)
+
+    def onRowsMoved(self, *args):
+        self.updateActions(self.currentIndex())
 
     def onRowsRemoved(self, parent: QModelIndex, first: int, last: int):
         if self._intent == "delete" and self._stash is None:
