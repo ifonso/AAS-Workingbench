@@ -7,66 +7,7 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
-from PyQt6.QtGui import QColor, QIcon, QPainter, QPixmap, QFont
-
-from aas_editor.settings.colors import LIGHT_BLUE
 from aas_editor.ui.theme.icons import tabler_icon
-
-
-def getCharsIcon(
-    chars: str,
-    font_size: int = 24,
-    color: QColor = LIGHT_BLUE,
-    background_color: QColor = QColor("transparent"),
-):
-    """
-    Generate a QIcon from a string of characters.
-
-    Args:
-        chars (str): The characters to render as an icon (max 4 characters).
-        font_size (int): The font size for the characters.
-        color (QColor): The color of the characters.
-        background_color (QColor): The background color of the icon.
-
-    Returns:
-        QIcon: An icon created from the characters.
-    """
-    if len(chars) > 4:
-        raise ValueError("Max 4 characters allowed for an icon")
-
-    # Create a pixmap to render the characters
-    size = font_size * 2  # Adjust size based on font size
-    pixmap = QPixmap(size, size)
-    pixmap.fill(background_color)  # Set background color
-
-    # Set up the painter
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
-
-    # Set font
-    font = QFont("Monospace")
-    font.setPointSize(font_size)
-    font.setBold(True)
-    painter.setFont(font)
-
-    # Set pen color
-    painter.setPen(color)
-
-    # Draw each character individually with tight spacing
-    char_width = font_size * 0.6  # Adjusted for a compact font
-    x_offset = 0  # Start drawing from the left padding
-    y_offset = (size - font_size) / 2  # Center vertically
-    char_spacing: int = 2
-    for char in chars:
-        # Draw the character at the current position
-        painter.drawText(int(x_offset), int(y_offset + font_size), char)
-        # Move the x_offset for the next character
-        x_offset += char_width + char_spacing
-    painter.end()
-
-    # Convert the pixmap to a QIcon
-    return QIcon(pixmap)
 
 
 # The action icons are Tabler icons (MIT) that draw in a color of the theme in

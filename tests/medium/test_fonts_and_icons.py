@@ -319,3 +319,11 @@ def test_zooming_a_tree_changes_the_size_and_keeps_the_family(
         assert QFontInfo(font).family() == FONT_FAMILY
     finally:
         DetailedInfoTable.currFont.setPointSize(before)
+
+
+def test_the_shared_qapp_has_inter_registered_for_every_test(
+    qapp: QApplication,
+) -> None:
+    # Run this test alone: nothing else has called `install_fonts` then.
+    assert FONT_FAMILY in QFontDatabase.families()
+    assert QFontInfo(QFont(FONT_FAMILY)).family() == FONT_FAMILY

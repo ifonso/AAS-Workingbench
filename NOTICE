@@ -91,6 +91,19 @@ Tabler Icons (src/aas_editor/icons/tabler/)
     folder, and is the text of the same release. The editor draws the files
     in a color of the theme, and does not change them.
 
+Icons of the kinds of AAS elements (src/aas_editor/icons/kinds/)
+    The 24 SVG files that mark the kinds of elements in the trees (shell,
+    submodel, concept description, the elements, and the parts such as
+    qualifier and reference) are the own work of this project, drawn for it in
+    2026, and are under its license, the GNU General Public License, version
+    3. Each is a shape for the family of the kind, with one or two letters for
+    the kind. The shapes and the letters were drawn from scratch on a grid of
+    16 by 16 pixels with a stroke of 1.33. The letters are skeletons of lines
+    that were made for these files, and are written as paths, so no font is
+    needed and none is embedded. No file of another set of icons, and no
+    outline of a font, was copied, traced or used as a model. They carry no
+    third-party license and need no attribution.
+
 Inter (src/aas_editor/fonts/)
     The font of the user interface. Inter is by The Inter Project Authors
     (https://github.com/rsms/inter), and the font file states "Copyright 2016
@@ -109,6 +122,47 @@ Inter (src/aas_editor/fonts/)
     The OFL asks that each copy of the font carries its license. The folder
     does, and so does the stand-alone build, which also ships this NOTICE.
 
+Fluent 2 color values (src/aas_editor/domain/design_tokens.py)
+    The neutral colors of the light and dark themes (backgrounds, foregrounds
+    and strokes) are values of the alias tokens of Fluent 2, read from
+    https://github.com/microsoft/fluentui (packages/tokens/src/alias/
+    lightColor.ts, darkColor.ts and global/colors.ts) on 2026-11-06. Only
+    those hex values are used, and no file of that repository is copied. The
+    repository states the MIT License, "Copyright (c) Microsoft
+    Corporation". The accent and status colors are this project's own. The
+    MIT License asks that its copyright notice and permission notice go with
+    "all copies or substantial portions of the Software". A few color values
+    are hardly a substantial portion, and the notice is given here anyway:
+
+        Copyright (c) Microsoft Corporation.
+
+        Permission is hereby granted, free of charge, to any person obtaining
+        a copy of this software and associated documentation files (the
+        "Software"), to deal in the Software without restriction, including
+        without limitation the rights to use, copy, modify, merge, publish,
+        distribute, sublicense, and/or sell copies of the Software, and to
+        permit persons to whom the Software is furnished to do so, subject to
+        the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+        EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+        NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+        BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+        ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+        CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+
+    The same repository's LICENSE adds that the fonts and icons that Fluent
+    UI React references are under separate terms
+    (https://aka.ms/fluentui-assets-license). This project uses none of
+    those fonts or icons, and the color values are not among them. The name
+    Fluent is used only to say what the colors follow, and the project is not
+    affiliated with or endorsed by Microsoft.
+
 Logos (src/aas_editor/icons/logo.*, full_logo.*, full_logo3.svg)
     Part of the AAS Manager code base. Their origin and license are not
     recorded in the repository. They are the only files of icons.
@@ -119,9 +173,6 @@ Of unrecorded origin
     style sheets of src/aas_editor/themes/ that name no license (see above).
     The old icons of actions, whose names matched the Material Design Icons
     set and whose origin was not recorded, were removed from the repository.
-    The icons that show the kinds of AAS elements in the trees are not files.
-    They are letters that the code draws with the font "Monospace" of the
-    system, and are to be replaced by icons of this project.
 
 
 Software that the editor installs
