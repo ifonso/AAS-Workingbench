@@ -71,6 +71,16 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Change list settings, in the context menu of a SubmodelElementList. It rebuilds the list with another type of items, value type, semantic id, or order flag, which the SDK fixes when the list is made. The items that fit stay, in order, and the ones that do not are named before the list changes. "Detect from the items" fills the settings from what the items share. Editing one of these attributes in a cell now points to this action.
 - An item of a SubmodelElementList shows a read-only `index` row with its position, where it showed the name that the SDK generates. The row follows items that are added, removed, or moved.
 - A text of several lines can be typed. An `xs:string` value has a box of several lines in the value dialog and in the add and edit forms, and so does the text of each language of a MultiLanguageProperty, a description, or a display name. The text comes back exactly as it was while nothing is edited, including Windows line breaks. An `xs:normalizedString` stays a line, because the SDK refuses a line break in it.
+- Create AAS in the context menu of the package tree asks for the id, the asset kind, the global asset id (generated, with a Generate button), the asset type, and specific asset ids. A new AAS always has valid AssetInformation. The Add of the shells node uses the same dialog.
+- Create Submodel asks for the id, the kind, and the AAS that should refer to it. The Submodel and its reference are one undo step. "Link existing Submodels..." in the context menu of an AAS lists the Submodels it does not refer to and links the ticked ones in one step.
+- "Generate global asset id" and "Add specific asset id..." in the context menu of an AAS, each one undo step. Removing the last asset id is refused with the reason (AASd-131).
+- "Remove attributes..." in the context menu of a Submodel removes all qualifiers, extensions, descriptions, display names, or categories from the Submodel and every element below it, including annotations, entity statements, and operation variables. The dialog names the number of each, and the question states what goes. It is one undo step.
+- A reference picker in every form that enters or edits a reference: `semanticId`, supplemental semantic ids, `valueId`, `refersTo`, the value of a ReferenceElement, the ends of a relationship, the Submodels and `derivedFrom` of an AAS, `externalSubjectId`, `isCaseOf`, `observed`, and `messageBroker`. "Choose from package..." lists the shells, Submodels, concept descriptions, and elements of the package, filtered by the target type that the field accepts, with a search. It derives the keys: an external reference to the id of a concept description, or a model reference through the path. An element gets a model reference, because it has no id. The keys stay editable, so an external reference to anything can still be typed.
+- Under the keys of a reference, a line says whether it resolves, is dangling (and which key is missing), or points outside of the package. The target type of a model reference follows the type of its last key.
+- When the keys break AASd-121 to 128, the form shows the reason in place of a traceback, and OK stays off until the keys are right. A reference without keys says to add one or choose a target.
+- "Jump to target" in the context menu of a reference in a tab opens the target in the same tab, so Back returns to the object being edited. A reference that resolves in part opens the closest object and names the key that was not found. A reference to nothing, or to something outside of the package, says so. An external reference whose id belongs to an object of the package also jumps. It works in Read mode.
+- Paste into an AAS: a copied Submodel is added with a new id, or its own id after a cut, and the AAS gets a reference to it. A copied reference to a Submodel is added as it is. A reference that the AAS holds already is skipped, with a message. A Submodel from another package comes with its concept descriptions and files. One paste is one undo step.
+- `domain/reference_picker.py`, `domain/asset_information.py`, `application/operations/create.py` and `bulk.py` hold the rules without Qt, and `domain/walking.descendants` walks entity statements and operation variables as well.
 
 ### Changed
 
@@ -139,6 +149,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Undo of adding a file that the package held already, with the same content, removed that file.
 - The Paste action could add the object of the paste buffer itself, so a second paste, or a paste into a collection that has the idShort, failed. It adds a copy with a free name.
 - Undoing the delete of a shell, submodel or concept description put the row at the end of its list. The rows of such lists are sorted by name, so the row returns to its sorted place.
+- Add on the node of the shells failed with AASd-131 and a traceback, because the generated form could not make AssetInformation. It opens the Create AAS dialog now.
+- The old chooser of a model reference listed every referable without a filter, and the semantic id had none. Both use the new picker.
 
 ### Removed
 
@@ -158,13 +170,17 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - 49 of the 132 bundled templates open only in failsafe mode, and so can only be saved with Save As. Their packages have defects that the SDK refuses to read: 30 share an id between objects, and the others break constraints such as AASd-014, 021, 022, 109, 123 or 131. No reader option can keep that content, so the rule stays. See [the causes](docs/software/validation.md#why-49-of-the-132-templates-open-only-in-failsafe-mode).
 - The validation rules check what the SDK leaves open, and cannot check AASd-012, or AASd-006 and AASd-007 when `valueId` points outside the package. Saving does not run them yet.
 - Shells, submodels, concept descriptions and the Submodel references of a shell cannot be moved, because the SDK keeps them in sets whose order is not saved (D16). Their view is sorted by name.
-- Paste into an AAS is not offered. A pasted submodel is added to the package without a reference from a shell. Link it with the action that links the submodels.
 - Cut still removes the element at once (D12), so Escape or a missing paste does not bring it back, except by undo.
 - A paste of elements into a SubmodelElementList does not check the type of the list in advance. The SDK refuses a wrong element (AASd-107), the paste is undone as a whole, and the message says why.
 - The paste buffer and the system clipboard are one: a newer copy anywhere replaces the buffer. The original keeps its internal buffer first.
 - Converting a text or a Property to a File can give a path that no stored file has. Saving reports such a File.
 - The item of a SubmodelElementList cannot be converted to another type, because the list fixes it. Change the list settings instead.
 - A cell of the package tree or of a tab is still one line. Use Edit to type line breaks.
+- The reference picker lists the open package only. Other packages, ECLASS, and IEC CDD are out of scope (F-EDT-11).
+- A reference copied from another program is not pasted into an AAS, because only copies made in the editor keep a reference. Copy the Submodel instead.
+- Jump to target is in the tabs only, because the package tree does not show references. A key of a reference is not a jump target of its own.
+- The Create AAS dialog does not ask for the external subject id of a specific asset id. Edit it in the tab afterwards, with the picker.
+- Remove attributes offers qualifiers, extensions, descriptions, display names, and categories. Semantic ids and data specifications are not offered, because removing them breaks the constraints of lists (AASd-107) and templates.
 
 ## 0.4.13 - 2026-08-28
 

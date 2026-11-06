@@ -128,16 +128,23 @@ class ReferenceFieldMixin:
         self, watched: QObject | None, event: QEvent | None
     ) -> bool:
         """Re-checks the reference a moment after the user changed the keys."""
-        if event is not None and hasattr(self, "_refresh_timer"):
-            if event.type() == QEvent.Type.ChildAdded and watched is not None:
-                child = getattr(event, "child", lambda: None)()
-                if isinstance(child, QWidget):
-                    child.installEventFilter(self)  # pyright: ignore[reportArgumentType]
-                    for inner in child.findChildren(QWidget):
-                        inner.installEventFilter(self)  # pyright: ignore[reportArgumentType]
-                self._refresh_timer.start()
-            elif event.type() in _WATCHED:
-                self._refresh_timer.start()
+        try:
+            if event is not None and hasattr(self, "_refresh_timer"):
+                if (
+                    event.type() == QEvent.Type.ChildAdded
+                    and watched is not None
+                ):
+                    child = getattr(event, "child", lambda: None)()
+                    if isinstance(child, QWidget):
+                        child.installEventFilter(self)  # pyright: ignore[reportArgumentType]
+                        for inner in child.findChildren(QWidget):
+                            inner.installEventFilter(self)  # pyright: ignore[reportArgumentType]
+                    self._refresh_timer.start()
+                elif event.type() in _WATCHED:
+                    self._refresh_timer.start()
+        except RuntimeError:
+            # The form is being deleted, and Qt still delivers its last events.
+            return False
         return False
 
     def showEvent(self, event: Any) -> None:  # noqa: N802
@@ -171,6 +178,13 @@ class ReferenceFieldMixin:
 
     def refresh_status(self) -> None:
         """Checks the keys, shows the state, and gates the OK button."""
+        try:
+            self._check_reference()
+        except RuntimeError:
+            # A timer fired after the form was deleted.
+            return
+
+    def _check_reference(self) -> None:
         self._derive_target_type()
         self._problem = ""
         reference = self.current_reference()

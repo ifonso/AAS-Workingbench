@@ -108,6 +108,11 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/operations/paste.py` | `plan_paste` and `paste_commands`: copies with a free idShort or a new id, inserted at a position. |
 | `application/operations/companions.py` | `gather_companions`, `plan_concepts`, `concept_commands`, and `retarget_semantic_ids`: what goes with a copy between packages. It lists the file references of the copies too. |
 | `ui/move_actions.py`, `ui/paste_actions.py`, `ui/paste_dialogs.py` | The move and paste actions and the questions of a paste between packages. |
+| `domain/asset_information.py`, `application/operations/create.py` | `build_asset_information` and `build_specific_asset_id` check the asset ids and say what is wrong (AASd-131). `new_shell` and `new_submodel` make valid objects with generated ids, `add_shell` and `add_submodel` put them in as one step, and the asset id commands edit a shell. |
+| `application/operations/bulk.py` | `plan_remove_attributes` finds the qualifiers, extensions, descriptions, display names, or categories of a Submodel and everything below, and `removal_commands` removes them. |
+| `domain/reference_picker.py` | The rules of the reference picker (see [Entering references](#entering-references)). |
+| `ui/create_dialogs.py`, `ui/create_actions.py`, `ui/bulk_actions.py` | The dialogs and the actions Create AAS, Create Submodel, Link existing Submodels, Generate global asset id, Add specific asset id, and Remove attributes. |
+| `ui/reference_picker.py`, `ui/reference_fields.py`, `ui/reference_jump.py` | The picker dialog, the form fields that hold it, and Jump to target. |
 
 ### Supplementary files
 
@@ -313,6 +318,21 @@ register_action(
 - **Paste.** `plan_paste(container, items, index, keep_ids, taken_ids)` clones the items through `domain.clipboard_json.clone`, so the buffer can be pasted again and nothing keeps a parent. An idShort is made free with `unique_id_short`, and an identifiable gets `new_identifier()` unless it is a cut that can keep its id. `ui/paste_actions.py` reads the buffer, `TreeClipboard.objects`, where text on the system clipboard that is AAS JSON has already become objects (`TreeView._appendClipboardText`). The existing Paste uses `pasteCopyFor` for the same naming.
 - **Between packages.** `TreeClipboard.source` is the package a copy came from. A paste into another package calls `gather_companions` (the concept descriptions of the semantic ids of the items and of everything below them) and `plan_concepts` (add, reuse when the JSON is equal, conflict otherwise), asks through `ui/paste_dialogs.py`, and puts `concept_commands` in the same group as the paste. A description added under a new id is followed by `retarget_semantic_ids` on the copies before they are inserted. `Companions` is the place to add other things that travel with a copy, such as supplementary files.
 - **Actions.** `register_move_actions()` and `register_paste_actions()` add `structure.move_*`, `structure.paste_*` and `structure.clear_buffer`. The tree views refresh the enabled states when the selection, the rows, or the buffer change.
+
+### Entering references
+
+[ADR 0014](adr/0014-reference-fields-and-creation-dialogs.md) records the decisions.
+
+- `widgetUtil.getWidget4typehint` gives every `Reference`, `ExternalReference`, and `ModelReference[...]` hint a `ReferenceFieldMixin` form. It keeps the key rows of the generated form and adds a "Choose from package..." button, and a line that says whether the reference resolves, dangles (and which key is missing), or points outside of the package.
+- `rule_for_hint` turns the hint into a `ReferenceRule`: which kinds are accepted and which classes may be the target. `candidates` lists the shells, Submodels, concept descriptions and elements, `reference_to` derives the keys, and `status_of` checks a reference against a `ReferenceIndex`.
+- The package comes from the tree view that opened the dialog (`package_of`), or from a `package` attribute of the dialog.
+- The form builds the reference while the user types. When the SDK refuses the keys, the form shows its message and keeps OK off, so the user sees the reason (AASd-121 to 128) and not a traceback.
+- Jump to target (`reference.jump`) is registered for the tabs. It opens the target in the same tab, so the tab's Back returns to the object being edited.
+- Paste into an AAS goes through `plan_paste_into_shell` and `shell_paste_commands` in `application/operations/paste.py`, and `ui/paste_actions._paste_into_shell`.
+
+### Creating
+
+`new_shell` and `new_submodel` make objects that the SDK accepts, with ids from `new_identifier`. `add_shell` and `add_submodel` push one step each, and the second also pushes the reference from the shell. The dialogs validate while the user types by building the object, so OK is off with the reason. `register_create_actions`, `register_bulk_actions`, and `register_jump_actions` are called by `__main__.py`.
 
 ### Working with legacy code
 
