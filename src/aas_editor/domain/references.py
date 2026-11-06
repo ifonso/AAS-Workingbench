@@ -456,7 +456,11 @@ class ReferenceIndex:
         except (KeyError, ValueError, TypeError, IndexError):
             return None
 
-    def usages_of(self, targets: Iterable[model.Referable]) -> list[Usage]:
+    def usages_of(
+        self,
+        targets: Iterable[model.Referable],
+        include_inside: bool = False,
+    ) -> list[Usage]:
         """Finds the references that point at objects or at elements below them.
 
         A reference to an identifiable is a model reference whose first key
@@ -465,10 +469,13 @@ class ReferenceIndex:
         element is a model reference whose path starts with the path of the
         element, so it also covers the elements below.
 
-        References that are stored inside a target do not count.
+        References that are stored inside a target do not count, unless
+        `include_inside` asks for them, as a rename does.
 
         Args:
             targets: The objects that are about to change or go away.
+            include_inside: Whether to include the references that are stored
+                in a target or below it.
 
         Returns:
             The usages, in document order, each reference once.
@@ -479,7 +486,7 @@ class ReferenceIndex:
         found: dict[tuple[int, int], Usage] = {}
         for target in wanted:
             for slot, node in self._candidates(target):
-                if _is_within(slot, inside):
+                if not include_inside and _is_within(slot, inside):
                     continue
                 found.setdefault(
                     (id(slot), id(node)),
@@ -546,6 +553,11 @@ class ReferenceIndex:
                 and starts_with(node, path)
             ):
                 yield slot, node
+
+
+def is_model_reference(reference: model.Reference) -> bool:
+    """Tells whether a reference is a `ModelReference`, not an external one."""
+    return isinstance(reference, model.ModelReference)
 
 
 def path_of(element: model.Referable) -> tuple[str, ...] | None:
