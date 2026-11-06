@@ -41,6 +41,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - A failure while saving, such as an unwritable folder, closed the application. It now shows an error.
 - The AAS Test tool could not check an AASX file, because it opened the file as text. It now opens files in binary mode.
 - `testEditCreate` hung the large tests because a modal dialog blocked it. The large tests now stub modal dialogs.
+- Renaming an idShort, or replacing an element, moved it to the end of its parent in the saved file. It now keeps its position.
+- An edit, an added element, or a deleted element in one tab did not show in other tabs that show the same object. They now update.
 
 ### Removed
 
