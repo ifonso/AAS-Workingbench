@@ -25,8 +25,19 @@ from PyQt6.QtCore import QObject, QVariant
 
 from aas_editor.package import StoredFile
 from aas_editor import settings
-from aas_editor.utils.util import getAttrDoc, simplifyInfo, getLimitStr, getAttrTypeHint, getIterItemTypeHint
-from aas_editor.utils.util_type import checkType, getTypeName, getTypeHintName, isIterable
+from aas_editor.utils.util import (
+    getAttrDoc,
+    simplifyInfo,
+    getLimitStr,
+    getAttrTypeHint,
+    getIterItemTypeHint,
+)
+from aas_editor.utils.util_type import (
+    checkType,
+    getTypeName,
+    getTypeHintName,
+    isIterable,
+)
 from PyQt6.QtCore import Qt
 
 from aas_editor.utils.util_classes import ClassesInfo
@@ -96,9 +107,13 @@ class StandardItem(QObject):
     def objectName(self) -> str:
         if self.objName:
             return self.objName
-        elif (hasattr(self.obj, "id_short")
-              and self.obj.id_short
-              and not self.obj.id_short.startswith("generated_submodel_list_hack_")):  # FIXME: Refactor after basyx fix
+        elif (
+            hasattr(self.obj, "id_short")
+            and self.obj.id_short
+            and not self.obj.id_short.startswith(
+                "generated_submodel_list_hack_"
+            )
+        ):  # FIXME: Refactor after basyx fix
             return self.obj.id_short
         elif hasattr(self.obj, "name") and self.obj.name:
             return self.obj.name
@@ -126,15 +141,24 @@ class StandardItem(QObject):
         if isinstance(self.obj, StoredFile):
             self.obj: StoredFile
             content_type: str = settings.MEDIA_TYPES_INFOS.get(
-                type(self.obj),{settings.CONTENT_TYPE_ATTR: "N\A"})[settings.CONTENT_TYPE_ATTR]
-            self.icon = QIcon(settings.MIME_TYPE_ICON_DICT.get(content_type, settings.FILE_ICON))
+                type(self.obj), {settings.CONTENT_TYPE_ATTR: r"N\A"}
+            )[settings.CONTENT_TYPE_ATTR]
+            self.icon = QIcon(
+                settings.MIME_TYPE_ICON_DICT.get(
+                    content_type, settings.FILE_ICON
+                )
+            )
         else:
             try:
-                self.icon = settings.getCharsIcon(settings.TYPE_SHORTS_DICT[type(self.obj)])
+                self.icon = settings.getCharsIcon(
+                    settings.TYPE_SHORTS_DICT[type(self.obj)]
+                )
             except KeyError:
                 for cls in settings.TYPE_SHORTS_DICT:
                     if isinstance(self.obj, cls):
-                        self.icon = settings.getCharsIcon(settings.TYPE_SHORTS_DICT[cls])
+                        self.icon = settings.getCharsIcon(
+                            settings.TYPE_SHORTS_DICT[cls]
+                        )
 
     def data(self, role, column=settings.ATTRIBUTE_COLUMN, column_name=""):
         # custom roles
@@ -161,7 +185,10 @@ class StandardItem(QObject):
         if role == settings.MEDIA_CONTENT_ROLE:
             return self.getMediaContent()
         # qt roles
-        if role == Qt.ItemDataRole.DecorationRole and column == settings.ATTRIBUTE_COLUMN:
+        if (
+            role == Qt.ItemDataRole.DecorationRole
+            and column == settings.ATTRIBUTE_COLUMN
+        ):
             return self.icon
         if role == Qt.ItemDataRole.WhatsThisRole:
             return self.doc
@@ -230,7 +257,7 @@ class StandardItem(QObject):
         tooltip = getLimitStr(tooltip)
         return tooltip if tooltip else QVariant()
 
-    def setParent(self, a0: 'QObject') -> None:
+    def setParent(self, a0: "QObject") -> None:
         super().setParent(a0)
         if a0 is None:
             return
@@ -253,14 +280,23 @@ class StandardItem(QObject):
             try:
                 data.resolve(self.package.objStore)
                 return True
-            except (AttributeError, KeyError, NotImplementedError, TypeError, IndexError, ValueError) as e:
+            except (
+                AttributeError,
+                KeyError,
+                NotImplementedError,
+                TypeError,
+                IndexError,
+                ValueError,
+            ) as e:
                 logging.exception(e)
                 return False
         return False
 
     @property
     def isMedia(self) -> bool:
-        if self.obj and isinstance(self.obj, tuple(settings.MEDIA_TYPES_INFOS.keys())):
+        if self.obj and isinstance(
+            self.obj, tuple(settings.MEDIA_TYPES_INFOS.keys())
+        ):
             return True
         return False
 
@@ -280,7 +316,9 @@ class StandardItem(QObject):
         attrName = self.data(settings.NAME_ROLE)
 
         try:
-            attrTypehint = getAttrTypeHint(type(self.parentObj), attrName, delOptional=False)
+            attrTypehint = getAttrTypeHint(
+                type(self.parentObj), attrName, delOptional=False
+            )
             return attrTypehint
         except KeyError:
             logging.exception("Typehint could not be gotten")
@@ -305,7 +343,10 @@ class StandardItem(QObject):
 
             if self.isUrlMedia or isinstance(content_value, bytes):
                 return MediaContent(content_value, content_type)
-            elif isinstance(content_value, str) and content_value in self.package.fileStore:
+            elif (
+                isinstance(content_value, str)
+                and content_value in self.package.fileStore
+            ):
                 file_content = io.BytesIO()
                 self.package.fileStore.write_file(content_value, file_content)
                 return MediaContent(file_content.getvalue(), content_type)

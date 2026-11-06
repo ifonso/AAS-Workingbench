@@ -37,7 +37,7 @@ import logging
 
 def nameIsSpecial(method_name):
     """Returns true if the method name starts with underscore"""
-    return method_name.startswith('_')
+    return method_name.startswith("_")
 
 
 def getAttrs(obj, exclSpecial=True, exclCallable=True) -> List[str]:
@@ -45,9 +45,12 @@ def getAttrs(obj, exclSpecial=True, exclCallable=True) -> List[str]:
     if exclSpecial:
         attrs[:] = [attr for attr in attrs if not nameIsSpecial(attr)]
     if exclCallable:
-        attrs[:] = [attr for attr in attrs
-                    if type(getattr(obj, attr)) in (type, ABCMeta)
-                    or not callable(getattr(obj, attr))]
+        attrs[:] = [
+            attr
+            for attr in attrs
+            if type(getattr(obj, attr)) in (type, ABCMeta)
+            or not callable(getattr(obj, attr))
+        ]
     return attrs
 
 
@@ -57,7 +60,9 @@ def attrOrder(attr):
     return 1000
 
 
-def getAttrs4detailInfo(obj, exclSpecial: bool = True, exclCallable: bool = True) -> List[str]:
+def getAttrs4detailInfo(
+    obj, exclSpecial: bool = True, exclCallable: bool = True
+) -> List[str]:
     attrs = getAttrs(obj, exclSpecial, exclCallable)
     for attr in util_classes.ClassesInfo.hiddenAttrs(type(obj)):
         try:
@@ -114,7 +119,7 @@ def simplifyInfo(obj, attrName: str = "") -> str:
     res = str(obj)
     try:
         if isinstance(obj, settings.ATTR_INFOS_TO_SIMPLIFY):
-            res = re.sub("^[A-Z]\w*[(]", "", res)
+            res = re.sub(r"^[A-Z]\w*[(]", "", res)
             res = res.rstrip(")")
         elif issubclass(type(obj), Reference):
             lastKey = obj.key[-1]
@@ -179,20 +184,23 @@ def getParams4init(objType: Type) -> List[str]:
     return list(paramsAndTypehints.keys())
 
 
-def getParamsAndTypehints4init(objType: Type, withDefaults=True) -> tuple[dict[str, Any], dict[str, Any]] | dict[
-    str, Any]:
+def getParamsAndTypehints4init(
+    objType: Type, withDefaults=True
+) -> tuple[dict[str, Any], dict[str, Any]] | dict[str, Any]:
     """Return params for init with their type and default values"""
     objType = resolveBaseType(objType)
 
     g = getfullargspecoftypeinit(objType)
     paramsAndTypehints = g.annotations.copy()
-    if 'return' in paramsAndTypehints:
-        paramsAndTypehints.pop('return')
+    if "return" in paramsAndTypehints:
+        paramsAndTypehints.pop("return")
     paramsAndTypehints = replaceForwardRefsWithTypes(paramsAndTypehints)
 
     if withDefaults:
         defaults = g.defaults
-        paramsDefaults = _getDefaultValuesOfParams(paramsAndTypehints.keys(), defaults)
+        paramsDefaults = _getDefaultValuesOfParams(
+            paramsAndTypehints.keys(), defaults
+        )
         return paramsAndTypehints, paramsDefaults
 
     return paramsAndTypehints
@@ -219,7 +227,9 @@ def getfullargspecoftypeinit(objType: Type) -> inspect.FullArgSpec:
     return g
 
 
-def replaceForwardRefsWithTypes(paramsTypehints: Dict[str, Any]) -> Dict[str, Any]:
+def replaceForwardRefsWithTypes(
+    paramsTypehints: Dict[str, Any],
+) -> Dict[str, Any]:
     for param in paramsTypehints:
         typeHint = paramsTypehints[param]
         paramsTypehints[param] = resolveForwardRef(typeHint)
@@ -248,17 +258,20 @@ def resolveForwardRef(typeHint: Any) -> Any:
         raise TypeError(f"no origin in typeHint, only args: {typeHint}")
 
 
-def _getDefaultValuesOfParams(params: Iterable[str], defaults: Tuple[Any]) -> Dict[str, Any]:
+def _getDefaultValuesOfParams(
+    params: Iterable[str], defaults: Tuple[Any]
+) -> Dict[str, Any]:
     params = list(params)
     paramsDefaults = {}
     if params and defaults:
-        paramsWithDefaults = params[len(params) - len(defaults):]
+        paramsWithDefaults = params[len(params) - len(defaults) :]
         paramsDefaults = dict(zip(paramsWithDefaults, defaults))
     return paramsDefaults
 
 
-def getReqParams4init(objType: Type, rmDefParams=True,
-                      attrsToHide=None, delOptional=True) -> Dict[str, Type]:
+def getReqParams4init(
+    objType: Type, rmDefParams=True, attrsToHide=None, delOptional=True
+) -> Dict[str, Type]:
     """Return required params for init with their type"""
     paramsTypehints, paramsDefaults = getParamsAndTypehints4init(objType)
 
@@ -290,8 +303,10 @@ def _actualizeParents(aasObj, parent=None):
             for element in namespaceset:
                 _actualizeParents(element, aasObj)
 
+
 def actualizeAASParents(aasObj):  # TODO change if aas changes
     _actualizeParents(aasObj)
+
 
 def delAASParent(aasObj):  # TODO change if aas changes
     if hasattr(aasObj, "parent"):
@@ -300,6 +315,7 @@ def delAASParent(aasObj):  # TODO change if aas changes
         for element in aasObj:
             element.parent = None
     return aasObj
+
 
 def getDoc(typ: type) -> str:
     return typ.__doc__
@@ -319,17 +335,17 @@ def getAttrDoc(attr: str, parentObj: type = None, doc: str = None) -> str:
 
     if doc:
         doc = " ".join(doc.split())
-        pattern = fr":ivar [~]?[.]?{attr}_?:(.*?)(:ivar|:raises|TODO|$)"
+        pattern = rf":ivar [~]?[.]?{attr}_?:(.*?)(:ivar|:raises|TODO|$)"
         res = re.search(pattern, doc)
         if res:
             reg = res.regs[1]
-            doc = doc[reg[0]: reg[1]]
+            doc = doc[reg[0] : reg[1]]
             doc = re.sub("([(]inherited from.*[)])?", "", doc)
-            doc = re.sub("[~]([a-zA-Z]+\.)+", "", doc)
+            doc = re.sub(r"[~]([a-zA-Z]+\.)+", "", doc)
             doc = re.sub("(:class:)?", "", doc)
             doc = re.sub("(<.*>)?", "", doc)
             doc = re.sub("`", "", doc)
-            doc = re.sub("[~]\.", "", doc)
+            doc = re.sub(r"[~]\.", "", doc)
             doc = f"{attr}: {doc}"
             return doc
     return ""
@@ -355,7 +371,9 @@ def inheritors(klass) -> set:
     return subclasses
 
 
-def getTreeItemPath(index: QModelIndex, role=Qt.ItemDataRole.DisplayRole, separator="/") -> str:
+def getTreeItemPath(
+    index: QModelIndex, role=Qt.ItemDataRole.DisplayRole, separator="/"
+) -> str:
     path = ""
     while index.isValid():
         path = f"{index.data(role)}{separator}{path}"
@@ -397,7 +415,11 @@ def toggleStylesheet(path: str) -> None:
 def isSimpleIterableType(objType) -> bool:
     if not util_type.isTypehint(objType):
         raise TypeError("Arg 1 must be type or typehint:", objType)
-    return False if util_type.issubtype(objType, settings.COMPLEX_ITERABLE_TYPES) else util_type.isIterableType(objType)
+    return (
+        False
+        if util_type.issubtype(objType, settings.COMPLEX_ITERABLE_TYPES)
+        else util_type.isIterableType(objType)
+    )
 
 
 def isSimpleIterable(obj) -> bool:
@@ -405,7 +427,9 @@ def isSimpleIterable(obj) -> bool:
 
 
 def getAttrTypeHint(objType, attr: str, delOptional: bool = True):
-    params = getReqParams4init(objType, rmDefParams=False, delOptional=delOptional)
+    params = getReqParams4init(
+        objType, rmDefParams=False, delOptional=delOptional
+    )
 
     # Determine type hint from initialization parameters or property type hint
     try:
@@ -418,7 +442,9 @@ def getAttrTypeHint(objType, attr: str, delOptional: bool = True):
         raise KeyError(f"Attribute {attr} not found in {objType}")
     except Exception as e:
         logging.exception(e)
-        raise KeyError(f"Failed to get type hint for attribute {attr} in {objType}")
+        raise KeyError(
+            f"Failed to get type hint for attribute {attr} in {objType}"
+        )
 
     # Process type hint arguments to remove Ellipsis if present
     try:
@@ -448,12 +474,18 @@ def getIterItemTypeHint(iterableTypehint):
         aas_editor.additional.classes.DictItem.__annotations__["value"] = str
         attrType = aas_editor.additional.classes.DictItem
     elif util_type.issubtype(iterableTypehint, dict):
-        aas_editor.additional.classes.DictItem.__annotations__["key"] = iterableTypehint.__args__[0]
-        aas_editor.additional.classes.DictItem.__annotations__["value"] = iterableTypehint.__args__[1]
+        aas_editor.additional.classes.DictItem.__annotations__["key"] = (
+            iterableTypehint.__args__[0]
+        )
+        aas_editor.additional.classes.DictItem.__annotations__["value"] = (
+            iterableTypehint.__args__[1]
+        )
         attrType = aas_editor.additional.classes.DictItem
     elif args:
         if len(args) > 1:
-            raise KeyError("Typehint of iterable has more then one attribute:", args)
+            raise KeyError(
+                "Typehint of iterable has more then one attribute:", args
+            )
         attrType = args[0]
     else:
         attrType = util_classes.ClassesInfo.addType(origin)
