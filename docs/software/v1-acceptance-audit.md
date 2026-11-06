@@ -24,16 +24,16 @@ A criterion with a test that covers part of it is `P`, with the missing part nam
 
 | Document | T | P | I | D | O | G | N | Total |
 |---|---|---|---|---|---|---|---|---|
-| F-EDT-01 Editor framework | 2 | 4 | 5 | 0 | 1 | 2 | 1 | 15 |
-| F-EDT-02 Environment, AAS, AssetInformation | 0 | 5 | 4 | 0 | 6 | 2 | 0 | 17 |
+| F-EDT-01 Editor framework | 4 | 4 | 5 | 0 | 1 | 0 | 1 | 15 |
+| F-EDT-02 Environment, AAS, AssetInformation | 3 | 5 | 1 | 0 | 6 | 2 | 0 | 17 |
 | F-EDT-03 Submodel and SubmodelRef | 0 | 9 | 3 | 0 | 2 | 1 | 1 | 16 |
 | F-EDT-04 SubmodelElements | 5 | 5 | 1 | 6 | 2 | 3 | 0 | 22 |
 | F-EDT-05 ConceptDescription and IEC 61360 | 4 | 3 | 1 | 5 | 4 | 2 | 0 | 19 |
 | F-EDT-06 Common attribute modules | 6 | 5 | 0 | 0 | 3 | 2 | 0 | 16 |
 | F-EDT-07 Qualifiers and Extensions | 1 | 3 | 0 | 2 | 5 | 2 | 0 | 13 |
-| F-EDT-08 Copy, paste, reorder | 6 | 6 | 0 | 2 | 5 | 1 | 0 | 20 |
-| F-EDT-09 Multi-element editing | 3 | 6 | 0 | 8 | 0 | 3 | 1 | 21 |
-| F-EDT-10 Supplementary files | 7 | 3 | 0 | 2 | 2 | 2 | 2 | 18 |
+| F-EDT-08 Copy, paste, reorder | 8 | 5 | 0 | 3 | 4 | 0 | 0 | 20 |
+| F-EDT-09 Multi-element editing | 8 | 4 | 0 | 8 | 0 | 0 | 1 | 21 |
+| F-EDT-10 Supplementary files | 8 | 3 | 0 | 2 | 1 | 2 | 2 | 18 |
 | F-EDT-11 References, semantics, lookups | 5 | 3 | 0 | 1 | 11 | 2 | 0 | 22 |
 | **All** | **39** | **52** | **14** | **26** | **41** | **22** | **5** | **199** |
 
@@ -50,11 +50,11 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | F-EDT-09 AC7 says that copying several rows is done. | The clipboard got the display names of the rows, one per line, and the buffer did not know its package, so a paste into another package skipped the concept descriptions and the files. **Defect, fixed** with two tests that failed first (`fix(editor): copy several rows as JSON and remember their package`). AC7 is `P`: the JSON array is there, the log line of the original is not. |
 | F-EDT-08 AC9 and F-EDT-08 "copying between packages brings concept descriptions". | True for one row, false for several, for the same reason. Fixed together with the above. |
 | F-EDT-01 AC7: deleting the last entry makes the list attribute absent. | Two tests assert that the list stays, empty. The file does not show it: serialized, an emptied `qualifier` is not written (probe). `P`. |
-| F-EDT-09 AC3 and AC4: Move up on rows 2 and 4 of 6. | The code moves each selected row one place, to 1 and 3. The original makes them adjacent, at 1 and 2, and does nothing when the first selected row is at the top, while the code moves the others. Not recorded anywhere as a decision. `P`. |
+| F-EDT-09 AC3 and AC4: Move up on rows 2 and 4 of 6. | The code moves each selected row one place, to 1 and 3. The original makes them adjacent, at 1 and 2, and does nothing when the first selected row is at the top, while the code moves the others. Not recorded anywhere as a decision. `P`. **Closed by WP15**: the move is the original's, with a mirrored Down, and ADR 0020 records it. Both are `T` now. |
 | F-EDT-10 AC8: a `.zip` gets `text/plain` for parity. | The code guesses from the extension, and gives `application/x-zip-compressed` on this machine, the registry of Windows, and `application/octet-stream` for an unknown one. The test asserts only "not text/plain". `D`, and the answer depends on the platform. |
 | F-EDT-04 AC22: a null `orderRelevant` is shown as the default (true). | The SDK has a bool that is true by default, and a file without `orderRelevant` reads as true (probe). The case cannot occur. `P`, because the tests assert the default only for a new list. |
 | F-EDT-04 AC9 and F-EDT-10 AC14, AC15: Base64 to binary and back for a Blob. | No code. The editor shows the bytes as text or hex. A gap. |
-| F-EDT-01 AC10, AC11: push and pop of an editing location. | No code. Back after Jump to target, and Back in the tabs, are the nearest thing. A gap. |
+| F-EDT-01 AC10, AC11: push and pop of an editing location. | No code. Back after Jump to target, and Back in the tabs, are the nearest thing. A gap. **Closed by WP15**: `T`. |
 | F-EDT-05 AC10: the view orders of concept descriptions. | Four of six: name, idShort, id, first use. "List index", "By SubmodelElements" and the structured order are not offered. A gap. |
 | F-EDT-04 AC2: new MultiLanguageProperty has a row for each default language. | No setting of default languages. A gap. |
 
@@ -71,8 +71,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 7 | P | Empty list stays in the object and is not written (see above). |
 | 8 | I | `ui/delete_flow.py`. The question is tested for a delete of objects with usages, and focus moving to the previous sibling is not. |
 | 9 | O | Plan: "Moving AAS, Submodels, concept descriptions, or SubmodelRefs"; D16. |
-| 10 | G | No push of a location. |
-| 11 | G | No pop of a location. |
+| 10 | T | `test_location_actions.py::test_pop_selects_the_pushed_row_with_its_expand_state`, `::test_a_collapsed_row_comes_back_collapsed`, `::test_pop_goes_back_through_the_pushes_in_reverse`, and `tests/small/test_locations.py`. Ctrl+Shift+P and Ctrl+Shift+O, tested not to collide with `settings/shortcuts.py` and the registered actions. |
+| 11 | T | `test_location_actions.py::test_pop_on_an_empty_stack_changes_nothing_and_does_not_fail`, and `::test_a_pushed_row_that_was_deleted_is_skipped` for a stale location, which the original keeps. |
 | 12 | N | Scripting. |
 | 13 | I | Shortcuts in `settings/shortcuts.py` and the actions. Only the Delete key in Read mode has a test. |
 | 14 | P | `test_validation_hints.py::test_tolerant_validate_reports_a_warning_when_a_rule_raises`. The severity is Warning, not High, and there is no test in a panel. |
@@ -84,8 +84,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 |---|---|---|
 | 1 | P | `test_create_flows.py::test_the_action_makes_a_shell_with_valid_asset_information`: `urn:uuid:` id, valid AssetInformation, reload, undo. The kind is Instance, not NotApplicable, and not recorded as a decision. Selection after the add is not asserted. |
 | 2 | P | `test_create_flows.py::test_template_kind_and_no_shell_make_a_free_submodel`. |
-| 3 | I | Copy actions are in the context menu of every object. No test that they are absent on the environment. |
-| 4 | I | A pasted shell gets a new id (D13). Copy recursively with new Submodel ids is not a separate action. |
+| 3 | T | `test_shell_copy_actions.py::test_on_the_node_of_the_shells_it_asks_which_to_copy`, `::test_the_environment_and_a_submodel_have_no_copy_of_an_aas`. "Copy AAS with new Submodel ids..." is on an AAS and on the shells node, and not on the package. |
+| 4 | T | `test_shell_copy_actions.py::test_the_copy_has_new_ids_and_refers_to_new_submodels`, `tests/small/test_copy_shell.py` (new ids, references resolve to the copies, the original is unchanged, one undo step). A pasted shell keeps referring to the same Submodels (D13). |
 | 5 | O | Plan: "Copy from an auxiliary package". |
 | 6 | I | Deleting a shell leaves its Submodels. No test of the declined question. |
 | 7 | O | Plan: "Stubs and Fetch, and repository delete". |
@@ -95,7 +95,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 11 | G | `Batch` is not handled. The plan has no decision. |
 | 12 | O | Plan: "Print code sheet". |
 | 13 | G | The list of specific asset ids stays empty, and an empty one is refused when the last is removed (AASd-131), which is a decision of the create flow, not this criterion. |
-| 14 | I | `test_package_files_ui.py` links and chooses a thumbnail. Deleting it and the create button are not tested. |
+| 14 | T | `test_package_files_ui.py::test_the_default_thumbnail_is_removed_after_a_question_and_the_file_stays`, `::test_a_removed_default_thumbnail_can_be_chosen_again`. The question comes first, and the file stays in the package. |
 | 15 | O | Plan: "Stubs and Fetch". |
 | 16 | O | Plan: "Stubs and Fetch". |
 | 17 | O | Plan: "Finalize AAS". |
@@ -219,10 +219,10 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 2 | T | `test_paste_actions.py::test_cut_then_paste_above_keeps_the_name_and_removes_the_source`. |
 | 3 | O | Plan: "Pending Cut"; D12. |
 | 4 | T | `test_paste_actions.py::test_a_second_paste_gives_a_further_duplicate`. |
-| 5 | O | Limit: the buffer and the system clipboard are one. |
+| 5 | D | [ADR 0020](adr/0020-selection-locations-and-clipboard.md): the buffer is a mirror of the system clipboard, and a newer copy wins. `test_paste_actions.py::test_json_that_is_newer_on_the_clipboard_replaces_the_buffer`. |
 | 6 | P | `test_paste_actions.py::test_json_from_another_program_pastes_after_the_buffer_is_cleared`. No idShort collision. |
 | 7 | P | `test_paste_actions.py::test_bad_clipboard_text_is_refused_with_a_message`. The text differs from the spec. |
-| 8 | G | No fallback text input when the clipboard is denied. |
+| 8 | T | `test_paste_actions.py::TestPasteFromText` (an empty clipboard and buffer, a bad text, the places, a pending cut), `test_paste_into_shell_action.py::test_submodel_json_typed_into_the_box_is_added_to_the_shell`. A desktop never denies the clipboard, so the action does not read it. |
 | 9 | P | `test_paste_actions.py::test_several_copied_elements_paste_below_in_their_order`, in tree order. The order of selection is not tested. |
 | 10 | P | `test_paste.py::TestElements::test_a_submodel_cannot_be_pasted_among_elements`. The text is not asserted. |
 | 11 | P | `test_paste_into_shell_action.py::test_pasting_the_same_reference_again_is_skipped_and_said`. A dialog, where the original logs. |
@@ -234,16 +234,16 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 17 | O | Same. |
 | 18 | O | Same. |
 | 19 | T | `test_paste_actions.py::test_annotations_can_be_pasted_above`. |
-| 20 | P | Removal and undo of a cut from a list are tested. The paste elsewhere is not in the same test. |
+| 20 | T | `test_paste_actions.py::test_a_cut_from_a_list_pasted_into_a_collection_leaves_the_list_without_it`, with save, reload and undo. |
 
 ## F-EDT-09 Multi-element editing
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | G | No panel for the selection. The actions are in the context menu. |
+| 1 | T | `test_selection_panel.py::test_two_siblings_give_the_header_and_the_actions_of_a_selection`, `::test_the_dock_opens_for_a_selection_until_the_user_closes_it`. A dock below the tree, not a replacement of the tabs ([ADR 0020](adr/0020-selection-locations-and-clipboard.md)). Seen offscreen only. |
 | 2 | D | Actions are offered across parents, and each row moves in its own container (changelog). |
-| 3 | P | `test_move.py::TestNewOrder::test_the_selection_moves_as_a_block_where_it_can`. The result differs from the spec (see above). |
-| 4 | P | Same test, one row at the top. |
+| 3 | T | `test_move.py::TestNewOrder::test_selected_rows_become_adjacent_as_in_package_explorer` (rows 2 and 4 of 6 end at 1 and 2), `test_move_actions.py::test_a_move_up_makes_rows_two_and_four_adjacent_at_one_and_two`. "In order of selection" is the order of the container, which Qt can give (ADR 0020). |
+| 4 | T | `test_move.py::TestNewOrder::test_selected_rows_become_adjacent_as_in_package_explorer` (`UP` with the first selected row on top), `test_move_actions.py::test_a_move_up_does_nothing_when_the_first_selected_row_is_on_top`: nothing changes, and the action is off. |
 | 5 | T | Same test, `TO_END`. |
 | 6 | P | `test_reference_integrity.py::test_deleting_several_referenced_objects_shows_one_dialog_and_one_step`. No "No" on several rows. |
 | 7 | P | `test_paste_actions.py::test_copying_several_elements_puts_their_json_on_the_clipboard`, added by this audit. The log line is not written. |
@@ -257,8 +257,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 15 | T | `test_bulk_edit.py::TestTexts::test_an_element_without_the_language_is_skipped_and_the_rest_change`. |
 | 16 | T | `test_bulk_actions.py::test_extensions_with_a_name_are_removed_in_one_step`. |
 | 17 | P | `test_bulk_dialogs.py::test_without_extensions_the_removal_has_nothing_to_choose`. No log text. |
-| 18 | G | Several supplementary files cannot be removed at once. |
-| 19 | G | Move is offered for variables of mixed directions, and Delete too. |
+| 18 | T | `test_package_files_ui.py::test_several_files_are_removed_as_one_step_with_one_question`, `::test_the_panel_removes_several_selected_files_at_once`, and `test_stored_file_delete.py::test_several_stored_files_are_deleted_in_one_step_with_one_question` for the tree. Removed at once, and not marked pending. |
+| 19 | T | `test_move_actions.py::test_variables_of_mixed_directions_get_neither_move_nor_delete`, `tests/small/test_selection.py::TestVariableDirections`. Cut and Copy stay. |
 | 20 | N | Touch. |
 | 21 | P | `test_undo_views.py::test_window_is_modified_after_an_edit_and_clean_after_undo` for an edit. No bulk action asserts it. The changed marker follows the history for every command. |
 
@@ -270,14 +270,14 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 2 | P | `test_package_files_ui.py::test_adding_a_file_sanitizes_the_name_and_guesses_the_media_type`. The folder is `/aasx/files` (D15), and there is no "pending" state. |
 | 3 | P | `test_package_files_ui.py::test_removing_a_file_nothing_refers_to_asks_nothing`. |
 | 4 | P | `test_supplementary_files_roundtrip.py::test_removing_a_file_and_its_paths`: gone after save and reload. |
-| 5 | O | Limit: the package thumbnail cannot be changed. |
+| 5 | T | `test_package_files_ui.py::test_the_package_thumbnail_is_changed_saved_and_read_back` (root of the package, saved, read back, undo), `::test_a_changed_package_thumbnail_survives_a_crash`, `tests/small/test_package_thumbnail.py`. No leaf with `[Thumbnail]`: the panel names the thumbnail (D18). |
 | 6 | T | `test_package_files_ui.py::test_choosing_a_file_for_a_file_element_keeps_its_media_type`. |
 | 7 | T | `test_package_files_ui.py::test_adding_a_file_for_a_file_element_sets_value_and_media_type`. |
 | 8 | D | The media type is guessed, and `application/octet-stream` when unknown (changelog). Checked above. |
 | 9 | T | `test_package_files_ui.py::test_creating_a_text_file_with_a_taken_name_warns_and_changes_nothing`. |
 | 10 | T | `test_supplementary_files.py::test_editing_a_text_file_keeps_non_ascii_text_and_line_breaks`, `test_supplementary_files_roundtrip.py::test_editing_a_text_file_keeps_utf8_text`. |
 | 11 | T | `test_package_files_ui.py::test_removing_a_file_asks_about_its_references`. |
-| 12 | O | Limit: Centralize file. |
+| 12 | O | Plan: "Centralize file", a repository feature that writes to a remote store at once ([ADR 0020](adr/0020-selection-locations-and-clipboard.md)). "Move file to folder" is the local counterpart. |
 | 13 | T | `test_blob_actions.py::test_loading_a_file_sets_the_bytes_in_one_undoable_step`. |
 | 14 | G | No Base64 conversion. |
 | 15 | G | The size label is shown. "Binary to Base64" is not offered. |
