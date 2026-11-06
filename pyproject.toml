@@ -213,6 +213,7 @@ strict = [
     "src/aas_editor/application",
     "src/aas_editor/domain",
     "src/aas_editor/infrastructure",
+    "src/aas_editor/ui",
 ]
 reportArgumentType = "warning"
 reportAssignmentType = "warning"

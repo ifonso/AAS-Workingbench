@@ -203,14 +203,6 @@ class AppSettings:
         default=False,
         type=bool,
     )
-    ALL_SUBMODEL_REFS_TO_AAS = Setting(
-        name="allSubmodelRefsToAas",
-        display_name="Automatically add refs of existing submodels to AAS when saving file",
-        description="If enabled, when saving an AASX file, all existing submodels are automatically added as references to the first AAS object.",
-        options={"Yes": True, "No": False},
-        default=True,
-        type=bool,
-    )
     WRITE_PRETTY_JSON = Setting(
         name="writePrettyJson",
         display_name="Write Pretty JSON",
@@ -231,7 +223,6 @@ class AppSettings:
     SETTINGS_TO_CHOOSE_BY_USER = [
         DEFAULT_NEW_FILETYPE,
         WRITE_JSON_IN_AASX,
-        ALL_SUBMODEL_REFS_TO_AAS,
         WRITE_PRETTY_JSON,
         SORT_KEYS_IN_JSON,
     ]

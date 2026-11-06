@@ -134,9 +134,12 @@ These checks matter most for parity work:
 
 - **Round trips:** read, write, and read again for AASX, JSON, and XML, and compare the content.
 - **Round-trip corpus:** `tests/medium/test_roundtrip_corpus.py` saves every package in `tests/data/` and compares the BaSyx objects and the file parts.
+  It also covers the AASX templates in `src/aas_editor/submodel_templates`: a sample of about every eighth template by default, always including the templates that point to a file missing in the package.
+  Set `AAS_CORPUS_TEMPLATES=all` to run all 132. The default run covers 31 templates in about 7 seconds, and all 132 take about 22 seconds.
   To add packages outside the repository, set `AAS_CORPUS_ROOT` to the folder that contains `Requester_screwing.aasx` and `package-explorer/src`.
   Without it, the local mode is skipped. Packages that the SDK cannot read, such as metamodel V2 files, are skipped with the reason.
 - **Factories:** build objects with the helpers in `tests/factories.py` (`from tests.factories import make_property`), not by hand in each test.
+  `tests/package_factories.py` builds packages that a normal writer does not make: a File without a stored file, and a File under an annotation.
 - **Sample packages:** use the IDTA templates in `tests/data/`. Add a small new file there only if no existing file covers the case.
 - **Spec constraints:** name the constraint in the test, such as `test_rejects_id_short_violating_constraint_aasd_002`.
 - **Acceptance criteria:** each parity feature doc has an acceptance criteria section. Turn each criterion into at least one test.

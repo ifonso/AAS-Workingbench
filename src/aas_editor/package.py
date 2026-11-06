@@ -18,22 +18,23 @@ from pathlib import Path
 from typing import Union, Iterable, Optional
 import mimetypes
 
-from basyx.aas.adapter.aasx import (
-    DictSupplementaryFileContainer,
-    AASXReader,
-    AASXWriter,
-)
-from basyx.aas.adapter.json import write_aas_json_file, read_aas_json_file_into
-from basyx.aas.adapter.xml import write_aas_xml_file, read_aas_xml_file_into
+from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
+from basyx.aas.adapter.json import write_aas_json_file
 from basyx.aas.model import (
     AssetAdministrationShell,
     Submodel,
     ConceptDescription,
-    SetObjectStore,
+    SetIdentifiableStore,
     Key,
     ModelReference,
 )
 
+from aas_editor.application.save import SaveOptions
+from aas_editor.infrastructure.package_io import (
+    PackageParts,
+    read_package,
+    write_package,
+)
 from aas_editor.settings.defaults import DEFAULT_COMPLETIONS
 from aas_editor.settings.app_settings import AppSettings
 
@@ -41,8 +42,21 @@ from aas_editor.settings.app_settings import AppSettings
 class Package:
     def __init__(self, file: Union[str, Path] = "", failsafe=False):
         """:raise TypeError if file has wrong file type"""
-        self.objStore = SetObjectStore()
+        self.objStore = SetIdentifiableStore()
         self.fileStore = DictSupplementaryFileContainer()
+        # Parts of the file that the object store and file store do not hold.
+        self.thumbnail = None
+        self.coreProperties = None
+        # File elements that pointed to a part missing in the package on open.
+        self.missingFiles = ()
+        # True if opened in failsafe mode: the SDK does not report what it
+        # skipped, so the package must not overwrite its source (D6).
+        self.partial = False
+        # The file the content was read from, or None for a new package.
+        self.sourceFile = None
+        # Hashes of the supplementary files as read, to find the files that
+        # were added or changed during the session.
+        self._loadedFileHashes = {}
         self.file = file
         if file:
             self._read(failsafe)
@@ -79,9 +93,25 @@ class Package:
     def sortKeysInJson(self):
         return AppSettings.SORT_KEYS_IN_JSON.value()
 
-    @property
-    def allSubmodelRefsToAas(self):
-        return AppSettings.ALL_SUBMODEL_REFS_TO_AAS.value()
+    def save_options(self) -> SaveOptions:
+        """The settings that change what a save writes, read once."""
+        return SaveOptions(
+            write_json_in_aasx=bool(self.writeJsonInAasx),
+            pretty_json=bool(self.writePrettyJson),
+            sort_json_keys=bool(self.sortKeysInJson),
+        )
+
+    def save_source(self) -> PackageParts:
+        """The content of the package, as the save flow reads it."""
+        return PackageParts(
+            objects=self.objStore,
+            files=self.fileStore,
+            thumbnail=self.thumbnail,
+            core_properties=self.coreProperties,
+            missing_files=self.missingFiles,
+            partial=self.partial,
+            source_file=self.sourceFile,
+        )
 
     def __str__(self):
         return self.name
@@ -90,49 +120,57 @@ class Package:
         return self.file.as_posix()
 
     def _read(self, failsafe):
-        fileType = self.file.suffix.lower().strip()
-        if fileType == ".xml":
-            read_aas_xml_file_into(self.objStore, self.file, failsafe=failsafe)
-        elif fileType == ".json":
-            read_aas_json_file_into(self.objStore, self.file, failsafe=failsafe)
-        elif fileType == ".aasx":
-            reader = AASXReader(self.file.as_posix(), failsafe=failsafe)
-            reader.read_into(self.objStore, self.fileStore)
-        else:
-            raise TypeError("Wrong file type:", self.file.suffix)
+        self._adopt(read_package(self.file, failsafe=failsafe))
 
-    def write(self, file: str = None):
-        if self.allSubmodelRefsToAas:
-            self.all_submodels_to_aas()
-        if file:
-            self.file: Path = file
+    def _adopt(self, parts: PackageParts):
+        """Takes over everything that was read from a package file."""
+        self.objStore = parts.objects
+        self.fileStore = parts.files
+        self.thumbnail = parts.thumbnail
+        self.coreProperties = parts.core_properties
+        self.missingFiles = parts.missing_files
+        self.partial = parts.partial
+        self.sourceFile = parts.source_file
+        self._loadedFileHashes = self._file_hashes()
 
-        fileType = self.file.suffix.lower().strip()
-        if fileType == ".xml":
-            # The file must be opened in binary mode! The XML writer will handle
-            # character encoding internally.
-            with open(self.file.as_posix(), "wb") as xml_file:
-                write_aas_xml_file(xml_file, self.objStore)
-        elif fileType == ".json":
-            with open(self.file.as_posix(), "w", encoding="utf-8") as fileIO:
-                indent = 2 if self.writePrettyJson else None
-                sort_keys = True if self.sortKeysInJson else False
-                write_aas_json_file(
-                    fileIO, self.objStore, indent=indent, sort_keys=sort_keys
-                )
+    def _file_hashes(self) -> dict:
+        return {
+            name: self.fileStore.get_sha256(name) for name in self.fileStore
+        }
 
-        elif fileType == ".aasx":
-            with AASXWriter(self.file.as_posix()) as writer:
-                writer.write_all_aas_objects(
-                    "/aasx/data.{}".format(
-                        "json" if self.writeJsonInAasx else "xml"
-                    ),
-                    self.objStore,
-                    self.fileStore,
-                    self.writeJsonInAasx,
-                )
-        else:
-            raise TypeError("Wrong file type:", self.file.suffix)
+    def session_file_names(self) -> list:
+        """Names of the supplementary files that are new or changed since open."""
+        return [
+            name
+            for name, digest in self._file_hashes().items()
+            if self._loadedFileHashes.get(name) != digest
+        ]
+
+    def write(self, file: Union[str, Path, None] = None):
+        """Writes the package, all or nothing.
+
+        The target is replaced only when the whole package was written, and
+        ``self.file`` changes only then. A failed save leaves both as they were.
+        This does not check for lost content: the save flow in
+        ``aas_editor.application.save`` does, before it calls this.
+
+        :raise TypeError if the file has a wrong file type
+        :raise KeyError if a File element has no stored file
+        """
+        target = Path(file).absolute() if file else self.file
+        write_package(target, self.save_source(), self.save_options())
+        self.recordSaved(target)
+
+    def recordSaved(self, target: Path):
+        """Records that the package was written to the target.
+
+        ``self.file`` changes only here, after the whole package was written.
+        The source file does not change: a partial package still must not
+        overwrite the file it was read from.
+        """
+        self.file = target
+        # What is on disk now is the baseline for files added later.
+        self._loadedFileHashes = self._file_hashes()
 
     def _recovery_stem(self, for_file: Path = None) -> str:
         file = self.file if for_file is None else Path(for_file)
@@ -145,13 +183,52 @@ class Package:
         recovery_dir.mkdir(parents=True, exist_ok=True)
         original_file = self._file
         stem = self._recovery_stem()
-        rec_path = recovery_dir / f"{stem}.json"
         meta_path = recovery_dir / f"{stem}.meta.json"
-        tmp_path = recovery_dir / f"{stem}.tmp.json"
 
-        # Recovery holds only the object store, always as JSON: this skips the AASX
-        # zip and its supplementary files, keeping periodic writes cheap. Supplementary
-        # file edits are not captured; restore reloads them from the original file.
+        # Recovery holds only the object store as JSON: this skips the AASX zip
+        # and its supplementary files, keeping periodic writes cheap. Restore
+        # reloads the files from the original. Files added during the session
+        # exist nowhere else, so then the recovery is a complete AASX instead.
+        rec_path = None
+        if self.session_file_names():
+            rec_path = self._write_aasx_recovery(recovery_dir / f"{stem}.aasx")
+        if rec_path is None:
+            rec_path = self._write_json_recovery(recovery_dir, stem)
+        # The other kind of recovery file is stale now.
+        other = ".json" if rec_path.suffix == ".aasx" else ".aasx"
+        (recovery_dir / f"{stem}{other}").unlink(missing_ok=True)
+
+        # Meta is written last: find_recovery_files() only offers entries with a
+        # meta file, so an incomplete recovery is never presented for restoring.
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "original_path": original_file.as_posix(),
+                    "recovery_filename": rec_path.name,
+                    "partial": self.partial,
+                },
+                f,
+            )
+        return rec_path
+
+    def _write_aasx_recovery(self, rec_path: Path) -> Optional[Path]:
+        """Writes the whole package, all or nothing. None if that failed."""
+        try:
+            write_package(rec_path, self.save_source(), self.save_options())
+        except KeyError:
+            # A File element without a stored file: the SDK cannot write this
+            # package. The JSON recovery still holds the objects.
+            logging.warning(
+                "AASX recovery not possible, writing JSON: %s",
+                self.file,
+                exc_info=True,
+            )
+            return None
+        return rec_path
+
+    def _write_json_recovery(self, recovery_dir: Path, stem: str) -> Path:
+        rec_path = recovery_dir / f"{stem}.json"
+        tmp_path = recovery_dir / f"{stem}.tmp.json"
         # Temp file first: a write that fails halfway must not replace a complete
         # recovery file with a truncated one.
         try:
@@ -166,17 +243,6 @@ class Package:
             # e.g. cross-device or permission error: do not leave the temp write behind
             tmp_path.unlink(missing_ok=True)
             raise
-
-        # Meta is written last: find_recovery_files() only offers entries with a
-        # meta file, so an incomplete recovery is never presented for restoring.
-        with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "original_path": original_file.as_posix(),
-                    "recovery_filename": rec_path.name,
-                },
-                f,
-            )
         return rec_path
 
     def delete_recovery(
@@ -185,26 +251,39 @@ class Package:
         # for_file lets callers target a previous path (e.g. after Save-As mutated self.file)
         file = self.file if for_file is None else Path(for_file)
         stem = self._recovery_stem(file)
-        for suffix in (".json", ".meta.json", ".tmp.json"):
+        for suffix in (".json", ".aasx", ".meta.json", ".tmp.json"):
             candidate = recovery_dir / f"{stem}{suffix}"
             candidate.unlink(missing_ok=True)
 
     @classmethod
     def restore_from_recovery(
-        cls, recovery_json: Path, original_path: Path
+        cls, recovery: Path, original_path: Path
     ) -> "Package":
-        """Build a package from a JSON recovery file, targeting its original file.
+        """Build a package from a recovery file, targeting its original file.
 
-        The recovered object store is paired with the supplementary files of the
-        original AASX on disk, so a later save rebuilds the complete AASX. If the
-        original is missing, its supplementary files cannot be recovered.
+        A JSON recovery holds only the objects. They are paired with the
+        supplementary files, thumbnail, and properties of the original AASX on
+        disk, so a later save rebuilds the complete AASX. If the original is
+        missing, those cannot be recovered. An AASX recovery is complete, and
+        keeps the files that were added after the original was opened.
         """
-        pack = cls(recovery_json)
+        pack = cls(recovery)
         pack.file = original_path
+        pack.sourceFile = pack.file
+        pack.partial = cls._recovery_was_partial(recovery) or pack.partial
         if pack.file.suffix.lower() == ".aasx":
             if pack.file.exists():
-                reader = AASXReader(pack.file.as_posix())
-                reader.read_into(SetObjectStore(), pack.fileStore)
+                original = read_package(pack.file, failsafe=True)
+                if recovery.suffix.lower() != ".aasx":
+                    pack.fileStore = original.files
+                    pack.thumbnail = original.thumbnail
+                    pack.coreProperties = original.core_properties
+                    pack.missingFiles = original.missing_files
+                # Whatever differs from the original on disk is new.
+                pack._loadedFileHashes = {
+                    name: original.files.get_sha256(name)
+                    for name in original.files
+                }
             else:
                 logging.warning(
                     "Original AASX missing, supplementary files not recovered: %s",
@@ -212,16 +291,28 @@ class Package:
                 )
         return pack
 
-    def all_submodels_to_aas(self):
-        """Add references of all existing submodels to submodel attribute of existing AAS."""
-        # TODO: fix if pyi40aas changes
+    @staticmethod
+    def _recovery_was_partial(recovery: Path) -> bool:
+        meta = recovery.parent / f"{recovery.stem}.meta.json"
+        try:
+            with open(meta, encoding="utf-8") as f:
+                return bool(json.load(f).get("partial", False))
+        except (OSError, ValueError):
+            return False
+
+    def all_submodels_to_aas(self) -> int:
+        """Add references of all existing submodels to the first AAS.
+
+        Saving no longer does this on its own (D8). It is an explicit action.
+
+        :return: the number of references that were added
+        """
         for shell in self.shells:
+            before = len(shell.submodel)
             for submodel in self.submodels:
-                reference = ModelReference.from_referable(submodel)
-                if shell.submodel is None:
-                    shell.submodel = set()
-                shell.submodel.add(reference)
-            break
+                shell.submodel.add(ModelReference.from_referable(submodel))
+            return len(shell.submodel) - before
+        return 0
 
     @property
     def name(self):
