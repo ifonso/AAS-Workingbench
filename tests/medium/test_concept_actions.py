@@ -1136,3 +1136,22 @@ class TestOrder:
 
         assert self._objects(lab) == order_before
         assert lab.view.model().conceptOrder() is ConceptOrder.ID
+
+
+def test_the_tools_for_descriptions_are_off_on_an_element(concepts) -> None:
+    submodel = make_submodel(elements=[_prop("A", "urn:cd:a")])
+    lab = concepts(submodel, model.ConceptDescription(id_="urn:cd:a"))
+    ids = (
+        "concepts.delete_invalid",
+        "concepts.fix_keys",
+        "concepts.order",
+    )
+
+    lab.select((*SUBMODEL, "A"))
+    on_element = [lab.enabled(action_id) for action_id in ids]
+    lab.select(("concept_descriptions",))
+    on_the_node = [lab.enabled(action_id) for action_id in ids]
+
+    # They were on for every row, so the menu of a Property listed them.
+    assert on_element == [False, False, False]
+    assert on_the_node == [True, True, True]
