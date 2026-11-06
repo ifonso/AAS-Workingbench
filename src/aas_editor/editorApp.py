@@ -607,6 +607,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             packTreeViewHeader.showSectionWithNames(
                 DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW, only=True
             )
+            # The indentation of nested elements comes out of this column, so
+            # a narrow one hides their names.
+            packTreeViewHeader.resizeSection(0, PACK_TREE_OBJECT_COLUMN_WIDTH)
         with open(
             AppSettings.PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE
         ) as json_file:

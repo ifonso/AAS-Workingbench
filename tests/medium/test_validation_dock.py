@@ -124,7 +124,7 @@ def test_dock_counts_each_severity(make_dock, package_with_findings) -> None:
 
     dock.set_package(package_with_findings.package)
 
-    assert dock.counts_label.text() == "1 errors, 2 warnings"
+    assert dock.counts_label.text() == "1 error, 2 warnings"
     assert dock.severity_boxes[Severity.ERROR].text() == "Error (1)"
     assert dock.severity_boxes[Severity.WARNING].text() == "Warning (2)"
 
@@ -143,7 +143,7 @@ def test_severity_filter_hides_the_warnings(
     dock.severity_boxes[Severity.WARNING].setChecked(False)
 
     assert [f.rule_id for f in dock.visible_findings()] == ["AASd-002"]
-    assert dock.counts_label.text() == "1 errors, 2 warnings. Showing 1 of 3"
+    assert dock.counts_label.text() == "1 error, 2 warnings. Showing 1 of 3"
 
 
 def test_severity_filter_shows_the_warnings_again(
