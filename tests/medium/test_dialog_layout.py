@@ -66,3 +66,26 @@ def test_a_long_reference_in_a_table_wraps_instead_of_ending_in_dots(
     qtbot.waitExposed(table)
 
     assert table.rowHeight(0) >= 3 * table.fontMetrics().height()
+
+
+def test_a_tall_form_gets_the_width_of_its_scroll_bar(
+    qapp, qtbot, monkeypatch
+) -> None:
+    from PyQt6.QtWidgets import QWidget
+
+    from aas_editor.dialogs import EditDialog
+
+    # A screen that is not tall enough for the form, as a laptop is not.
+    monkeypatch.setattr(EditDialog, "MAX_HEIGHT", 400)
+    dialog = EditDialog(None, "Edit")
+    qtbot.addWidget(dialog)
+    form = QWidget()
+    form.setMinimumSize(700, 900)
+    dialog.layout().addWidget(form)
+
+    dialog.adjustSize()
+
+    # The bar of a tall form takes room from the form, which has no bar of its
+    # own for the width, so the Clear button of a Blob was cut at the edge.
+    bar = dialog.scrollArea.verticalScrollBar().sizeHint().width()
+    assert dialog.width() >= 700 + bar
