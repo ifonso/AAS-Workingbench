@@ -2,7 +2,9 @@
 
 * `ValueTypeBox` chooses the XSD type, by its name such as `xs:int`.
 * `ValueEdit` is a line of text that checks itself against a type, and gives a
-  value of that type. It tells the user what is wrong while they type.
+  value of that type. It tells the user what is wrong while they type. An
+  `xs:string` gets several lines, because it may hold line breaks.
+* `MultiLineTextEdit` is the box of several lines, for a text with line breaks.
 * `BinaryEdit` shows bytes as text or as hex, and loads and saves files. The
   user never types a Python literal.
 * `ValueEditDialog` puts one of them in a dialog, for the attributes that are
@@ -116,6 +118,49 @@ class ValueTypeBox(QComboBox):
         self.value_type_changed.emit(self.value_type())
 
 
+class MultiLineTextEdit(QPlainTextEdit):
+    """A box of several lines for a text, with the interface of a line edit.
+
+    `text` gives exactly the text that was set while the user changed nothing,
+    including Windows line breaks (`\\r\\n`) and a lone `\\r`, which Qt would
+    turn into `\\n`. After an edit the text keeps the line break that the
+    original used, `\\n` or `\\r\\n`.
+    """
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        """Builds an empty box of about three lines."""
+        super().__init__(parent)
+        self._original: str | None = ""
+        self._newline = "\n"
+        self._loading = False
+        self.setTabChangesFocus(True)
+        self.setMinimumHeight(self.fontMetrics().lineSpacing() * 3 + 14)
+        self.textChanged.connect(self._on_edited)
+
+    def text(self) -> str:
+        """Returns the text, with the line breaks it was set with."""
+        if self._original is not None:
+            return self._original
+        return self.toPlainText().replace("\n", self._newline)
+
+    def setText(self, text: str) -> None:  # noqa: N802 - the name of QLineEdit
+        """Shows a text, and remembers it exactly."""
+        self._loading = True
+        try:
+            breaks = text.count("\n")
+            windows = text.count("\r\n")
+            self._newline = "\r\n" if windows and windows == breaks else "\n"
+            shown = text.replace("\r\n", "\n") if windows else text
+            self.setPlainText(shown)
+            self._original = text
+        finally:
+            self._loading = False
+
+    def _on_edited(self) -> None:
+        if not self._loading:
+            self._original = None
+
+
 class ValueLineEdit(QLineEdit):
     """A line of text that follows an XSD type.
 
@@ -199,7 +244,12 @@ class ValueLineEdit(QLineEdit):
 
 
 class ValueEdit(QWidget):
-    """A line of text for a value of an XSD type, with the problem below it.
+    """A text field for a value of an XSD type, with the problem below it.
+
+    An `xs:string` gets a box of several lines, because a string may hold line
+    breaks. Every other type, `xs:normalizedString` included, gets a line:
+    the SDK refuses a line break in a normalized string. The field changes
+    with the type, and the text goes along.
 
     Signals:
         changed: The text or the type changed.
@@ -220,6 +270,8 @@ class ValueEdit(QWidget):
         """
         super().__init__(parent)
         self.line = ValueLineEdit(value_type, self)
+        self.area = MultiLineTextEdit(self)
+        self.area.setPlaceholderText(value_types.type_name(datatypes.String))
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
         self.problem_label.setVisible(False)
@@ -227,8 +279,15 @@ class ValueEdit(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.line)
+        layout.addWidget(self.area)
         layout.addWidget(self.problem_label)
-        self.line.textChanged.connect(self._on_text_changed)
+        self.line.textChanged.connect(self._on_line_changed)
+        self.area.textChanged.connect(self._on_area_changed)
+        self._show_field()
+
+    def is_multiline(self) -> bool:
+        """Tells whether the field has several lines, which is for xs:string."""
+        return self.line.value_type() is datatypes.String
 
     def value_type(self) -> XsdType:
         """Returns the type that the text must follow."""
@@ -240,21 +299,31 @@ class ValueEdit(QWidget):
         Args:
             value_type: The new type. None means `xs:string`.
         """
+        text = self.text()
         self.line.set_value_type(value_type)
+        self._show_field()
+        # The text goes to the field that is shown now.
+        if self.is_multiline():
+            self.area.setText(text)
+        else:
+            self.line.setText(text)
         self._show_problem()
         self.changed.emit()
 
     def text(self) -> str:
         """Returns the text as it is."""
-        return self.line.text()
+        return self.area.text() if self.is_multiline() else self.line.text()
 
     def set_text(self, text: str) -> None:
         """Shows text."""
-        self.line.setText(text)
+        if self.is_multiline():
+            self.area.setText(text)
+        else:
+            self.line.setText(text)
 
     def set_value(self, value: Any) -> None:
         """Shows a value in its lexical form, or nothing for None."""
-        self.line.set_value(value)
+        self.set_text("" if value is None else value_types.format_value(value))
 
     def value(self) -> Any:
         """Returns the typed value, or None if the text of a number is empty.
@@ -262,13 +331,33 @@ class ValueEdit(QWidget):
         Raises:
             InvalidValueError: If the text is no value of the type.
         """
-        return self.line.value()
+        text = self.text()
+        value_type = self.value_type()
+        if not text and not value_types.keeps_whitespace(value_type):
+            return None
+        return value_types.parse(text, value_type)
 
     def problem(self) -> str | None:
         """Tells what is wrong with the text, or None if it is fine."""
-        return self.line.problem()
+        text = self.text()
+        if not text:
+            return None
+        return value_types.check(text, self.value_type())
 
-    def _on_text_changed(self, _: str) -> None:
+    def _show_field(self) -> None:
+        multiline = self.is_multiline()
+        self.line.setVisible(not multiline)
+        self.area.setVisible(multiline)
+
+    def _on_line_changed(self, _: str) -> None:
+        if not self.is_multiline():
+            self._notify()
+
+    def _on_area_changed(self) -> None:
+        if self.is_multiline():
+            self._notify()
+
+    def _notify(self) -> None:
         self._show_problem()
         self.changed.emit()
 
@@ -560,6 +649,22 @@ def value_dialog_args(owner: object, name: str) -> dict[str, Any] | None:
     if isinstance(owner, model.Blob) and name == "value":
         return {"binary": True, "content_type": owner.content_type}
     return None
+
+
+def entryTextArgs(parent_obj: object) -> dict[str, Any]:  # noqa: N802
+    """Tells the generated dialog to give the text of a language many lines.
+
+    Args:
+        parent_obj: The object that holds the row being edited.
+
+    Returns:
+        The keyword arguments for the generated dialog: the text of an entry
+        of a language string set, such as the value of a MultiLanguageProperty
+        or a description, is a box of several lines. Nothing for other objects.
+    """
+    if isinstance(parent_obj, model.LangStringSet):
+        return {"multilineParams": {"value"}}
+    return {}
 
 
 class ValueEditDialog(QDialog):
