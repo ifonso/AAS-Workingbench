@@ -30,6 +30,8 @@ from PyQt6.QtCore import Qt, QModelIndex
 from aas_editor.domain.typed_values import is_value_attr, value_type_of
 from aas_editor.settings import DEFAULT_COMPLETIONS
 from aas_editor.settings.app_settings import EDIT_TARGET_ROLE
+from aas_editor.settings.app_settings import NAME_ROLE
+from aas_editor.settings.app_settings import PARENT_OBJ_ROLE
 from aas_editor.ui.value_editor import ValueLineEdit
 from aas_editor.additional.classes import DictItem
 from aas_editor.utils.util_type import issubtype, isoftype
@@ -111,6 +113,19 @@ class EditDelegate(ColorDelegate):
     def isTypedValueCell(self, index: QtCore.QModelIndex) -> bool:
         return self.typedValueTarget(index) is not None
 
+    @staticmethod
+    def completionsFor(index: QtCore.QModelIndex) -> list:
+        """Return the values to suggest for the attribute that a cell shows
+
+        The list belongs to the attribute of the owner, by the name that the
+        SDK gives it, and not to the text that the cell holds now.
+        """
+        attrName = index.data(NAME_ROLE)
+        for cls in type(index.data(PARENT_OBJ_ROLE)).__mro__:
+            if cls in DEFAULT_COMPLETIONS:
+                return DEFAULT_COMPLETIONS[cls].get(attrName, [])
+        return []
+
     def createEditor(
         self,
         parent: QWidget,
@@ -123,14 +138,13 @@ class EditDelegate(ColorDelegate):
             owner, _ = target
             return ValueLineEdit(value_type_of(owner), parent)
         objType = type(index.data(Qt.ItemDataRole.EditRole))
-        attr = index.data(Qt.ItemDataRole.DisplayRole)
         if issubtype(objType, bool):
             widget = QCheckBox(parent)
         elif issubtype(objType, str):
             widget = LineEdit(parent)
-            completions = DEFAULT_COMPLETIONS.get(objType, {}).get(attr, [])
+            completions = self.completionsFor(index)
             if completions:
-                completer = QCompleter(parent, completions=completions)
+                completer = QCompleter(completions, parent)
                 completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
                 widget.setCompleter(completer)
         elif issubtype(objType, int):
