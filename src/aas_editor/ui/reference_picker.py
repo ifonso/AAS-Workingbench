@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QDialog
 from PyQt6.QtWidgets import QDialogButtonBox
+from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtWidgets import QPushButton
@@ -37,9 +38,10 @@ from aas_editor.domain.references import describe_reference
 
 TITLE = "Choose the target of the reference"
 MODEL_TEXT = "Model reference through the path of the target"
-EXTERNAL_TEXT = (
-    "External reference to the id of the target "
-    "(an element, which has no id, gets a model reference)"
+EXTERNAL_TEXT = "External reference to the id of the target"
+KIND_TIP = (
+    "An element has no id, so a reference to it is a model reference "
+    "through its path."
 )
 _CANDIDATE_ROLE = Qt.ItemDataRole.UserRole
 
@@ -83,12 +85,14 @@ class ReferencePickerDialog(QDialog):
         """
         super().__init__(parent)
         self.setWindowTitle(TITLE)
-        self.setMinimumSize(560, 420)
+        # The text of the kinds is a sentence, and the types are long words.
+        self.setMinimumSize(720, 420)
         self._objects = list(objects)
         self._rule = rule
         self._chosen: Candidate | None = None
 
         self.kind_box = QComboBox(self)
+        self.kind_box.setToolTip(KIND_TIP)
         if rule.allows_external:
             self.kind_box.addItem(EXTERNAL_TEXT, False)
         if rule.allows_model:
@@ -115,6 +119,12 @@ class ReferencePickerDialog(QDialog):
         self.tree.setRootIsDecorated(False)
         self.tree.setUniformRowHeights(True)
         self.tree.setColumnWidth(0, 240)
+        header = self.tree.header()
+        if header is not None:
+            # The names of the types are long words, and were cut to "Annot...".
+            header.setSectionResizeMode(
+                1, QHeaderView.ResizeMode.ResizeToContents
+            )
 
         self.preview = QLabel(self)
         self.preview.setWordWrap(True)

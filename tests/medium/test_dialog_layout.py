@@ -4,6 +4,7 @@ Each case renders the dialog on screen and measures what the user sees. The
 sizes are those of a laptop, not of the largest screen.
 """
 
+from tests.factories import make_annotated_relationship
 from tests.factories import make_property
 from tests.factories import make_submodel
 
@@ -89,3 +90,31 @@ def test_a_tall_form_gets_the_width_of_its_scroll_bar(
     # own for the width, so the Clear button of a Blob was cut at the edge.
     bar = dialog.scrollArea.verticalScrollBar().sizeHint().width()
     assert dialog.width() >= 700 + bar
+
+
+def test_the_reference_picker_shows_its_kind_and_the_types_in_full(
+    qapp, qtbot
+) -> None:
+    from basyx.aas import model
+
+    from aas_editor.domain.reference_picker import rule_for_hint
+    from aas_editor.ui.reference_picker import ReferencePickerDialog
+
+    submodel = make_submodel(
+        elements=[make_annotated_relationship("AnnotatedRelationshipElement")]
+    )
+    dialog = ReferencePickerDialog(
+        [submodel], rule_for_hint(model.Reference), parent=None
+    )
+    qtbot.addWidget(dialog)
+
+    dialog.show()
+    qtbot.waitExposed(dialog)
+
+    kind = dialog.kind_box
+    text_width = kind.fontMetrics().horizontalAdvance(kind.currentText())
+    longest_type = dialog.tree.fontMetrics().horizontalAdvance(
+        "AnnotatedRelationshipElement"
+    )
+    assert text_width <= kind.width() - 40
+    assert dialog.tree.columnWidth(1) >= longest_type
