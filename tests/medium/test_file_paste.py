@@ -23,7 +23,11 @@ def _two_packages(views, target_files):
         submodel,
         files={DOC: (b"%PDF source", "application/pdf")},
     )
-    other = make_submodel("urn:uuid:other", "Other")
+    other = make_submodel(
+        "urn:uuid:other",
+        "Other",
+        elements=[make_file_element("Existing", DOC)] if target_files else [],
+    )
     target = shown.open_package(
         make_shell("urn:uuid:other-shell", "OtherShell", submodels=[other]),
         other,
@@ -128,6 +132,25 @@ def test_a_copy_inside_the_same_package_does_not_touch_its_files(views) -> None:
 
     assert list(source.fileStore) == [DOC]
     assert files.read_file(source.fileStore, DOC) == b"%PDF source"
+
+
+def test_the_pasted_file_is_written_by_a_save_and_read_again(
+    views, tmp_path
+) -> None:
+    from aas_editor.package import Package
+
+    shown, source, target, submodel = _two_packages(
+        views, {DOC: (b"%PDF target", "application/pdf")}
+    )
+    pasted = _paste_submodel(shown, source, submodel)
+    renamed = _pasted_element(pasted).value
+
+    target.write(tmp_path / "target.aasx")
+    reloaded = Package(tmp_path / "target.aasx")
+
+    assert files.read_file(reloaded.fileStore, DOC) == b"%PDF target"
+    assert files.read_file(reloaded.fileStore, renamed) == b"%PDF source"
+    assert files.find_dangling(reloaded.objStore, reloaded.fileStore) == []
 
 
 def test_a_content_that_is_identical_is_reused_and_survives_undo(views) -> None:

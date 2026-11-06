@@ -169,7 +169,11 @@ class PackageFilesPanel(QWidget):
                 observer_for(package).subscribe(self._on_change),
                 package.commandStack.subscribe(self._on_history),
             ]
-        self.refresh()
+        if package is None or self.isVisible():
+            self.refresh()
+        else:
+            # A hidden panel reads the files when it is shown.
+            self._stale = True
 
     def _on_change(self, change: object) -> None:
         del change

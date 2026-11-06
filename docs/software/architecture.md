@@ -87,6 +87,27 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/operations/` | The plans and commands that keep references intact: `rename.py`, `delete.py`, `fix.py`, and `references.py`, which turns reference changes into commands. |
 | `ui/reference_dialogs.py` | The dialogs for renames, deletes and repairs: the preview of references, the rename dialog with Fix and Generate, and the delete dialog with the usages. |
 | `ui/reference_actions.py`, `ui/delete_flow.py` | The actions Rename id, Rename idShort, Sync idShort and Fix References, and the questions that come before a delete. |
+| `domain/part_names.py` | The names of stored files: checks a name as an OPC part name that cannot leave the package, makes a name from a folder and a local file name, finds names that are the same part (case-blind), numbers a taken name, and guesses the media type (`application/octet-stream` when unknown). |
+| `application/supplementary_files.py` | The stored files and what refers to them. The commands `AddFile`, `RemoveFile`, `RenameFile`, and `ReplaceFile`, and the operations that group them with the changes to File elements and the thumbnail: add, rename, move, remove, create and edit text, link, and find dangling references. |
+| `application/file_transfer.py` | Brings the files of copied objects along when they are pasted into another package: plans the copies, reuses identical files, numbers a taken name, and updates the pasted paths. Also remembers the package that was copied from. |
+| `ui/file_controller.py` | What the user can do with the files of one package: asks through `ui/file_dialogs.py`, runs the operations on the history of the package, and shows why something was refused. Also asks about the references of files that the package tree deletes. |
+| `ui/file_dialogs.py` | The pickers, the questions, the text editor, and the list of dangling references. |
+| `ui/package_files.py` | The Package files panel and its dock. |
+| `ui/file_actions.py` | The context menu actions for stored files, File elements, and the default thumbnail. Registered by `__main__.py` with `register_file_actions`. |
+
+### Supplementary files
+
+[ADR 0012](adr/0012-supplementary-files.md) records the SDK findings and the decisions.
+
+- **Where it is in the interface.** The package tree already lists the stored files below `fileStore`. Their context menu has the actions, the same functions are buttons of the Package files panel (View > Panels), and File elements and shells have the picker in their context menu (D15).
+- **One group for a file and its references.** Rename and Move change the name in the container and every File element, annotation, and thumbnail that has the old name, so one undo restores both. `FileReference` holds the object that has the path (`holder`), the attribute (`value` of a File, `path` of a Resource), and for a thumbnail its AssetInformation.
+- **Nothing is overwritten.** A new file with a taken name gets a numbered name, an identical file is reused, and a rename onto a taken name is refused. Names that differ only in case are taken.
+- **Names come from the file being edited,** so they are checked by `part_names.validate` when a file is added, created, renamed, or moved. A name that could leave the package is refused with a reason.
+- **The tree follows the container.** A command reports `Change.changed` for the container, and the item of the file store reads its rows again (`PackTreeViewItem.repopulatesOnChange`).
+- **Deleting a stored file in the tree** goes through `PackTreeView.prepareDelete` (the usages question of the delete flow), then the model removes the file with `RemoveFile`.
+- **Copying to another package.** The tree view remembers the files of the package at copy time (`copy_source`). `StandardTable.addItem` wraps the add command with `with_copied_files`, which adds the files and updates the pasted paths in the same group. The window shows what was copied or numbered in the status bar.
+- **Save.** `check_save` returns the dangling Files as a blocker with the code `DANGLING_FILES`, and the stored files that nothing refers to as a warning with `UNREFERENCED_FILES`. The dialogs offer "Repair file references..." and "Show package files...".
+- **Crash recovery.** When any stored file differs from the opened state, the recovery is an AASX. The files that nothing refers to cannot be in it, so they are written to `<stem>.files.json` next to it, and `restore_from_recovery` reads them again.
 
 ### How saving works
 
@@ -99,7 +120,7 @@ The SDK does not say what failsafe mode skipped, so every such package counts.
 
 Saving does not add Submodel references to the first AAS (D8). `Package.all_submodels_to_aas` is an explicit action in the context menu.
 
-Crash recovery writes the objects as JSON. When files were added since the package was opened, it writes a complete AASX instead, so that restoring keeps them.
+Crash recovery writes the objects as JSON. When files were added, removed, renamed, or changed since the package was opened, it writes a complete AASX instead, so that restoring keeps them. Files that nothing refers to go to a `.files.json` beside it (see [Supplementary files](#supplementary-files)).
 
 ## Target structure
 

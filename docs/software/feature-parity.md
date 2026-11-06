@@ -103,7 +103,7 @@ Treat `Partial` as "something exists", and confirm the details when starting eac
 | F-EDT-07 | Qualifiers and Extensions | P1 | Partial | Through the generic editors |
 | F-EDT-08 | Copy, paste, and reorder | P0 | Partial | Copy, cut, paste, and undo, with one history for each package. Cut removes the source from every kind of parent. Delete asks first when it is destructive, shows the usages, and is one undo step for a bulk delete. Reorder not confirmed. |
 | F-EDT-09 | Multi-element editing | P1 | Partial | Multi-select with bulk cut, copy, and delete |
-| F-EDT-10 | Supplementary files | P1 | Partial | `StoredFile` in `package.py` |
+| F-EDT-10 | Supplementary files | P1 | Partial | A Package files panel and context menu actions: add (name checked, never overwritten), create and edit text (UTF-8), rename and move with the File elements and the thumbnail that refer to the file, remove (asks about the paths), save to disk, and a picker for File elements and the default thumbnail (D15). All with undo. Saving warns about files that nothing refers to, refuses dangling paths with a repair dialog, and recovery keeps the files. Copying to another package copies the files. Not done: drop of a file on the panel, Centralize file, package thumbnail linking, Blob conversion (WP8b), and paste over an element. |
 | F-EDT-11 | References, semantics, lookups | P1 | Partial | Reference links open in tabs, with no lookup. The index finds dangling references, but nothing lists them yet. |
 
 ### Templates, exchange, plugins, and companions

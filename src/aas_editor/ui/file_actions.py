@@ -216,6 +216,7 @@ def _show_files(context: ActionContext) -> None:
 
 def _specs() -> list[ActionSpec]:
     packages = ViewKind.PACKAGES
+    anywhere = ViewKind.ANY
     return [
         ActionSpec(
             f"{PREFIX}add",
@@ -276,7 +277,7 @@ def _specs() -> list[ActionSpec]:
             "Choose package file...",
             _choose,
             _is_file_element,
-            views=packages,
+            views=anywhere,
             status_tip="Make this File refer to a supplementary file",
             order=_ORDER + 6,
         ),
@@ -285,7 +286,7 @@ def _specs() -> list[ActionSpec]:
             "Add file to package and link...",
             _add_and_link,
             _is_file_element,
-            views=packages,
+            views=anywhere,
             status_tip="Add a file from disk and make this File refer to it",
             order=_ORDER + 7,
         ),
@@ -294,7 +295,7 @@ def _specs() -> list[ActionSpec]:
             "Create text file and link...",
             _create_and_link,
             _is_file_element,
-            views=packages,
+            views=anywhere,
             order=_ORDER + 8,
         ),
         ActionSpec(
@@ -302,7 +303,7 @@ def _specs() -> list[ActionSpec]:
             "Edit linked text file...",
             _edit_linked,
             _links_to_text_file,
-            views=packages,
+            views=anywhere,
             order=_ORDER + 9,
         ),
         ActionSpec(
@@ -310,7 +311,7 @@ def _specs() -> list[ActionSpec]:
             "Choose default thumbnail from package files...",
             _choose_thumbnail,
             _has_asset_information,
-            views=packages,
+            views=anywhere,
             order=_ORDER + 10,
         ),
         ActionSpec(
@@ -318,7 +319,7 @@ def _specs() -> list[ActionSpec]:
             "Add file as default thumbnail...",
             _add_thumbnail,
             _has_asset_information,
-            views=packages,
+            views=anywhere,
             order=_ORDER + 11,
         ),
         ActionSpec(
@@ -341,6 +342,11 @@ def _specs() -> list[ActionSpec]:
             order=_ORDER + 13,
         ),
     ]
+
+
+def action_ids() -> list[str]:
+    """Returns the ids of the actions of this module."""
+    return [spec.action_id for spec in _specs()]
 
 
 def register_file_actions() -> None:

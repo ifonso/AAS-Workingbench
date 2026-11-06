@@ -44,6 +44,17 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Sync idShort copies the idShort of an element to the concept description of its semantic id, where that has no idShort or short name.
 - An invalid idShort, or one that a sibling has, gets a suggestion such as `My_motor` or `Name_1`, which the user can accept.
 - A test that reads every class of the SDK and fails when the walk over references misses a reference field.
+- A Package files panel (View > Panels > Package files, or "Show package files" in the context menu). It lists every supplementary file with its media type, size, and the File elements and thumbnail that refer to it, and marks the files that nothing refers to, because a save to AASX drops them. Buttons add a file from disk, create a text file, edit a text file, rename, move to a central folder, remove, save to disk, and find dangling references. Every change is one undo step, and in Read mode the buttons that change the package are off.
+- The same functions in the context menu of the file rows in the package tree, so Rename and Move can be started where the file is.
+- Rename and Move update the File elements, the File elements under annotations, and the default thumbnail that refer to the file, in the same undo step, so nothing is left pointing at the old name. A name that another file has, or that differs only in case, is refused instead of merged or numbered by the SDK.
+- Names of files are checked as part names. A name with `..`, a backslash, an empty folder name, or characters that the AASX writer refuses is refused with a reason, when a file is added, created, renamed, or moved. Before, such a name was accepted and the save failed later. A file name from disk is made safe: `report final.pdf` becomes `/aasx/files/report_final.pdf`.
+- A File element, and the default thumbnail of a shell, can be linked to a file of the package from the context menu: "Choose package file...", "Add file to package and link...", "Create text file and link...", "Edit linked text file...", "Choose default thumbnail from package files...", and "Add file as default thumbnail...". A file that is added and linked gets the media type of the file. A file that is only chosen leaves the media type of the element as it is.
+- Text files are created and edited as UTF-8, so non-ASCII text and Windows line breaks survive. A file that is not UTF-8 is not edited as text.
+- A file with an unknown extension gets the media type `application/octet-stream`. The original sets `text/plain`.
+- Removing a file asks what to do with the File elements and the thumbnail that refer to it: remove the paths, or leave them. Both are one undo step. The same question comes when a stored file is deleted in the package tree.
+- Context menu "Find dangling file references...": lists the File elements and thumbnails whose file is not in the package, and repairs them by choosing a stored file, adding a file, or clearing the path.
+- The dialog that refuses a save because a File points to a missing file has a button "Repair file references...". The warning about stored files that nothing refers to has a button "Show package files...", which cancels the save so the files can be linked first.
+- Copying objects to another open package, with copy and paste or with "Add existing submodel" from a template, copies the files that they refer to, in the same undo step as the paste. A file with the same name and the same content is reused. A different file with the same name, or one that differs only in case, is never overwritten: the copy gets a numbered name such as `doc_0001.pdf` and the pasted paths follow it. The status bar tells what was copied or renamed.
 
 ### Changed
 
@@ -66,6 +77,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Crash recovery removes the recovery file of a package once undo has brought the package back to its saved state.
 - Closing a package, and opening one, are no longer steps of an undo history.
 - Adding a reference that a shell has already, or an entry with a key that a mapping has, replaces nothing silently. A reference is refused with an error, and an entry replaces the old one as an edit that can be undone.
+- "Add file" in the package tree uses the same flow as the panel: the name is `/aasx/files/<name>` and can be edited, a taken name is never overwritten, and the add is one undo step. It stored the file as `/<name>` before.
+- Crash recovery writes a complete AASX whenever a stored file was added, removed, renamed, or changed since the package was opened, not only when a file was added.
 
 ### Fixed
 
@@ -102,6 +115,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Deleting a child closed the tab of its container, because the tabs were compared with the parent of the deleted rows.
 - A tab moved its current row to the last inserted row when another tab added a row, and could lose its current row when another tab changed the object. A tab now moves only for what its own user did.
 - A tab that showed an object deleted in another tab stayed open and out of date.
+- Deleting a stored file in the package tree failed with "Unknown parent object type". It removes the file now, and can be undone.
+- A file that was added in the session and that nothing refers to yet was lost after a crash, because the SDK writes only the files that a File element or the thumbnail refers to. Such files are kept next to the recovery file now. A file that was renamed or removed in the session came back as it was in the original after a restore, and is restored as it was.
+- Undo of adding a file that the package held already, with the same content, removed that file.
 
 ### Removed
 
@@ -113,6 +129,11 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 - The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
 - A string with line breaks is shown in a value line but cannot be typed there.
+- A File under the annotation of an annotated relationship still blocks a save to AASX, because the SDK writer skips such files. Save as JSON or XML, or move the File out of the annotation.
+- Pasting over an existing element (Replace) does not bring the files of the pasted element along. Paste it as a new element, or copy the files with Add file.
+- Only the default thumbnail of a shell is linked to a file. The package thumbnail (the image that Windows shows for the file) is kept as it was, and cannot be changed.
+- Files cannot be dropped on the panel, and "Centralize file" to an external store and the conversion of a File to a Blob are not done. The second belongs to the conversion of element types.
+- Selecting a stored file in the package tree opens a preview tab with QtWebEngine, which crashes a test process when it exits. The large tests switch the preview off.
 
 ## 0.4.13 - 2026-08-28
 
