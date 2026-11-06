@@ -29,6 +29,8 @@ from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.ui.colors import ADVISORY_STYLE
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.domain.reference_picker import ReferenceRule
 from aas_editor.domain.reference_picker import ReferenceStatus
 from aas_editor.domain.reference_picker import class_for_key_type
@@ -49,8 +51,8 @@ _WATCHED = (
     QEvent.Type.FocusOut,
     QEvent.Type.Hide,
 )
-_PROBLEM_STYLE = "color: #b00020;"
-_DANGLING_STYLE = "color: #8a5a00;"
+_PROBLEM_STYLE = PROBLEM_STYLE
+_DANGLING_STYLE = ADVISORY_STYLE
 
 
 def package_of(widget: QWidget) -> Any:
@@ -247,7 +249,13 @@ class ReferenceFieldMixin:
         combo = type_widget.widget
         if wanted is None or combo.findData(wanted) < 0:
             return
-        if combo.currentData() in (self._derived_type, None):
+        # At first the entry is the one that the list starts with, so the
+        # form takes the type of the last key. A type that the user chose later
+        # is kept.
+        if self._derived_type is None or combo.currentData() in (
+            self._derived_type,
+            None,
+        ):
             with QSignalBlocker(combo):
                 combo.setCurrentIndex(combo.findData(wanted))
         self._derived_type = wanted
@@ -303,6 +311,28 @@ class ReferenceGroupBox(ReferenceFieldMixin, TypeOptionObjGroupBox):
         super().__init__(objTypes, defType, **kwargs)  # pyright: ignore[reportUnknownMemberType]
         self._form_kwargs = {**kwargs, "parent": self, "title": ""}
         self._start_reference_field(rule_for_hint(model.Reference))
+        self._hide_picker_of_inner_form()
+
+    def replaceGroupBoxWidget(  # noqa: N802
+        self, objType: Any, **kwargs: Any
+    ) -> None:
+        """Changes the form for the kind, and keeps one picker on screen."""
+        super().replaceGroupBoxWidget(objType, **kwargs)  # pyright: ignore[reportUnknownMemberType]
+        self._hide_picker_of_inner_form()
+
+    def _hide_picker_of_inner_form(self) -> None:
+        """Hides the picker of the form inside, because this form has one.
+
+        The form of each kind brings its own button and status line. Both
+        showed, one under the other, and did the same.
+        """
+        inner: Any = self.widget  # pyright: ignore[reportUnknownMemberType]
+        if inner is self:
+            return
+        for name in ("_picker_button", "_status_label"):
+            widget = getattr(inner, name, None)
+            if widget is not None:
+                widget.hide()
 
     def _reference_box(self) -> Any:
         return self.widget

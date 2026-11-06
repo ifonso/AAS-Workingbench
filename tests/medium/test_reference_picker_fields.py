@@ -534,6 +534,56 @@ def test_every_reference_field_gets_the_picker(
     widget.deleteLater()
 
 
+@pytest.mark.parametrize("kind", [model.ExternalReference, None])
+def test_a_reference_form_shows_one_picker_and_one_status_line(
+    qapp: object, qtbot: Any, kind: type | None
+) -> None:
+    from PyQt6.QtWidgets import QPushButton
+
+    from aas_editor.ui.reference_fields import CHOOSE_TEXT
+    from aas_editor.widgets.widgetUtil import InputWidgetUtil
+
+    widget = InputWidgetUtil.getInputWidget(model.Reference)
+    qtbot.addWidget(widget)
+    if kind is not None:
+        widget.typeComboBox.setCurrentIndex(widget.typeComboBox.findData(kind))
+    widget.show()
+    qtbot.waitExposed(widget)
+
+    pickers = [
+        button
+        for button in widget.findChildren(QPushButton)
+        if button.text() == CHOOSE_TEXT and button.isVisibleTo(widget)
+    ]
+    assert len(pickers) == 1
+
+
+def test_editing_a_model_reference_keeps_the_type_its_last_key_names(
+    qapp: object, qtbot: Any
+) -> None:
+    from aas_editor.ui.reference_fields import ReferenceFieldMixin  # noqa: F401
+    from aas_editor.utils.util import getAttrTypeHint
+    from aas_editor.widgets.widgetUtil import InputWidgetUtil
+
+    # The SDK reads the target type of `observed` as a Referable, which the
+    # list of the form does not offer. The form then took its first entry and
+    # turned a reference to a Property into one to an annotated relationship.
+    reference = model.ModelReference(
+        (
+            model.Key(K.SUBMODEL, "urn:sm"),
+            model.Key(K.PROPERTY, "Speed"),
+        ),
+        model.Referable,
+    )
+    hint = getAttrTypeHint(model.BasicEventElement, "observed")
+    widget = InputWidgetUtil.getInputWidget(hint, objVal=reference)
+    qtbot.addWidget(widget)
+
+    widget.refresh_status()
+
+    assert widget.getObj2add().type is model.Property
+
+
 def test_the_package_is_found_through_a_tab_widget_in_the_parents(
     qapp: object, qtbot: Any
 ) -> None:

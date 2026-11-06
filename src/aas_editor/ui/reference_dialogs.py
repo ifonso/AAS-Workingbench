@@ -25,6 +25,7 @@ from PyQt6.QtWidgets import QTableWidgetItem
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.application.operations.delete import DeletePlan
 from aas_editor.application.operations.references import ReferenceChange
 from aas_editor.application.operations.rename import InvalidIdShortError
@@ -59,6 +60,9 @@ class ReferenceTable(QTableWidget):
         if header is not None:
             header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.setMinimumHeight(140)
+        self.setWordWrap(True)
+        # The end of an id tells ids apart, so the middle is left out.
+        self.setTextElideMode(Qt.TextElideMode.ElideMiddle)
 
     def set_rows(self, rows: Sequence[Sequence[str]]) -> None:
         """Replaces the content of the table."""
@@ -68,6 +72,7 @@ class ReferenceTable(QTableWidget):
                 item = QTableWidgetItem(text)
                 item.setToolTip(text)
                 self.setItem(row, column, item)
+        self.resizeRowsToContents()
 
     def texts(self) -> list[list[str]]:
         """Returns the text of every cell, row by row."""
@@ -226,7 +231,7 @@ class RenameDialog(QDialog):
         self.edit = QLineEdit(text)
         self.error_label = QLabel()
         self.error_label.setWordWrap(True)
-        self.error_label.setStyleSheet("color: #b00020;")
+        self.error_label.setStyleSheet(PROBLEM_STYLE)
         self.preview_label = QLabel()
         self.table = ReferenceTable(["Where", "Before", "After"])
         self.fix_button: QPushButton | None = None

@@ -36,7 +36,10 @@ from aas_editor.settings.app_settings import (
     ATTR_COLUMN_WIDTH,
     NAME_ROLE,
     ATTRIBUTE_COLUMN,
+    TYPE_COLUMN,
+    TYPE_COLUMN_WIDTH,
     VALUE_COLUMN,
+    VALUE_COLUMN_WIDTH,
     LINKED_ITEM_ROLE,
     IS_LINK_ROLE,
     PARENT_OBJ_ROLE,
@@ -70,6 +73,8 @@ class AttrsTreeView(TreeView):
         self.setObjectName("attrsTreeView")
         self.setModelWithProxy(self.treeModel(packItem))
         self.setColumnWidth(ATTRIBUTE_COLUMN, ATTR_COLUMN_WIDTH)
+        self.setColumnWidth(VALUE_COLUMN, VALUE_COLUMN_WIDTH)
+        self.setColumnWidth(TYPE_COLUMN, TYPE_COLUMN_WIDTH)
         self.setItemDelegate(EditDelegate(self))
 
     def buildHandlers(self):

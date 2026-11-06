@@ -367,7 +367,7 @@ class TestBetweenPackages:
             value_type=model.datatypes.String,
             semantic_id=make_external_reference("urn:cd:temp"),
         )
-        lab = pasting(element)
+        lab = pasting(element, make_property("Plain"))
         lab.package.add(concept_for_source)
         target = make_submodel(id_="urn:target", id_short="Target")
         objects = [target]
@@ -400,6 +400,22 @@ class TestBetweenPackages:
         lab.shown.view.setCurrentIndex(lab.shown.index("shells", package=1))
         lab.view.onUndo()
         assert list(other.concept_descriptions) == []
+
+    def test_several_copied_elements_bring_their_concept_descriptions(
+        self, pasting, monkeypatch
+    ) -> None:
+        from aas_editor.ui import paste_dialogs
+
+        monkeypatch.setattr(paste_dialogs, "ask_copy_concepts", lambda *a: True)
+        lab, other, target = self._two_packages(pasting, self._concept())
+        lab.select(lab.element_path("Temp"), lab.element_path("Plain"))
+        lab.copy()
+        lab.select(("submodels", "Target"), package=1)
+
+        lab.act("structure.paste_into")
+
+        assert _ids(target.submodel_element) == ["Temp", "Plain"]
+        assert [c.id for c in other.concept_descriptions] == ["urn:cd:temp"]
 
     def test_declining_pastes_the_element_alone(
         self, pasting, monkeypatch
@@ -492,3 +508,17 @@ class TestBetweenPackages:
         pasted = target.get_referable("Temp")
         assert pasted.semantic_id.key[0].value == "urn:cd:temp"  # type: ignore[attr-defined]
         assert len(list(other.concept_descriptions)) == 1
+
+
+def test_copying_several_elements_puts_their_json_on_the_clipboard(
+    pasting,
+) -> None:
+    from aas_editor.domain.clipboard_json import load_objects
+
+    lab = pasting(*(make_property(n) for n in "ABC"))
+    lab.select(lab.element_path("A"), lab.element_path("B"))
+
+    lab.copy()
+
+    text = QApplication.clipboard().text()
+    assert [o.id_short for o in load_objects(text)] == ["A", "B"]

@@ -22,7 +22,7 @@ This page describes the code as it is today, and the structure that new code sho
 
 | Module | Responsibility |
 |---|---|
-| `__main__.py` | Entry point. Creates `QApplication`, loads icons, and opens `EditorApp`. |
+| `__main__.py` | Entry point and composition root. Creates `QApplication`, loads icons, registers the actions of each feature, and opens `EditorApp`. |
 | `editorApp.py` | Main window, menus, toolbars, session save and restore. |
 | `design.py` | Generated main window layout, from `mainwindow_base.ui`. |
 | `package.py` | `Package`: holds the objects, files, thumbnail and properties of an opened package, adapts them to the layers below, and handles crash recovery files. |
@@ -74,7 +74,8 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/save.py` | The save flow. `check_save` returns blockers (no way around them) and warnings (save anyway), and `save` writes only when there are no blockers and the user confirms the warnings. It takes a `SaveSource` protocol and explicit `SaveOptions`, never `Package` or `AppSettings`. |
 | `infrastructure/package_io.py` | Reads and writes AASX, JSON and XML through BaSyx. A write goes to a temporary file with `failsafe=False` and replaces the target in one step. It does not import `Package`. |
 | `ui/save_warnings.py` | The dialogs for blockers, warnings, and missing files. They show decisions that `application/save.py` made. |
-| `ui/actions.py` | The registry where features add actions to the context menus and the toolbar (see [Registering an action](#registering-an-action)). |
+| `ui/actions.py` | The registry where features add actions to the context menus and the toolbar. It also decides the order of the menu: sections by the prefix of the action id, separators, submenus for the crowded sections, and hiding what does not apply (see [Registering an action](#registering-an-action)). |
+| `ui/colors.py` | The two colors of problems and advisories in dialogs, which read on the light and on the dark themes. The themes are style sheets of the application, so the palette does not tell which one is on. |
 | `domain/value_types.py` | Parses, formats, and checks text for each of the 31 XSD value types, using `from_xsd` and `xsd_repr` of the SDK and the checks it lacks. Also converts a value through its text, and checks the limits of a Range. |
 | `domain/typed_values.py` | The rules for the attributes that follow a `value_type` (Property, Range, Qualifier, Extension): text becomes a value, a Range keeps min at or below max, and a change of the type plans the converted values or refuses. Also recognizes the type hints of values and value types. |
 | `domain/language_tags.py` | Checks that a language tag is well-formed BCP 47, with the reason when it is not. Standard library only, and the same syntax as the SDK. |
@@ -301,7 +302,9 @@ register_action(
 
 - Every tree view builds an action for each spec that fits its kind of view when it is created. Register before the first view exists, for example by importing your module in the composition root, `__main__.py`, after its existing imports.
 - `is_enabled` is asked whenever the current item changes. `mutates` is true by default, and then the action is also disabled in Read mode and in views that do not allow editing.
-- `ActionContext` has the view, the current index, the selection, the package, and its stack. `toolbar=True` adds the action to the main toolbar, and `order` sorts the actions.
+- `ActionContext` has the view, the current index, the selection, the package, and its stack. `toolbar=True` adds the action to the main toolbar.
+- **Where it goes in the menu.** The prefix of `action_id` before the dot picks the section: `create` and `asset`, `structure`, `references` and `reference`, `conversion`, `concepts`, `bulk`, `preset` and `clipboard`, `files` and `blob`. An unknown prefix goes last. Sections are separated, and `order` sorts only inside a section, so two features that choose the same number no longer mix their actions. `concepts`, the group of `bulk`, `preset` and `clipboard`, and `files` are submenus. Add a prefix to `_MENU_SECTIONS` in `ui/actions.py` for a new section.
+- **What the menu shows.** An action whose `is_enabled` is false for the current item is hidden, so the menu of a Property lists about 40 entries and not all 90 that are registered. An action that applies but changes a package is shown and disabled in Read mode. Toolbar actions are never hidden. So write `is_enabled` as "does this apply to the row", and not as "is there a package", or the action shows on every row.
 
 ### Reference integrity
 

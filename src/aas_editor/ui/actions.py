@@ -155,10 +155,53 @@ class ActionRegistry:
     def specs_for(self, kind: ViewKind) -> list[ActionSpec]:
         """Returns the actions that a kind of view shows, in order."""
         wanted = [spec for spec in self._specs.values() if spec.views & kind]
-        return sorted(wanted, key=lambda spec: spec.order)
+        return sorted(
+            wanted,
+            key=lambda spec: (menu_section(spec.action_id), spec.order),
+        )
 
 
 _registry = ActionRegistry()
+
+# The sections of the context menu, in order. An action belongs to the section
+# of the prefix of its id, such as "structure" in "structure.move_up", so
+# features that register on their own still end up next to related actions,
+# whatever `order` they chose. Unknown prefixes go last.
+_MENU_SECTIONS: tuple[tuple[str, ...], ...] = (
+    ("create", "asset"),
+    ("structure",),
+    ("references", "reference"),
+    ("conversion",),
+    ("concepts",),
+    ("bulk", "preset", "clipboard"),
+    ("files", "blob"),
+)
+
+
+# The sections with many actions are a submenu of the context menu, so that
+# the menu of an element is not a list of fifty entries. The others are in the
+# menu itself, between separators.
+_SUBMENU_TITLES = {
+    4: "Concept descriptions",
+    5: "Qualifiers, extensions and bulk changes",
+    6: "Package files",
+}
+
+
+def menu_section(action_id: str) -> int:
+    """Returns the section of the context menu that an action belongs to.
+
+    Args:
+        action_id: The id of the action, such as "structure.move_up".
+
+    Returns:
+        The index of the section, which is also its place in the menu.
+    """
+    prefix = action_id.partition(".")[0]
+    for position, prefixes in enumerate(_MENU_SECTIONS):
+        if prefix in prefixes:
+            return position
+    return len(_MENU_SECTIONS)
 
 
 def default_registry() -> ActionRegistry:
@@ -194,6 +237,7 @@ class ViewActions:
         self._context = context
         self._can_edit = can_edit
         self._entries: list[tuple[ActionSpec, QAction]] = []
+        self._submenus: list[tuple[QMenu, list[QAction]]] = []
         for spec in (registry or _registry).specs_for(kind):
             self._entries.append((spec, self._create(view, spec)))
 
@@ -229,19 +273,53 @@ class ViewActions:
         return [action for spec, action in self._entries if spec.toolbar]
 
     def add_to_menu(self, menu: QMenu) -> None:
-        """Appends the actions to a menu, after a separator."""
+        """Appends the actions to a menu, with a separator between sections.
+
+        A menu collapses separators next to each other, so a section whose
+        actions are all hidden leaves no gap.
+        """
         if not self._entries:
             return
-        menu.addSeparator()
-        for action in self.actions:
-            menu.addAction(action)
+        previous: int | None = None
+        target: QMenu = menu
+        for spec, action in self._entries:
+            section = menu_section(spec.action_id)
+            if previous != section:
+                previous = section
+                title = _SUBMENU_TITLES.get(section)
+                if title is None:
+                    menu.addSeparator()
+                    target = menu
+                else:
+                    target = QMenu(title, menu)
+                    menu.addMenu(target)
+                    self._submenus.append((target, []))
+            if target is not menu:
+                self._submenus[-1][1].append(action)
+            target.addAction(action)
 
     def update(self) -> None:
-        """Enables each action by the rule of its spec and the editing state."""
+        """Shows and enables each action by the rule of its spec.
+
+        An action that does not apply to the current item is hidden, so the
+        menu lists what the user can do with it, and not everything that is
+        registered. One that applies but changes a package in Read mode stays
+        visible and is disabled. Actions of the toolbar are never hidden, so
+        the buttons do not move.
+        """
         context = self._context()
         for spec, action in self._entries:
+            applies = spec.is_enabled(context)
             allowed = not spec.mutates or self._can_edit()
-            action.setEnabled(allowed and spec.is_enabled(context))
+            action.setEnabled(allowed and applies)
+            if not spec.toolbar:
+                action.setVisible(applies)
+        for submenu, actions in self._submenus:
+            shown = [a for a in actions if a.isVisible()]
+            entry = submenu.menuAction()
+            if entry is not None:
+                entry.setVisible(bool(shown))
+                entry.setEnabled(any(a.isEnabled() for a in shown))
 
     def disable_mutating(self) -> None:
         """Disables the actions that change a package."""

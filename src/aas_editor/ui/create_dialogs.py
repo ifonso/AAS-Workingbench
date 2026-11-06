@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import QTableWidgetItem
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.application.operations.create import CreateError
 from aas_editor.application.operations.create import new_shell
 from aas_editor.application.operations.create import new_submodel
@@ -41,7 +42,7 @@ from aas_editor.domain.asset_information import new_global_asset_id
 from aas_editor.domain.ids import new_identifier
 from aas_editor.domain.references import describe_object
 
-_PROBLEM_STYLE = "color: #b00020;"
+_PROBLEM_STYLE = PROBLEM_STYLE
 NO_SHELL_TEXT = "(none: a Submodel that no AAS refers to)"
 _KIND_TEXT = {
     model.AssetKind.TYPE: "Type",

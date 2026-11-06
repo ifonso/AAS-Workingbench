@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import *
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 import aas_editor.widgets.groupBoxes
+from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.settings.app_settings import *
 from aas_editor.utils.recovery import (
     find_recovery_files,
@@ -93,7 +94,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # Permanent widget, not showMessage(): transient status tips (menu hover)
         # do not overwrite it, so the warning stays until writing recovers.
         self._recoveryStatusLabel = QLabel()
-        self._recoveryStatusLabel.setStyleSheet("color: #c0392b;")
+        self._recoveryStatusLabel.setStyleSheet(PROBLEM_STYLE)
         self._recoveryStatusLabel.hide()
         self.statusBar().addPermanentWidget(self._recoveryStatusLabel)
         self._modeStatusLabel = QLabel()

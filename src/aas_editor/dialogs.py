@@ -107,8 +107,20 @@ class EditDialog(QDialog):
     def adjustSize(self) -> None:
         layoutSize = self.layout().sizeHint()
         buttonsSize = self.buttonBox.sizeHint()
+        # A form taller than the dialog gets a vertical bar, which takes room
+        # from the form. The form has no bar for the width, so what was left
+        # of it was cut off at the right edge.
+        scrollBarWidth = 0
+        if layoutSize.height() + buttonsSize.height() > self.maximumHeight():
+            scrollBarWidth = (
+                self.scrollArea.verticalScrollBar().sizeHint().width()
+            )
         result = QSize(
-            max(layoutSize.width(), buttonsSize.width(), self.width()),
+            max(
+                layoutSize.width() + scrollBarWidth,
+                buttonsSize.width(),
+                self.width(),
+            ),
             max(layoutSize.height(), self.height()),
         )
         self.resize(result)

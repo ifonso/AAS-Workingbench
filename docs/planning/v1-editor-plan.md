@@ -274,4 +274,53 @@ All ─ WP12
 | WP9 | `feat/supplementary-files` | Done |
 | WP10 | `feat/concept-descriptions` | Done |
 | WP11 | `feat/bulk-editing-and-presets` | Done |
-| WP12 | `docs/v1-editor-release` | Not started |
+| WP12 | `docs/v1-editor-release` | Done |
+
+## Exit criteria result
+
+Checked by WP12 on 2026-11-06. The evidence for each criterion that has a test is in the [acceptance audit](../software/v1-acceptance-audit.md).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Every F-EDT capability is implemented or listed under Out of scope | **Not met** | Of 199 acceptance criteria, 22 are neither implemented nor in the Out of scope table (listed below), and 9 more rest only on a "Known limit" of the changelog. |
+| `make check` passes, and new layers have no type-checking warnings | Met | `ruff format --check`, `ruff check`, and `pyright` have no errors. `pyright` on `domain`, `application`, `infrastructure` and `ui` has 0 errors and 0 warnings. The legacy modules and the tests have 1231 warnings. `make` itself was not run. Its commands were. |
+| The whole corpus round-trips without losing content or file parts | **Met for 83 of 132 packages, and not for the 49 that open only in failsafe** | `AAS_CORPUS_TEMPLATES=all` passes (853 passed, 18 skipped). For the 49 the test compares the package that failsafe loaded with the saved one, so it proves that a save adds no further loss, and cannot see what the SDK left out when it opened the file. See rank 1. |
+| Every failure to save leaves the original file intact | Met | `test_safe_save.py` checks the bytes and the folder after a writer that fails, a Save As over an existing file, an unknown extension, and, since WP12, a replace that the system refuses. A full disk and a power cut were not tried. |
+| All 14 SubmodelElement types can be created, edited, moved where valid, undone, saved, and reloaded in a test | Met | `test_element_types.py` does all but the move, for each of the 14. `test_element_moves.py`, added by WP12, does the move, with undo, redo, save and reload, for each of the 14. |
+
+## What remains after v1
+
+Ranked by how much it costs a user.
+The numbers refer to criteria in the [acceptance audit](../software/v1-acceptance-audit.md).
+Nothing here was started in WP12, because each needs a design.
+
+1. **A package that opens only in failsafe loses what the SDK skipped, without a list.**
+   49 of the 132 bundled templates open this way, and D6 makes them Save As only, so the source file is safe.
+   Counting `idShort` in the XML of the file against the elements that were loaded, 37 of the 49 load fewer, mostly one (a duplicate concept description), but the three Bill of Materials extension templates load 20 of 40 and the Hierarchical Structures template 3 of 13. This is a count of `idShort` entries, so it is an estimate.
+   The editor does not tell what was dropped, and the corpus test cannot see it.
+   A reader that lists the skipped objects needs the SDK, or a reader of our own, which D3 rules out.
+2. **A Blob cannot be converted between Base64 text and bytes** (F-EDT-04 AC9, F-EDT-10 AC14 and AC15).
+   A Blob that holds Base64 text is common, and the user has to decode it elsewhere.
+3. **No selection panel, and no limits for a mixed selection** (F-EDT-09 AC1, AC18, AC19).
+   Move and Delete are offered for the variables of an Operation of mixed directions, where the original offers neither.
+   Several supplementary files cannot be removed at once.
+   The way a selection moves (each row one place, not made adjacent) is not recorded as a decision (AC3, AC4).
+4. **No push and pop of editing locations** (F-EDT-01 AC10, AC11).
+   Back after Jump to target and the Back of the tabs cover most of it.
+5. **Defaults and notices that the original gives for new objects** (F-EDT-04 AC2, AC17; F-EDT-06 AC1, AC5; F-EDT-07 AC12; F-EDT-02 AC11, AC13).
+   Default languages of a new MultiLanguageProperty, the notice for the asset id of an Entity, "Create w/ default" and the notices about missing descriptions, ids made from a template (`urn:x:DDDD`), a hint for a blank name of an extension, `Batch` as an asset kind.
+6. **Concept descriptions** (F-EDT-05 AC7, AC10, AC18; F-EDT-03 AC15; F-EDT-05 AC14; F-EDT-11 AC15, AC16).
+   Delete a value list as a whole, the orders "List index", "By SubmodelElements" and "Structured", SAMM, the embedded display of a description in the panel of an element, "Create empty", and a message where the action is only off.
+7. **Small gaps in the editors.**
+   Move language entries (F-EDT-06 AC15), a read-only category (AC16), a fallback text field when the clipboard is denied (F-EDT-08 AC8), Copy recursively of an AAS (F-EDT-02 AC3, AC4), delete the thumbnail (AC14), a file filter in the reference picker (F-EDT-11 AC5), paste into an existing qualifier (F-EDT-07 AC5).
+8. **The tabs still speak Python.**
+   The type column shows `NoneType`, `Namespa...` and `Constrain...`, the type hint column shows `Optional[Union[Duration, DateTime, ...]]`, attributes are in snake case (`value_type`, `display_name`), and list entries are called `DictItem 1`.
+   A new user cannot tell what these mean, and the original names the AAS attribute and its description.
+   It needs a vocabulary for every attribute, not a column rule.
+9. **Layout that was not made for a small window.**
+   The context menu of an element still has 38 entries, because the editor's own Save, Close, Zoom, Folding and Open in entries come with them.
+   The preview of a stored image or document takes half of its tab, and squeezes the attribute table at the default window size.
+   A column order, hidden columns and the sizes of docks that a user changed are restored from the last session, so the new column widths only show on a first run.
+10. **What is not verified.**
+    The pictures of this audit came from an offscreen platform, so they show layout and text, and not the behavior of a real display: scaling on a high-resolution screen, the theme colors on real monitors, the preview of media (it was black offscreen), and keyboard focus.
+    The large tests run only by hand, and not in CI.

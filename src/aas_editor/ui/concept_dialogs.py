@@ -276,6 +276,7 @@ class ConceptPickerDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Assign concept description")
         self.setMinimumWidth(720)
+        self.setMinimumHeight(420)
         self._concepts = list(concepts)
         self.current_label = QLabel(current)
         self.current_label.setWordWrap(True)

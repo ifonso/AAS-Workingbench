@@ -50,6 +50,7 @@ from aas_editor.domain.data_specifications import draft_of
 from aas_editor.domain.data_specifications import empty_attributes
 from aas_editor.domain.references import describe_object
 from aas_editor.domain.references import describe_reference
+from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.app_settings import OBJECT_ROLE
 from aas_editor.ui import concept_dialogs
 from aas_editor.ui import reference_dialogs
@@ -191,8 +192,18 @@ def _has_empty_attributes(context: ActionContext) -> bool:
     )
 
 
+def _in_concept_area(context: ActionContext) -> bool:
+    """Tells whether the row is the concept descriptions or one of them."""
+    return _has_package(context) and (
+        context.index.data(NAME_ROLE) == "concept_descriptions"
+        or any(isinstance(o, ConceptDescription) for o in _objects(context))
+    )
+
+
 def _can_sort(context: ActionContext) -> bool:
-    return hasattr(context.view.model(), "setConceptOrder")
+    return _in_concept_area(context) and hasattr(
+        context.view.model(), "setConceptOrder"
+    )
 
 
 # Creating
@@ -642,7 +653,7 @@ _SPECS = (
         "concepts.delete_invalid",
         "Delete invalid concept descriptions...",
         _run_delete_invalid,
-        _has_package,
+        _in_concept_area,
         405,
         "Delete descriptions with no data specification, isCaseOf or extension",
     ),
@@ -674,7 +685,7 @@ _SPECS = (
         "concepts.fix_keys",
         "Fix data specification keys...",
         _run_fix_keys,
-        _has_package,
+        _in_concept_area,
         409,
         "Give records with IEC 61360 content the key of the template",
     ),

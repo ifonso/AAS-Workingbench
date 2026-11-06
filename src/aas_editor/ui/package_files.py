@@ -16,7 +16,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtGui import QShowEvent
 from PyQt6.QtWidgets import QAbstractItemView
 from PyQt6.QtWidgets import QDockWidget
-from PyQt6.QtWidgets import QHBoxLayout
+from PyQt6.QtWidgets import QGridLayout
 from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
@@ -37,6 +37,7 @@ NAME_COLUMN = 0
 UNUSED_TEXT = "Not referenced: not saved in AASX"
 # How long the panel waits for more changes before it reads the files again.
 REFRESH_DELAY_MS = 50
+BUTTONS_PER_ROW = 4
 
 
 class PackageFilesPanel(QWidget):
@@ -119,19 +120,23 @@ class PackageFilesPanel(QWidget):
             self.remove_button,
         )
 
-        buttons = QHBoxLayout()
-        for button in (
-            self.add_button,
-            self.new_button,
-            self.edit_button,
-            self.rename_button,
-            self.move_button,
-            self.remove_button,
-            self.save_button,
+        # Two rows, because eight buttons in one row need more than a dock is
+        # wide, and the labels were cut off.
+        buttons = QGridLayout()
+        for position, button in enumerate(
+            (
+                self.add_button,
+                self.new_button,
+                self.edit_button,
+                self.rename_button,
+                self.move_button,
+                self.remove_button,
+                self.save_button,
+            )
         ):
-            buttons.addWidget(button)
-        buttons.addStretch(1)
-        buttons.addWidget(self.dangling_button)
+            buttons.addWidget(button, *divmod(position, BUTTONS_PER_ROW))
+        # Its label is long, so it has a row of its own.
+        buttons.addWidget(self.dangling_button, 2, 0, 1, BUTTONS_PER_ROW)
         layout = QVBoxLayout(self)
         layout.addWidget(self.summary_label)
         layout.addWidget(self.table)

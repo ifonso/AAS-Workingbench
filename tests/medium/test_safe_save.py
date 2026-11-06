@@ -202,6 +202,31 @@ def test_failed_save_keeps_existing_target_when_save_as_overwrites_it(
     assert _sha256(target) == before
 
 
+def test_failed_save_keeps_original_when_the_replace_is_refused(
+    qapp: object,
+    tmp_path: Path,
+    aasx_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The package was written completely, and then the system refused to put
+    # it in place, as it does for a file that another program holds open.
+    path = tmp_path / "held.aasx"
+    path.write_bytes(aasx_file.read_bytes())
+    before = _sha256(path)
+    package = Package(path)
+
+    def refuse(source: object, target: object) -> None:
+        raise PermissionError("The file is in use")
+
+    monkeypatch.setattr("os.replace", refuse)
+    with pytest.raises(PermissionError):
+        package.write()
+    monkeypatch.undo()
+
+    assert _sha256(path) == before
+    assert sorted(entry.name for entry in tmp_path.iterdir()) == ["held.aasx"]
+
+
 def test_failed_save_keeps_original_when_extension_is_unknown(
     qapp: object, aasx_file: Path, tmp_path: Path
 ) -> None:
