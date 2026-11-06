@@ -51,7 +51,11 @@ from PyQt6.QtWidgets import (
 )
 
 from basyx.aas.model import SubmodelElementList
+from basyx.aas.model import EmbeddedDataSpecification
+from basyx.aas.model import Extension
+from basyx.aas.model import Qualifier
 from basyx.aas.model import Referable
+from basyx.aas.model import SpecificAssetId
 
 import aas_editor.dialogs as dialogs
 import aas_editor.settings as settings
@@ -64,6 +68,7 @@ from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import copy_source
 from aas_editor.domain.clipboard_json import (
     ClipboardError,
+    dump_members,
     dump_objects,
     load_objects,
     looks_like_json,
@@ -141,6 +146,15 @@ from aas_editor.utils.util_type import isIterable, checkType, isoftype
 
 EMPTY_VIEW_MSG = "There are no elements in this view"
 EMPTY_VIEW_ICON = None
+
+
+# Parts of an element that have JSON of their own (`domain/member_json.py`).
+COPIED_AS_JSON = (
+    Qualifier,
+    Extension,
+    SpecificAssetId,
+    EmbeddedDataSpecification,
+)
 
 
 class HeaderView(QHeaderView):
@@ -1215,6 +1229,9 @@ class TreeView(BasicTreeView):
         if isinstance(data2copy, Referable):
             # The system clipboard gets the SDK's JSON, which can be pasted.
             text2copy = dump_objects([data2copy])
+        elif isinstance(data2copy, COPIED_AS_JSON):
+            # "Add qualifier from clipboard" and the like read this JSON.
+            text2copy = dump_members([data2copy])
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
         self.treeClipboard.source = index.data(PACKAGE_ROLE)
@@ -1238,6 +1255,10 @@ class TreeView(BasicTreeView):
             # As for one item, the system clipboard gets the SDK's JSON, which
             # can be pasted, in this program or in another one.
             text2copy = dump_objects(data2copy)
+        elif data2copy and all(
+            isinstance(o, COPIED_AS_JSON) for o in data2copy
+        ):
+            text2copy = dump_members(data2copy)
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
         # The package is what tells a paste into another package to bring
