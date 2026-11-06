@@ -38,10 +38,13 @@ from aas_editor.application.operations.paste import PasteError
 from aas_editor.application.operations.paste import PastePlan
 from aas_editor.application.operations.paste import paste_commands
 from aas_editor.application.operations.paste import plan_paste
+from aas_editor.application.operations.paste import plan_paste_into_shell
+from aas_editor.application.operations.paste import shell_paste_commands
 from aas_editor.domain import containers
 from aas_editor.domain.clipboard_json import ClipboardError
 from aas_editor.domain.clipboard_json import load_objects
 from aas_editor.domain.clipboard_json import looks_like_json
+from aas_editor.domain.references import describe_object
 from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.app_settings import OBJECT_ROLE
 from aas_editor.settings.app_settings import PACKAGE_ROLE
@@ -63,8 +66,15 @@ CLEAR_ID = "structure.clear_buffer"
 _NOT_ELEMENTS = ("qualifier", "extension")
 
 
-def buffer_objects(view: Any) -> list[model.Referable]:
+def buffer_objects(
+    view: Any, allow_references: bool = False
+) -> list[model.Referable]:
     """Returns the objects in the paste buffer of a view.
+
+    Args:
+        view: The tree view whose buffer is read.
+        allow_references: Whether a model reference in the buffer is returned
+            too. A reference is no element, but it can be pasted into an AAS.
 
     Raises:
         ClipboardError: If the buffer holds text that is no AAS object, with a
@@ -87,6 +97,8 @@ def buffer_objects(view: Any) -> list[model.Referable]:
             objects.extend(load_objects(entry))
         elif isinstance(entry, model.Referable):
             objects.append(entry)
+        elif allow_references and isinstance(entry, model.ModelReference):
+            objects.append(cast("model.Referable", entry))
         else:
             raise ClipboardError(
                 "The buffer holds something that is no element"
@@ -170,7 +182,10 @@ def _can_paste_into(context: ActionContext) -> bool:
         row is not None
         and context.package is not None
         and _has_buffer(context)
-        and child_container(row) is not None
+        and (
+            child_container(row) is not None
+            or isinstance(row.data(OBJECT_ROLE), model.AssetAdministrationShell)
+        )
     )
 
 
@@ -228,6 +243,10 @@ def _paste(context: ActionContext, where: str) -> None:
     if package is None or stack is None or row is None:
         return
     view: Any = context.view
+    shell = row.data(OBJECT_ROLE)
+    if where == "into" and isinstance(shell, model.AssetAdministrationShell):
+        _paste_into_shell(context, row, shell)
+        return
     try:
         items = buffer_objects(view)
         if where == "into":
@@ -282,6 +301,79 @@ def _paste(context: ActionContext, where: str) -> None:
     # The next paste of a cut is a copy again: the objects are in the package.
     buffer.cut = False
     _select_pasted(context, row, where, [item.copy for item in plan.items])
+
+
+def _paste_into_shell(
+    context: ActionContext,
+    row: QModelIndex,
+    shell: model.AssetAdministrationShell,
+) -> None:
+    """Pastes Submodels, or references to them, into an AAS (F-EDT-08 AC11, 12).
+
+    The Submodels and the references are one undo step. A reference the AAS
+    holds already is skipped and said so. The concept descriptions and files of
+    a Submodel from another package come along as in any other paste.
+    """
+    package: Any = context.package
+    view: Any = context.view
+    buffer = view.treeClipboard
+    try:
+        items = cast("list[Any]", buffer_objects(view, allow_references=True))
+        source = buffer.source
+        other = source if source is not None and source is not package else None
+        plan = plan_paste_into_shell(
+            shell,
+            items,
+            package.objStore,
+            keep_ids=buffer.cut,
+            source_objects=other.objStore if other is not None else None,
+        )
+        if plan.is_empty:
+            paste_dialogs.show_problem(
+                f"{describe_object(shell)} refers to "
+                f"{'this Submodel' if len(plan.already_linked) == 1 else 'these Submodels'}"
+                " already, so nothing was pasted.",
+                view,
+            )
+            return
+        copies = [item.copy for item in plan.copies]
+        companion_commands: list[Any] = []
+        file_before: list[Any] = []
+        file_after: list[Any] = []
+        if other is not None and copies:
+            answer = _ask_companions(context, copies, other)
+            if answer is None:
+                return
+            companion_commands, renamed = answer
+            retarget_semantic_ids(copies, renamed)
+            file_before, file_after = transfer_commands(
+                observer_for(package),
+                gather_companions(copies, other.objStore, True).files,
+                other.fileStore,
+                package.fileStore,
+            )
+        with context.stack.group(plan.description):  # pyright: ignore[reportOptionalMemberAccess]
+            for command in [*file_before, *companion_commands]:
+                context.push(command)
+            for command in shell_paste_commands(observer_for(package), plan):
+                context.push(command)
+            for command in file_after:
+                context.push(command)
+    except (ClipboardError, PasteError) as error:
+        paste_dialogs.show_problem(str(error), view)
+        return
+    except Exception as error:  # noqa: BLE001
+        paste_dialogs.show_problem(f"The paste was refused: {error}", view)
+        return
+    buffer.cut = False
+    if plan.dangling:
+        paste_dialogs.show_problem(
+            f"{len(plan.dangling)} pasted reference"
+            f"{'s point' if len(plan.dangling) != 1 else ' points'} at a "
+            "Submodel that is not in this package.",
+            view,
+        )
+    _select_pasted(context, row, "into", copies)
 
 
 def _select_pasted(

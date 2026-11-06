@@ -56,6 +56,17 @@ def main():
 
     register_paste_actions()
 
+    from aas_editor.ui.reference_jump import register_jump_actions
+
+    register_jump_actions()
+
+    from aas_editor.ui.create_actions import register_create_actions
+
+    register_create_actions()
+
+    from aas_editor.ui.bulk_actions import register_bulk_actions
+
+    register_bulk_actions()
     from aas_editor.ui.concept_actions import register_concept_actions
 
     register_concept_actions()

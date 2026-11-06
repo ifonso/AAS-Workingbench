@@ -125,12 +125,19 @@ class GroupBox(QGroupBox):
     def setVal(self, val):
         pass
 
+    def _adjustWindow(self) -> None:
+        try:
+            self.window().adjustSize()
+        except RuntimeError:
+            # The box was deleted before the event loop got to this call.
+            pass
+
     def adjustSize(self) -> None:
         oldSize = self.size()
         super(GroupBox, self).adjustSize()
         newSize = self.size()
         if oldSize != newSize:
-            QTimer.singleShot(0, lambda: self.window().adjustSize())
+            QTimer.singleShot(0, self._adjustWindow)
         newSize = self.size()
         if newSize.width() < oldSize.width():
             self.resize(oldSize.width(), newSize.height())

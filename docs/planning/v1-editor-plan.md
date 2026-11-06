@@ -268,7 +268,7 @@ All ─ WP12
 | WP5a | `feat/validation-rules` | Done |
 | WP5b | `feat/validation-ui` | Done |
 | WP6 | `feat/structure-operations` | Done |
-| WP7 | `feat/create-and-reference-flows` | Not started |
+| WP7 | `feat/create-and-reference-flows` | Done |
 | WP8a | `feat/value-editors` | Done |
 | WP8b | `feat/element-conversion` | Done |
 | WP9 | `feat/supplementary-files` | Done |
