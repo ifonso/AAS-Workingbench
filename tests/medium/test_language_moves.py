@@ -133,7 +133,6 @@ def test_clicking_two_rows_keeps_both_selected_for_the_move(moving) -> None:
 
     attrs = moving.attrs
     attrs.resize(600, 400)
-    attrs.show()
     attrs.expandAll()
     cells = [
         moving.lab_.row(attrs, "description", f"DictItem {n}").siblingAtColumn(
