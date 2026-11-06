@@ -11,6 +11,7 @@
 import sys
 from pathlib import Path
 from unittest import TestCase
+from unittest import mock
 
 import pytest
 
@@ -19,7 +20,7 @@ pytest.importorskip(
 )
 
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
 
 NAME_ROLE = None
 
@@ -29,6 +30,15 @@ AASX_FILE = Path(__file__).parents[1] / "data" / "TestPackage.aasx"
 class TestUi(TestCase):
     def setUp(self) -> None:
         self.app = QApplication.instance() or QApplication(sys.argv)
+
+        # A modal dialog blocks the event loop, so no test step would run after
+        # it opens. Dismiss every dialog as if the user had cancelled it.
+        for dialogCls in (QDialog, QMessageBox):
+            patcher = mock.patch.object(
+                dialogCls, "exec", return_value=QDialog.DialogCode.Rejected
+            )
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
         # Imported here because aas_editor.dialogs reads the primary screen at
         # import time, which fails until a QApplication exists.
@@ -51,6 +61,7 @@ class TestUi(TestCase):
         self.timer.setInterval(0)
 
     def tearDown(self) -> None:
+        self.timer.stop()
         self.window.close()
 
     def testViews(self):
@@ -110,9 +121,9 @@ class TestUi(TestCase):
             try:
                 if self.attrsTreeView.editCreateInDialogAct.isEnabled():
                     # Edit current item if possible
+                    # The stubbed dialog returns at once. Closing the active
+                    # window here would close the main window and end the run.
                     self.attrsTreeView.editCreateInDialogAct.trigger()
-                    if self.app.activeWindow():
-                        self.app.activeWindow().close()
                     self._nextItemInRightTree()
                     return
                 else:
@@ -128,7 +139,12 @@ class TestUi(TestCase):
     def _startTest(self, testFunc):
         self.timer.timeout.connect(testFunc)
         self.timer.start()
-        self.assertEqual(self.app.exec(), 0)
+        try:
+            self.assertEqual(self.app.exec(), 0)
+        finally:
+            # A timer that keeps firing would run the test step again later,
+            # against a window that is already closed.
+            self.timer.stop()
 
     def _nextItemInLeftTree(self):
         pack_index = next(self.itemsGenerator)

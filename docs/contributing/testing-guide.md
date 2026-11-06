@@ -22,9 +22,8 @@ uv run pytest tests/medium/test_package.py -k roundtrip
 Tests use Qt's `offscreen` platform by default, so they need no display.
 To watch a large test on screen, set `QT_QPA_PLATFORM=windows` (or `xcb` on Linux) first.
 
-**Known issue:** `testEditCreate` in `tests/large/test_main_window.py` does not finish when run offscreen, so `make test-large` hangs.
-It hangs with older SDK versions too, and it is probably waiting on a modal dialog.
-Until it is fixed, run the other large tests with `uv run pytest -m large -k "testViews or testLinks"`.
+Large tests stub the modal dialogs, because a dialog that opens blocks the event loop.
+The full large run takes several minutes.
 
 ## Test sizes
 
@@ -134,6 +133,10 @@ def test_line_edit_emits_text_when_user_types(qtbot: QtBot) -> None:
 These checks matter most for parity work:
 
 - **Round trips:** read, write, and read again for AASX, JSON, and XML, and compare the content.
+- **Round-trip corpus:** `tests/medium/test_roundtrip_corpus.py` saves every package in `tests/data/` and compares the BaSyx objects and the file parts.
+  To add packages outside the repository, set `AAS_CORPUS_ROOT` to the folder that contains `Requester_screwing.aasx` and `package-explorer/src`.
+  Without it, the local mode is skipped. Packages that the SDK cannot read, such as metamodel V2 files, are skipped with the reason.
+- **Factories:** build objects with the helpers in `tests/factories.py` (`from tests.factories import make_property`), not by hand in each test.
 - **Sample packages:** use the IDTA templates in `tests/data/`. Add a small new file there only if no existing file covers the case.
 - **Spec constraints:** name the constraint in the test, such as `test_rejects_id_short_violating_constraint_aasd_002`.
 - **Acceptance criteria:** each parity feature doc has an acceptance criteria section. Turn each criterion into at least one test.
