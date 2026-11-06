@@ -20,6 +20,7 @@ from basyx.aas.model import SubmodelElementList
 
 from aas_editor.application.editing import edit_mode
 from aas_editor.domain.containers import position_of
+from aas_editor.domain.samm import attribute_order
 from aas_editor.models import StandardItem
 from aas_editor import settings
 from aas_editor.settings import DICT_TYPES
@@ -87,7 +88,9 @@ class DetailedInfoItem(StandardItem):
         # Read mode shows what an object has, not what it could have (F-EDT-01
         # AC1). A null attribute is a row to create it from, which Edit mode needs.
         editing = edit_mode().is_editing
-        for attr in getAttrs4detailInfo(obj):
+        # A concept description with a SAMM element lists its Identifiable
+        # attributes first (F-EDT-05 AC18).
+        for attr in attribute_order(obj, getAttrs4detailInfo(obj)):
             if attr == "id_short" and isListItem(obj):
                 # The item of a list has no idShort: its position names it.
                 ListIndexItem(obj, name=LIST_INDEX_NAME, **kwargs)
