@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Main app | Submodel template attribute set",
+    "extension": {
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://admin-shell.io/SubmodelTemplates/smt-attribute-set/v1/0"
+          }
+        ]
+      },
+      "name": "smt-attrtibute-set"
+    }
+  },
+  {
+    "name": "Main app | Animation of values",
+    "extension": {
+      "name": "Animate.Args",
+      "value": "{ type: \"Sin\", ofs: 230.0, scale: 10.0, freq: 0.05, timer: 500 }",
+      "valueType": "xs:string"
+    }
+  },
+  {
+    "name": "BOM Plugin | Formatting arguments",
+    "extension": {
+      "name": "BOM.Args",
+      "value": "{ start: \"Tee\", end: \"Diamond\", width: 2.0, stroke: \"#000090\" }",
+      "valueType": "xs:string"
+    }
+  },
+  {
+    "name": "Plotting Plugin | Single plot arguments",
+    "extension": {
+      "name": "Plotting.Args",
+      "value": "{ grp:1, src: \"Event\", title: \"Phase voltages\", fmt: \"F0\", row: 6, col: 0, rowspan: 1, colspan:1, unit: \"V\", linewidth: 1.0 }",
+      "valueType": "xs:string"
+    }
+  },
+  {
+    "name": "Plotting Plugin | Time series arguments",
+    "extension": {
+      "name": "TimeSeries.Args",
+      "value": "{ height: 400, palette: \"Category10\" }",
+      "valueType": "xs:string"
+    }
+  },
+  {
+    "name": "ImageMap Plugin | Image map arguments",
+    "extension": {
+      "name": "ImageMap.Args",
+      "value": "{  }",
+      "valueType": "xs:string"
+    }
+  }
+]

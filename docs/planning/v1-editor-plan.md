@@ -273,5 +273,5 @@ All ─ WP12
 | WP8b | `feat/element-conversion` | Done |
 | WP9 | `feat/supplementary-files` | Done |
 | WP10 | `feat/concept-descriptions` | Done |
-| WP11 | `feat/bulk-editing-and-presets` | Not started |
+| WP11 | `feat/bulk-editing-and-presets` | Done |
 | WP12 | `docs/v1-editor-release` | Not started |

@@ -21,6 +21,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0014](0014-concept-descriptions-and-iec-61360.md) | Concept descriptions follow the semantic id by id, and IEC 61360 records are built from a checked draft | Accepted |
 | [0015](0015-validation-in-the-editor.md) | The rules run in the dock, in hints, and in the save gate, and the marker follows the stack | Accepted |
 | [0016](0016-reference-fields-and-creation-dialogs.md) | Reference fields wrap the generated forms, and creation has its own dialogs | Accepted |
+| [0017](0017-presets-and-the-pattern-language.md) | Presets are SDK JSON files, and bulk changes use a small pattern language | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.

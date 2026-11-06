@@ -227,6 +227,27 @@ def _position_changes(
     objects: Iterable[model.Identifiable],
 ) -> list[ReferenceChange]:
     """Finds the references to list items that change position."""
+    renames = position_renames(container, members, order)
+    if not renames:
+        return []
+    changes, _ = rewrite_keys(ReferenceIndex(objects), renames)
+    return list(changes)
+
+
+def position_renames(
+    container: object, members: Sequence[Any], order: Sequence[Any]
+) -> list[KeyRename]:
+    """Finds the new keys of the list items that change position (AASd-128).
+
+    Args:
+        container: The container of the members.
+        members: The members in their current order.
+        order: The members in the new order.
+
+    Returns:
+        One rename for each item of a `SubmodelElementList` that gets another
+        position. Empty for every other container.
+    """
     holder = _list_holder(members)
     if holder is None or not isinstance(container, model.NamespaceSet):
         return []
@@ -236,10 +257,7 @@ def _position_changes(
         path = path_of(item)
         if old != new and path is not None:
             renames.append(KeyRename(path, str(new)))
-    if not renames:
-        return []
-    changes, _ = rewrite_keys(ReferenceIndex(objects), renames)
-    return list(changes)
+    return renames
 
 
 def _list_holder(

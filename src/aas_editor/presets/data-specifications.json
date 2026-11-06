@@ -1,0 +1,25 @@
+[
+  {
+    "name": "IEC 61360",
+    "embeddedDataSpecification": {
+      "dataSpecification": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://admin-shell.io/DataSpecificationTemplates/DataSpecificationIec61360/3/0"
+          }
+        ]
+      },
+      "dataSpecificationContent": {
+        "modelType": "DataSpecificationIec61360",
+        "preferredName": [
+          {
+            "language": "en",
+            "text": "Preferred name"
+          }
+        ]
+      }
+    }
+  }
+]

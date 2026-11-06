@@ -75,6 +75,12 @@ def main():
 
     register_conversion_actions()
 
+    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_editor.ui.preset_actions import register_preset_actions
+
+    register_bulk_edit_actions()
+    register_preset_actions()
+
     # Check if a file path is provided as an argument
     fileToOpen = sys.argv[1] if len(sys.argv) > 1 else None
 
