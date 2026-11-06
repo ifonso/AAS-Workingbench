@@ -258,7 +258,7 @@ All ─ WP12
 
 | WP | Branch | Status |
 |---|---|---|
-| WP1 | `fix/editor-data-defects` | Not started |
+| WP1 | `fix/editor-data-defects` | Done |
 | WP2 | `feat/safe-save` | Not started |
 | WP3a | `refactor/model-change-observer` | Not started |
 | WP3b | `feat/command-undo` | Not started |
