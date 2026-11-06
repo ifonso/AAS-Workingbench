@@ -168,8 +168,15 @@ class EditObjDialog(EditDialog):
         title="",
         rmDefParams=True,
         objVal=None,
+        firstEntry=False,
         **kwargs,
     ):
+        """Make the dialog of a form for a type or for an object.
+
+        Args:
+            firstEntry: Whether a new list starts with one empty entry that has
+                the focus, so that adding one item is no extra step.
+        """
         title = title if title else f"Add {getTypeName(objTypeHint)}"
         EditDialog.__init__(self, parent, title=title)
         self.buttonOk.setEnabled(True)
@@ -189,6 +196,11 @@ class EditObjDialog(EditDialog):
         self.inputWidget.setObjectName("mainBox")
         self.inputWidget.setStyleSheet("#mainBox{border:0;}")  # FIXME
         self.layout().addWidget(self.inputWidget)
+        if firstEntry and objVal is None:
+            # After the form is in the dialog, or the focus is lost with it.
+            start = getattr(self.inputWidget, "startWithEntry", None)
+            if start is not None:
+                start()
         QTimer.singleShot(0, self.adjustSize)
 
     def getInputWidget(self):

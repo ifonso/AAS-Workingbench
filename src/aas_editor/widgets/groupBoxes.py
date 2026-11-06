@@ -61,6 +61,8 @@ from aas_editor.utils.util_type import (
 )
 from aas_editor.utils.util import isValOk4Typehint
 from aas_editor.application.hints import hints_mode
+from aas_editor.domain.form_labels import FieldLabel
+from aas_editor.domain.form_labels import field_label
 from aas_editor.domain.language_tags import check_language_tags
 from aas_editor.domain.validation.field_checks import (
     entity_global_asset_id_problem,
@@ -280,8 +282,7 @@ class ObjGroupBox(GroupBox):
         return widget
 
     def insertInputWidget(self, widget: QWidget, param: str, row: int = -1):
-        title = self.getWidgetTitle(param)
-        self.layout().insertRow(row, title, widget)
+        self.layout().insertRow(row, self._makeLabel(param, widget), widget)
         self.inputWidgets.append(widget)
         self.linkValueWidgets()
         self.adjustSize()
@@ -351,13 +352,16 @@ class ObjGroupBox(GroupBox):
         self._refreshNotice()
 
     def _rowOfParam(self, param: str):
+        """Return the row of a parameter, found by its name in the SDK."""
         layout = self.layout()
-        title = self.getWidgetTitle(param)
         for row in range(layout.rowCount()):
-            item = layout.itemAt(row, QFormLayout.ItemRole.LabelRole)
-            if item is not None and getattr(item.widget(), "text", None):
-                if item.widget().text() == title:
-                    return row
+            item = layout.itemAt(row, QFormLayout.ItemRole.FieldRole)
+            widget = item.widget() if item is not None else None
+            if widget is not None and (
+                widget is self.paramWidgets.get(param)
+                or getattr(widget, "paramName", None) == param
+            ):
+                return row
         return None
 
     def _refreshNotice(self, *_):
@@ -381,11 +385,41 @@ class ObjGroupBox(GroupBox):
         label.setText(problem or "")
         label.setVisible(problem is not None)
 
-    def getWidgetTitle(self, param: str):
-        title = param.strip("_")
-        if param not in self.defaultParams:
-            title = f"{title}*"
-        return title
+    def fieldLabel(self, param: str) -> FieldLabel:
+        """Return the words next to the field of a parameter.
+
+        The name is the one of the metamodel (`valueType`), as the tabs show
+        it (ADR 0022). The widgets of a parameter are still found by the
+        name of the SDK, in `paramWidgets`.
+        """
+        return field_label(
+            self.objTypeHint,
+            param,
+            self.paramsToAttrs.get(param, param),
+            required=param not in self.defaultParams,
+        )
+
+    def labelOf(self, param: str) -> QLabel | None:
+        """Return the label of the field of a parameter, if it has a row."""
+        row = self._rowOfParam(param)
+        if row is None:
+            return None
+        item = self.layout().itemAt(row, QFormLayout.ItemRole.LabelRole)
+        label = item.widget() if item is not None else None
+        return label if isinstance(label, QLabel) else None
+
+    def _makeLabel(self, param: str, field: QWidget) -> QLabel:
+        """Make the label of a field, with the description as its tooltip."""
+        words = self.fieldLabel(param)
+        label = QLabel(words.text, self)
+        # What a test or a script finds the label by, the name of the SDK.
+        label.setProperty("sdkName", param)
+        if words.tooltip:
+            label.setToolTip(words.tooltip)
+            if not field.toolTip():
+                field.setToolTip(words.tooltip)
+        label.setBuddy(field)
+        return label
 
     def getPreObj(self):
         kwargs = {}
@@ -438,7 +472,7 @@ class ObjGroupBox(GroupBox):
             paramName = params[widgets.index(widget)]
             btn = self.getCreatePushBtn(paramName)
             self.layout().insertRow(
-                widgetRow, self.getWidgetTitle(paramName), btn
+                widgetRow, self._makeLabel(paramName, btn), btn
             )
             self.delInputWidget(widget)
         self._refreshNotice()
@@ -535,6 +569,28 @@ class IterableGroupBox(GroupBox):
         self.layout().addRow(plusButton)
         self.inputWidgets = []
         self.setVal(self.objVal)
+
+    def startWithEntry(self) -> None:
+        """Start a new list with one empty entry, ready to be typed into.
+
+        The dialog that adds to a list is for one new entry most of the time,
+        so the entry is there already and has the focus. A box that has
+        entries is left as it is, and "Add Item" still adds more.
+        """
+        if self.inputWidgets:
+            return
+        self._addInputWidget()
+        self._focusEntry(self.inputWidgets[-1])
+
+    @staticmethod
+    def _focusEntry(entry: QWidget) -> None:
+        """Give the focus to the first field of an entry that takes it."""
+        fields = getattr(entry, "inputWidgets", None)
+        first = fields[0] if fields else getattr(entry, "inputWidget", entry)
+        for candidate in (first, *first.findChildren(QWidget)):
+            if candidate.focusPolicy() != Qt.FocusPolicy.NoFocus:
+                candidate.setFocus()
+                return
 
     def _getItemType(self):
         if ... in self.argTypes:

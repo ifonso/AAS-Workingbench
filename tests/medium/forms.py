@@ -50,6 +50,23 @@ class Form:
             or self._create_button(self.group, param) is not None
         )
 
+    def label(self, param: str) -> str:
+        """Returns the text that the form shows next to a parameter.
+
+        The form finds and fills a field by the name of the parameter of the
+        SDK, never by this text, which is the word of the metamodel.
+        """
+        label = self.group.labelOf(param)
+        assert label is not None, f"No label for '{param}'"
+        assert label.property("sdkName") == param
+        return label.text()
+
+    def tooltip(self, param: str) -> str:
+        """Returns the description that the label of a parameter shows."""
+        label = self.group.labelOf(param)
+        assert label is not None, f"No label for '{param}'"
+        return label.toolTip()
+
     def create(self, param: str) -> Any:
         """Presses Create for an optional parameter, and returns its widget."""
         button = self._create_button(self.group, param)
