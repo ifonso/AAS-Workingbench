@@ -647,6 +647,34 @@ def test_the_panel_without_a_package_says_so(qtbot) -> None:
     assert "No package" in panel.summary_label.text()
 
 
+def test_the_buttons_fit_a_panel_of_the_width_of_a_dock(qtbot) -> None:
+    from aas_editor.ui.package_files import PackageFilesPanel
+
+    panel = PackageFilesPanel(lambda: None)
+    qtbot.addWidget(panel)
+    buttons = (
+        panel.add_button,
+        panel.new_button,
+        panel.edit_button,
+        panel.rename_button,
+        panel.move_button,
+        panel.remove_button,
+        panel.save_button,
+        panel.dangling_button,
+    )
+
+    needed = panel.minimumSizeHint().width()
+    panel.resize(needed, 300)
+    panel.show()
+    qtbot.waitExposed(panel)
+    cut_off = [b.text() for b in buttons if b.width() < b.sizeHint().width()]
+
+    # Eight buttons in one row need about 1000 pixels, and a dock is often
+    # narrower, so the buttons were cut and showed "ew text file".
+    assert needed <= 700
+    assert cut_off == []
+
+
 def test_the_dangling_summary_is_shown(world, panel) -> None:
     _make_dangling(world)
     panel.refresh()
