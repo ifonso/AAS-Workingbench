@@ -317,8 +317,9 @@ class ViewActions:
         for submenu, actions in self._submenus:
             shown = [a for a in actions if a.isVisible()]
             entry = submenu.menuAction()
-            entry.setVisible(bool(shown))
-            entry.setEnabled(any(a.isEnabled() for a in shown))
+            if entry is not None:
+                entry.setVisible(bool(shown))
+                entry.setEnabled(any(a.isEnabled() for a in shown))
 
     def disable_mutating(self) -> None:
         """Disables the actions that change a package."""
