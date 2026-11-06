@@ -292,6 +292,24 @@ def test_bad_clipboard_text_is_refused_with_a_message(
     assert not lab.package.commandStack.can_undo
 
 
+def test_json_that_is_newer_on_the_clipboard_replaces_the_buffer(
+    pasting,
+) -> None:
+    """F-EDT-08 AC5 differs on purpose (ADR 0020): the buffer is the clipboard."""
+    lab = pasting(make_property("A"), make_property("B"))
+    lab.select(lab.element_path("A"))
+    lab.copy()
+    QApplication.clipboard().setText(
+        dump_objects([make_property("Other", "9")])
+    )
+    lab.view.updateTreeClipboard()
+    lab.select(lab.element_path("B"))
+
+    lab.act("structure.paste_below")
+
+    assert _ids(lab.submodel.submodel_element) == ["A", "B", "Other"]
+
+
 def test_a_submodel_cannot_be_pasted_among_elements(pasting) -> None:
     lab = pasting(make_property("A"))
     lab.view.treeClipboard.clear()

@@ -714,8 +714,16 @@ class StandardTable(QAbstractItemModel):
                 value, Identifiable
             ):
                 # An object with another id leaves references behind.
-                return replace_command(
-                    self._packageOf(index), container, item.obj, value, self
+                return self._withCopiedFiles(
+                    replace_command(
+                        self._packageOf(index),
+                        container,
+                        item.obj,
+                        value,
+                        self,
+                    ),
+                    value,
+                    index,
                 )
             # A paste over an element brings the files of the copy along, as
             # a paste beside it does.

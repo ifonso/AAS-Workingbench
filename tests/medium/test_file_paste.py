@@ -261,3 +261,36 @@ def test_replacing_without_a_known_source_adds_no_file(views) -> None:
     )
 
     assert list(target.fileStore) == []
+
+
+def test_replacing_a_submodel_brings_its_file_along(views, monkeypatch) -> None:
+    from PyQt6.QtCore import Qt
+
+    from aas_editor.ui import reference_dialogs
+
+    monkeypatch.setattr(
+        reference_dialogs, "confirm_reference_changes", lambda *a, **k: True
+    )
+
+    shown, source, target, other, _element = _replace_setup(views, None)
+    submodel = next(
+        o
+        for o in source.objStore
+        if o.id != other.id and isinstance(o, model.Submodel)
+    )
+    replacement = clone(submodel)
+    replacement.id = "urn:uuid:replacement"
+    copy_source.remember(source)
+    row = shown.index("submodels", "Other", package=1)
+
+    done = shown.table.setData(
+        shown.view.model().mapToSource(row),
+        replacement,
+        Qt.ItemDataRole.EditRole,
+    )
+
+    assert done, shown.table.lastErrorMsg
+    assert files.read_file(target.fileStore, DOC) == b"%PDF source"
+    assert _pasted_element(replacement).value == DOC
+    target.commandStack.undo()
+    assert list(target.fileStore) == []
