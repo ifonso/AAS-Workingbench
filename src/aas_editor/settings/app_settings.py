@@ -66,6 +66,10 @@ WINDOW_TITLE = (
 
 TOOLBARS_HEIGHT = 30
 ATTR_COLUMN_WIDTH = 200
+# What users edit is the value, so it gets room before the type and the type
+# hint, which only describe it. The type hint takes what is left.
+VALUE_COLUMN_WIDTH = 380
+TYPE_COLUMN_WIDTH = 130
 PACK_TREE_OBJECT_COLUMN_WIDTH = 480
 
 DEFAULT_MAINWINDOW_SIZE = QSize(1194, 624)
