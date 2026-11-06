@@ -16,7 +16,7 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
-from basyx.aas.model import SubmodelElementList
+from basyx.aas.model import Referable, SubmodelElementList
 
 from aas_editor.application.editing import edit_mode
 from aas_editor.domain.containers import position_of
@@ -93,12 +93,28 @@ class DetailedInfoItem(StandardItem):
                 ListIndexItem(obj, name=LIST_INDEX_NAME, **kwargs)
                 continue
             value = getattr(obj, attr)
+            if attr == "category" and isinstance(obj, Referable):
+                # Part 1 deprecates it. It shows only when it has content, and
+                # is not edited (F-EDT-06 AC16).
+                if value is not None:
+                    CategoryItem(value, name=attr, **kwargs)
+                continue
             if value is None and not editing:
                 continue
             DetailedInfoItem(value, name=attr, **kwargs)
 
 
 LIST_INDEX_NAME = "index"
+
+
+class CategoryItem(DetailedInfoItem):
+    """The read-only row of a category, which the specification deprecates.
+
+    The row can be deleted, which is how a category goes away (the original
+    offers no way). It cannot be typed over.
+    """
+
+    readOnly = True
 
 
 def isListItem(obj) -> bool:
