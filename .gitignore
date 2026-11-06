@@ -16,7 +16,8 @@ build
 coverage.xml
 htmlcov/
 
-# IDE and runtime output
+# IDE, agents and runtime output
+/.claude/
 .idea/
 *.log
 /src/aas_editor/settings/recovery/
