@@ -19,10 +19,10 @@ from PyQt6.QtWidgets import QMessageBox
 
 from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import ReadOnlyError
+from aas_editor.application.operations.bulk_move import bulk_move_commands
+from aas_editor.application.operations.bulk_move import can_bulk_move
+from aas_editor.application.operations.bulk_move import plan_bulk_move
 from aas_editor.application.operations.move import MoveKind
-from aas_editor.application.operations.move import can_move
-from aas_editor.application.operations.move import move_commands
-from aas_editor.application.operations.move import plan_move
 from aas_editor.domain import containers
 from aas_editor.domain import ordering
 from aas_editor.settings.app_settings import OBJECT_ROLE
@@ -71,25 +71,26 @@ def container_of_row(index: QModelIndex) -> object | None:
     return sets[0] if sets else None
 
 
-def _selection(context: ActionContext) -> tuple[object, list[object]] | None:
-    """Returns the common container and the selected members, or None."""
-    container: object | None = None
-    members: list[object] = []
+def _selection(context: ActionContext) -> list[tuple[object, object]] | None:
+    """Returns each selected member with its container, or None.
+
+    The members may be in different containers, and each moves within its
+    own. None when a selected row has no ordered container, such as a
+    submodel.
+    """
+    placements: list[tuple[object, object]] = []
     for index in selected_rows(context):
-        where = container_of_row(index)
-        if where is None or (container is not None and where is not container):
+        container = container_of_row(index)
+        if container is None:
             return None
-        container = where
-        members.append(index.data(OBJECT_ROLE))
-    if container is None:
-        return None
-    return container, members
+        placements.append((container, index.data(OBJECT_ROLE)))
+    return placements or None
 
 
 def _enabled(kind: MoveKind):
     def check(context: ActionContext) -> bool:
         found = _selection(context)
-        return found is not None and can_move(found[0], found[1], kind)
+        return found is not None and can_bulk_move(found, kind)
 
     return check
 
@@ -109,14 +110,13 @@ def _runner(kind: MoveKind):
         package: Any = context.package
         if found is None or package is None:
             return
-        container, members = found
-        plan = plan_move(container, members, kind, package.objStore)
+        plan = plan_bulk_move(found, kind, package.objStore)
         if plan is None:
             return
         _natural_order(context)
         try:
             with context.stack.group(plan.description):  # type: ignore[union-attr]
-                for command in move_commands(
+                for command in bulk_move_commands(
                     observer_for(context.package), plan
                 ):
                     context.push(command)
