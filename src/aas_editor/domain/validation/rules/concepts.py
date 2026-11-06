@@ -2,9 +2,13 @@
 
 The category of a concept description limits the data type of its IEC 61360
 data specification. The constraints are AASc-3a-004 to AASc-3a-007 of Part 3a.
-The SDK does not check them. Their wording and the sets of data types come from
-the verification code of Package Explorer (`AasCore.Aas3_1`, `verification.cs`
-and `constants.cs`), which is generated from the specification:
+The SDK does not check them. The sets of data types are those of the text of
+Part 3a, "Specification of the Asset Administration Shell, Part 3a: Data
+Specification IEC 61360" (IDTA-01003-a, V3.1.1), constraints AASc-3a-004 to
+AASc-3a-007. They were compared with the published source,
+`documentation/IDTA-01003-a/modules/ROOT/pages/includes/constraints.adoc` in
+https://github.com/admin-shell-io/aas-specs-iec61360 (tag v3.1.1, licensed
+CC BY 4.0). The messages of the findings are this project's own:
 
 - AASc-3a-004: category PROPERTY or VALUE, the data type is mandatory and one
   of DATE, STRING, STRING_TRANSLATABLE, INTEGER_MEASURE, INTEGER_COUNT,
@@ -172,8 +176,7 @@ RULES = (
     Rule(
         PROPERTY_OR_VALUE,
         "A property or value description has a data type of its group",
-        "Part 3a, constraint AASc-3a-004, in the wording of Package Explorer's "
-        "verification. The SDK does not check it.",
+        "Part 3a, constraint AASc-3a-004. The SDK does not check it.",
         property_or_value_data_type,
     ),
     Rule(

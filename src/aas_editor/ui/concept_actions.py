@@ -255,8 +255,8 @@ def _why_nothing_created(
         )
     name = describe_object(roots[0]) if roots else "the selection"
     return (
-        "Cannot create a concept description because no valid semantic id is "
-        f"present in {name}."
+        f"{name} has no valid semantic id, so there is no concept "
+        "description to create."
     )
 
 

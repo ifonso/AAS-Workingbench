@@ -57,7 +57,7 @@ def test_two_siblings_give_the_header_and_the_actions_of_a_selection(
 
     lab.select(("B",), ("D",))
 
-    assert lab.panel.header_label.text() == "Multiple selected elements"
+    assert lab.panel.header_label.text() == "Several elements selected"
     assert "2 Property" in lab.panel.detail_label.text()
     assert (
         lab.shown_buttons()

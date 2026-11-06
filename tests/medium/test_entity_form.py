@@ -8,7 +8,10 @@ from tests.medium.forms import Form
 
 from aas_editor.application.hints import hints_mode
 
-NOTICE = "Please choose the global identifier for the SelfManagedEntity"
+NOTICE = (
+    "Enter the global asset id of the asset that this self-managed entity "
+    "stands for"
+)
 
 
 def _notice(form: Form) -> QLabel:

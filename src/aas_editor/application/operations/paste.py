@@ -149,7 +149,7 @@ def _plan_elements(
 ) -> PastePlan:
     if not all(isinstance(item, model.SubmodelElement) for item in items):
         raise PasteError(
-            "No (valid) information for SubmodelElements in the paste buffer"
+            "The paste buffer holds something that is not a submodel element"
         )
     in_list = isinstance(container, model.OrderedNamespaceSet)
     taken: set[str] = {
@@ -180,7 +180,8 @@ def _plan_identifiables(
 ) -> PastePlan:
     if not all(isinstance(item, model.Identifiable) for item in items):
         raise PasteError(
-            "No (valid) information for Identifiables in the paste buffer"
+            "The paste buffer holds something that is not a shell, a "
+            "submodel or a concept description"
         )
     pasted: list[PastedItem] = []
     for item in items:

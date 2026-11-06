@@ -222,8 +222,10 @@ class TestPermanentSort:
         assert can_sort_permanently(ConceptOrder.ID)
         assert can_sort_permanently(ConceptOrder.FIRST_USE)
 
-    def test_the_message_is_the_one_of_package_explorer(self) -> None:
-        assert CANNOT_SORT == "Cannot apply selected sort order!"
+    def test_the_message_says_that_nothing_was_sorted(self) -> None:
+        assert CANNOT_SORT == (
+            "The file cannot keep this order, so nothing was sorted"
+        )
 
     def test_every_order_has_a_label(self) -> None:
         assert all(order.label for order in ConceptOrder)

@@ -21,8 +21,8 @@ from aas_editor.application.validation import hints_for
 from aas_editor.application.validation import validate_package
 
 CATEGORY_HINT = (
-    "Hint: The category 'PARAMETER' is deprecated. Do not plan to use it in "
-    "new developments (EDT-HINT-CATEGORY)"
+    "Hint: The specification has deprecated categories, so a new model "
+    "should leave out 'PARAMETER' (EDT-HINT-CATEGORY)"
 )
 
 
@@ -258,7 +258,7 @@ def test_inline_hint_finds_whitespace_in_the_value_of_a_key(
 
     field.setText("urn:a b")
 
-    assert hint.text.startswith("There seems to be whitespace")
+    assert hint.text.startswith("This key value holds a space")
 
 
 def test_inline_hint_says_that_the_global_asset_id_is_empty(
