@@ -9,9 +9,15 @@ moving it to another thread would mean reading them while they change.
 Runs are debounced instead: every change of the package, and every step of its
 history, only restarts a short timer. A burst of changes, such as a paste or a
 bulk delete, is followed by one run. Nothing runs while no view listens.
+
+The run is linear in the size of the package, so a very large package would
+make the window stop for a moment after every burst of changes. The wait grows
+with the cost of the last run, so that the rules never take more than about a
+sixth of the time of the UI (ADR 0029).
 """
 
 from typing import Protocol
+import time
 import weakref
 
 from PyQt6 import sip
@@ -29,6 +35,9 @@ from aas_editor.domain.validation import ValidationReport
 
 # How long the service waits after the last change before it runs the rules.
 DEBOUNCE_MS = 250
+# The wait is at least this many times the cost of the last run. A run that
+# takes 60 ms keeps the minimum, and one that takes 300 ms waits 1.5 s.
+WAIT_PER_RUN = 5
 
 
 class ValidatedPackage(Protocol):
@@ -70,6 +79,7 @@ class ValidationService(QObject):
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.setInterval(DEBOUNCE_MS)
+        self._last_run_ms = 0.0
         self._timer.timeout.connect(self.refresh)
         self._subscriptions: tuple[Subscription, ...] = (
             observer_for(package).subscribe(self._on_change),
@@ -87,6 +97,16 @@ class ValidationService(QObject):
     def hint_report(self) -> ValidationReport:
         """The findings and hints, from the last run made with hints."""
         return self._hint_report
+
+    @property
+    def last_run_ms(self) -> float:
+        """How long the last run took, in milliseconds."""
+        return self._last_run_ms
+
+    @property
+    def wait_ms(self) -> int:
+        """How long the service waits after a change before it runs."""
+        return max(DEBOUNCE_MS, round(WAIT_PER_RUN * self._last_run_ms))
 
     @property
     def is_stale(self) -> bool:
@@ -131,9 +151,13 @@ class ValidationService(QObject):
         package = self._package()
         if package is None:
             return
+        started = time.perf_counter()
         full = validate_package(
             package.save_source(), with_hints=self._with_hints
         )
+        self._last_run_ms = (time.perf_counter() - started) * 1000
+        if not sip.isdeleted(self._timer):
+            self._timer.setInterval(self.wait_ms)
         self._hint_report = full
         self._report = package_findings(full)
         self._stale = False

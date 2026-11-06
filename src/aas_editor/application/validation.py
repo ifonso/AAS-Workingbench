@@ -22,6 +22,8 @@ Example:
 
 from collections.abc import Callable
 from collections.abc import Iterable
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
@@ -131,6 +133,96 @@ def hints_for(report: ValidationReport, target: object) -> tuple[Finding, ...]:
         for f in report.findings
         if f.anchor is target or f.rule_id == RULE_FAILED
     )
+
+
+@dataclass(frozen=True)
+class FindingCounts:
+    """How many findings a report has, by what the user can do about them.
+
+    Errors and warnings are findings of the rules of the specification, and
+    the Validation panel lists them. Hints come from the hint rules, or have
+    the severity of a notice. They are advice, show next to their object, and
+    the panel does not list them, whatever severity a hint rule gives them.
+
+    Attributes:
+        errors: The errors of the rules.
+        warnings: The warnings of the rules.
+        hints: Every other finding of the report.
+    """
+
+    errors: int = 0
+    warnings: int = 0
+    hints: int = 0
+
+    @property
+    def findings(self) -> int:
+        """The errors and warnings together, which the panel lists."""
+        return self.errors + self.warnings
+
+
+def is_listed(finding: Finding) -> bool:
+    """Tells whether the Validation panel lists a finding.
+
+    Args:
+        finding: A finding of a report that was made with hints.
+
+    Returns:
+        True for an error or a warning of the rules, and False for a hint.
+    """
+    return not is_hint(finding) and finding.severity is not Severity.INFO
+
+
+def count_findings(report: ValidationReport) -> FindingCounts:
+    """Counts the errors, warnings, and hints of a report.
+
+    Args:
+        report: A report, made with or without hints.
+
+    Returns:
+        The counts. The warnings are those of the rules, so they match the
+        panel, and a hint that a hint rule gives the severity of a warning is
+        a hint.
+    """
+    listed = tuple(f for f in report.findings if is_listed(f))
+    errors = sum(1 for f in listed if f.severity is Severity.ERROR)
+    warnings = len(listed) - errors
+    return FindingCounts(errors, warnings, len(report.findings) - len(listed))
+
+
+def count_text(count: int, noun: str) -> str:
+    """Words a count with its noun, such as `1 error` and `2 errors`."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
+def stepping_findings(report: ValidationReport) -> tuple[Finding, ...]:
+    """Selects the findings that F8 goes through: errors, then warnings."""
+    return tuple(f for f in report.findings if is_listed(f))
+
+
+def step_finding(
+    findings: Sequence[Finding], after: FindingKey | None, forward: bool
+) -> int | None:
+    """Finds which finding F8 or Shift+F8 goes to.
+
+    Args:
+        findings: The findings to go through, in order.
+        after: The key of the finding that the user was at, or None. A run
+            makes new objects, so the finding is known by its key.
+        forward: True for the next finding, False for the previous one.
+
+    Returns:
+        The index in `findings`, wrapping at both ends. When the user was at
+        no finding, or the finding is gone, the first one going forward and
+        the last one going back. None if there is no finding.
+    """
+    if not findings:
+        return None
+    position = next(
+        (i for i, f in enumerate(findings) if finding_key(f) == after), None
+    )
+    if position is None:
+        return 0 if forward else len(findings) - 1
+    return (position + (1 if forward else -1)) % len(findings)
 
 
 def save_check_for(report: ValidationReport) -> SaveCheck:

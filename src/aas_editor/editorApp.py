@@ -107,6 +107,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self._modeStatusLabel = QLabel()
         self._modeStatusLabel.setObjectName("modeStatusLabel")
         self.statusBar().addPermanentWidget(self._modeStatusLabel)
+        # The counts of errors, warnings and hints of the current package
+        self.statusBar().addPermanentWidget(self.validationController.status)
         self._unsavedStatusLabel = QLabel()
         self._unsavedStatusLabel.setObjectName("unsavedStatusLabel")
         self.statusBar().addPermanentWidget(self._unsavedStatusLabel)
@@ -315,6 +317,13 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuNavigate = QMenu("&Navigate", self.menubar)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollToSrcAct)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollFromSrcAct)
+        self.menuNavigate.addSeparator()
+        self.menuNavigate.addAction(
+            self.validationController.next_finding_action
+        )
+        self.menuNavigate.addAction(
+            self.validationController.previous_finding_action
+        )
         self.menuNavigate.addSeparator()
         for actionId in ("navigate.push_location", "navigate.pop_location"):
             locationAct = self.mainTreeView.registeredActions.find(actionId)
