@@ -35,7 +35,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The context menu of a Blob has "Load Blob content from file..." and "Save Blob content to file...". Saving also works in Read mode.
 - Language tags of display names, descriptions, and MultiLanguageProperty values are checked for BCP 47. A malformed tag, an empty text, or a language used twice is refused with the reason, such as "use a hyphen, not an underscore, as in en-US". The list of languages offers 13 codes instead of 5.
 - Adding to a SubmodelElementList opens a dialog for the type of the list, with the value type of the list fixed and the semantic id of the list filled in. Before, any type could be chosen, and the SDK refused the wrong ones afterwards.
-- The form of a new SubmodelElementList offers only element types that can be made, and shows `order_relevant` ticked, as the SDK default is true.
+- The form of a new SubmodelElementList offers only element types that can be made, and shows `order_relevant` ticked, as the SDK default is true. Editing what a list fixes when it is made, such as `order_relevant`, is refused with a message that says to make a new list.
 - Every attribute of the 14 submodel element types can be reached in the form and in the tab, including `direction`, `state`, `messageTopic`, `messageBroker`, `lastUpdate`, `minInterval`, and `maxInterval` of a BasicEventElement, which the original editor lacks.
 
 ### Changed
