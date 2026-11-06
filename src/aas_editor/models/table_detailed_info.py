@@ -27,7 +27,7 @@ from aas_editor.settings.app_settings import (
     PACKAGE_ROLE,
     NAME_ROLE,
     OBJECT_ROLE,
-    DEFAULT_COLUMNS_IN_DETAILED_INFO,
+    COLUMNS_IN_ATTRIBUTE_TABS,
     PACK_ITEM_ROLE,
     DEFAULT_FONT,
 )
@@ -47,9 +47,7 @@ class DetailedInfoTable(StandardTable):
             package=self.package,
             new=False,
         )
-        super(DetailedInfoTable, self).__init__(
-            DEFAULT_COLUMNS_IN_DETAILED_INFO, root
-        )
+        super(DetailedInfoTable, self).__init__(COLUMNS_IN_ATTRIBUTE_TABS, root)
         # Other tabs may edit the objects that this one shows.
         self.watchPackage(self.package)
         # Read mode hides the null attributes, so the rows change with the mode.

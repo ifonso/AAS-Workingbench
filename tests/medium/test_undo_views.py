@@ -331,12 +331,8 @@ class TestUndoActsOnTheActivePackage:
         shown.open_package(make_submodel(elements=[collection]))
         attrs = shown.attrs_view("submodels", "Submodel", "Collection", "y")
         model_ = attrs.model()
-        id_short = next(
-            model_.index(row, 0)
-            for row in range(model_.rowCount())
-            if model_.index(row, 0).data(Qt.ItemDataRole.DisplayRole)
-            == "id_short"
-        )
+        id_short = _row_named(attrs, "id_short")
+        assert model_.index(id_short.row(), 0).data() == "idShort"
 
         attrs._setItemData(id_short.siblingAtColumn(1), "q", EDIT)
         renamed = _ids(collection)
@@ -577,7 +573,7 @@ class TestOtherTabsKeepTheirState:
             following.currentIndex()
             .siblingAtColumn(0)
             .data(Qt.ItemDataRole.DisplayRole)
-            == "id_short"
+            == "idShort"
         )
 
     def test_the_acting_tab_selects_the_new_row(self, views) -> None:
@@ -590,11 +586,12 @@ class TestOtherTabsKeepTheirState:
             extensions, model.Extension(name="Note"), _add_role()
         )
 
+        # The row of an extension is named by the name of the extension.
         assert (
             acting.currentIndex()
             .siblingAtColumn(0)
             .data(Qt.ItemDataRole.DisplayRole)
-            .startswith("Extension")
+            == "Note"
         )
 
     def test_a_tab_keeps_expanded_rows_when_another_tab_adds_a_row(
@@ -644,9 +641,13 @@ def _add_role() -> int:
 
 
 def _row_named(view, name: str) -> QModelIndex:
+    from aas_editor.settings.app_settings import NAME_ROLE
+
+    # The rows are found by the attribute of the SDK. The first column shows
+    # the name that the metamodel gives, such as idShort for id_short.
     model_ = view.model()
     for row in range(model_.rowCount()):
         index = model_.index(row, 0)
-        if index.data(Qt.ItemDataRole.DisplayRole) == name:
+        if index.data(NAME_ROLE) == name:
             return index
     raise LookupError(name)

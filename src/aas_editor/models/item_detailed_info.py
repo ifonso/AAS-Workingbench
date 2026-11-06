@@ -17,13 +17,21 @@
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
 from basyx.aas.model import SubmodelElementList
+from PyQt6.QtCore import Qt
 
 from aas_editor.application.editing import edit_mode
+from aas_editor.domain.attribute_display import entry_label
+from aas_editor.domain.attribute_display import type_column_text
+from aas_editor.domain.attribute_display import value_text
+from aas_editor.domain.attribute_vocabulary import LIST_INDEX
+from aas_editor.domain.attribute_vocabulary import AttributeInfo
+from aas_editor.domain.attribute_vocabulary import attribute_info
 from aas_editor.domain.containers import position_of
 from aas_editor.models import StandardItem
 from aas_editor import settings
 from aas_editor.settings import DICT_TYPES
-from aas_editor.utils.util import getAttrs4detailInfo, isSimpleIterable
+from aas_editor.utils.util import getAttrs4detailInfo, getLimitStr
+from aas_editor.utils.util import isSimpleIterable
 from aas_editor.utils.util_type import getTypeName
 from aas_editor.additional.classes import DictItem
 from aas_editor.package import Package
@@ -35,8 +43,18 @@ class DetailedInfoItem(StandardItem):
     repopulatesOnChange = True
 
     def __init__(
-        self, obj, name="", parent=None, package: Package = None, **kwargs
+        self,
+        obj,
+        name="",
+        parent=None,
+        package: Package = None,
+        label: str = None,
+        **kwargs,
     ):
+        # `label` is what the first column shows for an entry of a list. The
+        # name stays what the editor finds the row by, so a row is found again
+        # after the view was rebuilt, and is not the text a person reads.
+        self._label = label
         super().__init__(obj, name, parent, **kwargs)
         if parent and not package:
             self.package = parent.data(settings.PACKAGE_ROLE)
@@ -67,9 +85,11 @@ class DetailedInfoItem(StandardItem):
     @staticmethod
     def _populateDict(obj, **kwargs):
         for i, key in enumerate(obj):
+            entry = DictItem(key, obj[key])
             DetailedInfoItem(
-                DictItem(key, obj[key]),
+                entry,
                 name=f"{getTypeName(DictItem)} {i}",
+                label=entry_label(entry, i),
                 **kwargs,
             )
 
@@ -79,8 +99,69 @@ class DetailedInfoItem(StandardItem):
             DetailedInfoItem(
                 sub_item_obj,
                 name=f"{getTypeName(sub_item_obj.__class__)} {i}",
+                label=entry_label(sub_item_obj, i),
                 **kwargs,
             )
+
+    @property
+    def attributeInfo(self) -> AttributeInfo | None:
+        """The vocabulary entry of the attribute that the row shows, if any."""
+        owner = self.parentObj
+        if owner is None or not self.objName:
+            return None
+        return attribute_info(type(owner), self.objName)
+
+    @property
+    def displayName(self) -> str:
+        """What the first column reads: the name that the metamodel gives."""
+        if self._label:
+            return self._label
+        info = self.attributeInfo
+        return info.name if info is not None else self.objectName
+
+    @property
+    def typeText(self) -> str:
+        """What the type column reads, in words of the AAS."""
+        return type_column_text(self.attributeInfo, self.obj)
+
+    def data(self, role, column=settings.ATTRIBUTE_COLUMN, column_name=""):
+        if role == Qt.ItemDataRole.WhatsThisRole:
+            info = self.attributeInfo
+            if info is not None:
+                return info.description
+        return super().data(role, column, column_name)
+
+    def _getDisplayRoleData(self, column, column_name):
+        if column == settings.ATTRIBUTE_COLUMN:
+            return getLimitStr(self.displayName)
+        if column == settings.TYPE_COLUMN:
+            return getLimitStr(self.typeText)
+        if column == settings.VALUE_COLUMN:
+            text = value_text(self.obj)
+            if text is not None:
+                return text
+        return super()._getDisplayRoleData(column, column_name)
+
+    def _getTooltipRoleData(self, column, column_name):
+        info = self.attributeInfo
+        if column == settings.ATTRIBUTE_COLUMN:
+            if info is None:
+                return self.displayName
+            return f"{info.name}: {info.type_name}\n\n{info.description}"
+        if column in (settings.VALUE_COLUMN, settings.TYPE_COLUMN):
+            shown = (
+                self.typeText
+                if column == settings.TYPE_COLUMN
+                else self.displayValue
+            )
+            if self.typecheck or info is None:
+                return getLimitStr(shown)
+            actual = type_column_text(None, self.obj)
+            return getLimitStr(
+                f"{shown}\n\nThe value must be of type '{info.type_name}', "
+                f"not of type '{actual}'!"
+            )
+        return super()._getTooltipRoleData(column, column_name)
 
     @staticmethod
     def _populateUnknown(obj, **kwargs):
@@ -117,7 +198,17 @@ class ListIndexItem(DetailedInfoItem):
 
     def __init__(self, element, name=LIST_INDEX_NAME, **kwargs):
         self.element = element
-        super().__init__(self.position(), name=name, typehint=int, **kwargs)
+        super().__init__(
+            self.position(),
+            name=name,
+            label=LIST_INDEX.name,
+            typehint=int,
+            **kwargs,
+        )
+
+    @property
+    def attributeInfo(self) -> AttributeInfo | None:
+        return LIST_INDEX
 
     def position(self) -> int:
         """Return the position of the element in its list, -1 if it has left it.

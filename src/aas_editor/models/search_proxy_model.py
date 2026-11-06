@@ -21,6 +21,7 @@ from typing import List, Any, Optional
 
 from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 from basyx.aas.model import AbstractObjectStore
+from basyx.aas.model import NamespaceSet
 from basyx.aas.model.concept import ConceptDescription
 
 from PyQt6.QtCore import (
@@ -41,10 +42,16 @@ def hasSavedOrder(obj: Any) -> bool:
     """Tell whether the rows below an object follow an order that is saved.
 
     The elements of a submodel, the items of a list, the variables of an
-    operation and the attributes of an object do. The members of a set, an
-    object store or a file container have none, so the tree orders them by
-    name.
+    operation and the attributes of an object do. So do the qualifiers and
+    extensions of an element, which the SDK keeps in a `NamespaceSet` that
+    remembers the order of insertion. The members of another set, an object
+    store or a file container have none, so the tree orders them by name.
+
+    A tab names an entry of such a set by its key, such as the type of a
+    qualifier, so sorting it by name would show another order than the file.
     """
+    if isinstance(obj, NamespaceSet):
+        return True
     return not isinstance(
         obj, (Set, AbstractObjectStore, AbstractSupplementaryFileContainer)
     )
