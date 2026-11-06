@@ -45,6 +45,7 @@ This page describes the code as it is today, and the structure that new code sho
 2. `models/` wraps the objects in tree items. Selecting one opens its attributes in a tab, shown by `AttrsTreeView`.
 3. Attributes and editors come from **runtime type introspection**: `utils/util_type.py` and `getAttrTypeHint` read the type hints of BaSyx classes.
    This is why the editor handles new SDK attributes with little code, and also why it relies heavily on SDK internals.
+   What a tab shows is not the introspected name: `domain/attribute_vocabulary.py` gives the name of the metamodel, the type, and the description of each attribute. The editor still edits by the name of the SDK, which `NAME_ROLE` holds, and a test fails for an attribute without an entry.
 4. Edits go through the model, which turns each one into a command and pushes it on the undo history of the package.
    A command changes the BaSyx objects and reports the change to the package's change observer, so that the models of all tabs show the same objects again (see [Change observer and commands](#change-observer-and-commands)).
    The package counts as changed while its history differs from the saved state.
@@ -132,6 +133,9 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/concepts.py`, `domain/concept_order.py` | Submodels and elements with their semantic ids, new descriptions from a semantic id or a pair, matching by idShort, empty descriptions, and the view orders of descriptions. |
 | `application/operations/concepts.py`, `application/operations/data_specs.py` | `plan_create`, `plan_assign`, `plan_detect`, `plan_from_pairs`, `plan_invalid`; and the commands for records, template keys, empty attributes, and value list imports (see [Concept descriptions](#concept-descriptions)). |
 | `ui/concept_actions.py`, `ui/concept_dialogs.py`, `ui/iec61360_dialog.py`, `ui/value_list_dialog.py` | The actions in the context menu of the package tree, registered by `__main__.py` with `register_concept_actions`, and their dialogs. |
+| `domain/attribute_vocabulary.py` | For each attribute of each class: the name of the metamodel (`displayName`), the name of its type (`list of Qualifier`), and a short description from Part 1. Keyed by class name and found along the base classes. `attribute_info`, `metamodel_name`, and `entries` (see [ADR 0022](adr/0022-attribute-vocabulary.md)). |
+| `domain/attribute_display.py` | What a tab reads for a value that Python would show badly: `value_type_name` (`xs:double`), `type_column_text`, `value_text` (`(not set)`, `(empty)`), and `entry_label`, the name of an entry of a list. |
+| `application/header_state.py` | `restorable_state`: a saved header state is restored only for the version of the layout that it was made for. |
 
 ### Supplementary files
 

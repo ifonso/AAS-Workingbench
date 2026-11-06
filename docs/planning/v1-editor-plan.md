@@ -313,14 +313,13 @@ Nothing here was started in WP12, because each needs a design.
    Delete a value list as a whole, the orders "List index", "By SubmodelElements" and "Structured", SAMM, the embedded display of a description in the panel of an element, "Create empty", and a message where the action is only off.
 7. **Small gaps in the editors.**
    Move language entries (F-EDT-06 AC15), a read-only category (AC16), a fallback text field when the clipboard is denied (F-EDT-08 AC8), Copy recursively of an AAS (F-EDT-02 AC3, AC4), delete the thumbnail (AC14), a file filter in the reference picker (F-EDT-11 AC5), paste into an existing qualifier (F-EDT-07 AC5).
-8. **The tabs still speak Python.**
-   The type column shows `NoneType`, `Namespa...` and `Constrain...`, the type hint column shows `Optional[Union[Duration, DateTime, ...]]`, attributes are in snake case (`value_type`, `display_name`), and list entries are called `DictItem 1`.
-   A new user cannot tell what these mean, and the original names the AAS attribute and its description.
-   It needs a vocabulary for every attribute, not a column rule.
-9. **Layout that was not made for a small window.**
-   The context menu of an element still has 38 entries, because the editor's own Save, Close, Zoom, Folding and Open in entries come with them.
-   The preview of a stored image or document takes half of its tab, and squeezes the attribute table at the default window size.
-   A column order, hidden columns and the sizes of docks that a user changed are restored from the last session, so the new column widths only show on a first run.
+8. **The package tree still speaks Python.**
+   The tabs name attributes, types and entries as the metamodel does (WP17, [ADR 0022](../software/adr/0022-attribute-vocabulary.md)), but the tree of packages still shows `concept_descriptions`, `fileStore` and `input_variable` as nodes, and the class of the SDK in its type column.
+   The editor finds those nodes by that name, so the names need a separate display role first.
+9. **The context menu is still long.**
+   An element has 25 to 27 entries, down from 38 (WP17).
+   Move and paste, rename, and the sections of concept descriptions, qualifiers and files are in it, and a user who needs fewer has no way to choose.
+   The sizes of docks that a user changed are restored from the last session without a version, as the columns of the tabs were.
 10. **What is not verified.**
     The pictures of this audit came from an offscreen platform, so they show layout and text, and not the behavior of a real display: scaling on a high-resolution screen, the theme colors on real monitors, the preview of media (it was black offscreen), and keyboard focus.
     The large tests run only by hand, and not in CI.
