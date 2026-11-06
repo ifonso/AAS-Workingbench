@@ -11,7 +11,6 @@
 import sys
 from pathlib import Path
 from unittest import TestCase
-from unittest import mock
 
 import pytest
 
@@ -20,25 +19,19 @@ pytest.importorskip(
 )
 
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
+from PyQt6.QtWidgets import QApplication
 
 NAME_ROLE = None
 
 AASX_FILE = Path(__file__).parents[1] / "data" / "TestPackage.aasx"
 
 
+# The session QApplication outlives every test. When each test created and
+# dropped its own, Qt deleted objects that the widgets share between windows.
+@pytest.mark.usefixtures("qapp")
 class TestUi(TestCase):
     def setUp(self) -> None:
         self.app = QApplication.instance() or QApplication(sys.argv)
-
-        # A modal dialog blocks the event loop, so no test step would run after
-        # it opens. Dismiss every dialog as if the user had cancelled it.
-        for dialogCls in (QDialog, QMessageBox):
-            patcher = mock.patch.object(
-                dialogCls, "exec", return_value=QDialog.DialogCode.Rejected
-            )
-            patcher.start()
-            self.addCleanup(patcher.stop)
 
         # Imported here because aas_editor.dialogs reads the primary screen at
         # import time, which fails until a QApplication exists.

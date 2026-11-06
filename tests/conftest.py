@@ -17,6 +17,8 @@ with contextlib.suppress(ImportError):
     import PyQt6.QtWebEngineWidgets  # noqa: E402, F401
 
 from PyQt6.QtWidgets import QApplication  # noqa: E402
+from PyQt6.QtWidgets import QDialog  # noqa: E402
+from PyQt6.QtWidgets import QMessageBox  # noqa: E402
 
 TESTS_DIR = Path(__file__).parent
 TEST_DATA_DIR = TESTS_DIR / "data"
@@ -33,6 +35,20 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
                 f"Test outside a size directory: '{relative_path}'"
             )
         item.add_marker(size)
+
+
+@pytest.fixture(autouse=True)
+def stub_modal_dialogs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Dismisses modal dialogs as if the user had cancelled them.
+
+    A modal dialog blocks the event loop for good, so a test that opens one
+    would hang. This includes the error box of the exception hook. A test that
+    needs the dialog's text replaces `exec` itself.
+    """
+    for dialog_class in (QDialog, QMessageBox):
+        monkeypatch.setattr(
+            dialog_class, "exec", lambda self: QDialog.DialogCode.Rejected
+        )
 
 
 @pytest.fixture(scope="session")
