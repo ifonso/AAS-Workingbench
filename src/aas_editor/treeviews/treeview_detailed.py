@@ -26,7 +26,7 @@
 
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt, QModelIndex
-from PyQt6.QtWidgets import QAbstractScrollArea
+from PyQt6.QtWidgets import QAbstractScrollArea, QHeaderView
 
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
@@ -38,6 +38,7 @@ from aas_editor.settings.app_settings import (
     ATTRIBUTE_COLUMN,
     TYPE_COLUMN,
     TYPE_COLUMN_WIDTH,
+    TYPE_HINT_COLUMN,
     VALUE_COLUMN,
     VALUE_COLUMN_WIDTH,
     LINKED_ITEM_ROLE,
@@ -72,9 +73,26 @@ class AttrsTreeView(TreeView):
         )
         self.setObjectName("attrsTreeView")
         self.setModelWithProxy(self.treeModel(packItem))
+        # The value is what a user edits, so it takes the width that the name
+        # and the type leave. A tab is not wide, and a scroll bar for the
+        # columns hides the type.
+        header = self.header()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(
+            ATTRIBUTE_COLUMN, QHeaderView.ResizeMode.Interactive
+        )
+        header.setSectionResizeMode(
+            VALUE_COLUMN, QHeaderView.ResizeMode.Stretch
+        )
+        header.setSectionResizeMode(
+            TYPE_COLUMN, QHeaderView.ResizeMode.Interactive
+        )
         self.setColumnWidth(ATTRIBUTE_COLUMN, ATTR_COLUMN_WIDTH)
         self.setColumnWidth(VALUE_COLUMN, VALUE_COLUMN_WIDTH)
         self.setColumnWidth(TYPE_COLUMN, TYPE_COLUMN_WIDTH)
+        # The type that the Python SDK declares says what the type column
+        # says, in words that only a programmer reads.
+        self.header().hideSection(TYPE_HINT_COLUMN)
         self.setItemDelegate(EditDelegate(self))
 
     def buildHandlers(self):
@@ -124,6 +142,8 @@ class AttrsTreeView(TreeView):
         self.openInBackgroundAct.setVisible(indexIsLink)
         self.openInNewTabAct.setVisible(indexIsLink)
         self.openInNewWindowAct.setVisible(indexIsLink)
+        # Without a link there is nothing to open, and the entry is empty.
+        self.openInMenu.menuAction().setVisible(indexIsLink)
 
     def updateEditActs(self, index: QModelIndex):
         super().updateEditActs(index)

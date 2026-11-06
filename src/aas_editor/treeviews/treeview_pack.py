@@ -403,6 +403,10 @@ class PackTreeView(TreeView):
                 enabled=False,
             )
             self.saveInActs.append(saveInAct)
+        # One menu, which the File menu and the entry of the package share.
+        self.saveInMenu = QMenu("Save in JSON/XML/AASX", self)
+        for saveInAct in self.saveInActs:
+            self.saveInMenu.addAction(saveInAct)
 
         self.saveAllAct = QAction(
             SAVE_ALL_ICON,
@@ -582,17 +586,20 @@ class PackTreeView(TreeView):
             self.editCreateInDialogAct, self.editJsonAct
         )
 
-        self.attrsMenu.addSeparator()
-        self.attrsMenu.addAction(self.saveAct)
-        self.attrsMenu.addAction(self.saveAsAct)
-        saveInMenu = self.attrsMenu.addMenu("Save in JSON/XML/AASX")
-        for act in self.saveInActs:
-            saveInMenu.addAction(act)
-        self.attrsMenu.addAction(self.saveAllAct)
-        self.attrsMenu.addAction(self.linkSubmodelsAct)
-        self.attrsMenu.addAction(self.closeAct)
-        self.attrsMenu.addAction(self.closeAllAct)
-        # self.attrsMenu.insertAction(self.addAct, self.addExistingSubmodelsAct)
+        # What saves or closes a package is not what an element needs. The
+        # File menu and the toolbar have these actions, and the entry of the
+        # package itself has them too. It is hidden for the other rows, and
+        # only the entry is hidden, because the actions are shared.
+        self.packageMenu = QMenu("Package", self.attrsMenu)
+        self.attrsMenu.insertMenu(self.viewMenu.menuAction(), self.packageMenu)
+        self.packageMenu.addAction(self.saveAct)
+        self.packageMenu.addAction(self.saveAsAct)
+        self.packageMenu.addMenu(self.saveInMenu)
+        self.packageMenu.addAction(self.saveAllAct)
+        self.packageMenu.addAction(self.linkSubmodelsAct)
+        self.packageMenu.addSeparator()
+        self.packageMenu.addAction(self.closeAct)
+        self.packageMenu.addAction(self.closeAllAct)
 
         self.openInCurrTabAct.triggered.connect(
             lambda: self.openInCurrTabClicked.emit(self.currentIndex())
@@ -653,6 +660,25 @@ class PackTreeView(TreeView):
         self.updateOpenInActs(index)
         self.updateSaveActs(index)
         self.updateCloseActs(index)
+        self.updateMenuEntries(index)
+
+    def canAddTo(self, index: QModelIndex) -> bool:
+        if not index.isValid():
+            return True  # a new package
+        return super().canAddTo(index) or (
+            index.data(NAME_ROLE) in ClassesInfo.packViewAttrs(Package)
+        )
+
+    def updateMenuEntries(self, index: QModelIndex):
+        """Show only the entries of the menu that the item can use.
+
+        The actions themselves are not hidden, because the toolbars and the
+        File menu show them too. Only entries that nothing else shows are.
+        """
+        obj = index.data(OBJECT_ROLE)
+        isPackage = type(obj) is Package
+        self.packageMenu.menuAction().setVisible(isPackage)
+        self.addAsJsonAct.setVisible(self.canAddTo(index) and not isPackage)
 
     def updateCopyCutPasteDelActs(self, index: QModelIndex):
         super().updateCopyCutPasteDelActs(index)
@@ -669,9 +695,12 @@ class PackTreeView(TreeView):
     def updateCopyPasteSubmodelActs(self, index: QModelIndex):
         """Make the 'Add existing submodel' menu visible if the 'submodel' element is clicked."""
         attrName = index.data(NAME_ROLE)
+        isSubmodels = attrName == "submodels"
         self.addExistSubmodelsMenu.menuAction().setEnabled(
-            self.canEdit() and attrName == "submodels"
+            self.canEdit() and isSubmodels
         )
+        # It is a long list, and it applies to one node only.
+        self.addExistSubmodelsMenu.menuAction().setVisible(isSubmodels)
 
     def updateOpenInActs(self, index: QModelIndex):
         if index.isValid():

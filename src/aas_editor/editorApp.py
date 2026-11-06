@@ -29,6 +29,7 @@ from aas_editor.utils.recovery import (
 )
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import transfer_reports
+from aas_editor.application.header_state import restorable_state
 from aas_editor.ui.package_files import PackageFilesDock
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
@@ -252,6 +253,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
 
         self.menuFile.addAction(self.mainTreeView.saveAct)
         self.menuFile.addAction(self.mainTreeView.saveAsAct)
+        self.menuFile.addMenu(self.mainTreeView.saveInMenu)
         self.menuFile.addAction(self.mainTreeView.saveAllAct)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.settingsDialogAct)
@@ -617,7 +619,12 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             customLists = json.load(json_file)
             packTreeViewHeader.setCustomLists(customLists)
         packTreeViewHeader.initMenu()
-        tabTreeViewHeaderState = AppSettings.TABTREEVIEW_HEADER_STATE.value()
+        # A state that an earlier release saved would bring its columns back.
+        tabTreeViewHeaderState = restorable_state(
+            AppSettings.TABTREEVIEW_HEADER_STATE.value(),
+            AppSettings.TABTREEVIEW_HEADER_LAYOUT.value(),
+            TAB_HEADER_LAYOUT_VERSION,
+        )
         if tabTreeViewHeaderState:
             self.mainTabWidget.currentWidget().attrsTreeView.header().restoreState(
                 tabTreeViewHeaderState
@@ -668,6 +675,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.mainTabWidget.currentWidget()
             .attrsTreeView.header()
             .saveState()
+        )
+        AppSettings.TABTREEVIEW_HEADER_LAYOUT.setValue(
+            TAB_HEADER_LAYOUT_VERSION
         )
         # AppSettings.DEFAULT_NEW_FILETYPE_FILTER.setValue(self.packTreeView.defaultNewFileType)
 

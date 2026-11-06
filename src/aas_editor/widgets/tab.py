@@ -88,6 +88,14 @@ from aas_editor.widgets import LineEdit
 from aas_editor.ui.hints_bar import HintsBar
 
 COMPLETION_ROLE = Qt.ItemDataRole.DisplayRole
+
+# The share of a tab that the preview of a stored file gets, until the user
+# drags the handle. The attributes get the rest, at least this many pixels.
+PREVIEW_DEFAULT_SHARE = 1 / 3
+# The attributes keep at least this width, and so does a tab that has a
+# preview open: a narrower tab opens with the preview dragged shut.
+PREVIEW_MIN_ATTRIBUTES_WIDTH = 360
+PREVIEW_MIN_TAB_WIDTH = 720
 CASE_SENSITIVITY = Qt.CaseSensitivity.CaseInsensitive
 
 
@@ -411,6 +419,8 @@ class TabWithTreeView(QWidget):
         self.package = None
         self._changeSubscription = None
         self._staleCheckPending = False
+        self._previewShare = PREVIEW_DEFAULT_SHARE
+        self._previewPlaced = False
         # Advice about the shown object, while hints mode is on (F-EDT-06)
         self.hintsBar = HintsBar(self)
         self.initActions()
@@ -482,6 +492,10 @@ class TabWithTreeView(QWidget):
             SC_SEARCH, self, activated=self.searchBar.showFocused
         )
 
+        # The splitter that the preview of a stored file opens in must exist
+        # before the first item is opened.
+        self._initLayout()
+
         self.packItem = QPersistentModelIndex(QModelIndex())
         self.prevItems = []
         self.nextItems = []
@@ -489,8 +503,6 @@ class TabWithTreeView(QWidget):
             self.openItem(packItem)
         else:
             self.openEmptyItem()
-
-        self._initLayout()
 
     def initToolbar(self):
         self.toolBar = ToolBar(self)
@@ -651,12 +663,7 @@ class TabWithTreeView(QWidget):
     def updateMediaWidget(self):
         if self.packItem.data(IS_MEDIA_ROLE):
             self.mediaWidget.setContent(b"loading...")
-            self.mediaViewWidget.show()
-            if not self.mediaWidget.width():
-                # set equal sizes
-                oldSizes = self.splitter.sizes()
-                newSizes = [sum(oldSizes) // (len(oldSizes)) for i in oldSizes]
-                self.splitter.setSizes(newSizes)
+            self._showPreviewPane()
 
             try:
                 mediaContent: "MediaContent" = self.packItem.data(
@@ -676,6 +683,43 @@ class TabWithTreeView(QWidget):
             self.mediaWidget.setZoomFactor(1.0)
         else:
             self.mediaViewWidget.hide()
+
+    def _showPreviewPane(self):
+        """Open the preview of a stored file beside the attributes.
+
+        The attributes are what a user edits, and the table is squeezed when
+        the preview takes half of the tab. The preview gets a third, or what
+        the user last dragged the handle to. A tab that is too narrow for both
+        starts with the preview dragged shut. It is a splitter either way.
+        """
+        if self.mediaViewWidget.isHidden():
+            self.mediaViewWidget.show()
+            self._previewPlaced = False
+            self._placePreview()
+
+    def _placePreview(self):
+        # The width of a tab that was never shown says nothing.
+        if not self.isVisible():
+            return
+        self._previewPlaced = True
+        width = self.splitter.width()
+        # Only the proportion matters, the splitter scales it to its width.
+        total = 3000
+        share = self._previewShare if width >= PREVIEW_MIN_TAB_WIDTH else 0
+        preview = round(total * share)
+        self.splitter.setSizes([total - preview, preview])
+
+    def showEvent(self, a0):
+        super().showEvent(a0)
+        if self.mediaViewWidget.isVisibleTo(self) and not self._previewPlaced:
+            # The layout has its width after this event.
+            QTimer.singleShot(0, self._placePreview)
+
+    def _onPreviewResized(self, *_):
+        sizes = self.splitter.sizes()
+        # A preview that was dragged shut opens again at the share before.
+        if self.mediaViewWidget.isVisible() and sizes[1] > 0:
+            self._previewShare = sizes[1] / sum(sizes)
 
     def saveMediaAsWithDialog(self, directory="") -> bool:
         mediaContent = self.packItem.data(MEDIA_CONTENT_ROLE)
@@ -724,11 +768,22 @@ class TabWithTreeView(QWidget):
         treeViewLayout.addWidget(self.hintsBar)
         treeViewLayout.addWidget(self.attrsTreeView)
 
+        # The attributes keep a width that they can be read in, and the
+        # preview can be dragged shut.
+        treeViewWidget.setMinimumWidth(PREVIEW_MIN_ATTRIBUTES_WIDTH)
         self.splitter = QSplitter()
         self.splitter.setOrientation(Qt.Orientation.Horizontal)
         self.splitter.setContentsMargins(0, 0, 0, 0)
         self.splitter.addWidget(treeViewWidget)
         self.splitter.addWidget(self.mediaViewWidget)
+        self.splitter.setStretchFactor(0, 2)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setCollapsible(0, False)
+        self.splitter.setCollapsible(1, True)
+        self.splitter.handle(1).setToolTip(
+            "Drag to show or hide the preview of the file"
+        )
+        self.splitter.splitterMoved.connect(self._onPreviewResized)
 
         layout = QVBoxLayout(self)
         layout.setObjectName("tabLayout")
