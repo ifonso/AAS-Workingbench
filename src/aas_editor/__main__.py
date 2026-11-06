@@ -64,6 +64,10 @@ def main():
 
     register_create_actions()
 
+    from aas_editor.ui.shell_copy_actions import register_shell_copy_actions
+
+    register_shell_copy_actions()
+
     from aas_editor.ui.bulk_actions import register_bulk_actions
 
     register_bulk_actions()
@@ -84,6 +88,10 @@ def main():
     from aas_editor.ui.load_report_actions import register_load_report_actions
 
     register_load_report_actions()
+
+    from aas_editor.ui.location_actions import register_location_actions
+
+    register_location_actions()
 
     # Check if a file path is provided as an argument
     fileToOpen = sys.argv[1] if len(sys.argv) > 1 else None

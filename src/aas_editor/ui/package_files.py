@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QTableWidget
 from PyQt6.QtWidgets import QTableWidgetItem
+from PyQt6.QtWidgets import QTableWidgetSelectionRange
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
@@ -34,6 +35,7 @@ from aas_editor.ui.file_controller import FileController
 from aas_editor.ui.file_controller import FilePackage
 
 NAME_COLUMN = 0
+COLUMNS = 4
 UNUSED_TEXT = "Not referenced: not saved in AASX"
 # How long the panel waits for more changes before it reads the files again.
 REFRESH_DELAY_MS = 50
@@ -78,7 +80,7 @@ class PackageFilesPanel(QWidget):
         self._timer.timeout.connect(self.refresh)
 
         self.summary_label = QLabel()
-        self.table = QTableWidget(0, 4)
+        self.table = QTableWidget(0, COLUMNS)
         self.table.setHorizontalHeaderLabels(
             ["Name", "Media type", "Size", "Used by"]
         )
@@ -86,8 +88,10 @@ class PackageFilesPanel(QWidget):
         self.table.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows
         )
+        # Several files can be removed at once (F-EDT-09 AC18). The other
+        # buttons work on one file.
         self.table.setSelectionMode(
-            QAbstractItemView.SelectionMode.SingleSelection
+            QAbstractItemView.SelectionMode.ExtendedSelection
         )
         header = self.table.horizontalHeader()
         if header is not None:
@@ -111,6 +115,9 @@ class PackageFilesPanel(QWidget):
         self.dangling_button = self._button(
             "Find dangling references...", self._dangling
         )
+        self.thumbnail_button = self._button(
+            "Package thumbnail...", self._thumbnail
+        )
         self._mutating = (
             self.add_button,
             self.new_button,
@@ -118,6 +125,7 @@ class PackageFilesPanel(QWidget):
             self.rename_button,
             self.move_button,
             self.remove_button,
+            self.thumbnail_button,
         )
 
         # Two rows, because eight buttons in one row need more than a dock is
@@ -135,8 +143,10 @@ class PackageFilesPanel(QWidget):
             )
         ):
             buttons.addWidget(button, *divmod(position, BUTTONS_PER_ROW))
-        # Its label is long, so it has a row of its own.
-        buttons.addWidget(self.dangling_button, 2, 0, 1, BUTTONS_PER_ROW)
+        # Their labels are long, so they have a row of their own.
+        half = BUTTONS_PER_ROW // 2
+        buttons.addWidget(self.dangling_button, 2, 0, 1, half)
+        buttons.addWidget(self.thumbnail_button, 2, half, 1, half)
         layout = QVBoxLayout(self)
         layout.addWidget(self.summary_label)
         layout.addWidget(self.table)
@@ -212,21 +222,30 @@ class PackageFilesPanel(QWidget):
         """Reads the files of the package again."""
         self._stale = False
         package = self._package
+        # The rows are rebuilt, and the files that were selected stay so.
+        selected = set(self.selected_names())
         self.table.setRowCount(0)
         if package is None:
             self.summary_label.setText("No package is selected.")
             self._update_buttons()
             return
         controller = FileController(package, self)
-        selected = self.selected_name()
         infos = controller.infos()
         self.table.setRowCount(len(infos))
         for row, info in enumerate(infos):
             self._fill_row(row, info)
-            if info.name == selected:
-                self.table.selectRow(row)
+            if info.name in selected:
+                self.table.setRangeSelected(
+                    QTableWidgetSelectionRange(row, 0, row, COLUMNS - 1), True
+                )
         dangling = len(controller.dangling())
         text = f"{len(infos)} file(s) in the package."
+        thumbnail = package.thumbnail
+        text += (
+            f" Package thumbnail: {thumbnail.name}."
+            if thumbnail is not None
+            else " No package thumbnail."
+        )
         if dangling:
             text += (
                 f" {dangling} reference(s) point to a file that is not in the "
@@ -251,13 +270,21 @@ class PackageFilesPanel(QWidget):
                 item.setFont(font)
             self.table.setItem(row, column, item)
 
+    def selected_names(self) -> list[str]:
+        """The names of the selected files, in the order of the rows."""
+        names: list[str] = []
+        for item in sorted(
+            self.table.selectedItems(), key=QTableWidgetItem.row
+        ):
+            name = item.data(Qt.ItemDataRole.UserRole)
+            if isinstance(name, str) and name not in names:
+                names.append(name)
+        return names
+
     def selected_name(self) -> str | None:
-        """The name of the selected file, or None."""
-        items = self.table.selectedItems()
-        if not items:
-            return None
-        name = items[0].data(Qt.ItemDataRole.UserRole)
-        return name if isinstance(name, str) else None
+        """The name of the selected file, or None unless exactly one is."""
+        names = self.selected_names()
+        return names[0] if len(names) == 1 else None
 
     def _update_buttons(self) -> None:
         has_package = self._package is not None
@@ -275,14 +302,12 @@ class PackageFilesPanel(QWidget):
         self.add_button.setEnabled(has_package and editing)
         self.new_button.setEnabled(has_package and editing)
         self.edit_button.setEnabled(text and editing)
-        for button in (
-            self.rename_button,
-            self.move_button,
-            self.remove_button,
-        ):
+        for button in (self.rename_button, self.move_button):
             button.setEnabled(name is not None and editing)
+        self.remove_button.setEnabled(bool(self.selected_names()) and editing)
         self.save_button.setEnabled(name is not None)
         self.dangling_button.setEnabled(has_package)
+        self.thumbnail_button.setEnabled(has_package and editing)
 
     # -- the buttons -------------------------------------------------------------
 
@@ -321,15 +346,20 @@ class PackageFilesPanel(QWidget):
 
     def _remove(self) -> None:
         controller = self._controller()
-        name = self.selected_name()
-        if controller is not None and name is not None:
-            controller.remove(name)
+        names = self.selected_names()
+        if controller is not None and names:
+            controller.remove_many(names)
 
     def _save(self) -> None:
         controller = self._controller()
         name = self.selected_name()
         if controller is not None and name is not None:
             controller.save_to_disk(name)
+
+    def _thumbnail(self) -> None:
+        controller = self._controller()
+        if controller is not None:
+            controller.change_package_thumbnail()
 
     def _dangling(self) -> None:
         controller = self._controller()

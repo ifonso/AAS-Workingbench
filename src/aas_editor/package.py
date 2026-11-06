@@ -71,6 +71,8 @@ class Package:
         self.fileStore = DictSupplementaryFileContainer()
         # Parts of the file that the object store and file store do not hold.
         self.thumbnail = None
+        # The thumbnail as read, to see that it changed (F-EDT-10 AC5).
+        self._loadedThumbnail = None
         self.coreProperties = None
         # File elements that pointed to a part missing in the package on open.
         self.missingFiles = ()
@@ -167,6 +169,7 @@ class Package:
         self.objStore = parts.objects
         self.fileStore = parts.files
         self.thumbnail = parts.thumbnail
+        self._loadedThumbnail = parts.thumbnail
         self.coreProperties = parts.core_properties
         self.missingFiles = parts.missing_files
         self.partial = parts.partial
@@ -195,6 +198,10 @@ class Package:
         """True if files were added, removed, renamed, or changed since open."""
         return self._file_hashes() != self._loadedFileHashes
 
+    def thumbnail_changed(self) -> bool:
+        """True if the package thumbnail differs from the one that was read."""
+        return self.thumbnail != self._loadedThumbnail
+
     def write(self, file: Union[str, Path, None] = None):
         """Writes the package, all or nothing.
 
@@ -220,6 +227,7 @@ class Package:
         self.file = target
         # What is on disk now is the baseline for files added later.
         self._loadedFileHashes = self._file_hashes()
+        self._loadedThumbnail = self.thumbnail
 
     def _recovery_stem(self, for_file: Path = None) -> str:
         file = self.file if for_file is None else Path(for_file)
@@ -239,7 +247,7 @@ class Package:
         # reloads the files from the original. Files added during the session
         # exist nowhere else, so then the recovery is a complete AASX instead.
         rec_path = None
-        if self.files_changed():
+        if self.files_changed() or self.thumbnail_changed():
             rec_path = self._write_aasx_recovery(recovery_dir / f"{stem}.aasx")
         wrote_aasx = rec_path is not None
         if rec_path is None:
@@ -400,6 +408,7 @@ class Package:
                     pack.coreProperties = original.core_properties
                     pack.missingFiles = original.missing_files
                 # Whatever differs from the original on disk is new.
+                pack._loadedThumbnail = original.thumbnail
                 pack._loadedFileHashes = {
                     name: (
                         original.files.get_sha256(name),

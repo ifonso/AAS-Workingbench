@@ -95,6 +95,51 @@ def test_deleting_a_stored_file_in_the_view_clears_the_references_in_one_step(
     assert element.value == PART
 
 
+PARTS = {
+    "/aasx/files/a.txt": (b"a", "text/plain"),
+    "/aasx/files/b.txt": (b"b", "text/plain"),
+    "/aasx/files/c.txt": (b"c", "text/plain"),
+}
+
+
+def test_several_stored_files_are_deleted_in_one_step_with_one_question(
+    views, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    asked: list[int] = []
+
+    def answer(references, parent=None):
+        asked.append(len(references))
+        return file_dialogs.ReferenceAnswer.LEAVE
+
+    monkeypatch.setattr(file_dialogs, "ask_remove_references", answer)
+    shown = views()
+    submodel = make_submodel(
+        elements=[
+            make_file_element("A", "/aasx/files/a.txt", "text/plain"),
+            make_file_element("B", "/aasx/files/b.txt", "text/plain"),
+        ]
+    )
+    package = shown.open_package(
+        make_shell(submodels=[submodel]), submodel, files=PARTS
+    )
+    shown.view.expandAll()
+    shown.select(
+        shown.index("fileStore", "/aasx/files/a.txt"),
+        shown.index("fileStore", "/aasx/files/c.txt"),
+    )
+
+    shown.view.onDelClear()
+    after = sorted(package.fileStore)
+    package.commandStack.undo()
+
+    assert after == ["/aasx/files/b.txt"]
+    assert sorted(package.fileStore) == sorted(PARTS)
+    assert not package.commandStack.can_undo
+    assert asked == [1]
+
+
 def test_cancelling_the_question_deletes_nothing(views, monkeypatch) -> None:
     shown, package, element = _open_referenced(views, monkeypatch, "CANCEL")
 

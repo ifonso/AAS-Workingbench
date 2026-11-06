@@ -69,6 +69,7 @@ from aas_editor.domain.clipboard_json import (
     looks_like_json,
 )
 from aas_editor.domain.list_children import child_defaults
+from aas_editor.domain.selection import has_mixed_variable_directions
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.utils.util_type import getTypeName
 from aas_editor.ui.actions import ActionContext, ViewActions, ViewKind
@@ -960,7 +961,20 @@ class TreeView(BasicTreeView):
         self.pasteAct.setEnabled(indexValid)
         self.copyAct.setEnabled(indexValid)
         self.cutAct.setEnabled(indexValid)
-        self.delClearAct.setEnabled(indexValid)
+        # Variables of an Operation in different directions are cut or copied,
+        # but not deleted (F-EDT-09 AC19), so the entry is not offered.
+        deleteOffered = not self.selectionHasMixedDirections()
+        self.delClearAct.setEnabled(indexValid and deleteOffered)
+        self.delClearAct.setVisible(deleteOffered)
+
+    def selectionHasMixedDirections(self) -> bool:
+        """Tell if the selection holds variables of different directions."""
+        # Every selected row counts, also those in another parent.
+        return has_mixed_variable_directions(
+            index.data(OBJECT_ROLE)
+            for index in self.selectedIndexes()
+            if index.isValid()
+        )
 
     def updateEditActs(self, index: QModelIndex):
         self.editCreateInDialogAct.setEnabled(

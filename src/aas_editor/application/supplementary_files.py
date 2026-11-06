@@ -44,6 +44,7 @@ from aas_editor.application.edits import SetAttribute
 from aas_editor.domain import part_names
 from aas_editor.domain.file_references import FileReference
 from aas_editor.domain.file_references import file_references
+from aas_editor.domain.parts import Thumbnail
 
 
 class FileOperationError(ValueError):
@@ -587,6 +588,71 @@ def link_thumbnail(
             stack.push(
                 SetAttribute(observer, resource, "content_type", content_type)
             )
+
+
+def remove_thumbnail(
+    stack: CommandStack,
+    observer: ModelChangeObserver,
+    asset_information: model.AssetInformation,
+) -> None:
+    """Takes the default thumbnail away from an asset, as one step.
+
+    The stored file stays in the package. Nothing refers to it any more, so a
+    save lists it with the other files that nothing refers to.
+
+    Args:
+        stack: The history of the package.
+        observer: Where to report the change.
+        asset_information: The AssetInformation of a shell.
+
+    Raises:
+        FileOperationError: If the asset has no default thumbnail.
+    """
+    if asset_information.default_thumbnail is None:
+        raise FileOperationError("The AAS has no default thumbnail.")
+    stack.push(
+        SetAttribute(
+            observer,
+            asset_information,
+            "default_thumbnail",
+            None,
+            description="Remove the default thumbnail",
+        )
+    )
+
+
+def change_package_thumbnail(
+    stack: CommandStack,
+    observer: ModelChangeObserver,
+    package: object,
+    thumbnail: Thumbnail,
+) -> bool:
+    """Makes an image the thumbnail of the package, as one step (F-EDT-10 AC5).
+
+    The package thumbnail is the image that a file browser shows for the file.
+    It is a part of its own, and not a stored file: no File element refers to
+    it, and the file store does not list it.
+
+    Args:
+        stack: The history of the package.
+        observer: Where to report the change.
+        package: The package. It needs a `thumbnail` attribute.
+        thumbnail: What `parts.new_thumbnail` made.
+
+    Returns:
+        False when the package has this thumbnail already, so nothing changed.
+    """
+    command = SetAttribute(
+        observer,
+        package,
+        "thumbnail",
+        thumbnail,
+        description="Change the package thumbnail",
+    )
+    if command.is_noop:
+        return False
+    stack.push(command)
+    return True
 
 
 def clear_reference_command(

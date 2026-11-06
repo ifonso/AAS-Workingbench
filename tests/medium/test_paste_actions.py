@@ -292,6 +292,24 @@ def test_bad_clipboard_text_is_refused_with_a_message(
     assert not lab.package.commandStack.can_undo
 
 
+def test_json_that_is_newer_on_the_clipboard_replaces_the_buffer(
+    pasting,
+) -> None:
+    """F-EDT-08 AC5 differs on purpose (ADR 0020): the buffer is the clipboard."""
+    lab = pasting(make_property("A"), make_property("B"))
+    lab.select(lab.element_path("A"))
+    lab.copy()
+    QApplication.clipboard().setText(
+        dump_objects([make_property("Other", "9")])
+    )
+    lab.view.updateTreeClipboard()
+    lab.select(lab.element_path("B"))
+
+    lab.act("structure.paste_below")
+
+    assert _ids(lab.submodel.submodel_element) == ["A", "B", "Other"]
+
+
 def test_a_submodel_cannot_be_pasted_among_elements(pasting) -> None:
     lab = pasting(make_property("A"))
     lab.view.treeClipboard.clear()
@@ -334,6 +352,136 @@ def test_read_mode_disables_pasting(pasting) -> None:
     lab.view.updateActions(lab.view.currentIndex())
 
     assert not lab.enabled("structure.paste_below")
+
+
+def test_a_cut_from_a_list_pasted_into_a_collection_leaves_the_list_without_it(
+    pasting, tmp_path
+) -> None:
+    from tests.factories import make_list
+
+    lab = pasting(
+        make_list("L", [make_property("x", "1"), make_property("y", "2")]),
+        make_collection("To", [make_property("Other")]),
+    )
+    lab.select(lab.element_path("L", "x"))
+
+    lab.cut()
+    list_after_cut = [m.value for m in lab.submodel.get_referable("L").value]  # type: ignore[attr-defined]
+    lab.select(lab.element_path("To", "Other"))
+    lab.act("structure.paste_above")
+
+    saved = lab.saved(tmp_path)
+    assert list_after_cut == ["2"]
+    assert [m.value for m in lab.submodel.get_referable("L").value] == ["2"]  # type: ignore[attr-defined]
+    assert _ids(lab.submodel.get_referable("To").value) == ["x", "Other"]  # type: ignore[attr-defined]
+    assert [m.value for m in saved.get_referable("L").value] == ["2"]  # type: ignore[attr-defined]
+    assert _ids(saved.get_referable("To").value) == ["x", "Other"]  # type: ignore[attr-defined]
+    lab.view.onUndo()
+    lab.view.onUndo()
+    assert [m.value for m in lab.submodel.get_referable("L").value] == [  # type: ignore[attr-defined]
+        "1",
+        "2",
+    ]
+
+
+class TestPasteFromText:
+    """F-EDT-08 AC8: a text box when the clipboard cannot be read."""
+
+    @pytest.fixture
+    def typed(self, monkeypatch: pytest.MonkeyPatch):
+        from aas_editor.ui import paste_dialogs
+
+        answer: dict[str, object] = {"value": None, "places": None}
+
+        def ask(places, parent=None):
+            answer["places"] = [key for key, _ in places]
+            return answer["value"]
+
+        monkeypatch.setattr(paste_dialogs, "ask_paste_text", ask)
+        return answer
+
+    def test_text_is_pasted_with_an_empty_clipboard_and_buffer(
+        self, pasting, typed
+    ) -> None:
+        lab = pasting(make_property("A"), make_property("B"))
+        lab.select(lab.element_path("A"))
+        typed["value"] = (dump_objects([make_property("Typed", "7")]), "below")
+
+        enabled = lab.act("structure.paste_text")
+
+        assert enabled
+        assert lab.view.treeClipboard.isEmpty()
+        assert _ids(lab.submodel.submodel_element) == ["A", "Typed", "B"]
+        assert lab.rows() == ["A", "Typed", "B"]
+        lab.view.onUndo()
+        assert _ids(lab.submodel.submodel_element) == ["A", "B"]
+
+    def test_text_is_pasted_into_a_collection(self, pasting, typed) -> None:
+        lab = pasting(make_collection("C", [make_property("In")]))
+        lab.select(lab.element_path("C"))
+        typed["value"] = (dump_objects([make_property("Typed")]), "into")
+
+        lab.act("structure.paste_text")
+
+        assert _ids(lab.submodel.get_referable("C").value) == ["In", "Typed"]  # type: ignore[attr-defined]
+
+    def test_text_that_is_no_aas_object_is_refused_with_a_message(
+        self, pasting, typed
+    ) -> None:
+        lab = pasting(make_property("A"))
+        lab.select(lab.element_path("A"))
+        typed["value"] = ("hello", "below")
+
+        lab.act("structure.paste_text")
+
+        assert lab.problems
+        assert _ids(lab.submodel.submodel_element) == ["A"]
+        assert not lab.package.commandStack.can_undo
+
+    def test_cancelling_the_box_changes_nothing(self, pasting, typed) -> None:
+        lab = pasting(make_property("A"))
+        lab.select(lab.element_path("A"))
+        typed["value"] = None
+
+        lab.act("structure.paste_text")
+
+        assert _ids(lab.submodel.submodel_element) == ["A"]
+        assert not lab.problems
+
+    def test_the_box_offers_the_places_that_fit_the_row(
+        self, pasting, typed
+    ) -> None:
+        lab = pasting(make_property("A"), make_collection("C"))
+        lab.select(lab.element_path("A"))
+        lab.act("structure.paste_text")
+        on_property = typed["places"]
+        lab.select(lab.element_path("C"))
+        lab.act("structure.paste_text")
+
+        assert on_property == ["below", "above"]
+        assert typed["places"] == ["below", "above", "into"]
+
+    def test_a_pending_cut_is_not_taken_by_a_paste_from_text(
+        self, pasting, typed
+    ) -> None:
+        lab = pasting(make_property("A"), make_property("B"))
+        lab.select(lab.element_path("A"))
+        lab.cut()
+        lab.select(lab.element_path("B"))
+        typed["value"] = (dump_objects([make_property("A")]), "below")
+
+        lab.act("structure.paste_text")
+
+        assert lab.view.treeClipboard.cut
+        assert _ids(lab.submodel.submodel_element) == ["B", "A"]
+
+    def test_it_is_off_in_read_mode(self, pasting, typed) -> None:
+        lab = pasting(make_property("A"))
+        lab.select(lab.element_path("A"))
+        edit_mode().set_editing(False)
+        lab.view.updateActions(lab.view.currentIndex())
+
+        assert not lab.enabled("structure.paste_text")
 
 
 def test_the_existing_paste_into_a_submodel_gives_the_copy_a_free_name(

@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 from basyx.aas import model
 import pytest
+from PyQt6.QtWidgets import QTableWidgetSelectionRange
 from tests.factories import make_asset_information
 from tests.factories import make_file_element
 from tests.factories import make_shell
@@ -356,6 +357,50 @@ def test_removing_a_file_nothing_refers_to_asks_nothing(
     assert UNUSED not in world.package.fileStore
 
 
+def test_several_files_are_removed_as_one_step_with_one_question(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    questions: list[int] = []
+
+    def ask(references, parent=None):
+        questions.append(len(references))
+        return file_dialogs.ReferenceAnswer.CLEAR
+
+    monkeypatch.setattr(file_dialogs, "ask_remove_references", ask)
+
+    assert controller.remove_many([DOC, NOTE, UNUSED])
+
+    assert sorted(world.package.fileStore) == [THUMB]
+    assert world.document.value is None and world.note.value is None
+    assert questions == [2]
+    world.package.commandStack.undo()
+    assert sorted(world.package.fileStore) == sorted(FILES)
+    assert (world.document.value, world.note.value) == (DOC, NOTE)
+    assert not world.package.commandStack.can_undo
+
+
+def test_cancelling_the_question_for_several_files_keeps_all_of_them(
+    world, controller
+) -> None:
+    world.answers.references = world.answers.references.CANCEL
+
+    assert not controller.remove_many([DOC, UNUSED])
+
+    assert sorted(world.package.fileStore) == sorted(FILES)
+    assert not world.package.commandStack.can_undo
+
+
+def test_leaving_the_paths_removes_only_the_files(world, controller) -> None:
+    world.answers.references = world.answers.references.LEAVE
+
+    assert controller.remove_many([DOC, NOTE])
+
+    assert (world.document.value, world.note.value) == (DOC, NOTE)
+    assert sorted(world.package.fileStore) == sorted([UNUSED, THUMB])
+
+
 def test_saving_a_file_to_disk_writes_its_bytes(
     world, controller, tmp_path: Path
 ) -> None:
@@ -416,6 +461,225 @@ def test_choosing_a_default_thumbnail_and_adding_one(
     world.package.commandStack.undo()
     assert asset.default_thumbnail.path == DOC
     assert "/aasx/files/logo.png" not in world.package.fileStore
+
+
+def test_the_default_thumbnail_is_removed_after_a_question_and_the_file_stays(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.ui import file_dialogs
+
+    questions: list[str] = []
+    monkeypatch.setattr(
+        file_dialogs,
+        "confirm",
+        lambda parent, text: questions.append(text) or True,
+    )
+    asset = world.shell.asset_information
+
+    assert controller.remove_thumbnail(asset)
+
+    assert asset.default_thumbnail is None
+    assert THUMB in world.package.fileStore
+    assert THUMB in questions[0]
+    path = tmp_path / "no_thumb.aasx"
+    world.package.write(path)
+    assert (
+        Package(path)
+        .objStore.get_item(world.shell.id)
+        .asset_information.default_thumbnail
+        is None
+    )
+    world.package.commandStack.undo()
+    assert asset.default_thumbnail.path == THUMB
+
+
+def test_declining_the_question_keeps_the_default_thumbnail(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    monkeypatch.setattr(file_dialogs, "confirm", lambda parent, text: False)
+
+    assert not controller.remove_thumbnail(world.shell.asset_information)
+
+    assert world.shell.asset_information.default_thumbnail.path == THUMB
+    assert not world.package.commandStack.can_undo
+
+
+def test_without_a_default_thumbnail_there_is_nothing_to_remove(
+    world, controller
+) -> None:
+    world.shell.asset_information.default_thumbnail = None
+
+    assert not controller.remove_thumbnail(world.shell.asset_information)
+
+    assert world.answers.warnings == ["The AAS has no default thumbnail."]
+
+
+def test_a_removed_default_thumbnail_can_be_chosen_again(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    monkeypatch.setattr(file_dialogs, "confirm", lambda parent, text: True)
+    asset = world.shell.asset_information
+    controller.remove_thumbnail(asset)
+    world.answers.chosen = THUMB
+
+    assert controller.choose_thumbnail(asset)
+
+    assert asset.default_thumbnail.path == THUMB
+
+
+def test_remove_default_thumbnail_is_offered_on_a_shell_that_has_one(
+    views,
+) -> None:
+    from aas_editor.ui.file_actions import register_file_actions
+
+    register_file_actions()
+    shown = views()
+    shell = make_shell(
+        asset_information=make_asset_information(
+            default_thumbnail=model.Resource(THUMB, "image/png")
+        )
+    )
+    shown.open_package(shell, files=FILES)
+    shown.select(shown.index("shells", "Shell"))
+    view = shown.view
+    view.updateActions(view.currentIndex())
+    action = view.registeredActions.find("files.remove_thumbnail")
+
+    offered = action.isEnabled()
+    shell.asset_information.default_thumbnail = None
+    view.updateActions(view.currentIndex())
+
+    assert offered
+    assert not action.isEnabled()
+
+
+def test_the_package_thumbnail_is_changed_saved_and_read_back(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.ui import file_dialogs
+
+    image = tmp_path / "cover.png"
+    image.write_bytes(b"\x89PNG cover")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: image)
+
+    assert controller.change_package_thumbnail()
+
+    thumbnail = world.package.thumbnail
+    assert (thumbnail.name, thumbnail.content_type, thumbnail.data) == (
+        "/thumbnail.png",
+        "image/png",
+        b"\x89PNG cover",
+    )
+    assert "/thumbnail.png" not in world.package.fileStore
+    saved = tmp_path / "with_thumbnail.aasx"
+    world.package.write(saved)
+    reloaded = Package(saved).thumbnail
+    assert reloaded is not None and reloaded.data == b"\x89PNG cover"
+    assert reloaded.name == "/thumbnail.png"
+    world.package.commandStack.undo()
+    assert world.package.thumbnail is None
+
+
+def test_a_file_that_is_no_image_is_refused_with_a_message(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    text = tmp_path / "notes.txt"
+    text.write_bytes(b"hello")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: text)
+
+    assert not controller.change_package_thumbnail()
+
+    assert world.package.thumbnail is None
+    assert "not an image" in world.answers.warnings[0]
+    assert not world.package.commandStack.can_undo
+
+
+def test_cancelling_the_picker_keeps_the_package_thumbnail(
+    world, controller, monkeypatch
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: None)
+
+    assert not controller.change_package_thumbnail()
+
+    assert not world.package.commandStack.can_undo
+
+
+def test_a_changed_package_thumbnail_survives_a_crash(
+    world, controller, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.ui import file_dialogs
+
+    source = tmp_path / "source.aasx"
+    world.package.write(source)
+    package = Package(source)
+    image = tmp_path / "new.jpg"
+    image.write_bytes(b"jpeg")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: image)
+    from aas_editor.ui.file_controller import FileController
+
+    assert FileController(package, None).change_package_thumbnail()
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert restored.thumbnail is not None
+    assert restored.thumbnail.data == b"jpeg"
+    assert restored.thumbnail_changed()
+
+
+def test_an_unchanged_package_thumbnail_keeps_the_cheap_recovery(
+    world, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+
+    source = tmp_path / "source.aasx"
+    world.package.write(source)
+    package = Package(source)
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    assert recovery.suffix == ".json"
+    assert not package.thumbnail_changed()
+
+
+def test_the_panel_says_which_package_thumbnail_there_is(
+    world, controller, panel, monkeypatch, tmp_path: Path
+) -> None:
+    from aas_editor.ui import file_dialogs
+
+    before = panel.summary_label.text()
+    image = tmp_path / "cover.png"
+    image.write_bytes(b"png")
+    monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: image)
+    controller.change_package_thumbnail()
+    panel.refresh()
+
+    assert "No package thumbnail" in before
+    assert "/thumbnail.png" in panel.summary_label.text()
+
+
+def test_the_package_thumbnail_button_is_off_in_read_mode(world, panel) -> None:
+    from aas_editor.application.editing import edit_mode
+
+    on = panel.thumbnail_button.isEnabled()
+    edit_mode().set_editing(False)
+    try:
+        off = not panel.thumbnail_button.isEnabled()
+    finally:
+        edit_mode().set_editing(True)
+
+    assert on and off
 
 
 def test_editing_the_text_file_of_a_file_element(world, controller) -> None:
@@ -597,6 +861,52 @@ def test_the_panel_buttons_work_on_the_selected_file(
     qtbot.waitUntil(lambda: "/aasx/files/renamed.txt" in _rows(panel))
 
     assert world.note.value == "/aasx/files/renamed.txt"
+
+
+def test_the_panel_removes_several_selected_files_at_once(
+    world, panel, qtbot
+) -> None:
+    names = sorted(FILES)
+    panel.table.clearSelection()
+    panel.table.setRangeSelected(
+        QTableWidgetSelectionRange(names.index(DOC), 0, names.index(DOC), 3),
+        True,
+    )
+    panel.table.setRangeSelected(
+        QTableWidgetSelectionRange(
+            names.index(UNUSED), 0, names.index(UNUSED), 3
+        ),
+        True,
+    )
+    selected = panel.selected_names()
+    single_only = [
+        button.isEnabled()
+        for button in (panel.rename_button, panel.edit_button)
+    ]
+
+    panel.remove_button.click()
+    qtbot.waitUntil(lambda: UNUSED not in _rows(panel))
+
+    assert sorted(selected) == sorted([DOC, UNUSED])
+    assert single_only == [False, False]
+    assert sorted(world.package.fileStore) == sorted([NOTE, THUMB])
+    world.package.commandStack.undo()
+    assert sorted(world.package.fileStore) == sorted(FILES)
+
+
+def test_the_selected_files_stay_selected_when_the_list_refreshes(
+    world, panel
+) -> None:
+    names = sorted(FILES)
+    for name in (NOTE, THUMB):
+        index = names.index(name)
+        panel.table.setRangeSelected(
+            QTableWidgetSelectionRange(index, 0, index, 3), True
+        )
+
+    panel.refresh()
+
+    assert sorted(panel.selected_names()) == sorted([NOTE, THUMB])
 
 
 def test_the_edit_button_is_for_text_files_only(world, panel) -> None:

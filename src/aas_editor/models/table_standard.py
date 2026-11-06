@@ -37,7 +37,11 @@ from PyQt6.QtGui import QFont
 
 from aas_editor.application.change_marks import with_ancestors
 from aas_editor.application.changes import Change, ChangeKind, observer_for
-from aas_editor.application.commands import Command, ReadOnlyError
+from aas_editor.application.commands import (
+    Command,
+    CommandGroup,
+    ReadOnlyError,
+)
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.edits import (
     AddMember,
@@ -710,15 +714,29 @@ class StandardTable(QAbstractItemModel):
                 value, Identifiable
             ):
                 # An object with another id leaves references behind.
-                return replace_command(
-                    self._packageOf(index), container, item.obj, value, self
+                return self._withCopiedFiles(
+                    replace_command(
+                        self._packageOf(index),
+                        container,
+                        item.obj,
+                        value,
+                        self,
+                    ),
+                    value,
+                    index,
                 )
-            return ReplaceMember(
-                self._observerFor(index),
-                container,
-                item.obj,
-                self._checkedMember(container, item.obj, value),
-                origin=self,
+            # A paste over an element brings the files of the copy along, as
+            # a paste beside it does.
+            return self._withCopiedFiles(
+                ReplaceMember(
+                    self._observerFor(index),
+                    container,
+                    item.obj,
+                    self._checkedMember(container, item.obj, value),
+                    origin=self,
+                ),
+                value,
+                index,
             )
         return self.attributeCommand(index, container, item.objName, value)
 
@@ -823,7 +841,10 @@ class StandardTable(QAbstractItemModel):
     def _syncAfterEdit(self, index: QModelIndex, command: Command):
         """Make the item show the object that the edit made of it"""
         item = self.objByIndex(index)
-        if isinstance(command, (ReplaceMember, ReplaceIdentifiable)):
+        if isinstance(command, CommandGroup):
+            for inner in command.commands:
+                self._syncAfterEdit(index, inner)
+        elif isinstance(command, (ReplaceMember, ReplaceIdentifiable)):
             item.obj = command.new
         elif isinstance(command, RenameCommand):
             if item.objName == command.name:

@@ -30,6 +30,7 @@ from aas_editor.utils.recovery import (
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import transfer_reports
 from aas_editor.ui.package_files import PackageFilesDock
+from aas_editor.ui.selection_panel import SelectionDock
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
 from aas_editor.settings.icons import EXIT_ICON, SETTINGS_ICON, NEW_PACK_ICON
@@ -279,6 +280,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuView.addAction(self.menuAppearance.menuAction())
         self.menuView.addSection("Panels")
         self.menuView.addAction(self.filesDock.toggleViewAction())
+        self.menuView.addAction(self.selectionDock.toggleViewAction())
         self.menuView.addAction(
             self.validationController.dock.toggleViewAction()
         )
@@ -293,6 +295,11 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuNavigate = QMenu("&Navigate", self.menubar)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollToSrcAct)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollFromSrcAct)
+        self.menuNavigate.addSeparator()
+        for actionId in ("navigate.push_location", "navigate.pop_location"):
+            locationAct = self.mainTreeView.registeredActions.find(actionId)
+            if locationAct is not None:
+                self.menuNavigate.addAction(locationAct)
 
         self.menuTools = QMenu("&Tools", self.menubar)
         self.menuTools.addAction(self.testEnginesToolDialogAct)
@@ -370,6 +377,12 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.filesDock.show_package
         )
         transfer_reports.subscribe(self.onFilesCopied)
+        # What is selected in the tree, and what can be done with all of it
+        self.selectionDock = SelectionDock(self.mainTreeView, self)
+        self.addDockWidget(
+            QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, self.selectionDock
+        )
+        self.selectionDock.hide()
 
     def onFilesCopied(self, plan):
         """Tell the user what a paste did with the files of the objects"""

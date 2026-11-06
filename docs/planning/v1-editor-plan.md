@@ -26,6 +26,7 @@ The original's menu layout and declarative UI are not goals, so this plan builds
 | Data Specification UoM (Part 3b, F-EDT-05) | The SDK has no class for it. |
 | Moving AAS, Submodels, concept descriptions, or SubmodelRefs | The SDK stores them in sets, so the order cannot persist. See D16. |
 | Pending Cut (F-EDT-08 AC3) | Cut stays immediate. See D12. |
+| Centralize file to an external store (F-EDT-10 AC12) | A repository feature: it writes to a remote store at once, outside the undo history and the safe save (D4). Move file to folder does it inside the package. See [ADR 0020](../software/adr/0020-selection-locations-and-clipboard.md). |
 | Take-over bar and per-keystroke writes (F-EDT-01) | A workaround for a defect in the original. |
 | Metamodel V3.2 | The SDK does not implement it. |
 
@@ -300,18 +301,12 @@ Nothing here was started in WP12, because each needs a design.
    The content itself is not kept. The SDK refuses to construct it, and no reader option or flag changes that. A second object with an id that another has cannot be kept next to it, because the store holds one object for each id, and the others break constraints that the model enforces. Keeping them needs a repair that chooses a value, or a reader of our own, which D3 rules out.
 2. **A Blob cannot be converted between Base64 text and bytes** (F-EDT-04 AC9, F-EDT-10 AC14 and AC15).
    A Blob that holds Base64 text is common, and the user has to decode it elsewhere.
-3. **No selection panel, and no limits for a mixed selection** (F-EDT-09 AC1, AC18, AC19).
-   Move and Delete are offered for the variables of an Operation of mixed directions, where the original offers neither.
-   Several supplementary files cannot be removed at once.
-   The way a selection moves (each row one place, not made adjacent) is not recorded as a decision (AC3, AC4).
-4. **No push and pop of editing locations** (F-EDT-01 AC10, AC11).
-   Back after Jump to target and the Back of the tabs cover most of it.
 5. **Defaults and notices that the original gives for new objects** (F-EDT-04 AC2, AC17; F-EDT-06 AC1, AC5; F-EDT-07 AC12; F-EDT-02 AC11, AC13).
    Default languages of a new MultiLanguageProperty, the notice for the asset id of an Entity, "Create w/ default" and the notices about missing descriptions, ids made from a template (`urn:x:DDDD`), a hint for a blank name of an extension, `Batch` as an asset kind.
 6. **Concept descriptions** (F-EDT-05 AC7, AC10, AC18; F-EDT-03 AC15; F-EDT-05 AC14; F-EDT-11 AC15, AC16).
    Delete a value list as a whole, the orders "List index", "By SubmodelElements" and "Structured", SAMM, the embedded display of a description in the panel of an element, "Create empty", and a message where the action is only off.
 7. **Small gaps in the editors.**
-   Move language entries (F-EDT-06 AC15), a read-only category (AC16), a fallback text field when the clipboard is denied (F-EDT-08 AC8), Copy recursively of an AAS (F-EDT-02 AC3, AC4), delete the thumbnail (AC14), a file filter in the reference picker (F-EDT-11 AC5), paste into an existing qualifier (F-EDT-07 AC5).
+   Move language entries (F-EDT-06 AC15), a read-only category (AC16), a file filter in the reference picker (F-EDT-11 AC5), paste into an existing qualifier (F-EDT-07 AC5).
 8. **The tabs still speak Python.**
    The type column shows `NoneType`, `Namespa...` and `Constrain...`, the type hint column shows `Optional[Union[Duration, DateTime, ...]]`, attributes are in snake case (`value_type`, `display_name`), and list entries are called `DictItem 1`.
    A new user cannot tell what these mean, and the original names the AAS attribute and its description.

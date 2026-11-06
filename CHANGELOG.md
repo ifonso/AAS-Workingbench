@@ -108,6 +108,14 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - "Show what was left out when opened..." in the context menu of a package brings the list back later, and the dialog that refuses to overwrite the source names what is missing, lists the first ten items, and has a button for the full list. The list is kept in the crash recovery.
 - `PackageParts.load_report` and `domain/load_report.py`, with the records of the SDK as structured data: severity, whether the object was left out or kept, the kind, the line or id, the part, the reason, and the text in full. A message that the parser does not know is kept whole and shown as not understood.
 - A test that checks the list against the `idShort` entries in the XML of all 132 bundled templates: the entries that the loaded objects lack are exactly those below the places that the list names.
+- A Selection panel (View > Panels > Selection) below the package tree. For two rows or more it shows `Multiple selected elements`, the kinds and the parent of the rows, and buttons for Move up, down, to top and to end, Cut, Copy, Delete, Change attribute, and Remove extensions. Each button is the action of the menu, with the same enabled and disabled states. The panel opens by itself for the first multiple selection, and stays closed after you close it (F-EDT-09 AC1).
+- Push location and Pop location (Navigate menu, `Ctrl+Shift+P` and `Ctrl+Shift+O`, as in Package Explorer). Pop selects the row that was pushed, with the expand state it had, skips rows that are gone, and does nothing when nothing was pushed (F-EDT-01 AC10, AC11).
+- "Paste from text..." in the context menu: a box for the JSON of copied elements, with the place to paste it (below, above, or into the selected row). It works when the clipboard cannot be read, and does not touch the buffer (F-EDT-08 AC8).
+- "Copy AAS with new Submodel ids..." on an AAS, and on the node of the shells, where it asks which AAS. The copy, its global asset id, and each Submodel it refers to get new ids, the copy refers to the copied Submodels, and references between the copies follow. One undo step. It is not offered on the package (F-EDT-02 AC3, AC4).
+- "Remove default thumbnail..." on an AAS, with a question. The file stays in the package, and the thumbnail can be chosen again (F-EDT-02 AC14).
+- The package thumbnail can be changed: "Change package thumbnail..." on the package, and a button in the Package files panel, which also names the current one. The image is stored as `/thumbnail.<extension>` in the root of the package, as the original does. It is one undo step, is saved, and survives a crash (F-EDT-10 AC5).
+- The Package files panel takes several rows, and Remove removes them all in one step with one question about the references.
+- Variables of an Operation in different directions: Move and Delete are not offered, and Cut and Copy are (F-EDT-09 AC19).
 
 ### Changed
 
@@ -137,6 +145,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The package tree and the tabs show the order that is saved in the file. They sorted every level by name, descending, so a moved element stayed where it was. Levels with a saved order, such as the elements of a submodel, show that order, and the shells, submodels and concept descriptions, which the SDK keeps in sets, are sorted by name, ascending. A click on a column header still sorts the whole tree, and a move puts the tree back to the saved order. The sort is no longer restored from the last session. See [ADR 0011](docs/software/adr/0011-natural-order-in-trees.md).
 - Copying an element or an object puts its JSON on the system clipboard instead of its display text.
 - The actions of the tree views update when the selection, the rows, or the paste buffer change.
+- Move up and Move down put the selected rows of a container next to each other, as Package Explorer does. Rows 2 and 4 of 6 go to 1 and 2, and nothing moves when the first selected row is at the top. Down is the mirror: the block ends one place below the last selected row. The rows keep the order they have in the container, and not the order of the clicks ([ADR 0020](docs/software/adr/0020-selection-locations-and-clipboard.md)). Before, each row moved one place.
 
 ### Fixed
 
@@ -193,6 +202,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Add on the node of the shells failed with AASd-131 and a traceback, because the generated form could not make AssetInformation. It opens the Create AAS dialog now.
 - The old chooser of a model reference listed every referable without a filter, and the semantic id had none. Both use the new picker.
 - An AASX in which a later part has an object with the id of an object in an earlier part opened without a word, in strict mode too, and lost the later object, because the SDK skips it without a message. The editor now finds it, lists it, and refuses to overwrite the source, unless the two objects are equal.
+- Pasting over an existing element, Submodel, or AAS (Replace) did not bring the files of the pasted object into the package. It does now, in the same undo step.
+- The Package files panel lost its selection every time it refreshed.
 
 ### Removed
 
@@ -210,9 +221,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
 - A string with line breaks is shown in a value line but cannot be typed there.
 - A File under the annotation of an annotated relationship still blocks a save to AASX, because the SDK writer skips such files. Save as JSON or XML, or move the File out of the annotation.
-- Pasting over an existing element (Replace) does not bring the files of the pasted element along. Paste it as a new element, or copy the files with Add file.
-- Only the default thumbnail of a shell is linked to a file. The package thumbnail (the image that Windows shows for the file) is kept as it was, and cannot be changed.
-- Files cannot be dropped on the panel, and "Centralize file" to an external store is not done.
+- Files cannot be dropped on the panel. "Centralize file" to an external store is out of scope, because it writes to a remote store at once, outside the undo history. "Move file to folder" does the same inside the package.
 - Selecting a stored file in the package tree opens a preview tab with QtWebEngine. A test process that did that ends with an access violation (exit code -1073741819) after its tests passed, and prints no summary, in each of three runs on 2026-11-06. The session `QApplication` of the tests outlives the web engine. The application does not show it: three runs of the real entry point that selected a stored file and quit ended with code 0, and `tests/large/test_application_exit.py` does the same with an open package. That was on an offscreen platform, where the preview is black, so it is not verified on a real display. The large tests switch the preview off where they do not test it.
 - 49 of the 132 bundled templates open only in failsafe mode, and the SDK leaves out what it refuses to read: 91 objects, 26 elements and 83 details, which the editor now lists. The content is still lost: it is not in the open package, and not in a copy saved with Save As, because the SDK does not give it to the editor. By a count of `idShort` entries, 45 of the 49 load fewer than their file has, and the three Bill of Materials extension templates load 20 of 40, because one submodel is gone. Their packages have defects that the SDK refuses to read: 30 share an id between objects, and the others break constraints such as AASd-014, 021, 022, 109, 123 or 131. No reader option can keep that content, so Save As stays the only way to save them. See [the causes](docs/software/validation.md#why-49-of-the-132-templates-open-only-in-failsafe-mode) and [ADR 0018](docs/software/adr/0018-load-report.md).
 - The SDK's failsafe reader for JSON raises for a reference with no keys and for a value that does not parse, where its XML reader skips the item. Such a JSON file cannot be opened, not even after the question about recovery mode.
@@ -227,7 +236,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Shells, submodels, concept descriptions and the Submodel references of a shell cannot be moved, because the SDK keeps them in sets whose order is not saved (D16). Their view is sorted by name, and the descriptions can also be listed by idShort, id, or first use.
 - Cut still removes the element at once (D12), so Escape or a missing paste does not bring it back, except by undo.
 - A paste of elements into a SubmodelElementList does not check the type of the list in advance. The SDK refuses a wrong element (AASd-107), the paste is undone as a whole, and the message says why.
-- The paste buffer and the system clipboard are one: a newer copy anywhere replaces the buffer. The original keeps its internal buffer first.
+- The paste buffer and the system clipboard are one: a newer copy anywhere replaces the buffer. The original keeps its internal buffer first. This is a decision ([ADR 0020](docs/software/adr/0020-selection-locations-and-clipboard.md)).
 - Converting a text or a Property to a File can give a path that no stored file has. Saving reports such a File.
 - The item of a SubmodelElementList cannot be converted to another type, because the list fixes it. Change the list settings instead.
 - A cell of the package tree or of a tab is still one line. Use Edit to type line breaks.

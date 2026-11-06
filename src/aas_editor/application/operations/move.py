@@ -89,8 +89,14 @@ def new_order(
 ) -> list[Any]:
     """Works out the order after a move.
 
-    Selected members that already sit at the start (for up and top) or at the
-    end (for down and end) stay where they are, and the others still move.
+    The selected members are taken out and put back next to each other, as
+    Package Explorer does (F-EDT-09 AC3 and AC4, ADR 0020):
+
+    * Up puts the block one place above the first selected member. When that
+      member is at the top, nothing changes, even if others could move.
+    * Down is the mirror of that: the block ends one place below the last
+      selected member, and nothing changes when that member is at the bottom.
+    * To top and to end put the block at the start or the end.
 
     Args:
         members: The members in their current order.
@@ -99,37 +105,28 @@ def new_order(
 
     Returns:
         The members in the new order. The selected ones keep their order
-        among themselves.
+        among themselves, which is their order in the container.
     """
     chosen = {id(item) for item in selected}
     order = list(members)
-    if kind is MoveKind.TO_TOP:
-        return [m for m in order if id(m) in chosen] + [
-            m for m in order if id(m) not in chosen
-        ]
-    if kind is MoveKind.TO_END:
-        return [m for m in order if id(m) not in chosen] + [
-            m for m in order if id(m) in chosen
-        ]
-    if kind is MoveKind.UP:
-        for position in range(1, len(order)):
-            if id(order[position]) in chosen and (
-                id(order[position - 1]) not in chosen
-            ):
-                order[position - 1], order[position] = (
-                    order[position],
-                    order[position - 1],
-                )
+    block = [m for m in order if id(m) in chosen]
+    rest = [m for m in order if id(m) not in chosen]
+    if not block:
         return order
-    for position in range(len(order) - 2, -1, -1):
-        if id(order[position]) in chosen and (
-            id(order[position + 1]) not in chosen
-        ):
-            order[position], order[position + 1] = (
-                order[position + 1],
-                order[position],
-            )
-    return order
+    positions = [n for n, m in enumerate(order) if id(m) in chosen]
+    if kind is MoveKind.TO_TOP:
+        start = 0
+    elif kind is MoveKind.TO_END:
+        start = len(rest)
+    elif kind is MoveKind.UP:
+        if positions[0] == 0:
+            return order
+        start = positions[0] - 1
+    else:
+        if positions[-1] == len(order) - 1:
+            return order
+        start = positions[-1] + 2 - len(block)
+    return rest[:start] + block + rest[start:]
 
 
 def can_move(
