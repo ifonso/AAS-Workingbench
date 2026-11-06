@@ -85,6 +85,8 @@ from aas_editor.widgets import SearchBar, ToolBar
 from aas_editor.utils.util import getTreeItemPath
 from aas_editor.models import StandardTable
 from aas_editor.widgets import LineEdit
+from aas_editor.ui.embedded_concept import EmbeddedConceptPanel
+from aas_editor.ui.embedded_concept import open_in_tab
 from aas_editor.ui.hints_bar import HintsBar
 
 COMPLETION_ROLE = Qt.ItemDataRole.DisplayRole
@@ -423,6 +425,10 @@ class TabWithTreeView(QWidget):
         self._previewPlaced = False
         # Advice about the shown object, while hints mode is on (F-EDT-06)
         self.hintsBar = HintsBar(self)
+        # The concept description of the semantic id, below the attributes
+        self.embeddedConcept = EmbeddedConceptPanel(
+            self, lambda concept: open_in_tab(self, concept)
+        )
         self.initActions()
 
         self.pathToolBar = ToolBar(self)
@@ -601,6 +607,7 @@ class TabWithTreeView(QWidget):
         self.packItemObj = self.packItem.data(OBJECT_ROLE)
         self._followPackage(self.packItem.data(PACKAGE_ROLE))
         self.hintsBar.set_target(self.package, self.packItemObj)
+        self.embeddedConcept.set_target(self.package, self.packItemObj)
         self.updateMediaWidget()
         self.pathLine.setText(getTreeItemPath(self.packItem))
         self.objTypeLine.setText(getTypeName(type(self.packItemObj)))
@@ -767,6 +774,7 @@ class TabWithTreeView(QWidget):
         treeViewLayout.setContentsMargins(0, 0, 0, 0)
         treeViewLayout.addWidget(self.hintsBar)
         treeViewLayout.addWidget(self.attrsTreeView)
+        treeViewLayout.addWidget(self.embeddedConcept)
 
         # The attributes keep a width that they can be read in, and the
         # preview can be dragged shut.

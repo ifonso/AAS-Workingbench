@@ -193,8 +193,9 @@ class Iec61360Draft:
         value_format: The format of the value.
         value: One value, which excludes a value list (AASc-3a-010).
         level_types: The level types that are set.
-        value_list: The pairs of the value list. The dialog does not edit
-            them; it keeps what the record had. The importer fills it.
+        value_list: The pairs of the value list, or None for no value list.
+            The dialog can remove pairs and does not edit them; the importer
+            fills it.
     """
 
     preferred_name: list[tuple[str, str]] = field(

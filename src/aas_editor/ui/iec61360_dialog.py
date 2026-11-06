@@ -17,6 +17,7 @@ from basyx.aas import model
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QStandardItem
 from PyQt6.QtGui import QStandardItemModel
+from PyQt6.QtWidgets import QAbstractItemView
 from PyQt6.QtWidgets import QCheckBox
 from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QDialog
@@ -25,11 +26,13 @@ from PyQt6.QtWidgets import QGroupBox
 from PyQt6.QtWidgets import QHBoxLayout
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QLineEdit
+from PyQt6.QtWidgets import QListWidget
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QScrollArea
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.domain.references import describe_reference
 from aas_editor.ui.colors import ADVISORY_STYLE
 from aas_editor.ui.colors import PROBLEM_STYLE
 from aas_editor.domain.data_specifications import DATA_TYPE_GROUPS
@@ -132,6 +135,9 @@ class Iec61360Dialog(QDialog):
             "(none)".
         level_checks: A check box for each level type.
         value_list_label: How many pairs the value list has.
+        pairs_list: The pairs of the value list, one row each.
+        remove_pair_button: Takes the selected pair out.
+        remove_list_button: Takes the whole value list away.
         problems_label: The reasons why the record cannot be made yet.
         advisories_label: The constraints the SDK does not check.
         buttons: The accept and the cancel button.
@@ -155,7 +161,11 @@ class Iec61360Dialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumSize(640, 560)
-        self._value_list = draft.value_list
+        # The pairs of the record, in the order of the list. Pairs are added
+        # by the import, and removed here.
+        self._pairs: list[model.ValueReferencePair] = sorted(
+            draft.value_list or (), key=lambda pair: (pair.value, id(pair))
+        )
 
         self.preferred_name = LanguageRows(MAX_PREFERRED_NAME)
         self.short_name = LanguageRows(MAX_SHORT_NAME)
@@ -179,13 +189,35 @@ class Iec61360Dialog(QDialog):
             self.level_checks[level] = check
             levels.addWidget(check)
         levels.addStretch(1)
-        count = len(draft.value_list or ())
-        self.value_list_label = QLabel(
-            f"{count} pair{'' if count == 1 else 's'}. "
-            "Use Import value list to change them."
-            if count
-            else "No pairs. Use Import value list to add them."
+        self.value_list_label = QLabel()
+        self.pairs_list = QListWidget()
+        self.pairs_list.setMaximumHeight(96)
+        self.pairs_list.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
         )
+        self.remove_pair_button = QPushButton("Remove pair")
+        self.remove_pair_button.setToolTip(
+            "Take the selected pair out of the value list"
+        )
+        self.remove_list_button = QPushButton("Remove value list")
+        self.remove_list_button.setToolTip(
+            "Take the whole value list away. The record has none then"
+        )
+        self.pairs_list.currentRowChanged.connect(self._update_pair_buttons)
+        self.remove_pair_button.clicked.connect(
+            lambda: self.remove_pair(self.pairs_list.currentRow())
+        )
+        self.remove_list_button.clicked.connect(self.remove_value_list)
+        pair_buttons = QHBoxLayout()
+        pair_buttons.addWidget(self.remove_pair_button)
+        pair_buttons.addWidget(self.remove_list_button)
+        pair_buttons.addStretch(1)
+        value_list_box = QWidget()
+        value_list_layout = QVBoxLayout(value_list_box)
+        value_list_layout.setContentsMargins(0, 0, 0, 0)
+        value_list_layout.addWidget(self.value_list_label)
+        value_list_layout.addWidget(self.pairs_list)
+        value_list_layout.addLayout(pair_buttons)
 
         template = QLineEdit(IEC_61360_TEMPLATE_KEY)
         template.setReadOnly(True)
@@ -206,7 +238,7 @@ class Iec61360Dialog(QDialog):
         values_form.addRow("Symbol", self.symbol)
         values_form.addRow("Value format", self.value_format)
         values_form.addRow("Value", self.value)
-        values_form.addRow("Value list", self.value_list_label)
+        values_form.addRow("Value list", value_list_box)
         values_form.addRow("Level types", levels)
         values_form.addRow("Source of definition", self.source_of_definition)
 
@@ -237,6 +269,7 @@ class Iec61360Dialog(QDialog):
         self.short_name.set_rows(draft.short_name)
         self.definition.set_rows(draft.definition)
         self.set_data_type(draft.data_type)
+        self._refresh_pairs()
         for rows in (self.preferred_name, self.short_name, self.definition):
             rows.changed.connect(self._update)
         for edit in (
@@ -307,8 +340,53 @@ class Iec61360Dialog(QDialog):
                 for level, check in self.level_checks.items()
                 if check.isChecked()
             ),
-            value_list=self._value_list,
+            value_list=tuple(self._pairs) or None,
         )
+
+    def remove_pair(self, row: int) -> None:
+        """Takes one pair out of the value list.
+
+        When it was the last pair, the record has no value list at all, since
+        a value list has at least one pair.
+
+        Args:
+            row: The number of the pair in the list of pairs. A number that
+                names no pair does nothing.
+        """
+        if 0 <= row < len(self._pairs):
+            del self._pairs[row]
+            self._refresh_pairs()
+            self._update()
+
+    def remove_value_list(self) -> None:
+        """Takes the whole value list away."""
+        self._pairs.clear()
+        self._refresh_pairs()
+        self._update()
+
+    def _refresh_pairs(self) -> None:
+        count = len(self._pairs)
+        self.pairs_list.clear()
+        for pair in self._pairs:
+            target = (
+                f"  =  {describe_reference(pair.value_id)}"
+                if pair.value_id is not None
+                else ""
+            )
+            self.pairs_list.addItem(f"{pair.value}{target}")
+        self.value_list_label.setText(
+            f"{count} pair{'' if count == 1 else 's'}. "
+            "Use Import value list to add more."
+            if count
+            else "No pairs. Use Import value list to add them."
+        )
+        self.pairs_list.setVisible(bool(count))
+        self._update_pair_buttons()
+
+    def _update_pair_buttons(self, _row: int = -1) -> None:
+        self.remove_pair_button.setVisible(bool(self._pairs))
+        self.remove_pair_button.setEnabled(self.pairs_list.currentRow() >= 0)
+        self.remove_list_button.setVisible(bool(self._pairs))
 
     def _update(self) -> None:
         report = check_draft(self.draft)

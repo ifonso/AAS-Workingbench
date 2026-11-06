@@ -34,6 +34,7 @@ from aas_editor.domain.data_specifications import MAX_PREFERRED_NAME
 from aas_editor.domain.data_specifications import MAX_SHORT_NAME
 from aas_editor.domain.data_specifications import template_reference
 from aas_editor.domain.ids import fix_id_short
+from aas_editor.domain.ids import new_identifier
 from aas_editor.domain.references import ReferenceIndex
 
 # The longest display name the SDK accepts (MultiLanguageNameType).
@@ -152,6 +153,18 @@ def data_type_for(holder: model.Referable) -> model.DataTypeIEC61360 | None:
     if isinstance(holder, model.Property):
         return _DATA_TYPES.get(holder.value_type)
     return None
+
+
+def new_empty_concept() -> ConceptDescription:
+    """Builds a description with a generated id and nothing else.
+
+    This is `Create empty` of Package Explorer (F-EDT-11 AC15). The user fills
+    it in afterwards, so it has no data specification yet.
+
+    Returns:
+        A description that is not part of a package yet, with a `urn:uuid:` id.
+    """
+    return ConceptDescription(id_=new_identifier())
 
 
 def new_concept_for(

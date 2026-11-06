@@ -164,6 +164,7 @@ class Candidate:
     label: str
     owner: str
     depth: int
+    package: str = ""
 
     @property
     def search_text(self) -> str:
@@ -174,6 +175,19 @@ class Candidate:
             else ""
         )
         return f"{self.kind} {self.label} {self.owner} {ids}".lower()
+
+
+@dataclass(frozen=True, eq=False)
+class PickerSource:
+    """The objects of one package that the picker lists (F-EDT-11 AC1).
+
+    Attributes:
+        name: The name of the package, such as its file name.
+        objects: Its shells, submodels, and concept descriptions.
+    """
+
+    name: str
+    objects: tuple[model.Identifiable, ...]
 
 
 def _label_of(target: model.Referable) -> str:
@@ -197,10 +211,35 @@ def _root_order(root: model.Identifiable) -> tuple[int, str]:
     return len(rank), _label_of(root).lower()
 
 
+def candidates_in(
+    sources: Iterable[PickerSource],
+    classes: TargetClasses = ANYTHING,
+    text: str = "",
+) -> list[Candidate]:
+    """Lists what a reference may point at in several packages.
+
+    Args:
+        sources: The packages, the one that is edited first.
+        classes: Only targets of these classes are listed.
+        text: Only targets that contain this text, as for `candidates`.
+
+    Returns:
+        The candidates of each package in turn, each marked with the name of
+        its package.
+    """
+    found: list[Candidate] = []
+    for source in sources:
+        found.extend(
+            candidates(source.objects, classes, text, package=source.name)
+        )
+    return found
+
+
 def candidates(
     objects: Iterable[model.Identifiable],
     classes: TargetClasses = ANYTHING,
     text: str = "",
+    package: str = "",
 ) -> list[Candidate]:
     """Lists what a reference may point at, in document order.
 
@@ -209,6 +248,7 @@ def candidates(
         classes: Only targets of these classes are listed.
         text: Only targets whose class, path, owner, or id contain this text,
             ignoring case. Empty lists everything.
+        package: The name of the package, for a list that spans several.
 
     Returns:
         The candidates. A shell, a submodel, or a concept description comes
@@ -231,6 +271,7 @@ def candidates(
                 label=_label_of(target),
                 owner=owner,
                 depth=0 if target is root else len(path_of(target) or ()) - 1,
+                package=package,
             )
             if wanted in candidate.search_text:
                 found.append(candidate)

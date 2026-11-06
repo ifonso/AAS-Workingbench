@@ -306,6 +306,48 @@ def test_a_data_specification_preset_is_added(presets, tmp_path) -> None:
     assert prop.embedded_data_specifications == []
 
 
+def test_a_data_specification_preset_gives_one_record_and_no_blank_one(
+    presets,
+) -> None:
+    """F-EDT-05 AC16 and F-EDT-06 AC14, end state.
+
+    Package Explorer creates a blank record, and the preset replaces it. The
+    SDK cannot hold a blank record (tests/small/test_blank_member_probes), so
+    the list has the one record of the preset and nothing else.
+    """
+    prop = make_property("A")
+    lab = presets(prop)
+    lab.select_elements("A")
+
+    lab.use_preset("preset.add_data_specification", "IEC 61360")
+
+    (record,) = prop.embedded_data_specifications
+    assert [k.value for k in record.data_specification.key] == [
+        "https://admin-shell.io/DataSpecificationTemplates/"
+        "DataSpecificationIec61360/3/0"
+    ]
+    content = record.data_specification_content
+    assert isinstance(content, model.DataSpecificationIEC61360)
+    assert dict(content.preferred_name) == {"en": "Preferred name"}
+
+
+def test_a_qualifier_preset_gives_one_qualifier_with_its_semantic_id(
+    presets,
+) -> None:
+    """F-EDT-07 AC1, end state: type, value, kind, semantic id, and no other."""
+    prop = make_property("A")
+    lab = presets(prop)
+    lab.select_elements("A")
+
+    lab.use_preset("preset.add_qualifier", CARDINALITY)
+
+    (qualifier,) = prop.qualifier
+    assert (qualifier.type, qualifier.value) == ("SMT/Cardinality", "One")
+    assert qualifier.kind is model.QualifierKind.TEMPLATE_QUALIFIER
+    assert qualifier.semantic_id is not None
+    assert len(qualifier.semantic_id.key) == 1
+
+
 def test_a_specific_asset_id_preset_asks_for_the_value(
     presets, tmp_path
 ) -> None:

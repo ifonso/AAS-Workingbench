@@ -72,6 +72,7 @@ from aas_editor.domain.load_report import RawRecord
 from aas_editor.domain.load_report import Severity
 from aas_editor.domain.load_report import build_report
 from aas_editor.domain.load_report import duplicate_in_other_part
+from aas_editor.domain.ordered_store import OrderedIdentifiableStore
 from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import MissingFile
 from aas_editor.domain.parts import Thumbnail
@@ -102,7 +103,7 @@ class PackageParts:
     """
 
     objects: model.SetIdentifiableStore[model.Identifiable] = field(
-        default_factory=lambda: model.SetIdentifiableStore[model.Identifiable]()
+        default_factory=OrderedIdentifiableStore
     )
     files: DictSupplementaryFileContainer = field(
         default_factory=DictSupplementaryFileContainer

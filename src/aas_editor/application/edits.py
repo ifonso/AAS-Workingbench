@@ -34,6 +34,7 @@ from aas_editor.application.commands import CommandStack
 from aas_editor.domain import containers
 from aas_editor.domain import ordering
 from aas_editor.domain import typed_values
+from aas_editor.domain.ordered_store import OrderedIdentifiableStore
 
 
 def describe(obj: object) -> str:
@@ -53,12 +54,22 @@ def _is_mapping_member_change(container: object) -> bool:
     return isinstance(container, MutableMapping)
 
 
+def _row_of(container: object, position: int | None) -> int | None:
+    """Tells the row a view gives a member, which a store cannot say.
+
+    The store of a package keeps shells, submodels and descriptions in one
+    order (ADR 0021), and a view lists each kind under a node of its own, so a
+    position in the store is no row.
+    """
+    return None if isinstance(container, OrderedIdentifiableStore) else position
+
+
 def _member_added(
     container: object, member: object, position: int | None
 ) -> Change:
     if _is_mapping_member_change(container):
         return Change.changed(container)
-    return Change.added(container, member, position)
+    return Change.added(container, member, _row_of(container, position))
 
 
 def _member_removed(
@@ -66,7 +77,7 @@ def _member_removed(
 ) -> Change:
     if _is_mapping_member_change(container):
         return Change.changed(container)
-    return Change.removed(container, member, position)
+    return Change.removed(container, member, _row_of(container, position))
 
 
 class SetAttribute(Command):
@@ -352,6 +363,10 @@ class ReorderMembers(Command):
     def _report(
         self, before: Sequence[object], after: Sequence[object]
     ) -> None:
+        if isinstance(self._container, OrderedIdentifiableStore):
+            # A view lists each kind of object under a node of its own and
+            # orders the rows itself, so a position in the store moves no row.
+            return
         # Placing each member at its final row, lowest row first, gives the
         # final order in a model that moves one row at a time.
         old_index = {id(member): n for n, member in enumerate(before)}

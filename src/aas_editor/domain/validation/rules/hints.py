@@ -12,7 +12,9 @@ Notice is info.
 from collections.abc import Iterator
 
 from basyx.aas import model
+from basyx.aas.model.concept import ConceptDescription
 
+from aas_editor.domain.samm import is_samm
 from aas_editor.domain.validation.context import ValidationContext
 from aas_editor.domain.validation.field_checks import copy_name_problem
 from aas_editor.domain.validation.field_checks import global_asset_id_problem
@@ -26,6 +28,7 @@ CATEGORY_DEPRECATED = "EDT-HINT-CATEGORY"
 COPY_NAME = "EDT-HINT-COPY-NAME"
 ASSET_ID_EMPTY = "EDT-HINT-ASSET-ID-EMPTY"
 ASSET_ID_DUPLICATE = "EDT-HINT-ASSET-ID-DUPLICATE"
+NO_DATA_SPECIFICATION = "EDT-HINT-NO-DATA-SPEC"
 
 
 def key_whitespace(context: ValidationContext) -> Iterator[Finding]:
@@ -121,6 +124,32 @@ def duplicate_asset_id(context: ValidationContext) -> Iterator[Finding]:
             )
 
 
+def concept_without_data_specification(
+    context: ValidationContext,
+) -> Iterator[Finding]:
+    """Finds a concept description with no data specification (F-EDT-05).
+
+    Part 1 says that a concept description has at least one data specification
+    template associated. A description that carries a SAMM element is left out
+    (AC18): it defines its concept in the extension, not in a record.
+    """
+    for obj in context.objects:
+        if (
+            isinstance(obj, ConceptDescription)
+            and not obj.embedded_data_specifications
+            and not is_samm(obj)
+        ):
+            yield Finding(
+                NO_DATA_SPECIFICATION,
+                Severity.WARNING,
+                "The concept description has no data specification, so it "
+                "defines nothing. Add an IEC 61360 record",
+                obj,
+                obj,
+                "embedded_data_specifications",
+            )
+
+
 def _shells(
     context: ValidationContext,
 ) -> Iterator[model.AssetAdministrationShell]:
@@ -159,5 +188,12 @@ HINT_RULES = (
         "A global asset id is used once",
         "F-EDT-02 AC9: two shells for one asset id are probably a mistake.",
         duplicate_asset_id,
+    ),
+    Rule(
+        NO_DATA_SPECIFICATION,
+        "A concept description has a data specification",
+        "F-EDT-05: Part 1 gives a concept description at least one data "
+        "specification. One with a SAMM element is left out (AC18).",
+        concept_without_data_specification,
     ),
 )
