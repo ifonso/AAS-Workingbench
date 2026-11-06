@@ -1,6 +1,7 @@
 """Shared fixtures and test-size classification for the whole test suite."""
 
 from collections.abc import Iterator
+import contextlib
 import os
 from pathlib import Path
 import sys
@@ -9,6 +10,11 @@ import pytest
 
 # Must be set before Qt loads so tests never need a real display.
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+# QtWebEngine must be imported before any QApplication exists, or importing the
+# widgets and tree views later fails. Without it, only those tests are skipped.
+with contextlib.suppress(ImportError):
+    import PyQt6.QtWebEngineWidgets  # noqa: E402, F401
 
 from PyQt6.QtWidgets import QApplication  # noqa: E402
 
