@@ -9,10 +9,12 @@ Every number here comes from a test in `tests/`, named next to the table.
 ```python
 from aas_editor.application.validation import save_check_for, validate_package
 
-report = validate_package(package.save_source())   # linear, 45 ms for Purchase Order
+# Linear in the size of the package: 45 ms for Purchase Order.
+report = validate_package(package.save_source())
 for finding in report.errors:
     print(finding.rule_id, finding.location, finding.message)
-check = save_check_for(report)                     # blockers and confirmable errors (D5)
+# The blockers and the confirmable errors of a save (D5).
+check = save_check_for(report)
 ```
 
 | Part | Where | What |
