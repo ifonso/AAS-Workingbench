@@ -16,6 +16,19 @@ Each one is a single undo step, is disabled in Read mode, and either changes eve
 | Add qualifier, extension, or specific asset id from clipboard | Adds the member (or members) that the system clipboard holds as JSON. |
 | Move up, down, to top, to end | Moves the selected rows. A selection across several collections, lists, or submodels moves in each container. |
 
+### Concept descriptions for a selection
+
+The actions of the concept description tools work on every selected submodel or element, so no separate bulk action exists:
+
+| Action | For a selection |
+|---|---|
+| Assign concept description... | Gives all selected elements the chosen description as semantic id. A semantic id that is set is replaced only after a list of the old and the new ones was confirmed. |
+| Auto-detect concept descriptions... | Gives each selected element, and everything below it, that has no semantic id the description with its idShort, after a preview. It never replaces a semantic id. |
+| Create concept descriptions from all semantic ids... | Adds a description for each semantic id below the selection that has none. |
+| Fix data specification keys... | Looks at the selected descriptions, or at all of them when none is selected. |
+
+Each is one undo step. See ADR 0014 for how a description is found.
+
 ### Which objects take what
 
 | Kind | Objects |

@@ -160,7 +160,7 @@ def register_bulk_edit_actions() -> None:
                 "Change the idShort, description, display name or value of "
                 "the selected objects, with a preview"
             ),
-            order=400,
+            order=430,
         ),
         ActionSpec(
             action_id=REMOVE_EXTENSIONS_ID,
@@ -172,7 +172,7 @@ def register_bulk_edit_actions() -> None:
                 "Remove the extensions of the selected objects that share "
                 "a name or semantic id"
             ),
-            order=401,
+            order=431,
         ),
     )
     for spec in specs:

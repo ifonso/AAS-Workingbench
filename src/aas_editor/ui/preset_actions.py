@@ -162,15 +162,15 @@ def _from_clipboard(kind: MemberKind) -> Callable[[ActionContext], None]:
 
 
 _PRESETS = (
-    (MemberKind.QUALIFIER, "qualifier", 410),
-    (MemberKind.EXTENSION, "extension", 411),
-    (MemberKind.SPECIFIC_ASSET_ID, "specific_asset_id", 412),
-    (MemberKind.EMBEDDED_DATA_SPECIFICATION, "data_specification", 413),
+    (MemberKind.QUALIFIER, "qualifier", 440),
+    (MemberKind.EXTENSION, "extension", 441),
+    (MemberKind.SPECIFIC_ASSET_ID, "specific_asset_id", 442),
+    (MemberKind.EMBEDDED_DATA_SPECIFICATION, "data_specification", 443),
 )
 _CLIPBOARD = (
-    (MemberKind.QUALIFIER, "qualifier", 420),
-    (MemberKind.EXTENSION, "extension", 421),
-    (MemberKind.SPECIFIC_ASSET_ID, "specific_asset_id", 422),
+    (MemberKind.QUALIFIER, "qualifier", 450),
+    (MemberKind.EXTENSION, "extension", 451),
+    (MemberKind.SPECIFIC_ASSET_ID, "specific_asset_id", 452),
 )
 
 

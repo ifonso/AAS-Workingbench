@@ -45,11 +45,13 @@ def editor(
     from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
     from aas_editor.ui.bulk_dialogs import RemoveExtensionsDialog
     from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_editor.ui.concept_actions import register_concept_actions
     from aas_editor.ui.move_actions import register_move_actions
     from aas_editor.ui.preset_actions import register_preset_actions
     from aas_editor.ui.preset_dialogs import PresetDialog
 
     register_move_actions()
+    register_concept_actions()
     register_bulk_edit_actions()
     register_preset_actions()
     monkeypatch.setattr(
@@ -255,6 +257,38 @@ def test_bulk_edits_agree_in_tree_objects_and_file_and_undo_to_the_start(
         for n in first_children
     }
     moved_tree = {n: _rows(view, *base, n) for n in first_children}
+
+    # 5. The assign action of the concept description work package takes the
+    # whole selection: one description becomes the semantic id of two elements.
+    from aas_editor.ui import concept_dialogs
+
+    def concepts() -> list[model.ConceptDescription]:
+        return sorted(
+            (
+                o
+                for o in package.objStore
+                if isinstance(o, model.ConceptDescription)
+            ),
+            key=lambda c: c.id,
+        )
+
+    parent = _path(view, *base)
+    _select(
+        view, _find(view, parent, "CityTown"), _find(view, parent, "Company")
+    )
+    concepts_before = len(concepts())
+    chosen = concepts()[0]
+    patch(concept_dialogs, "ask_concept", lambda *args, **kwargs: chosen)
+    patch(
+        concept_dialogs,
+        "confirm_replace_semantic_ids",
+        lambda *args, **kwargs: True,
+    )
+    _act(view, "concepts.assign")
+    assigned = [
+        [k.value for k in holder.get_referable(n).semantic_id.key]
+        for n in ("CityTown", "Company")
+    ]
     final = snapshot(package.objStore)
     final_reloaded = snapshot(_reloaded_store(editor, "final.aasx"))
 
@@ -284,8 +318,10 @@ def test_bulk_edits_agree_in_tree_objects_and_file_and_undo_to_the_start(
     for name, children in first_children.items():
         assert moved[name] == [*children[1:], children[0]]
         assert moved_tree[name] == moved[name]
+    assert concepts_before >= 1
+    assert assigned == [[chosen.id]] * 2
     assert final == final_reloaded
-    assert steps == 5
+    assert steps == 6
     assert at_start == original
     assert not changed_at_start
     assert at_end == final
