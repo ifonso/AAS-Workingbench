@@ -15,6 +15,8 @@ from basyx.aas.adapter.aasx import AASXWriter
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 import pyecma376_2
 
+from aas_editor.domain.ordered_store import OrderedIdentifiableStore
+
 DEFAULT_SHELL_ID = "urn:uuid:00000000-0000-4000-8000-000000000001"
 DEFAULT_SUBMODEL_ID = "urn:uuid:00000000-0000-4000-8000-000000000002"
 DEFAULT_ASSET_ID = "urn:uuid:00000000-0000-4000-8000-000000000003"
@@ -147,11 +149,47 @@ def make_external_reference(value: str) -> model.ExternalReference:
 def make_store(
     *objects: model.Identifiable,
 ) -> model.SetIdentifiableStore:
-    """Builds an object store that holds the given identifiables."""
-    store: model.SetIdentifiableStore = model.SetIdentifiableStore()
+    """Builds an object store that holds the given identifiables, in order."""
+    store: model.SetIdentifiableStore = OrderedIdentifiableStore()
     for obj in objects:
         store.add(obj)
     return store
+
+
+SAMM_V2 = "urn:samm:org.eclipse.esmf.samm"
+
+
+def samm_type_urn(type_name: str, version: str = "2.1.0") -> str:
+    """Returns the URN of a SAMM element type, such as `Aspect` or `Trait`."""
+    meta_model = {"Aspect", "Property", "Entity", "Unit", "Characteristic"}
+    space = "meta-model" if type_name in meta_model else "characteristic"
+    prefix = (
+        "urn:bamm:io.openmanufacturing" if version.startswith("1.") else SAMM_V2
+    )
+    return f"{prefix}:{space}:{version}#{type_name}"
+
+
+def make_samm_concept(
+    id_: str,
+    type_name: str = "Property",
+    value: str | None = None,
+    id_short: str | None = None,
+    version: str = "2.1.0",
+) -> model.ConceptDescription:
+    """Builds a concept description with a SAMM element in an extension.
+
+    Package Explorer stores the element as JSON in an extension whose semantic
+    id is the URN of its type. `value` is that JSON text.
+    """
+    extension = model.Extension(
+        f"samm-{type_name.lower()}",
+        value_type=model.datatypes.String,
+        value=value,
+        semantic_id=make_external_reference(samm_type_urn(type_name, version)),
+    )
+    return model.ConceptDescription(
+        id_, id_short=id_short or type_name, extension=[extension]
+    )
 
 
 def make_valid_environment() -> model.SetIdentifiableStore:
@@ -162,10 +200,22 @@ def make_valid_environment() -> model.SetIdentifiableStore:
             make_property("Count", 3, model.datatypes.Int),
         ]
     )
+    concept = make_concept_description()
+    concept.embedded_data_specifications.append(
+        model.EmbeddedDataSpecification(
+            make_external_reference(
+                "https://admin-shell.io/DataSpecificationTemplates/"
+                "DataSpecificationIEC61360/3/1"
+            ),
+            model.DataSpecificationIEC61360(
+                model.PreferredNameTypeIEC61360({"en": "Concept"})
+            ),
+        )
+    )
     return make_store(
         make_shell(submodels=[submodel]),
         submodel,
-        make_concept_description(),
+        concept,
     )
 
 

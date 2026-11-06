@@ -37,8 +37,9 @@ from aas_editor.application.commands import ReadOnlyError
 from aas_editor.application.edits import RemoveMember
 from aas_editor.application.operations import concepts as ops
 from aas_editor.application.operations import data_specs
+from aas_editor.application.operations import sort_concepts as sorting
 from aas_editor.domain.concept_order import ConceptOrder
-from aas_editor.domain.concept_order import first_use_ranks
+from aas_editor.domain.concept_order import ranks_for
 from aas_editor.domain.concepts import SemanticHolder
 from aas_editor.domain.concepts import children_of
 from aas_editor.domain.concepts import holders_of
@@ -550,12 +551,10 @@ def apply_concept_order(
     Args:
         view: The tree view, whose model is a `SearchProxyModel`.
         order: The order to use.
-        objects: The identifiables of the package, for the first use order.
+        objects: The identifiables of the package in the order of its store,
+            for the orders that rank the descriptions.
     """
-    ranks = (
-        first_use_ranks(objects) if order is ConceptOrder.FIRST_USE else None
-    )
-    view.model().setConceptOrder(order, ranks)
+    view.model().setConceptOrder(order, ranks_for(order, objects))
 
 
 def ask_concept_order(
@@ -585,6 +584,50 @@ def _run_order(context: ActionContext) -> None:
     chosen = ask_concept_order(proxy.conceptOrder(), context.view)
     if chosen is not None:
         apply_concept_order(context.view, chosen, _all_objects(context))
+
+
+def _run_sort(context: ActionContext) -> None:
+    """Sorts the descriptions of the package by the order of the view."""
+    proxy: Any = context.view.model()
+    order: ConceptOrder = proxy.conceptOrder()
+    objects = _all_objects(context)
+    try:
+        plan = sorting.plan_sort(objects, order)
+    except sorting.SortRefused as refused:
+        _show(context, str(refused), TITLE)
+        return
+    if not plan.changes:
+        _show(
+            context,
+            f"The file lists the concept descriptions by {order.label} "
+            "already.",
+        )
+        return
+    rows = [
+        [str(number), c.id_short or "", c.id]
+        for number, c in enumerate(
+            (o for o in plan.new_order if isinstance(o, ConceptDescription)), 1
+        )
+    ]
+    if not concept_dialogs.confirm_preview(
+        "Sort the concept descriptions",
+        f"Sort the concept descriptions of the file by {order.label}? A save "
+        "writes them in this order. Undo gives the old order back.",
+        ["#", "idShort", "Id"],
+        rows,
+        (),
+        "Sort",
+        context.view,
+    ):
+        return
+    command = sorting.sort_command(
+        observer_for(context.package), _store(context), plan
+    )
+    if _push(context, command.description, [command]):
+        # What the view lists now is the order of the file.
+        apply_concept_order(
+            context.view, ConceptOrder.LIST_INDEX, _all_objects(context)
+        )
 
 
 def _spec(
@@ -705,5 +748,13 @@ _SPECS = (
         411,
         "Choose how the view lists the concept descriptions",
         mutates=False,
+    ),
+    _spec(
+        "concepts.sort",
+        "Sort concept descriptions in the file...",
+        _run_sort,
+        _can_sort,
+        412,
+        "Write the concept descriptions in the order the view lists them",
     ),
 )
