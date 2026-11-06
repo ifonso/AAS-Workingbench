@@ -108,6 +108,11 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/operations/paste.py` | `plan_paste` and `paste_commands`: copies with a free idShort or a new id, inserted at a position. |
 | `application/operations/companions.py` | `gather_companions`, `plan_concepts`, `concept_commands`, and `retarget_semantic_ids`: what goes with a copy between packages. It lists the file references of the copies too. |
 | `ui/move_actions.py`, `ui/paste_actions.py`, `ui/paste_dialogs.py` | The move and paste actions and the questions of a paste between packages. |
+| `domain/data_specifications.py` | The IEC 61360 template key and how to tell its spellings apart, `Iec61360Draft` (the content as text), `check_draft` (reasons the SDK would refuse it, and notes for AASc-3a-008, 009 and 010), `build_record`, and `empty_attributes`. |
+| `domain/value_list_text.py` | `parse_value_pairs`: value list pairs from lines or JSON, one entry at a time, never evaluated. |
+| `domain/concepts.py`, `domain/concept_order.py` | Submodels and elements with their semantic ids, new descriptions from a semantic id or a pair, matching by idShort, empty descriptions, and the view orders of descriptions. |
+| `application/operations/concepts.py`, `application/operations/data_specs.py` | `plan_create`, `plan_assign`, `plan_detect`, `plan_from_pairs`, `plan_invalid`; and the commands for records, template keys, empty attributes, and value list imports (see [Concept descriptions](#concept-descriptions)). |
+| `ui/concept_actions.py`, `ui/concept_dialogs.py`, `ui/iec61360_dialog.py`, `ui/value_list_dialog.py` | The actions in the context menu of the package tree, registered by `__main__.py` with `register_concept_actions`, and their dialogs. |
 
 ### Supplementary files
 
@@ -313,6 +318,17 @@ register_action(
 - **Paste.** `plan_paste(container, items, index, keep_ids, taken_ids)` clones the items through `domain.clipboard_json.clone`, so the buffer can be pasted again and nothing keeps a parent. An idShort is made free with `unique_id_short`, and an identifiable gets `new_identifier()` unless it is a cut that can keep its id. `ui/paste_actions.py` reads the buffer, `TreeClipboard.objects`, where text on the system clipboard that is AAS JSON has already become objects (`TreeView._appendClipboardText`). The existing Paste uses `pasteCopyFor` for the same naming.
 - **Between packages.** `TreeClipboard.source` is the package a copy came from. A paste into another package calls `gather_companions` (the concept descriptions of the semantic ids of the items and of everything below them) and `plan_concepts` (add, reuse when the JSON is equal, conflict otherwise), asks through `ui/paste_dialogs.py`, and puts `concept_commands` in the same group as the paste. A description added under a new id is followed by `retarget_semantic_ids` on the copies before they are inserted. `Companions` is the place to add other things that travel with a copy, such as supplementary files.
 - **Actions.** `register_move_actions()` and `register_paste_actions()` add `structure.move_*`, `structure.paste_*` and `structure.clear_buffer`. The tree views refresh the enabled states when the selection, the rows, or the buffer change.
+
+### Concept descriptions
+
+[ADR 0014](adr/0014-concept-descriptions-and-iec-61360.md) records the SDK findings and the decisions.
+
+- **Plans, then commands.** Each operation of `application/operations/concepts.py` makes a plan without changing anything (`CreatePlan`, `AssignPlan`, `DetectPlan`, `PairsPlan`, `InvalidConcept`), with a `summary` sentence and the items it skips and why. The `*_commands` functions build `AddMember` and `SetAttribute` commands, and the action pushes them in one group, so one undo takes everything back.
+- **Finding the description.** A semantic id names a description when one of its keys holds the id (`fix.concept_of`). Creating takes the first key as the id. Assigning writes an external reference with one global key. A semantic id that is set is replaced only after the user saw the old and the new one, and Auto-detect never replaces one.
+- **IEC 61360 records.** The dialog edits an `Iec61360Draft`, and `check_draft` is asked after every keystroke. Its errors are the reasons why the SDK would raise (empty preferred name, a language tag, lengths 18, 255, 1023 and 2048), and its advisories are constraints the SDK does not check. `build_record` raises `DraftError` with all reasons, and makes no attribute empty. Editing replaces the content of the record with `SetAttribute`, so the record keeps its place and the spelling of its key.
+- **Value lists.** `parse_value_pairs` reads lines and JSON. JSON entries are decoded one at a time through the SDK's `StrictAASFromJsonDecoder`, with a skeleton that the SDK wrote, so a bad entry names its place and the others are read. `plan_value_list_import` compares pairs by value and value id keys, because the SDK compares them by identity, and the command sets a new set so undo gives the old one back.
+- **Delete invalid.** `ui/concept_actions` lists the empty descriptions with their usages, asks which to delete, and then calls `ui.delete_flow.prepare_delete` and removes the descriptions in the same group as the reference cleanup.
+- **View order.** `SearchProxyModel.setConceptOrder` takes a `ConceptOrder` and the ranks of the first use order. It applies while the tree is in the natural order and ignores a column that the user clicked. It never changes the package.
 
 ### Working with legacy code
 
