@@ -285,7 +285,7 @@ CONTRAST_PAIRS: Final = (
     *_text("status_warning", "bg_content", "bg_chrome", "bg_warning"),
     *_text("status_warning", "bg_selected"),
     *_text("status_success", "bg_content", "bg_chrome", "bg_selected"),
-    *_text("mark_new", "bg_content", "bg_chrome", "bg_selected"),
+    *_text("mark_new", "bg_content", "bg_chrome", "bg_hover", "bg_selected"),
     # Text on the primary button and its hover.
     *_text("accent_on", "accent", "accent_hover"),
     # Icons and the edges of controls.
@@ -339,12 +339,49 @@ class Density(StrEnum):
 
 DEFAULT_DENSITY: Final = Density.COMPACT
 
+
+def parse_density(text: object) -> Density:
+    """Reads a density that was saved as text.
+
+    Args:
+        text: What the settings gave back, such as `dense`.
+
+    Returns:
+        The density, or `DEFAULT_DENSITY` for anything that names none, so a
+        damaged settings file never stops the start.
+    """
+    try:
+        return Density(text)
+    except ValueError:
+        return DEFAULT_DENSITY
+
+
 ROW_HEIGHTS: Final = {
     Density.COMFORTABLE: 28,
     Density.COMPACT: 24,
     Density.DENSE: 20,
 }
 """The height of a row of a tree or a table in pixels, for each density."""
+
+ROW_TEXT_PADDING: Final = 3
+"""The room a row keeps around a line of text, in pixels, so that a zoomed
+font still fits its row."""
+
+
+def fitting_row_height(density: Density, line_height: int) -> int:
+    """Gives the height of a row for a line of text.
+
+    The row of a density is the height of the plan, and it grows when the font
+    is zoomed so far that a line and its padding would not fit.
+
+    Args:
+        density: How tightly rows sit.
+        line_height: The height of one line of the font in pixels.
+
+    Returns:
+        The height of the row in pixels.
+    """
+    return max(ROW_HEIGHTS[density], line_height + ROW_TEXT_PADDING)
 
 
 @dataclass(frozen=True)

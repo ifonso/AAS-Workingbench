@@ -24,7 +24,7 @@ from PyQt6.QtCore import (
     QPersistentModelIndex,
     Qt,
 )
-from PyQt6.QtGui import QBrush, QAction, QShortcut
+from PyQt6.QtGui import QBrush, QColor, QAction, QShortcut
 from PyQt6.QtWidgets import (
     QLabel,
     QWidget,
@@ -34,8 +34,9 @@ from PyQt6.QtWidgets import (
 )
 
 from aas_editor.models.search_proxy_model import SearchProxyModel
-from aas_editor.settings.colors import HIGHLIGHT_YELLOW
+from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.shortcuts import SC_SEARCH
+from aas_editor.ui.theme import current_tokens
 from aas_editor.settings.icons import (
     NEXT_ICON,
     PREV_ICON,
@@ -201,7 +202,7 @@ class SearchBar(ToolBar):
             self.view.setCurrentIndex(QModelIndex(self.foundItems[0]))
             for item in self.foundItems:
                 self.view.itemDelegate().setBgColor(
-                    QModelIndex(item), QBrush(HIGHLIGHT_YELLOW)
+                    QModelIndex(item), QBrush(QColor(current_tokens().bg_find))
                 )
         self.model.dataChanged.emit(QModelIndex(), QModelIndex())
         self._updateResultLabel()

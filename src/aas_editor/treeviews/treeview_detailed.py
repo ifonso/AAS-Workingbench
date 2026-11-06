@@ -151,7 +151,7 @@ class AttrsTreeView(TreeView):
     def fittingAttributeWidth(self) -> int:
         """Return the width that keeps the common attribute names whole."""
         return self._measured(
-            WIDEST_ATTRIBUTE_NAME, True, ATTR_COLUMN_PADDING, ATTR_COLUMN_WIDTH
+            WIDEST_ATTRIBUTE_NAME, False, ATTR_COLUMN_PADDING, ATTR_COLUMN_WIDTH
         )
 
     def fittingTypeWidth(self) -> int:

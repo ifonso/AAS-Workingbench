@@ -105,6 +105,24 @@ class ThemeManager(QObject):
         """The height of a row of a tree or a table, in pixels."""
         return ROW_HEIGHTS[self._density]
 
+    def set_density(self, density: Density) -> None:
+        """Changes how tightly rows sit.
+
+        The sheet of a new theme is made again, because the padding of menu
+        items follows the density. Whatever else shows rows reads the density
+        when it is told that the theme changed.
+
+        Args:
+            density: The new density.
+        """
+        if density == self._density:
+            return
+        self._density = density
+        if self._choice in FLUENT_THEMES:
+            self._apply_fluent()
+        else:
+            self.changed.emit()
+
     def apply(self, choice: str, density: Density | None = None) -> None:
         """Puts a new theme on the application.
 

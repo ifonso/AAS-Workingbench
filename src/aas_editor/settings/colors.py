@@ -9,10 +9,7 @@
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 from PyQt6.QtGui import QColor
 
+# The blue of the action icons. The icons are recolored from the theme in the
+# phase of the icon engine, and this goes then. The colors of rows are tokens of
+# the theme, see `aas_editor.ui.theme.current_tokens`.
 LIGHT_BLUE = QColor(132, 185, 255)
-LIGHT_BLUE_ALTERNATE = QColor(132, 185, 255, 30)
-LINK_BLUE = QColor(40, 123, 220)
-CHANGED_BLUE = QColor(83, 148, 236, 255)
-HIGHLIGHT_YELLOW = QColor(255, 255, 0, 130)
-RED = QColor("red")
-NEW_GREEN = QColor("green")

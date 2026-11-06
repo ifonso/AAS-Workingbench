@@ -135,6 +135,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Tests for the output variables and the in/out variables of an Operation: a variable goes into the list it was added under only (F-EDT-04 AC18), for each of the three lists.
 - Tests that deleting the last specific asset id of a shell leaves no list in the file, and that the last asset id of a shell without a global asset id stays (F-EDT-02 AC13).
 - Three new themes in View, Choose Theme: Fluent light, Fluent dark, and Fluent, follow the system. They are made from one table of colors, so every pair of text and surface has at least 4.5 to 1 and every icon and input edge at least 3 to 1, and a test measures them all. The old themes stay for now.
+- A setting "Row density" in Settings, with Comfortable (28 pixels a row), Compact (24, the default), and Dense (20). It applies at once. A zoomed font still makes a row taller when its line does not fit.
 
 ### Changed
 
@@ -203,6 +204,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - A preview that is dragged shut, or that did not fit a narrow tab, has a button "Show preview of the file" in the tab.
 - The attribute column of a tab keeps `embeddedDataSpecifications` and `supplementalSemanticId` whole, and the type column keeps `MultiLanguageNameType`, measured with the font of the tab. A narrow tab gives them a share of its width, so the value keeps room. The address line of a tab takes what the buttons leave, so they are no longer cut into a "..." menu in a window of the default size.
 - The hints bar shows two or more hints on one line that names their rules, with the sentences in a tooltip. One hint, errors and warnings keep their sentence. The findings are the same.
+- The trees read in one level of emphasis. Names and values are regular, where every name was bold and underlined and every value italic, so only a link is underlined and links can be told apart. The type column and `(not set)` are muted. The rows have no stripes, a nested level indents 16 pixels instead of 20, and a row is 24 pixels high where it was 26 at the old font.
+- The colors of the rows come from the theme in use and follow a switch of theme: links, changed and added names, and the highlight of a search match. A changed or added name also has a dot at the right end of its cell, so the mark does not rest on color alone, and a selected row has a bar at its left edge.
+- The default font size of the trees is 10 pt (13 pixels at 96 dpi), where it was 12 pt. A saved size of exactly 12 pt counts as the old default and takes the new one once, and any other saved size is kept. The widths that users dragged in the tab headers and in the header of the package tree are reset once, as the columns fit the new font.
 
 ### Fixed
 
@@ -284,6 +288,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The setting "Automatically add refs of existing submodels to AAS when saving file". Saving no longer links Submodels to the first AAS, and it was on by default.
 - The undo list of 10 steps in each tab. The history of a package replaces it.
 - The `screenshots/` folder, which showed the old interface and was used only by the README.
+- The alternating row colors of the trees, and the old blue and green of links, changed rows, and added rows in `settings/colors.py`.
 
 ### Documentation
 
