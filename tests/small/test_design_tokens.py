@@ -8,6 +8,7 @@ from aas_editor.domain.design_tokens import DEFAULT_DENSITY
 from aas_editor.domain.design_tokens import ICON_CONTRAST
 from aas_editor.domain.design_tokens import LIGHT
 from aas_editor.domain.design_tokens import ROW_HEIGHTS
+from aas_editor.domain.design_tokens import ROW_TEXT_PADDING
 from aas_editor.domain.design_tokens import SPACING
 from aas_editor.domain.design_tokens import TEXT_CONTRAST
 from aas_editor.domain.design_tokens import THEMES
@@ -15,6 +16,8 @@ from aas_editor.domain.design_tokens import TYPE_RAMP
 from aas_editor.domain.design_tokens import ColorTokens
 from aas_editor.domain.design_tokens import Density
 from aas_editor.domain.design_tokens import contrast_ratio
+from aas_editor.domain.design_tokens import fitting_row_height
+from aas_editor.domain.design_tokens import parse_density
 
 PAIR_IDS = [pair.name for pair in CONTRAST_PAIRS]
 
@@ -166,3 +169,28 @@ def test_type_ramp_has_the_roles_of_the_plan():
         "title": (16, 22, 600),
         "display": (20, 26, 600),
     }
+
+
+def test_a_line_that_fits_leaves_the_row_at_the_height_of_its_density():
+    for density, height in ROW_HEIGHTS.items():
+        assert fitting_row_height(density, 16) == height
+
+
+def test_a_zoomed_font_makes_the_row_taller_than_its_density():
+    assert fitting_row_height(Density.COMPACT, 30) == 30 + ROW_TEXT_PADDING
+
+
+def test_a_line_that_just_fits_does_not_grow_the_row():
+    line = ROW_HEIGHTS[Density.DENSE] - ROW_TEXT_PADDING
+
+    assert fitting_row_height(Density.DENSE, line) == ROW_HEIGHTS[Density.DENSE]
+
+
+def test_a_density_that_was_saved_is_read_back():
+    for density in Density:
+        assert parse_density(density.value) is density
+
+
+@pytest.mark.parametrize("text", ["", "tiny", None, 24])
+def test_a_density_that_is_no_density_gives_the_default(text):
+    assert parse_density(text) is DEFAULT_DENSITY
