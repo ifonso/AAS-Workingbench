@@ -128,7 +128,6 @@ def test_clicking_two_rows_keeps_both_selected_for_the_move(moving) -> None:
     # The user selects with the mouse, which makes the clicked row current and
     # refreshes the actions. A refresh that selects the current row alone
     # would leave the move with one row.
-    from PyQt6.QtCore import QPoint
     from PyQt6.QtCore import Qt
     from PyQt6.QtTest import QTest
 

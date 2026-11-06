@@ -75,6 +75,12 @@ from aas_editor.utils.util_type import getTypeName
 from aas_editor.ui.actions import ActionContext, ViewActions, ViewKind
 from aas_editor.ui.delete_flow import DeleteCancelled, prepare_delete
 from aas_editor.ui.paste_actions import pasteCopyFor
+from aas_editor.ui.selection_rows import (
+    DIFFERENT_PACKAGES_TEXT,
+    in_one_package,
+    show_refusal,
+    top_level_rows,
+)
 from aas_editor.settings.app_settings import *
 from aas_editor.additional.classes import DictItem
 from aas_editor.delegates import EditDelegate
@@ -1092,7 +1098,7 @@ class TreeView(BasicTreeView):
         objects are referenced (D11), and a cut does not ask (confirm False).
         Taking the references away is part of the same undo step.
         """
-        indexes = self.getTopLevelSameLevelIndexes(self.selectedIndexes())
+        indexes = self.selectedRowsFor("delete")
         if not indexes:
             return
         try:
@@ -1160,12 +1166,33 @@ class TreeView(BasicTreeView):
                 self._setItemData(index, NOT_GIVEN, CLEAR_ROW_ROLE)
 
     def onMultipleDelClear(self, indexes: List[QModelIndex]):
-        # All deletions are one undo step.
+        """Delete or clear rows that are in the order of the tree.
+
+        The rows may have different parents. All deletions are one undo step.
+        """
         with self.historyGroup(indexes[0], f"Delete {len(indexes)} items"):
-            for index in sorted(
-                indexes, key=lambda x: x.row(), reverse=True
-            ):  # reverse to avoid shifting rows
+            # From the bottom up, so that a deleted row never moves a row
+            # that is still to be deleted, in its own parent or in another.
+            for index in reversed(indexes):
                 self.onOneItemDelClear(index)
+
+    def selectedRowsFor(self, action: str) -> List[QModelIndex]:
+        """Return the selected rows that an action works on, or none.
+
+        :param action: the verb for the message, such as "delete"
+        :return: each selected row once, in the order of the tree, also when
+            the rows have different parents. Empty, after a message, if the
+            rows are in different packages, which one step cannot serve.
+        """
+        rows = top_level_rows(self.selectedIndexes())
+        if not in_one_package(rows):
+            show_refusal(
+                action.capitalize(),
+                DIFFERENT_PACKAGES_TEXT.format(action=action),
+                self,
+            )
+            return []
+        return rows
 
     def onCopy(self):
         indexes = self.selectedIndexes()
@@ -1190,19 +1217,16 @@ class TreeView(BasicTreeView):
         self.pasteAct.setEnabled(self.canEdit() and self.isPasteOk(index))
 
     def onMultipleItemsCopy(self, indexes: List[QModelIndex]):
-        # Get top level indexes
-        top_same_level_indexes = self.getTopLevelSameLevelIndexes(indexes)
+        # The rows may have different parents, and all of them are copied, in
+        # the order of the tree.
+        rows = self.selectedRowsFor("copy")
+        if not rows:
+            return
         data2copy = [
-            i.data(COPY_ROLE)
-            for i in top_same_level_indexes
-            if i.data(COPY_ROLE) is not None
+            i.data(COPY_ROLE) for i in rows if i.data(COPY_ROLE) is not None
         ]
         text2copy = "\n".join(
-            [
-                i.data(Qt.ItemDataRole.DisplayRole)
-                for i in indexes
-                if i.isValid()
-            ]
+            [i.data(Qt.ItemDataRole.DisplayRole) for i in rows]
         )
         if data2copy and all(isinstance(o, Referable) for o in data2copy):
             # As for one item, the system clipboard gets the SDK's JSON, which
@@ -1212,52 +1236,11 @@ class TreeView(BasicTreeView):
         self.treeClipboard.append(data2copy, objRepr=text2copy)
         # The package is what tells a paste into another package to bring
         # the concept descriptions and files of the copies.
-        self.treeClipboard.source = indexes[0].data(PACKAGE_ROLE)
+        self.treeClipboard.source = rows[0].data(PACKAGE_ROLE)
         clipboard = QApplication.clipboard()
         clipboard.setText(
             self.treeClipboard.objStrings[-1], QClipboard.Mode.Clipboard
         )
-
-    def getTopLevelSameLevelIndexes(self, indexes):
-        # Remove invalid indexes just in case
-        valid_indexes = [idx for idx in indexes if idx.isValid()]
-
-        # A view that selects rows lists every cell of a row, but a row is one
-        # item: it must be deleted, copied, or cut once.
-        rows = set()
-        unique_indexes = []
-        for idx in valid_indexes:
-            row = (idx.parent(), idx.row())
-            if row not in rows:
-                rows.add(row)
-                unique_indexes.append(idx)
-        valid_indexes = unique_indexes
-
-        # Remove indexes whose parent is also in the list
-        top_level_candidates = []
-        for idx in valid_indexes:
-            if idx.parent() not in valid_indexes:
-                top_level_candidates.append(idx)
-
-        if len(valid_indexes) <= 1:
-            return valid_indexes
-
-        # Determine the common parent among remaining top-level candidates
-        first_parent = top_level_candidates[0].parent()
-        same_level_indexes = [
-            idx for idx in top_level_candidates if idx.parent() == first_parent
-        ]
-
-        # A view that selects whole rows lists every column of a row. The row
-        # is one object, so it counts once, or a delete would run once for
-        # each column and remove the rows behind it.
-        rows = set()
-        one_for_each_row = []
-        for idx in same_level_indexes:
-            if idx.row() not in rows:
-                rows.add(idx.row())
-                one_for_each_row.append(idx)
-        return one_for_each_row
 
     def isPasteOk(self, index: QModelIndex) -> bool:
         if self.treeClipboard.isEmpty() or not index.isValid():
@@ -1385,6 +1368,9 @@ class TreeView(BasicTreeView):
             self._setItemData(index, obj2paste, Qt.ItemDataRole.EditRole)
 
     def onCut(self):
+        if not self.selectedRowsFor("cut"):
+            # Nothing is copied and nothing is deleted.
+            return
         self.onCopy()
         # Cut is immediate, and the objects come back with the paste (D12).
         # A pasted cut keeps the ids of its objects (D13).
