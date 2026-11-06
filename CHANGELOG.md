@@ -136,6 +136,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- On a first run, the package tree hid the names of nested elements, because its first column was too narrow for their indentation. The column now starts wide, and a width that the user chose stays.
+- The Validation dock cut off the rule and the location of a finding. It also said "1 warnings".
+- Closing the application could show an error about a deleted QTimer, and could keep the process from ending. The hints bar told the validation service that it had gone after Qt had destroyed the service.
 - Setting the semantic id of an element moved it to the end of its siblings, and undo did not put it back. The position is kept for every attribute now.
 - Deleting a row in a tab that selects whole rows ran the delete once for each column, and removed up to three more rows behind it.
 - Giving an item of a list a semantic id that differs from its siblings was refused, as AASd-114 demands, but the SDK had taken the item out of the list by then, and it was lost. The item stays now.
