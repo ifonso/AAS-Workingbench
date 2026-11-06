@@ -113,6 +113,11 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/reference_picker.py` | The rules of the reference picker (see [Entering references](#entering-references)). |
 | `ui/create_dialogs.py`, `ui/create_actions.py`, `ui/bulk_actions.py` | The dialogs and the actions Create AAS, Create Submodel, Link existing Submodels, Generate global asset id, Add specific asset id, and Remove attributes. |
 | `ui/reference_picker.py`, `ui/reference_fields.py`, `ui/reference_jump.py` | The picker dialog, the form fields that hold it, and Jump to target. |
+| `domain/data_specifications.py` | The IEC 61360 template key and how to tell its spellings apart, `Iec61360Draft` (the content as text), `check_draft` (reasons the SDK would refuse it, and notes for AASc-3a-008, 009 and 010), `build_record`, and `empty_attributes`. |
+| `domain/value_list_text.py` | `parse_value_pairs`: value list pairs from lines or JSON, one entry at a time, never evaluated. |
+| `domain/concepts.py`, `domain/concept_order.py` | Submodels and elements with their semantic ids, new descriptions from a semantic id or a pair, matching by idShort, empty descriptions, and the view orders of descriptions. |
+| `application/operations/concepts.py`, `application/operations/data_specs.py` | `plan_create`, `plan_assign`, `plan_detect`, `plan_from_pairs`, `plan_invalid`; and the commands for records, template keys, empty attributes, and value list imports (see [Concept descriptions](#concept-descriptions)). |
+| `ui/concept_actions.py`, `ui/concept_dialogs.py`, `ui/iec61360_dialog.py`, `ui/value_list_dialog.py` | The actions in the context menu of the package tree, registered by `__main__.py` with `register_concept_actions`, and their dialogs. |
 
 ### Supplementary files
 
@@ -321,7 +326,7 @@ register_action(
 
 ### Entering references
 
-[ADR 0014](adr/0014-reference-fields-and-creation-dialogs.md) records the decisions.
+[ADR 0015](adr/0015-reference-fields-and-creation-dialogs.md) records the decisions.
 
 - `widgetUtil.getWidget4typehint` gives every `Reference`, `ExternalReference`, and `ModelReference[...]` hint a `ReferenceFieldMixin` form. It keeps the key rows of the generated form and adds a "Choose from package..." button, and a line that says whether the reference resolves, dangles (and which key is missing), or points outside of the package.
 - `rule_for_hint` turns the hint into a `ReferenceRule`: which kinds are accepted and which classes may be the target. `candidates` lists the shells, Submodels, concept descriptions and elements, `reference_to` derives the keys, and `status_of` checks a reference against a `ReferenceIndex`.
@@ -333,6 +338,16 @@ register_action(
 ### Creating
 
 `new_shell` and `new_submodel` make objects that the SDK accepts, with ids from `new_identifier`. `add_shell` and `add_submodel` push one step each, and the second also pushes the reference from the shell. The dialogs validate while the user types by building the object, so OK is off with the reason. `register_create_actions`, `register_bulk_actions`, and `register_jump_actions` are called by `__main__.py`.
+### Concept descriptions
+
+[ADR 0014](adr/0014-concept-descriptions-and-iec-61360.md) records the SDK findings and the decisions.
+
+- **Plans, then commands.** Each operation of `application/operations/concepts.py` makes a plan without changing anything (`CreatePlan`, `AssignPlan`, `DetectPlan`, `PairsPlan`, `InvalidConcept`), with a `summary` sentence and the items it skips and why. The `*_commands` functions build `AddMember` and `SetAttribute` commands, and the action pushes them in one group, so one undo takes everything back.
+- **Finding the description.** A semantic id names a description when one of its keys holds the id (`fix.concept_of`). Creating takes the first key as the id. Assigning writes an external reference with one global key. A semantic id that is set is replaced only after the user saw the old and the new one, and Auto-detect never replaces one.
+- **IEC 61360 records.** The dialog edits an `Iec61360Draft`, and `check_draft` is asked after every keystroke. Its errors are the reasons why the SDK would raise (empty preferred name, a language tag, lengths 18, 255, 1023 and 2048), and its advisories are constraints the SDK does not check. `build_record` raises `DraftError` with all reasons, and makes no attribute empty. Editing replaces the content of the record with `SetAttribute`, so the record keeps its place and the spelling of its key.
+- **Value lists.** `parse_value_pairs` reads lines and JSON. JSON entries are decoded one at a time through the SDK's `StrictAASFromJsonDecoder`, with a skeleton that the SDK wrote, so a bad entry names its place and the others are read. `plan_value_list_import` compares pairs by value and value id keys, because the SDK compares them by identity, and the command sets a new set so undo gives the old one back.
+- **Delete invalid.** `ui/concept_actions` lists the empty descriptions with their usages, asks which to delete, and then calls `ui.delete_flow.prepare_delete` and removes the descriptions in the same group as the reference cleanup.
+- **View order.** `SearchProxyModel.setConceptOrder` takes a `ConceptOrder` and the ranks of the first use order. It applies while the tree is in the natural order and ignores a column that the user clicked. It never changes the package.
 
 ### Working with legacy code
 
