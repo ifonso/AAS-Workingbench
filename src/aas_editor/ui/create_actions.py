@@ -40,6 +40,8 @@ from aas_editor.application.operations.create import shell_of
 from aas_editor.application.operations.create import unlinked_submodels
 from aas_editor.application.operations.rename import RenameError
 from aas_editor.domain.asset_information import AssetInformationError
+from aas_editor.package import Package
+from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.app_settings import OBJECT_ROLE
 from aas_editor.settings.app_settings import PACK_ITEM_ROLE
 from aas_editor.ui.actions import ActionContext
@@ -257,8 +259,30 @@ def shell_for(context: ActionContext) -> model.AssetAdministrationShell | None:
     return None
 
 
-def _has_package(context: ActionContext) -> bool:
-    return context.package is not None
+def _is_package_or_node(context: ActionContext, node: str) -> bool:
+    """Tells whether the row is the package, or the node that lists a kind."""
+    if context.package is None:
+        return False
+    return (
+        isinstance(context.index.data(OBJECT_ROLE), Package)
+        or context.index.data(NAME_ROLE) == node
+    )
+
+
+def _can_create_shell(context: ActionContext) -> bool:
+    """A shell is made on the package, on the shells, or beside a shell."""
+    return (
+        _is_package_or_node(context, "shells") or shell_for(context) is not None
+    )
+
+
+def _can_create_submodel(context: ActionContext) -> bool:
+    """A submodel is made on the package, on the submodels, or on a shell."""
+    return (
+        _is_package_or_node(context, "submodels")
+        or shell_for(context) is not None
+        or isinstance(context.index.data(OBJECT_ROLE), model.Submodel)
+    )
 
 
 def _can_link(context: ActionContext) -> bool:
@@ -305,7 +329,7 @@ def register_create_actions() -> None:
             action_id=CREATE_SHELL_ID,
             text="Create AAS...",
             run=_run_create_shell,
-            is_enabled=_has_package,
+            is_enabled=_can_create_shell,
             views=ViewKind.PACKAGES,
             status_tip="Create an AAS with valid AssetInformation",
             order=200,
@@ -314,7 +338,7 @@ def register_create_actions() -> None:
             action_id=CREATE_SUBMODEL_ID,
             text="Create Submodel...",
             run=_run_create_submodel,
-            is_enabled=_has_package,
+            is_enabled=_can_create_submodel,
             views=ViewKind.PACKAGES,
             status_tip="Create a Submodel and refer to it from an AAS",
             order=201,

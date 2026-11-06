@@ -187,3 +187,76 @@ def test_registering_an_id_twice_is_refused(registry) -> None:
 
     with pytest.raises(ValueError, match="already registered"):
         _register(registry)
+
+
+def test_actions_are_grouped_by_the_section_of_their_id(
+    views, registry
+) -> None:
+    # Features chose their order values on their own, so the same number
+    # (200, 300) used to put unrelated actions side by side.
+    _register(registry, action_id="files.sample", order=1)
+    _register(registry, action_id="create.sample", order=900)
+    _register(registry, action_id="structure.sample", order=500)
+    _register(registry, action_id="unknown.sample", order=0)
+
+    from aas_editor.ui.actions import ViewKind
+    from aas_editor.ui.actions import default_registry
+
+    views()
+
+    ids = [
+        spec.action_id
+        for spec in default_registry().specs_for(ViewKind.PACKAGES)
+        if spec.action_id.endswith(".sample")
+    ]
+    assert ids == [
+        "create.sample",
+        "structure.sample",
+        "files.sample",
+        "unknown.sample",
+    ]
+
+
+def test_the_menu_separates_the_sections_and_hides_what_does_not_apply(
+    views, registry
+) -> None:
+    from PyQt6.QtWidgets import QMenu
+
+    _register(registry, action_id="create.sample", order=1)
+    _register(registry, action_id="files.sample", order=1)
+    shown = views()
+    shown.open_package(make_submodel(elements=[make_property("p")]))
+    shown.select(shown.index("submodels", "Submodel"))
+
+    menu = QMenu()
+    shown.view.registeredActions.add_to_menu(menu)
+    texts = [
+        "|" if action.isSeparator() else action.text()
+        for action in menu.actions()
+        if action.isSeparator() or action.text() == "Tag the element"
+    ]
+    on_submodel = [
+        shown.view.registeredActions.find(f"{prefix}.sample").isVisible()
+        for prefix in ("create", "files")
+    ]
+    shown.select(shown.index("submodels", "Submodel", "p"))
+    on_property = [
+        shown.view.registeredActions.find(f"{prefix}.sample").isVisible()
+        for prefix in ("create", "files")
+    ]
+
+    assert texts.count("|") >= 2
+    assert on_submodel == [False, False]
+    assert on_property == [True, True]
+
+
+def test_an_action_of_the_toolbar_is_never_hidden(views, registry) -> None:
+    _register(registry, toolbar=True)
+    shown = views()
+    shown.open_package(make_submodel(elements=[make_property("p")]))
+    shown.select(shown.index("submodels", "Submodel"))
+
+    action = shown.view.registeredActions.find("test.tag")
+
+    assert not action.isEnabled()
+    assert action.isVisible()
