@@ -2,6 +2,7 @@
 
 from basyx.aas import model
 import pytest
+from tests.factories import make_external_reference
 from tests.factories import make_property
 from tests.factories import make_reference_to
 from tests.factories import make_submodel
@@ -111,6 +112,66 @@ class TestList:
         containers.replace_member(items, "b", "z")
 
         assert items == ["a", "z", "c"]
+
+
+class TestConstrainedList:
+    """The supplemental semantic ids and the specific asset ids of the SDK."""
+
+    @staticmethod
+    def _element() -> model.Property:
+        element = make_property("a")
+        element.semantic_id = make_external_reference("urn:main")
+        element.supplemental_semantic_id.extend(
+            [
+                make_external_reference("urn:one"),
+                make_external_reference("urn:two"),
+            ]
+        )
+        return element
+
+    def test_add_inserts_at_the_index(self) -> None:
+        element = self._element()
+
+        position = containers.add_member(
+            element.supplemental_semantic_id,
+            make_external_reference("urn:n"),
+            1,
+        )
+
+        assert position == 1
+        assert [
+            key.key[0].value for key in element.supplemental_semantic_id
+        ] == [
+            "urn:one",
+            "urn:n",
+            "urn:two",
+        ]
+
+    def test_remove_tells_the_position(self) -> None:
+        element = self._element()
+
+        position = containers.remove_member(
+            element.supplemental_semantic_id, make_external_reference("urn:two")
+        )
+
+        assert position == 1
+        assert len(element.supplemental_semantic_id) == 1
+
+    def test_replace_keeps_the_position(self) -> None:
+        element = self._element()
+
+        containers.replace_member(
+            element.supplemental_semantic_id,
+            make_external_reference("urn:one"),
+            make_external_reference("urn:new"),
+        )
+
+        assert [
+            key.key[0].value for key in element.supplemental_semantic_id
+        ] == [
+            "urn:new",
+            "urn:two",
+        ]
 
 
 class TestSet:

@@ -134,12 +134,9 @@ class SetAttribute(Command):
         self._observer.notify(Change.changed(self._owner))
 
     def _assign(self, value: object) -> None:
-        if self._name == "id_short" and isinstance(
-            self._owner, model.Referable
-        ):
-            ordering.set_id_short(self._owner, value)  # pyright: ignore[reportArgumentType]
-        else:
-            setattr(self._owner, self._name, value)
+        # Setting some attributes makes the SDK move the owner to the end of
+        # its namespace, which would reorder the siblings (D19).
+        ordering.set_attribute(self._owner, self._name, value)
 
 
 class AddMember(Command):

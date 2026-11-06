@@ -15,6 +15,7 @@ key and value, and its position is the position of the key.
 
 from collections.abc import Iterable
 from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 from collections.abc import MutableSet
 from typing import Any
 from typing import cast
@@ -37,7 +38,8 @@ def position_of(container: object, member: object) -> int | None:
     """Returns the position of a member, or None if it has none.
 
     Args:
-        container: A `NamespaceSet`, a list, or a mapping. Other containers
+        container: A `NamespaceSet`, a list (also the SDK's `ConstrainedList`), or a
+            mapping. Other containers
             have no order.
         member: The object to look for, compared by identity. A mapping
             member is a pair, and its key is looked for.
@@ -50,7 +52,7 @@ def position_of(container: object, member: object) -> int | None:
         key = cast("tuple[Any, Any]", member)[0]
         keys = _members(container)
         return keys.index(key) if key in keys else None
-    if isinstance(container, (model.NamespaceSet, list)):
+    if isinstance(container, (model.NamespaceSet, MutableSequence)):
         held_members = _members(cast("object", container))
         for position, held in enumerate(held_members):
             if held is member:
@@ -93,8 +95,8 @@ def add_member(
         else:
             ordering.insert_at(namespace_set, member, index)
         return position_of(cast("object", container), member)
-    if isinstance(container, list):
-        items = cast("list[Any]", container)
+    if isinstance(container, MutableSequence):
+        items = cast("MutableSequence[Any]", container)
         if index is None or index >= len(items):
             items.append(member)
             return len(items) - 1
@@ -132,10 +134,10 @@ def remove_member(container: object, member: object) -> int | None:
         del cast("MutableMapping[Any, Any]", container)[key]
     elif isinstance(container, model.NamespaceSet):
         cast("model.NamespaceSet[Any]", container).remove(member)
-    elif isinstance(container, list):
+    elif isinstance(container, MutableSequence):
         if position is None:
             raise KeyError(f"Not in the list: {member!r}")
-        del cast("list[Any]", container)[position]
+        del cast("MutableSequence[Any]", container)[position]
     elif isinstance(container, MutableSet):
         cast("MutableSet[Any]", container).remove(member)
     else:
@@ -164,11 +166,11 @@ def replace_member(container: object, old: object, new: object) -> None:
         ordering.replace_item(
             cast("model.NamespaceSet[Any]", container), old, new
         )
-    elif isinstance(container, list):
+    elif isinstance(container, MutableSequence):
         position = position_of(cast("object", container), old)
         if position is None:
             raise KeyError(f"Not in the list: {old!r}")
-        cast("list[Any]", container)[position] = new
+        cast("MutableSequence[Any]", container)[position] = new
     elif isinstance(container, MutableSet):
         members = cast("MutableSet[Any]", container)
         if old not in members:

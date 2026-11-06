@@ -5,6 +5,7 @@ import io
 from basyx.aas import model
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 import pytest
+from tests.factories import make_external_reference
 from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
@@ -69,6 +70,26 @@ def test_set_attribute_keeps_the_position_when_it_renames(
     stack.undo()
 
     assert (renamed, _ids(submodel)) == (["z", "b", "c"], ["a", "b", "c"])
+
+
+def test_set_attribute_keeps_the_position_when_it_sets_a_semantic_id(
+    observer: ModelChangeObserver,
+) -> None:
+    submodel = make_submodel(
+        elements=[make_property("a"), make_property("b"), make_property("c")]
+    )
+    element = next(iter(submodel.submodel_element))
+    stack = CommandStack()
+
+    stack.push(
+        SetAttribute(
+            observer, element, "semantic_id", make_external_reference("urn:x")
+        )
+    )
+    after_push = _ids(submodel)
+    stack.undo()
+
+    assert (after_push, _ids(submodel)) == (["a", "b", "c"], ["a", "b", "c"])
 
 
 def test_set_attribute_reports_a_change_of_the_owner_when_applied_and_reverted(
