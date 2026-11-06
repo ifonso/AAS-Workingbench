@@ -40,6 +40,7 @@ CLASSES_INFO[Package] = {
         # The program's own state, which the tab of a package showed as a
         # list of Python objects and flags.
         "changeMarks",
+        "loadReport",
         "objStore",
         "saveGate",
         "sortKeysInJson",
