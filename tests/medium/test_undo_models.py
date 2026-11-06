@@ -657,3 +657,14 @@ def test_opening_a_package_leaves_no_undo_step(model_support, world) -> None:
     assert world.table.rowCount() == 2
     assert not other_package.commandStack.can_undo
     assert not world.stack.can_undo
+
+
+def test_package_detail_view_does_not_show_the_undo_history(
+    model_support, world
+) -> None:
+    details = model_support.detail_table(world.table)
+
+    shown = model_support.names(details)
+
+    assert "commandStack" not in shown
+    assert "recoveryWritten" not in shown
