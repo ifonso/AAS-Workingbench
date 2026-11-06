@@ -5,9 +5,18 @@ the shown object: a rule of the specification that it breaks, or a hint such as
 a deprecated category. It never blocks anything. The value stays in the model,
 the tab stays editable, and the package can be saved. The bar reads the report
 of the validation service, which runs debounced, so typing never waits for it.
+
+An error or a warning is a finding of the rules, and the Validation panel lists
+it, so a click on the bar opens the panel at that finding. A hint is advice and
+is not in the panel, so a bar that has only hints does not link anywhere. The
+tooltip says which is which.
 """
 
+from PyQt6.QtCore import QEvent
+from PyQt6.QtCore import QObject
 from PyQt6.QtCore import Qt
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtWidgets import QFrame
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QVBoxLayout
@@ -15,6 +24,8 @@ from PyQt6.QtWidgets import QWidget
 
 from aas_editor.application.hints import hints_mode
 from aas_editor.application.validation import hints_for
+from aas_editor.application.validation import is_hint
+from aas_editor.application.validation import is_listed
 from aas_editor.domain.attribute_vocabulary import metamodel_name
 from aas_editor.domain.validation import Finding
 from aas_editor.domain.validation import Severity
@@ -24,11 +35,22 @@ from aas_editor.ui.validation_service import service_for
 
 # How many hints the bar lists before it summarizes the rest.
 MAX_SHOWN = 5
+KINDS_TIP = (
+    "Errors and warnings break the rules of the specification, and the "
+    "Validation panel lists them. Hints are advice, not rules, and the panel "
+    "does not list them."
+)
 _LABELS = {
     Severity.ERROR: "Error",
     Severity.WARNING: "Warning",
     Severity.INFO: "Hint",
 }
+
+
+def _label(finding: Finding) -> str:
+    """Names the kind of a finding. A hint is a hint, whatever its severity,
+    because the panel lists errors and warnings of the rules and not hints."""
+    return "Hint" if is_hint(finding) else _LABELS[finding.severity]
 
 
 def hint_lines(findings: tuple[Finding, ...]) -> list[str]:
@@ -52,21 +74,49 @@ def hint_lines(findings: tuple[Finding, ...]) -> list[str]:
 
 
 def hint_details(findings: tuple[Finding, ...]) -> str:
-    """Words every finding in full, for the tooltip of the bar."""
+    """Words every finding in full."""
     return "\n".join(
-        f"{_LABELS[f.severity]}: {f.message} ({f.rule_id})" for f in findings
+        f"{_label(f)}: {f.message} ({f.rule_id})" for f in findings
     )
+
+
+def bar_tooltip(findings: tuple[Finding, ...]) -> str:
+    """Words the tooltip of the bar: every finding, and what the kinds mean.
+
+    Args:
+        findings: The findings about one object, most severe first.
+
+    Returns:
+        The full text of each finding, the difference between a finding and
+        a hint, and the click that opens the panel when there is something
+        for it to open.
+    """
+    lines = [hint_details(findings), "", KINDS_TIP]
+    if linked_finding(findings) is not None:
+        lines.append("Click to open it in the Validation panel.")
+    return "\n".join(lines)
+
+
+def linked_finding(findings: tuple[Finding, ...]) -> Finding | None:
+    """Picks the finding that a click on the bar opens in the panel.
+
+    Args:
+        findings: The findings about one object, most severe first.
+
+    Returns:
+        The first error or warning, or None when there are only hints,
+        because the panel does not list hints.
+    """
+    return next((f for f in findings if is_listed(f)), None)
 
 
 def _lines(findings: tuple[Finding, ...] | list[Finding]) -> list[str]:
     lines = [
-        f"{_LABELS[f.severity]}: {f.message} ({f.rule_id})"
-        for f in findings[:MAX_SHOWN]
+        f"{_label(f)}: {f.message} ({f.rule_id})" for f in findings[:MAX_SHOWN]
     ]
     if len(findings) > MAX_SHOWN:
         lines.append(
-            f"... and {len(findings) - MAX_SHOWN} more. "
-            "The Validation dock lists all of them"
+            f"... and {len(findings) - MAX_SHOWN} more. Hover to read them"
         )
     return lines
 
@@ -80,6 +130,27 @@ def _topic(finding: Finding) -> str:
     if finding.attribute is None:
         return finding.rule_id
     return metamodel_name(type(finding.subject), finding.attribute)
+
+
+class FindingLinks(QObject):
+    """Tells the main window that a bar asked to open a finding.
+
+    The bars live in tabs, which know nothing of the panel, so they send the
+    request here. The window connects `opened` once.
+
+    Attributes:
+        opened: Emitted with the package and the `Finding` to open.
+    """
+
+    opened = pyqtSignal(object, object)
+
+
+_links = FindingLinks()
+
+
+def finding_links() -> FindingLinks:
+    """Returns the one place where bars ask to open a finding."""
+    return _links
 
 
 class HintsBar(QFrame):
@@ -98,6 +169,9 @@ class HintsBar(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 2, 4, 2)
         layout.addWidget(self.label)
+        # A click on the text must reach the bar, and a drag still selects it.
+        self.label.installEventFilter(self)
+        self._linked: Finding | None = None
         # The service names its listeners by identity. A token outlives the
         # bar, so that the bar can still be removed when it is destroyed.
         self._token = object()
@@ -128,6 +202,37 @@ class HintsBar(QFrame):
             self._package = package
         self._enter()
         self._update()
+
+    @property
+    def linked(self) -> Finding | None:
+        """The finding that a click opens in the Validation panel, if any."""
+        return self._linked
+
+    def open_linked(self) -> None:
+        """Asks the window to open the linked finding in the panel."""
+        if self._linked is not None and self._package is not None:
+            finding_links().opened.emit(self._package, self._linked)
+
+    def mouseReleaseEvent(self, a0: QMouseEvent | None) -> None:
+        """Opens the linked finding when the bar is clicked."""
+        if a0 is not None and a0.button() == Qt.MouseButton.LeftButton:
+            self.open_linked()
+        super().mouseReleaseEvent(a0)
+
+    def eventFilter(self, a0: QObject | None, a1: QEvent | None) -> bool:
+        """Treats a click on the text as a click on the bar.
+
+        A release after a drag that selected text is not a click, so that the
+        text can still be selected and copied.
+        """
+        if (
+            a0 is self.label
+            and a1 is not None
+            and a1.type() == QEvent.Type.MouseButtonRelease
+            and not self.label.hasSelectedText()
+        ):
+            self.open_linked()
+        return super().eventFilter(a0, a1)
 
     # -- internals --------------------------------------------------------
 
@@ -170,8 +275,15 @@ class HintsBar(QFrame):
             findings = hints_for(service.hint_report, self._target)
         if not findings:
             self.label.clear()
+            self._linked = None
             self.hide()
             return
+        self._linked = linked_finding(findings)
         self.label.setText("\n".join(hint_lines(findings)))
-        self.setToolTip(hint_details(findings))
+        self.setToolTip(bar_tooltip(findings))
+        self.setCursor(
+            Qt.CursorShape.PointingHandCursor
+            if self._linked is not None
+            else Qt.CursorShape.ArrowCursor
+        )
         self.show()
