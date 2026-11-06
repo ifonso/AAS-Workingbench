@@ -48,7 +48,7 @@ The rationale for the first two is in [ADR 0005](../software/adr/0005-metamodel-
 | D11 | Delete | Shows usages when something references the target, then offers to remove those references or leave them. |
 | D12 | Cut | Stays immediate, as today. Undo restores it. |
 | D13 | Duplicates on paste | idShort gets a numeric suffix automatically (`Name_1`). Copied Identifiables get a new id. Cut then paste keeps the id, because changing it would leave references dangling, a defect the original has. |
-| D14 | Generated ids | `urn:uuid:<uuid4>`, replacing the fixed `https://www.example.com/`. |
+| D14 | Generated ids | `urn:uuid:<uuid4>`, replacing the fixed `https://www.example.com/`. A template that the user sets (`urn:x:DDDD`) replaces it, see [ADR 0019](../software/adr/0019-defaults-and-notices-of-new-objects.md). |
 | D15 | File location | New files default to `/aasx/files/<name>`. Collisions are shown, and `File.value` follows the stored name. |
 | D16 | Reorder | Offered within Submodel, SMC, SML, Entity, Operation variables, and annotations, where probes show order surviving a JSON and XML round trip. Warn when index references (AASd-128) are affected. Concept description sort only changes the view. |
 | D17 | SML child idShort | Hide the SDK's generated names, as today. Never serialize them. |
@@ -299,20 +299,16 @@ Nothing here was started in WP12, because each needs a design.
    Counting `idShort` in the XML of the file against the elements that were loaded, 37 of the 49 load fewer, mostly one (a duplicate concept description), but the three Bill of Materials extension templates load 20 of 40 and the Hierarchical Structures template 3 of 13. This is a count of `idShort` entries, so it is an estimate.
    The editor does not tell what was dropped, and the corpus test cannot see it.
    A reader that lists the skipped objects needs the SDK, or a reader of our own, which D3 rules out.
-2. **A Blob cannot be converted between Base64 text and bytes** (F-EDT-04 AC9, F-EDT-10 AC14 and AC15).
-   A Blob that holds Base64 text is common, and the user has to decode it elsewhere.
 3. **No selection panel, and no limits for a mixed selection** (F-EDT-09 AC1, AC18, AC19).
    Move and Delete are offered for the variables of an Operation of mixed directions, where the original offers neither.
    Several supplementary files cannot be removed at once.
    The way a selection moves (each row one place, not made adjacent) is not recorded as a decision (AC3, AC4).
 4. **No push and pop of editing locations** (F-EDT-01 AC10, AC11).
    Back after Jump to target and the Back of the tabs cover most of it.
-5. **Defaults and notices that the original gives for new objects** (F-EDT-04 AC2, AC17; F-EDT-06 AC1, AC5; F-EDT-07 AC12; F-EDT-02 AC11, AC13).
-   Default languages of a new MultiLanguageProperty, the notice for the asset id of an Entity, "Create w/ default" and the notices about missing descriptions, ids made from a template (`urn:x:DDDD`), a hint for a blank name of an extension, `Batch` as an asset kind.
 6. **Concept descriptions** (F-EDT-05 AC7, AC10, AC18; F-EDT-03 AC15; F-EDT-05 AC14; F-EDT-11 AC15, AC16).
    Delete a value list as a whole, the orders "List index", "By SubmodelElements" and "Structured", SAMM, the embedded display of a description in the panel of an element, "Create empty", and a message where the action is only off.
 7. **Small gaps in the editors.**
-   Move language entries (F-EDT-06 AC15), a read-only category (AC16), a fallback text field when the clipboard is denied (F-EDT-08 AC8), Copy recursively of an AAS (F-EDT-02 AC3, AC4), delete the thumbnail (AC14), a file filter in the reference picker (F-EDT-11 AC5), paste into an existing qualifier (F-EDT-07 AC5).
+   A fallback text field when the clipboard is denied (F-EDT-08 AC8), Copy recursively of an AAS (F-EDT-02 AC3, AC4), delete the thumbnail (AC14), a file filter in the reference picker (F-EDT-11 AC5).
 8. **The tabs still speak Python.**
    The type column shows `NoneType`, `Namespa...` and `Constrain...`, the type hint column shows `Optional[Union[Duration, DateTime, ...]]`, attributes are in snake case (`value_type`, `display_name`), and list entries are called `DictItem 1`.
    A new user cannot tell what these mean, and the original names the AAS attribute and its description.

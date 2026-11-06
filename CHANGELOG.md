@@ -104,6 +104,17 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Read mode shows no row for an attribute that has no value (F-EDT-01 AC1). Edit mode brings the rows back, and the tabs change with the mode.
 - The changed marker follows the saved state in all tabs (F-EDT-01 AC3). A save clears it, and so does an undo that returns to the saved state. The package tree and every tab read the same marks, and the objects above a changed object are marked too.
 - `validate(..., tolerant=True)` and `validate_package(source, with_hints=...)`, and `SaveGate` in `application/validation.py`.
+- The context menu of a Blob has "Blob: Base64 text to bytes" and "Blob: Bytes to Base64 text" (F-EDT-04 AC9, F-EDT-10 AC14 and AC15). A Blob that holds Base64 text becomes the bytes it spells, and the other way round, as one undo step. Text that is no Base64 is refused with the character or the length that is wrong, and nothing changes. This is about the content of the Blob. A file stores the bytes of a Blob as Base64 anyway. There is no question first, because undo takes it back.
+- A setting of default languages (Settings, `en` at first, such as `en,de`). A new MultiLanguageProperty starts with an empty row for each of them, a new row of a language list and of an IEC 61360 text starts with the first one that no row has, and a description made from a semantic id uses the first (F-EDT-04 AC2). An empty row is left out when the element is made, because the SDK refuses an empty text, and no row with a text means no value.
+- Creating a display name or a description starts with one row in the first default language, as "Create w/ default" does in the original (F-EDT-06 AC1).
+- Templates for generated ids, one for shells, global asset ids, submodels of each kind, and concept descriptions (Settings). `urn:x:DDDD` gives `urn:x:` and four digits, `X` is a hexadecimal digit and `A` a letter, and a backslash makes the next character literal. Generate in the create dialogs and in Rename id, and the id of a new object, follow them. Without a template the id is a `urn:uuid:` as before (F-EDT-06 AC5, F-EDT-03 AC2). A submodel dialog takes the id of the other kind when the kind changes, unless the id was typed.
+- Notices in the bar of hints for a Referable without a display name or a description, and for one that has one language only (F-EDT-06 AC1), and for a self-managed entity without a global asset id (F-EDT-04 AC17). They are Hints, and never block.
+- A new Entity is self-managed, and its form says "Please choose the global identifier for the SelfManagedEntity" until the global asset id has text (F-EDT-04 AC17).
+- The form of an extension says that it needs a name while the name is blank (F-EDT-07 AC12). The dialog of a specific asset id refused a blank name already.
+- Move up, down, to top, and to end move language entries in a display name, a description, or the value of a MultiLanguageProperty, as one undo step. The order is written to the file (F-EDT-06 AC15).
+- "Paste qualifier from clipboard into this qualifier" in the context menu of a qualifier row (F-EDT-07 AC5). The type, value type, value, value id, and semantic ids are taken over in one undo step. The kind stays, as in the original. A type that another qualifier has is refused (AASd-021), and so is text that is no qualifier, with the reason.
+- Tests for the output variables and the in/out variables of an Operation: a variable goes into the list it was added under only (F-EDT-04 AC18), for each of the three lists.
+- Tests that deleting the last specific asset id of a shell leaves no list in the file, and that the last asset id of a shell without a global asset id stays (F-EDT-02 AC13).
 
 ### Changed
 
@@ -133,6 +144,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The package tree and the tabs show the order that is saved in the file. They sorted every level by name, descending, so a moved element stayed where it was. Levels with a saved order, such as the elements of a submodel, show that order, and the shells, submodels and concept descriptions, which the SDK keeps in sets, are sorted by name, ascending. A click on a column header still sorts the whole tree, and a move puts the tree back to the saved order. The sort is no longer restored from the last session. See [ADR 0011](docs/software/adr/0011-natural-order-in-trees.md).
 - Copying an element or an object puts its JSON on the system clipboard instead of its display text.
 - The actions of the tree views update when the selection, the rows, or the paste buffer change.
+- A new AAS has the asset kind Instance. Package Explorer makes NotApplicable there, Type in another place, and says in its own notice that Instance is the usual choice (F-EDT-02 AC1, [ADR 0019](docs/software/adr/0019-defaults-and-notices-of-new-objects.md)).
+- The category is shown read-only, and only when it has content (F-EDT-06 AC16). A tab and the package tree refuse to set or change it, and say that it is deprecated. Delete removes it, as one undo step, and a new element has no category row. Before, it was editable, and an empty row was there to create it.
 
 ### Fixed
 
@@ -213,7 +226,10 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The tabs show Python vocabulary: `NoneType`, `Namespa...`, `Optional[Union[...]]` in the type hint column, attributes in snake case, and `DictItem 1` for the entries of a mapping.
 - The preview of a stored image or document takes half of its tab, and squeezes the attribute table at the default window size.
 - The validation rules check what the SDK leaves open, and cannot check AASd-012, or AASd-006 and AASd-007 when `valueId` points outside the package.
-- Hints cover the cases that the rules and five hint rules know. The notices of Package Explorer about missing descriptions, semantic ids and display names, and the hints for the Qualifier and data specification sections, are not done.
+- Hints cover the cases that the rules and ten hint rules know. The notices of Package Explorer about missing semantic ids, and the hints for the Qualifier and data specification sections, are not done.
+- A row of a language list cannot hold an empty text, because the SDK refuses one (and an empty list). "Create w/ default" and the default languages give rows that wait for text in the dialog, and a row that stays empty is left out. The original keeps an empty entry in the model.
+- The asset kind `Batch` is a literal of metamodel V3.2, which the SDK does not have. A file that has it is refused as a whole, and in failsafe mode the shell is left out and the package is partial (F-EDT-02 AC11).
+- The dialog that makes an element still has a field for the category, because the SDK takes it in the constructor. The tabs and the package tree show it read-only afterwards.
 - An attribute row that holds a text or number is not coloured as changed, because a mark names an object and Python shares texts. The object above it is marked.
 - The Validation dock lists the package check, not the hints. Fixing a finding (F-PKG-04 Fix) is not done beyond Fix References.
 - The rules run in the thread of the UI. A package ten times the size of the largest template would take about half a second after each pause in editing.

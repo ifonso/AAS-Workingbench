@@ -79,10 +79,13 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/value_types.py` | Parses, formats, and checks text for each of the 31 XSD value types, using `from_xsd` and `xsd_repr` of the SDK and the checks it lacks. Also converts a value through its text, and checks the limits of a Range. |
 | `domain/typed_values.py` | The rules for the attributes that follow a `value_type` (Property, Range, Qualifier, Extension): text becomes a value, a Range keeps min at or below max, and a change of the type plans the converted values or refuses. Also recognizes the type hints of values and value types. |
 | `domain/language_tags.py` | Checks that a language tag is well-formed BCP 47, with the reason when it is not. Standard library only, and the same syntax as the SDK. |
-| `domain/blob_content.py` | Shows the bytes of a Blob as text or as hex, and reads them back. Keeps Windows line breaks. |
+| `domain/blob_content.py` | Shows the bytes of a Blob as text or as hex, and reads them back. Keeps Windows line breaks. Also turns Base64 text into the bytes it spells and back, with the reason when the text is no Base64. |
 | `domain/list_children.py` | What a new child of a SubmodelElementList gets from the list: its type, value type, and semantic id. |
 | `ui/value_editor.py` | `ValueTypeBox`, `ValueLineEdit`, `ValueEdit`, `BinaryEdit`, and `ValueEditDialog`. They only show the rules of the domain modules (see [Entering values](#entering-values)). |
-| `ui/blob_actions.py` | The context menu actions that load and save the bytes of a Blob. Registered by `__main__.py` with `register_blob_actions`. |
+| `ui/blob_actions.py` | The context menu actions that load, save, and convert the bytes of a Blob (Base64 text to bytes and back). Registered by `__main__.py` with `register_blob_actions`. |
+| `domain/default_languages.py`, `domain/id_templates.py`, `ui/user_defaults.py` | The setting of default languages and the templates of generated ids (`urn:x:DDDD`) as texts that are read and checked, and the one place that reads them from `AppSettings` (see [ADR 0019](adr/0019-defaults-and-notices-of-new-objects.md)). |
+| `application/operations/language_order.py` | `plan_language_move` and `language_move_command`: moving the entries of a multi-language text by their language, with `ReorderLanguages` of `edits.py`. |
+| `application/operations/paste_qualifier.py` | `plan_paste_into_qualifier` and `paste_qualifier_commands`: taking the clipboard qualifier into an existing one, which keeps its kind. |
 | `domain/replacement.py` | What replacing an element by a new one would do: `ReplacementPlan` with the new element, the `Loss` list, notes, and where the items went. Found without changing anything. |
 | `domain/element_copy.py` | Copies of elements without their parent, the attributes all elements share, and how to write a value for a message. |
 | `domain/conversion.py` | Which element types convert to which, and what each conversion keeps and loses (see [Replacing an element](#replacing-an-element)). |
