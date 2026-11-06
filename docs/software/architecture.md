@@ -87,6 +87,8 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/operations/` | The plans and commands that keep references intact: `rename.py`, `delete.py`, `fix.py`, and `references.py`, which turns reference changes into commands. |
 | `ui/reference_dialogs.py` | The dialogs for renames, deletes and repairs: the preview of references, the rename dialog with Fix and Generate, and the delete dialog with the usages. |
 | `ui/reference_actions.py`, `ui/delete_flow.py` | The actions Rename id, Rename idShort, Sync idShort and Fix References, and the questions that come before a delete. |
+| `domain/validation/` | The rules over BaSyx objects: `rules/` has 20 rules in six modules, `context.py` walks the package once for all of them, `engine.validate` runs them, `findings.py` has `Finding` and `ValidationReport`, and `coverage.py` records for each constraint whether the SDK, a rule, or neither enforces it (see [Validation](#validation)). |
+| `application/validation.py` | `validate_package(source)` runs the rules on anything that has `objects` and `files`, such as the result of `Package.save_source()`. `save_check_for(report)` maps a report to the blockers and warnings of a save (D5). |
 
 ### How saving works
 
@@ -238,6 +240,16 @@ register_action(
 - `register_reference_actions()` adds the actions to the registry. `__main__.py` calls it before the first view exists.
 - A feature that moves or replaces elements must keep references right in the same step. For positions in a list, use `rewrite_keys` with a `KeyRename` for each item that moved.
 
+### Validation
+
+[ADR 0010](adr/0010-validation-findings.md) records the design, and [Validation](validation.md) has the constraint table and the results on the templates.
+
+- A `Rule` has an id (`AASd-nnn` or `EDT-...`), a title, its source, and a function from a `ValidationContext` to `Finding`s. `ALL_RULES` lists them, and `validate(objects, stored_files)` returns a `ValidationReport`, errors first.
+- A finding names the object that is wrong (`subject`) and the shell, submodel, description or element to select (`anchor`). `blocks_save` is true only for the two findings that the SDK cannot write as AASX: a File with no stored file and a File under an annotation. They use `domain.file_references`, as `application/save.py` does.
+- Add a rule by writing a function in a module of `rules/`, adding a `Rule` to its `RULES`, and a row to `coverage.COVERAGE` or `EDITOR_RULE_REASONS`. A test fails when the rules and the table disagree. Write the failing case with an edit or an argument that the SDK does not check, because the SDK refuses most invalid objects when they are made.
+- A rule goes over the views of the context, so a run is linear: 43 ms for Purchase Order.
+- Nothing runs the rules on a save or shows them yet. WP5b adds the dock and merges `save_check_for(report)` into `check_save`.
+
 ### Working with legacy code
 
 - Put new features in the layers, and connect them to the legacy UI with a thin adapter.
@@ -261,3 +273,4 @@ See [ADR 0003](adr/0003-python-style.md).
 
 - [Decision records](adr/README.md)
 - [Feature parity roadmap](feature-parity.md)
+- [Validation](validation.md)
