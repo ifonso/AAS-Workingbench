@@ -212,7 +212,9 @@ class TestIdEdit:
                 table, "concept_descriptions", table.index(0, 0)
             ),
         )
-        replacement = model.ConceptDescription("urn:test:cd2", "Concept")
+        replacement = model.ConceptDescription(
+            id_="urn:test:cd2", id_short="Concept"
+        )
 
         edited = table.setData(concept, replacement, EDIT)
 

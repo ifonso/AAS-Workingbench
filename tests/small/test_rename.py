@@ -484,7 +484,9 @@ class TestReplaceIdentifiable:
     ) -> None:
         linked = make_linked()
         original = snapshot(linked.store)
-        replacement = model.ConceptDescription("urn:test:cd2", "Concept")
+        replacement = model.ConceptDescription(
+            id_="urn:test:cd2", id_short="Concept"
+        )
         stack = CommandStack()
 
         stack.push(
@@ -507,7 +509,7 @@ class TestReplaceIdentifiable:
         self, observer: ModelChangeObserver
     ) -> None:
         linked = make_linked()
-        replacement = model.ConceptDescription(MAIN_ID, "Concept")
+        replacement = model.ConceptDescription(id_=MAIN_ID, id_short="Concept")
 
         with pytest.raises(DuplicateIdError):
             ReplaceIdentifiable(
