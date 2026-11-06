@@ -33,6 +33,11 @@ def main():
     # causes the application to crash during initialization.
     initialize_all_icons()
 
+    # Features add their actions before the first view exists.
+    from aas_editor.ui.blob_actions import register_blob_actions
+
+    register_blob_actions()
+
     from aas_editor.editorApp import EditorApp as CurrentApp
 
     # Check if a file path is provided as an argument
