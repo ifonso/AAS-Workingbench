@@ -45,6 +45,10 @@ from aas_editor.application.edits import (
     SetValueType,
 )
 from aas_editor.application.listeners import Subscription
+from aas_editor.application.file_transfer import copy_source, with_copied_files
+from aas_editor.application.supplementary_files import FileOperationError
+from aas_editor.application.supplementary_files import RemoveFile
+from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 from aas_editor.domain.containers import is_list_like
 from aas_editor.domain.language_tags import check_language_tag
 from aas_editor.domain.list_settings import fixed_attribute_hint
@@ -109,6 +113,7 @@ REFUSALS = (
     InvalidValueError,
     AASConstraintViolation,
     RenameError,
+    FileOperationError,
 )
 
 # What `renameCommand` returns for an edit that is no rename.
@@ -288,8 +293,27 @@ class StandardTable(QAbstractItemModel):
         if command is None:
             itemInitKwargs = self._getKwargsForItemInit(obj, parent)
             return self._addItem(parent, itemInitKwargs, row)
-        self._run(parent, command)
+        self._run(parent, self._withCopiedFiles(command, obj, parent))
         return self._indexShowing(parent, obj)
+
+    def _withCopiedFiles(
+        self, command: Command, obj, parent: QModelIndex
+    ) -> Command:
+        """Make the add of copied objects bring their stored files along.
+
+        Objects that were copied from another package refer to files of that
+        package. The files are copied in the same undo step.
+        """
+        package = self._packageOf(parent)
+        if package is None:
+            return command
+        return with_copied_files(
+            command,
+            obj,
+            copy_source.store,
+            package.fileStore,
+            observer_for(package),
+        )
 
     def _getKwargsForItemInit(
         self, obj: Union[Package, "SubmodelElement", Iterable], parent
@@ -890,7 +914,15 @@ class StandardTable(QAbstractItemModel):
 
         for currRow in range(row + count - 1, row - 1, -1):
             child = parentItem.children()[currRow]
-            if isMemberContainer(parentObj):
+            if isinstance(parentObj, AbstractSupplementaryFileContainer):
+                # A stored file is removed from the container of the package.
+                self._run(
+                    parent,
+                    RemoveFile(
+                        self._observerFor(parent), parentObj, child.obj.name
+                    ),
+                )
+            elif isMemberContainer(parentObj):
                 # A mapping member is a pair, and the item shows it as such.
                 self._run(
                     parent,
