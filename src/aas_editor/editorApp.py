@@ -518,9 +518,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         for pkg in self.packTreeModel.openedPacks():
             # Per-package flag: the window modified flag is shared and gets reset
             # whenever any package is saved or closed
-            if pkg.changed and pkg.file and pkg.file.exists():
+            if pkg.changed or pkg.recoveryWritten:
                 try:
-                    pkg.write_recovery(RECOVERY_DIR)
+                    pkg.update_recovery(RECOVERY_DIR)
                 except Exception:
                     # Never let a failed recovery write abort the crash handler or the
                     # timer, but log it: a silent failure means the user believes they

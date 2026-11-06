@@ -777,7 +777,6 @@ class TreeView(BasicTreeView):
         self.selectionModel().currentChanged.connect(self.onCurrentChanged)
         self.setCurrentIndex(self.rootIndex())
         self.model().dataChanged.connect(self.onDataChanged)
-        self.model().rowsAboutToBeRemoved.connect(self.onRowsAboutToBeRemoved)
         self.model().rowsInserted.connect(self.onRowsInserted)
         self.model().rowsRemoved.connect(self.onRowsRemoved)
         history = getattr(self.sourceModel(), "historyChanged", None)
@@ -801,6 +800,13 @@ class TreeView(BasicTreeView):
     # removes and adds all of them. The view remembers what was expanded and
     # which row was current, and puts that back, so that a tab that follows a
     # change of another tab keeps its state.
+
+    def setModel(self, model) -> None:
+        if model is not None:
+            # Connected before the view makes its selection model, which
+            # would otherwise move the current index away first.
+            model.rowsAboutToBeRemoved.connect(self.onRowsAboutToBeRemoved)
+        super().setModel(model)
 
     def onRowsAboutToBeRemoved(
         self, parent: QModelIndex, first: int, last: int

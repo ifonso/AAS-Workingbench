@@ -49,6 +49,7 @@ class Package:
         """:raise TypeError if file has wrong file type"""
         # The undo history of the package, and the state that was saved last.
         # It refuses changes while the editor is in Read mode (D18).
+        self.recoveryWritten = False
         self.commandStack = CommandStack(
             PACKAGE_HISTORY_LIMIT, lambda: edit_mode().is_editing
         )
@@ -266,12 +267,29 @@ class Package:
             raise
         return rec_path
 
+    def update_recovery(self, recovery_dir: Path) -> None:
+        """Keep the recovery file as current as the unsaved state.
+
+        A package with unsaved changes gets a recovery file. One that is clean
+        again, because the user saved or undid everything back to the saved
+        state, loses it, so that the next start does not offer to restore
+        changes that were taken back.
+        """
+        if self.changed:
+            if self.file and self.file.exists():
+                self.write_recovery(recovery_dir)
+                self.recoveryWritten = True
+        elif self.recoveryWritten:
+            self.delete_recovery(recovery_dir)
+            self.recoveryWritten = False
+
     def delete_recovery(
         self, recovery_dir: Path, for_file: Path = None
     ) -> None:
         # for_file lets callers target a previous path (e.g. after Save-As mutated self.file)
         file = self.file if for_file is None else Path(for_file)
         stem = self._recovery_stem(file)
+        self.recoveryWritten = False
         for suffix in (".json", ".aasx", ".meta.json", ".tmp.json"):
             candidate = recovery_dir / f"{stem}{suffix}"
             candidate.unlink(missing_ok=True)
