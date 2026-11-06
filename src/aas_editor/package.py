@@ -159,7 +159,18 @@ class Package:
         """
         target = Path(file).absolute() if file else self.file
         write_package(target, self.save_source(), self.save_options())
+        self.recordSaved(target)
+
+    def recordSaved(self, target: Path):
+        """Records that the package was written to the target.
+
+        ``self.file`` changes only here, after the whole package was written.
+        The source file does not change: a partial package still must not
+        overwrite the file it was read from.
+        """
         self.file = target
+        # What is on disk now is the baseline for files added later.
+        self._loadedFileHashes = self._file_hashes()
 
     def _recovery_stem(self, for_file: Path = None) -> str:
         file = self.file if for_file is None else Path(for_file)

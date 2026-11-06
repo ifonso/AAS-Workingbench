@@ -41,14 +41,15 @@ from PyQt6.QtWidgets import (
     QWidget,
     QApplication,
 )
-from basyx.aas.adapter.aasx import AASXReader, DictSupplementaryFileContainer
 from basyx.aas.adapter.json import read_aas_json_file, AASToJsonEncoder
 from basyx.aas.adapter.xml import read_aas_xml_file
-from basyx.aas.model import SetObjectStore, Submodel, Referable, Identifiable
+from basyx.aas.model import Submodel, Referable, Identifiable
 
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 from aas_editor.delegates import EditDelegate
+from aas_editor.application.save import SaveStatus, save
+from aas_editor.infrastructure.package_io import read_package, write_package
 from aas_editor.package import Package, StoredFile
 from aas_editor.settings import (
     FILTER_AAS_FILES,
@@ -97,6 +98,11 @@ from aas_editor.utils.util import (
 )
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.treeviews.base import HeaderView, TreeView
+from aas_editor.ui.save_warnings import (
+    confirm_save,
+    show_missing_files,
+    show_save_refused,
+)
 from aas_editor import dialogs
 
 
@@ -243,7 +249,7 @@ class PackTreeView(TreeView):
         jsonFiles = [file for file in sm_templates_path.rglob("*.json")]
         smFiles = aasxFiles + xmlFiles + jsonFiles
 
-        # Read the aas files and store it in SetObjectStore in dictionary fileObjDict.
+        # Read the aas files and store it in SetIdentifiableStore in dictionary fileObjDict.
         for smFile in smFiles:
             try:
                 fileType = smFile.suffix.lower().strip()
@@ -252,10 +258,9 @@ class PackTreeView(TreeView):
                 elif fileType == ".json":
                     objStore = read_aas_json_file(smFile.as_posix())
                 elif fileType == ".aasx":
-                    objStore = SetObjectStore()
-                    fileStore = DictSupplementaryFileContainer()  # prosto tak
-                    reader = AASXReader(smFile.as_posix())
-                    reader.read_into(objStore, fileStore)
+                    # Failsafe, as before. The tolerant reader also closes
+                    # the file and opens templates with missing files.
+                    objStore = read_package(smFile, failsafe=True).objects
                 else:
                     raise TypeError("Wrong file type:", smFile.suffix)
                 # Save path to the file relative to the submodel folder
@@ -386,6 +391,15 @@ class PackTreeView(TreeView):
             statusTip="Save all files",
             triggered=lambda: self.saveAll(),
             enabled=True,
+        )
+
+        self.linkSubmodelsAct = QAction(
+            "Add references to all Submodels to the first AAS",
+            self,
+            statusTip="Add a reference to every Submodel of the package "
+            "to the first AAS. Saving does not do this.",
+            triggered=lambda: self.linkAllSubmodelsToFirstAas(),
+            enabled=False,
         )
 
         self.closeAct = QAction(
@@ -531,6 +545,7 @@ class PackTreeView(TreeView):
         for act in self.saveInActs:
             saveInMenu.addAction(act)
         self.attrsMenu.addAction(self.saveAllAct)
+        self.attrsMenu.addAction(self.linkSubmodelsAct)
         self.attrsMenu.addAction(self.closeAct)
         self.attrsMenu.addAction(self.closeAllAct)
         # self.attrsMenu.insertAction(self.addAct, self.addExistingSubmodelsAct)
@@ -627,6 +642,7 @@ class PackTreeView(TreeView):
         for act in self.saveInActs:
             act.setEnabled(self.isSaveOk())
         self.saveAllAct.setEnabled(self.isSaveAllOk())
+        self.linkSubmodelsAct.setEnabled(self.isSaveOk())
 
     def updateCloseActs(self, index: QModelIndex):
         self.closeAct.setEnabled(self.isCloseOk())
@@ -835,6 +851,8 @@ class PackTreeView(TreeView):
                     return None
             absFile = pack.file.absolute().as_posix()
             self.updateRecentFiles(absFile)
+            if pack.missingFiles:
+                show_missing_files(pack.name, pack.missingFiles, self)
         except Exception as e:
             self.removeFromRecentFiles(file)
             widgets.messsageBoxes.ErrorMessageBox.withTraceback(
@@ -867,7 +885,22 @@ class PackTreeView(TreeView):
         pack = self.currentIndex().data(PACKAGE_ROLE) if pack is None else pack
         originalFile = pack.file  # write(file) may change pack.file on Save-As
         try:
-            pack.write(file)
+            target = Path(file).absolute() if file else pack.file
+            outcome = save(
+                pack.save_source(),
+                target,
+                pack.save_options(),
+                write_package,
+                lambda check: confirm_save(check, self),
+            )
+            if outcome.status is SaveStatus.REFUSED:
+                show_save_refused(outcome.check, self)
+                return False
+            if outcome.status is SaveStatus.CANCELLED:
+                return False
+            # Only a written package changes its file, so a failed Save As
+            # leaves the target as it was.
+            pack.recordSaved(target)
             pack.changed = False
             pack.delete_recovery(RECOVERY_DIR, for_file=originalFile)
             self.updateRecentFiles(pack.file.absolute().as_posix())
@@ -889,6 +922,24 @@ class PackTreeView(TreeView):
                 self, f"Package couldn't be saved: {file or originalFile}: {e}"
             ).exec()
         return False
+
+    def linkAllSubmodelsToFirstAas(self) -> int:
+        """Adds a reference to every Submodel to the first AAS (D8).
+
+        Saving used to do this on its own. It is an explicit action now.
+
+        :return: the number of references that were added
+        """
+        pack = self.currentIndex().data(PACKAGE_ROLE)
+        added = pack.all_submodels_to_aas()
+        if added:
+            pack.changed = True
+            (packItem,) = self.model().match(
+                QModelIndex(), OBJECT_ROLE, pack, hits=1
+            )
+            self.model().setData(packItem, NOT_GIVEN, UPDATE_ROLE)
+            self.updateWindowModified()
+        return added
 
     def savePackInTypeWithDialog(
         self, filetype=None, pack: Package = None
@@ -925,7 +976,10 @@ class PackTreeView(TreeView):
 
     def saveAll(self):
         for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
-            self.savePack(pack)
+            # An unchanged package has nothing to save, and may be one that
+            # the save refuses, such as a package with missing files.
+            if pack.changed:
+                self.savePack(pack)
         self.updateWindowModified()
 
     def closeFileWithDialog(self):
@@ -959,7 +1013,10 @@ class PackTreeView(TreeView):
                     )
                     res = dialog.exec()
                     if res == QMessageBox.StandardButton.Save:
-                        self.savePack()
+                        # A save that was refused, cancelled, or failed must
+                        # not close the package and lose its changes.
+                        if not self.savePack():
+                            return
                     elif res == QMessageBox.StandardButton.Cancel:
                         return
                     elif res == QMessageBox.StandardButton.Discard:
@@ -990,7 +1047,9 @@ class PackTreeView(TreeView):
             res = dialog.exec()
             if res == QMessageBox.StandardButton.Save:
                 for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
-                    self.savePack(pack)
+                    # Do not close anything when a save did not happen.
+                    if pack.changed and not self.savePack(pack):
+                        return
             elif res == QMessageBox.StandardButton.Cancel:
                 return
             elif res == QMessageBox.StandardButton.Discard:
