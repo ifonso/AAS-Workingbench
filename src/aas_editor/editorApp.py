@@ -20,7 +20,8 @@ from PyQt6.QtWidgets import *
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 import aas_editor.widgets.groupBoxes
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import problem_style
+from aas_editor.ui.theme import FLUENT_THEMES, theme_manager
 from aas_editor.settings.app_settings import *
 from aas_editor.utils.recovery import (
     find_recovery_files,
@@ -47,7 +48,6 @@ from aas_editor.widgets import AddressLine
 from aas_editor.widgets.tab import TabWidget
 from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
-from aas_editor.utils.util import toggleStylesheet
 from aas_editor.treeviews.base import HeaderView
 from aas_editor.ui.validation_window import install_validation
 
@@ -99,7 +99,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # Permanent widget, not showMessage(): transient status tips (menu hover)
         # do not overwrite it, so the warning stays until writing recovers.
         self._recoveryStatusLabel = QLabel()
-        self._recoveryStatusLabel.setStyleSheet(PROBLEM_STYLE)
+        self._recoveryStatusLabel.setStyleSheet(problem_style())
         self._recoveryStatusLabel.hide()
         self.statusBar().addPermanentWidget(self._recoveryStatusLabel)
         self._modeStatusLabel = QLabel()
@@ -111,10 +111,13 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.openLastSessionFiles()
 
     def loadThemes(self):
+        # The old themes are style sheets, and the new ones are made from
+        # tokens, so they come first. Each id maps to the text of its entry.
         self.themes = {}
         for file in THEMES_FOLDER.iterdir():
             if file.suffix == ".qss":
                 self.themes[file.stem] = str(file)
+        self.themeLabels = {**FLUENT_THEMES, **{n: n for n in self.themes}}
         self.currTheme = DEFAULT_THEME
 
     # noinspection PyArgumentList
@@ -174,15 +177,19 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
 
         # Theme actions
         self.themeActs = []
-        for theme in self.themes:
-            self.themeActs.append(
-                QAction(
-                    theme,
-                    self,
-                    statusTip=f"Choose {theme} theme",
-                    triggered=lambda: self.toggleThemeSlot(),
-                )
+        self.themeGroup = QActionGroup(self)
+        for theme, label in self.themeLabels.items():
+            themeAct = QAction(
+                label,
+                self,
+                checkable=True,
+                checked=theme == self.currTheme,
+                statusTip=f"Choose {label} theme",
+                triggered=lambda: self.toggleThemeSlot(),
             )
+            themeAct.setData(theme)
+            self.themeGroup.addAction(themeAct)
+            self.themeActs.append(themeAct)
 
         # Edit and Read mode (D18): one switch for all open packages
         self.editModeAct = QAction(
@@ -460,12 +467,24 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
     def toggleThemeSlot(self):
         action = self.sender()
         if action:
-            self.toggleTheme(action.text())
+            self.toggleTheme(action.data())
 
     def toggleTheme(self, theme: str) -> None:
-        if theme in self.themes:
-            toggleStylesheet(self.themes[theme])
-            self.currTheme = theme
+        """Puts a theme on, and the default for a name that is unknown."""
+        if theme not in self.themeLabels:
+            theme = DEFAULT_THEME
+        if theme in FLUENT_THEMES:
+            theme_manager().apply(theme)
+        else:
+            theme_manager().apply_legacy(theme, Path(self.themes[theme]))
+        self.currTheme = theme
+        for themeAct in self.themeActs:
+            themeAct.setChecked(themeAct.data() == theme)
+        # The recovery warning stays open across a switch of theme. It does not
+        # exist yet when the theme of the last session is put on.
+        recoveryLabel = getattr(self, "_recoveryStatusLabel", None)
+        if recoveryLabel is not None:
+            recoveryLabel.setStyleSheet(problem_style())
 
     def closeEvent(self, a0: QCloseEvent) -> None:
         # Edits made in a detached tab window set the flag on that window, not on this one,

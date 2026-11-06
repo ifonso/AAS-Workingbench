@@ -517,6 +517,7 @@ Proposed only, none added now:
 ### Progress
 
 - **C, `feat/form-vocabulary`: done.** Forms read in the words of ADR 0022, with the description as the tooltip, and the add dialog of a list starts with one entry and the focus in its first field. [ADR 0026](../software/adr/0026-forms-read-in-words-of-the-metamodel.md). Not built: the "More" line for optional attributes, a new shortcut, and a new text for the "Create" button.
+- **D, done** on `feat/design-tokens`: tokens, generated style sheet, palette, and theme manager, with Fusion, as `fluent-light`, `fluent-dark`, and `fluent-system` in the theme list. The light theme is the default of a first run. `ui/colors.py` reads the tokens. [ADR 0025](../software/adr/0025-design-tokens-and-theme-architecture.md).
 
 ## 7. Decisions for the owner
 

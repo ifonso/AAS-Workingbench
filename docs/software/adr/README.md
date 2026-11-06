@@ -29,6 +29,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0022](0022-attribute-vocabulary.md) | Tabs name attributes with a vocabulary of the metamodel, and show what the editor edits unchanged | Accepted |
 | [0023](0023-actions-on-the-whole-selection.md) | Delete, cut and copy act on the whole selection, or refuse | Accepted |
 | [0024](0024-package-tree-vocabulary-and-layout.md) | The package tree and the cells read in words of the AAS, and a layout that fits the screen | Accepted |
+| [0025](0025-design-tokens-and-theme-architecture.md) | One table of design tokens makes the style sheet, the palette, and the colors of text | Accepted |
 
 | [0026](0026-forms-read-in-words-of-the-metamodel.md) | Forms read in the words of the metamodel, and adding to a list starts with its entry | Accepted |
 

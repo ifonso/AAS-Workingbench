@@ -30,8 +30,8 @@ from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QWidget
 
-from aas_editor.ui.colors import ADVISORY_STYLE
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import advisory_style
+from aas_editor.ui.colors import problem_style
 from aas_editor.domain.reference_picker import ReferenceRule
 from aas_editor.domain.reference_picker import ReferenceStatus
 from aas_editor.domain.reference_picker import class_for_key_type
@@ -57,8 +57,6 @@ _WATCHED = (
     QEvent.Type.FocusOut,
     QEvent.Type.Hide,
 )
-_PROBLEM_STYLE = PROBLEM_STYLE
-_DANGLING_STYLE = ADVISORY_STYLE
 
 
 def package_of(widget: QWidget) -> Any:
@@ -291,7 +289,7 @@ class ReferenceFieldMixin:
         reference = self.current_reference()
         if reference is None:
             self._status = None
-            self._show(self._problem, _PROBLEM_STYLE)
+            self._show(self._problem, problem_style())
             self._gate(valid=False)
             return
         self._gate(valid=True)
@@ -302,7 +300,7 @@ class ReferenceFieldMixin:
             return
         status = status_of(ReferenceIndex(objects), reference)
         self._status = status
-        self._show(status.text, _DANGLING_STYLE if status.is_dangling else "")
+        self._show(status.text, advisory_style() if status.is_dangling else "")
 
     def _show(self, text: str, style: str) -> None:
         self._status_label.setText(text)

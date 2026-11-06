@@ -47,9 +47,7 @@ from aas_editor.domain.references import describe_object
 from aas_editor.domain.rename_pattern import FILTER_NAMES
 from aas_editor.domain.rename_pattern import FIELD_NAMES
 from aas_editor.domain.rename_pattern import examples
-from aas_editor.ui.colors import PROBLEM_COLOR
-
-_REFUSED_COLOR = QColor(PROBLEM_COLOR)
+from aas_editor.ui.colors import problem_color
 
 _HELP = (
     "Text is copied as it is. A field in braces is replaced, and filters "
@@ -226,7 +224,7 @@ class ChangeAttributeDialog(QDialog):
                 item = QTableWidgetItem(text)
                 item.setToolTip(text)
                 if entry.status is EntryStatus.REFUSED:
-                    item.setForeground(QBrush(_REFUSED_COLOR))
+                    item.setForeground(QBrush(QColor(problem_color())))
                 elif entry.status in (
                     EntryStatus.SKIPPED,
                     EntryStatus.UNCHANGED,
