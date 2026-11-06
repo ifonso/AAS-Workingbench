@@ -24,6 +24,9 @@ LEFT_SHARE = 0.4
 LEFT_MIN_WIDTH = 520
 """What the tree of packages needs for its object and type columns."""
 
+TAB_MIN_WIDTH = 720
+"""What a tab needs to show a preview beside its attributes."""
+
 
 def first_run_size(
     available_width: int, available_height: int
@@ -63,19 +66,24 @@ def window_size(
     return first_run_size(available_width, available_height)
 
 
-def zone_widths(window_width: int) -> tuple[int, int]:
+def zone_widths(window_width: int, toolbar_width: int = 0) -> tuple[int, int]:
     """Returns the widths of the tree of packages and of the tabs.
 
     Args:
         window_width: The width of the window.
+        toolbar_width: The width that the toolbar of the tree needs to show
+            all of its buttons, or 0 if it is not known.
 
     Returns:
-        The tree gets a share of the window and what it needs at least, and
-        the tabs get the rest.
+        The tree gets a share of the window, what its columns need at least,
+        and the width of its toolbar if the tabs keep room for a preview
+        then. The tabs get the rest.
     """
-    left = min(
-        max(round(window_width * LEFT_SHARE), LEFT_MIN_WIDTH), window_width
-    )
+    left = max(round(window_width * LEFT_SHARE), LEFT_MIN_WIDTH)
+    if toolbar_width > left:
+        left = min(toolbar_width, window_width - TAB_MIN_WIDTH)
+        left = max(left, LEFT_MIN_WIDTH)
+    left = min(left, window_width)
     return left, window_width - left
 
 

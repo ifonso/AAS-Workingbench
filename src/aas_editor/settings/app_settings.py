@@ -75,6 +75,10 @@ WIDEST_ATTRIBUTE_NAME = "embeddedDataSpecifications"
 WIDEST_TYPE_NAME = "MultiLanguageNameType"
 ATTR_COLUMN_PADDING = 64
 TYPE_COLUMN_PADDING = 28
+# A narrow view gives them no more than this share of its width, so that the
+# value keeps room to be read and edited.
+ATTR_MAX_SHARE = 0.42
+TYPE_MAX_SHARE = 0.30
 # What the column gets when the font cannot be measured.
 ATTR_COLUMN_WIDTH = 250
 TYPE_COLUMN_WIDTH = 190
@@ -91,6 +95,9 @@ TAB_HEADER_LAYOUT_VERSION = 3
 PACK_TREE_HEADER_LAYOUT_VERSION = 1
 ZONES_LAYOUT_VERSION = 1
 PACK_TREE_OBJECT_COLUMN_WIDTH = 340
+# What the toolbar of the tree needs beyond the width of its buttons: the
+# margin of the toolbar and the frame of the tree.
+TOOLBAR_ROOM = 24
 
 DEFAULT_MAINWINDOW_SIZE = QSize(1194, 624)
 MAX_FONT_SIZE = 60

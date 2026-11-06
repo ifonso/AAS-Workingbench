@@ -72,7 +72,7 @@ def _lines(findings: tuple[Finding, ...] | list[Finding]) -> list[str]:
 
 def _grouped_line(notices: list[Finding]) -> str:
     rules = ", ".join(f.rule_id for f in notices)
-    return f"{len(notices)} hints: {rules} (hover to read them)"
+    return f"{len(notices)} hints: {rules}"
 
 
 class HintsBar(QFrame):

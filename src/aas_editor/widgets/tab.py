@@ -64,6 +64,7 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QCompleter,
     QStyledItemDelegate,
+    QSizePolicy,
 )
 
 from basyx.aas.model import Identifiable, Referable
@@ -807,9 +808,16 @@ class TabWithTreeView(QWidget):
         toolBarWidget = QWidget()
         toolBarLayout = QHBoxLayout(toolBarWidget)
         toolBarLayout.setContentsMargins(0, 0, 0, 0)
+        # The address takes what is left, and does not claim its own width.
+        # Shared out by their hints, the buttons were cut into a "..." menu
+        # while the address kept its width.
+        self.pathLine.setMinimumWidth(40)
+        self.pathLine.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed
+        )
         toolBarLayout.addWidget(self.toolBar)
         toolBarLayout.addWidget(self.pathToolBar)
-        toolBarLayout.addWidget(self.pathLine)
+        toolBarLayout.addWidget(self.pathLine, 1)
         toolBarLayout.addWidget(self.objTypeLine)
         toolBarWidget.setFixedHeight(TOOLBARS_HEIGHT)
 

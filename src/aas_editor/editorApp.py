@@ -671,7 +671,12 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             widths = [left.width(), right.width()]
         else:
             # A first run, or sizes of an earlier release: the new default.
-            widths = list(zone_widths(self.width()))
+            widths = list(
+                zone_widths(
+                    self.width(),
+                    self.toolBar.sizeHint().width() + TOOLBAR_ROOM,
+                )
+            )
         self.splitter.setSizes(widths)
 
     def applyLastSessionOrientation(self):

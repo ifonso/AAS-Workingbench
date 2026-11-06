@@ -35,6 +35,8 @@ from aas_editor.models import DetailedInfoTable
 from aas_editor.delegates import EditDelegate
 from aas_editor.settings.app_settings import (
     ATTR_COLUMN_PADDING,
+    ATTR_MAX_SHARE,
+    TYPE_MAX_SHARE,
     ATTR_COLUMN_WIDTH,
     NAME_ROLE,
     ATTRIBUTE_COLUMN,
@@ -64,6 +66,44 @@ class AttrsTreeView(TreeView):
     def __init__(self, parent=None, treeModel=DetailedInfoTable, **kwargs):
         super(AttrsTreeView, self).__init__(parent, **kwargs)
         self.treeModel = treeModel
+        # Until the user sizes a column, or a saved state does, the columns
+        # keep fitting the room that the view has.
+        self.userSizedColumns = False
+        self._fittingColumns = False
+        self.header().sectionResized.connect(self._onSectionResized)
+
+    def _onSectionResized(self, section: int, *_):
+        if not self._fittingColumns and section in (
+            ATTRIBUTE_COLUMN,
+            TYPE_COLUMN,
+        ):
+            self.userSizedColumns = True
+
+    def fitColumns(self):
+        """Size the name and type columns to their names, within the room.
+
+        The names that nearly every element shows are kept whole when the
+        view has the room. A narrow view gives the name and the type a share
+        of its width at most, so that the value, which is what is edited,
+        keeps the rest. Once the user sizes a column, nothing is refitted.
+        """
+        width = self.viewport().width()
+        if self.userSizedColumns:
+            return
+        attribute, kind = self.fittingAttributeWidth(), self.fittingTypeWidth()
+        if width > 0:
+            attribute = min(attribute, int(width * ATTR_MAX_SHARE))
+            kind = min(kind, int(width * TYPE_MAX_SHARE))
+        self._fittingColumns = True
+        try:
+            self.setColumnWidth(ATTRIBUTE_COLUMN, attribute)
+            self.setColumnWidth(TYPE_COLUMN, kind)
+        finally:
+            self._fittingColumns = False
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.fitColumns()
 
     # noinspection PyUnresolvedReferences
     def newPackItem(self, packItem):
@@ -92,9 +132,9 @@ class AttrsTreeView(TreeView):
         header.setSectionResizeMode(
             TYPE_COLUMN, QHeaderView.ResizeMode.Interactive
         )
-        self.setColumnWidth(ATTRIBUTE_COLUMN, self.fittingAttributeWidth())
+        self.userSizedColumns = False
+        self.fitColumns()
         self.setColumnWidth(VALUE_COLUMN, VALUE_COLUMN_WIDTH)
-        self.setColumnWidth(TYPE_COLUMN, self.fittingTypeWidth())
         # The type that the Python SDK declares says what the type column
         # says, in words that only a programmer reads.
         self.header().hideSection(TYPE_HINT_COLUMN)
