@@ -140,7 +140,7 @@ class SetAttribute(Command):
         if isinstance(previous, MutableSequence):
             # The SDK fills such a list again instead of replacing it, so the
             # value that was read would be the new one after the change.
-            previous = list(previous)
+            previous = list(cast("MutableSequence[Any]", previous))
         self._assign(self._value)
         self._previous = previous
         origin, self._origin = self._origin, None
