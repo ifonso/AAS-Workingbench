@@ -6,14 +6,14 @@ bundled templates and the JSON files made for these tests.
 
 import pytest
 
-from aas_editor.domain.load_report import build_report
-from aas_editor.domain.load_report import duplicate_in_other_part
 from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.load_report import Outcome
-from aas_editor.domain.load_report import parse_record
 from aas_editor.domain.load_report import RawRecord
 from aas_editor.domain.load_report import Scope
 from aas_editor.domain.load_report import Severity
+from aas_editor.domain.load_report import build_report
+from aas_editor.domain.load_report import duplicate_in_other_part
+from aas_editor.domain.load_report import parse_record
 
 PART = "/aasx/data/data.aas.xml"
 
@@ -225,8 +225,7 @@ def test_the_summary_counts_by_scope_and_names_the_kinds_of_objects() -> None:
     summary = report.summary()
 
     assert summary == (
-        "Left out: 3 objects and 1 detail. The objects are 2 concept "
-        "descriptions, 1 submodel."
+        "Left out: 3 objects (2 concept descriptions, 1 submodel) and 1 detail."
     )
 
 
@@ -247,6 +246,28 @@ def test_the_text_to_copy_has_every_issue_and_every_line_of_the_sdk() -> None:
     for record in (SUBMODEL_LOST, NESTED):
         for line in record.splitlines():
             assert f"SDK: {line}" in text
+
+
+def test_the_biggest_losses_come_first_and_the_unknown_last() -> None:
+    report = build_report(
+        [
+            error(NESTED),
+            error("what is this"),
+            error(SUBMODEL_LOST),
+            error(DUPLICATE, ""),
+        ]
+    )
+
+    ordered = [issue.scope for issue in report.by_weight()]
+
+    assert ordered == [
+        Scope.OBJECT,
+        Scope.OBJECT,
+        Scope.DETAIL,
+        Scope.OTHER,
+    ]
+    assert report.by_weight()[-1].outcome is Outcome.UNKNOWN
+    assert report.text().splitlines()[2].startswith("1. Left out submodel")
 
 
 def test_an_empty_report_is_false_and_says_nothing() -> None:

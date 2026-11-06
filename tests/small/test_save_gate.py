@@ -20,6 +20,7 @@ from aas_editor.application.save import SaveStatus
 from aas_editor.application.save import check_save
 from aas_editor.application.save import save
 from aas_editor.application.validation import SaveGate
+from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import Thumbnail
 from aas_editor.domain.validation import Finding
@@ -46,6 +47,7 @@ class FakeSource:
     core_properties: CoreProperties | None = None
     partial: bool = False
     source_file: Path | None = None
+    load_report: LoadReport = field(default_factory=LoadReport)
 
 
 class RecordingWriter:

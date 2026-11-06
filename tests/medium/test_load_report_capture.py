@@ -21,7 +21,7 @@ from tests.factories import make_shell
 from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.factories import write_aasx
-from tests.medium.failsafe_causes import TEMPLATES_DIR
+from tests.medium.load_report_measure import LOSES_A_SUBMODEL
 from tests.package_factories import FIRST_PART
 from tests.package_factories import SECOND_PART
 from tests.package_factories import SHARED_ID
@@ -30,15 +30,6 @@ from tests.package_factories import write_package_with_same_id_in_two_parts
 from aas_editor.domain.load_report import Outcome
 from aas_editor.domain.load_report import Scope
 from aas_editor.infrastructure.package_io import read_package
-
-LOSES_A_SUBMODEL = (
-    TEMPLATES_DIR
-    / "Hierarchical Structures enabling Bills of Material"
-    / "Extension based on IEC 81346"
-    / "1"
-    / "0"
-    / "IDTA 02011-1_Template_BoM_ExtensionbasedonIEC81346.aasx"
-)
 
 
 def _xml_with_equal_property_names(path: Path) -> Path:

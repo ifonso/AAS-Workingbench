@@ -33,6 +33,7 @@ import threading
 from types import TracebackType
 from typing import Any
 from typing import BinaryIO
+from typing import cast
 
 from basyx.aas import model
 from basyx.aas.adapter.aasx import AASXReader
@@ -208,10 +209,15 @@ class _TolerantReader(AASXReader):
         self._capture = capture
         self._parts: list[tuple[str, list[tuple[str, str]]]] = []
 
-    def _parse_aas_part(self, part_name: str, **kwargs: Any) -> Any:
+    def _parse_aas_part(
+        self, part_name: str, **kwargs: Any
+    ) -> model.DictIdentifiableStore[model.Identifiable]:
         if self._capture is not None:
             self._capture.part = part_name
-        parsed = super()._parse_aas_part(part_name, **kwargs)
+        parsed = cast(
+            "model.DictIdentifiableStore[model.Identifiable]",
+            super()._parse_aas_part(part_name, **kwargs),  # pyright: ignore[reportUnknownMemberType]
+        )
         self._parts.append(
             (part_name, [(type(obj).__name__, obj.id) for obj in parsed])
         )

@@ -109,6 +109,7 @@ from aas_editor.treeviews.base import HeaderView, TreeView
 from aas_editor.ui.actions import ViewKind
 from aas_editor.application.file_transfer import PackageContent
 from aas_editor.ui.file_controller import FileController, prepare_file_delete
+from aas_editor.ui.load_report_dialog import show_load_report
 from aas_editor.ui.save_warnings import (
     confirm_save,
     show_missing_files,
@@ -880,7 +881,10 @@ class PackTreeView(TreeView):
                 msgBox.setInformativeText(
                     "The file might not align with the official schema. "
                     "Verify with the Tools/compliance tool for specifics. \n\n"
-                    "Proceeding may result in missing or incorrect objects. Continue anyway?"
+                    "Proceeding opens the package without the content that the "
+                    "SDK cannot read, and then lists what was left out. The "
+                    "file itself stays unchanged and cannot be overwritten. "
+                    "Continue anyway?"
                 )
                 msgBox.setStandardButtons(
                     QMessageBox.StandardButton.Cancel
@@ -897,6 +901,10 @@ class PackTreeView(TreeView):
             self.updateRecentFiles(absFile)
             if pack.missingFiles:
                 show_missing_files(pack.name, pack.missingFiles, self)
+            # What the SDK left out. It can be a loss in a package that opened
+            # strictly too, when two parts share an id. It is shown again from
+            # the context menu of the package.
+            show_load_report(pack.name, pack.loadReport, self)
         except Exception as e:
             self.removeFromRecentFiles(file)
             widgets.messsageBoxes.ErrorMessageBox.withTraceback(
@@ -967,6 +975,7 @@ class PackTreeView(TreeView):
                     outcome.check,
                     self,
                     lambda: FileController(pack, self).repair_dangling(),
+                    lambda: show_load_report(pack.name, pack.loadReport, self),
                 )
                 return False
             if outcome.status is SaveStatus.CANCELLED:

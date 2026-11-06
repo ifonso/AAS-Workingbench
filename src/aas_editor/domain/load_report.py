@@ -186,6 +186,23 @@ class LoadReport:
         """The shells, submodels, and concept descriptions that are missing."""
         return tuple(i for i in self.left_out if i.scope is Scope.OBJECT)
 
+    def by_weight(self) -> tuple[LoadIssue, ...]:
+        """Orders the issues with the biggest losses first.
+
+        Whatever was left out comes before the rest, and objects before
+        elements before details. Issues of one weight keep the order of the
+        SDK.
+        """
+        return tuple(
+            sorted(
+                self.issues,
+                key=lambda i: (
+                    i.outcome is not Outcome.LEFT_OUT,
+                    _WEIGHT[i.scope],
+                ),
+            )
+        )
+
     def count(self, scope: Scope) -> int:
         """Counts what was left out, of one scope."""
         return sum(1 for i in self.left_out if i.scope is scope)
@@ -203,12 +220,6 @@ class LoadReport:
         parts = self._counts_by_scope()
         if parts:
             sentences.append(f"Left out: {_join(parts)}.")
-        kinds = Counter(i.subject for i in self.left_out_objects)
-        if kinds:
-            listed = ", ".join(
-                _number(count, kind) for kind, count in kinds.most_common()
-            )
-            sentences.append(f"The objects are {listed}.")
         unknown = len(self.unknown)
         if unknown:
             sentences.append(
@@ -227,7 +238,7 @@ class LoadReport:
         if not self.issues:
             return ""
         lines = [self.summary(), ""]
-        for number, issue in enumerate(self.issues, 1):
+        for number, issue in enumerate(self.by_weight(), 1):
             lines.append(f"{number}. {issue.describe(full_part=True)}")
             for raw_line in issue.text.splitlines():
                 lines.append(f"      SDK: {raw_line}")
@@ -258,11 +269,19 @@ class LoadReport:
             (Scope.PART, "part"),
             (Scope.OTHER, "other item"),
         )
-        found = [
-            _number(self.count(scope), word)
-            for scope, word in words
-            if self.count(scope)
-        ]
+        found: list[str] = []
+        for scope, word in words:
+            if not self.count(scope):
+                continue
+            chunk = _number(self.count(scope), word)
+            if scope is Scope.OBJECT:
+                # Which objects, because that is what a user looks for.
+                kinds = Counter(i.subject for i in self.left_out_objects)
+                listed = ", ".join(
+                    _number(count, kind) for kind, count in kinds.most_common()
+                )
+                chunk = f"{chunk} ({listed})"
+            found.append(chunk)
         return found
 
 
@@ -313,6 +332,16 @@ def duplicate_in_other_part(
         f"{first_part}. Found by the editor, not logged by the SDK.",
     )
 
+
+# The order of `LoadReport.by_weight`: a lost submodel is not to be buried
+# under the texts that follow it.
+_WEIGHT: Final = {
+    Scope.OBJECT: 0,
+    Scope.PART: 1,
+    Scope.ELEMENT: 2,
+    Scope.OTHER: 3,
+    Scope.DETAIL: 4,
+}
 
 # -- parsing -----------------------------------------------------------------
 

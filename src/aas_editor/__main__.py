@@ -81,6 +81,10 @@ def main():
     register_bulk_edit_actions()
     register_preset_actions()
 
+    from aas_editor.ui.load_report_actions import register_load_report_actions
+
+    register_load_report_actions()
+
     # Check if a file path is provided as an argument
     fileToOpen = sys.argv[1] if len(sys.argv) > 1 else None
 

@@ -20,6 +20,10 @@ from aas_editor.application.save import SaveStatus
 from aas_editor.application.save import check_save
 from aas_editor.application.save import package_format
 from aas_editor.application.save import save
+from aas_editor.domain.load_report import LoadReport
+from aas_editor.domain.load_report import RawRecord
+from aas_editor.domain.load_report import Severity
+from aas_editor.domain.load_report import build_report
 from aas_editor.domain.parts import Thumbnail
 
 OPTIONS = SaveOptions()
@@ -41,6 +45,7 @@ class FakeSource:
     core_properties: pyecma376_2.OPCCoreProperties | None = None
     partial: bool = False
     source_file: Path | None = None
+    load_report: LoadReport = field(default_factory=LoadReport)
 
     def store_file(self, name: str) -> None:
         self.files.add_file(name, io.BytesIO(b"content"), "application/pdf")
@@ -141,6 +146,70 @@ def test_check_save_blocks_when_partial_package_overwrites_its_source(
 
     assert len(check.blockers) == 1
     assert "Save As" in check.blockers[0].message
+
+
+def _report_of_lost_concepts(count: int) -> LoadReport:
+    records = [
+        RawRecord(
+            Severity.ERROR,
+            "basyx.test",
+            f"ConceptDescription[urn:x:cd{number}] has a duplicate "
+            "identifier already parsed in the document! skipping it...",
+            "/aasx/data.xml",
+        )
+        for number in range(count)
+    ]
+    return build_report(records)
+
+
+def test_the_refusal_of_a_partial_package_says_what_was_left_out(
+    tmp_path: Path,
+) -> None:
+    source = FakeSource(
+        partial=True,
+        source_file=tmp_path / "source.aasx",
+        load_report=_report_of_lost_concepts(2),
+    )
+
+    (blocker,) = check_save(source, tmp_path / "source.aasx", OPTIONS).blockers
+
+    assert "2 objects" in blocker.message
+    assert "2 concept descriptions" in blocker.message
+    assert "Use Save As" in blocker.message
+    assert "not have this content either" in blocker.message
+    assert blocker.details == (
+        "Left out concept description (id urn:x:cd0, data.xml): Another "
+        "object in the file has the same id. The first one was kept.",
+        "Left out concept description (id urn:x:cd1, data.xml): Another "
+        "object in the file has the same id. The first one was kept.",
+    )
+
+
+def test_the_refusal_lists_ten_items_and_counts_the_rest(
+    tmp_path: Path,
+) -> None:
+    source = FakeSource(
+        partial=True,
+        source_file=tmp_path / "source.aasx",
+        load_report=_report_of_lost_concepts(50),
+    )
+
+    (blocker,) = check_save(source, tmp_path / "source.aasx", OPTIONS).blockers
+
+    assert len(blocker.details) == 11
+    assert blocker.details[-1] == "... and 40 more"
+    assert "50 objects" in blocker.message
+
+
+def test_the_refusal_admits_an_empty_report_may_hide_a_loss(
+    tmp_path: Path,
+) -> None:
+    source = FakeSource(partial=True, source_file=tmp_path / "source.aasx")
+
+    (blocker,) = check_save(source, tmp_path / "source.aasx", OPTIONS).blockers
+
+    assert "may be missing" in blocker.message
+    assert blocker.details == ()
 
 
 def test_check_save_allows_partial_package_when_target_is_another_file(

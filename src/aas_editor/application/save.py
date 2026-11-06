@@ -31,6 +31,7 @@ from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 from aas_editor.domain.file_references import file_references
 from aas_editor.domain.file_references import missing_files
 from aas_editor.domain.file_references import unreferenced_files
+from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import Thumbnail
 
@@ -109,8 +110,16 @@ class SaveSource(Protocol):
     def partial(self) -> bool:
         """True if the package was opened in failsafe mode.
 
-        The SDK does not report what failsafe mode skipped, so the package may
-        be missing objects, and must not overwrite its source.
+        The package may be missing objects, and must not overwrite its source.
+        """
+        ...
+
+    @property
+    def load_report(self) -> LoadReport:
+        """What the SDK reported that it left out when it read the package.
+
+        It is what the SDK logged, so it can be empty for a partial package,
+        and the package is still partial then.
         """
         ...
 
@@ -156,6 +165,7 @@ class SaveIssue:
 # Issue codes that the dialogs offer a repair for.
 DANGLING_FILES = "dangling_files"
 UNREFERENCED_FILES = "unreferenced_files"
+LOAD_REPORT = "load_report"
 
 
 @dataclass(frozen=True)
@@ -240,13 +250,7 @@ def check_save(
         and source.source_file is not None
         and _same_file(source.source_file, target)
     ):
-        blockers.append(
-            SaveIssue(
-                "This package was opened in recovery mode, so objects that "
-                "could not be read are missing. It cannot overwrite its "
-                "source. Use Save As to write a copy."
-            )
-        )
+        blockers.append(_partial_issue(source.load_report))
 
     references = file_references(source.objects)
     stored_files = list(source.files)
@@ -354,6 +358,29 @@ def save(
         return SaveOutcome(SaveStatus.CANCELLED, check)
     writer(target, source, options)
     return SaveOutcome(SaveStatus.SAVED, check)
+
+
+def _partial_issue(report: LoadReport) -> SaveIssue:
+    """Says why a partial package cannot overwrite its source.
+
+    With a report, the issue says what is missing and lists the first items.
+    The copy that Save As writes lacks the same content, because the SDK did
+    not read it.
+    """
+    if not report:
+        return SaveIssue(
+            "This package was opened in recovery mode, so objects that could "
+            "not be read may be missing, although the SDK did not say which. "
+            "It cannot overwrite its source. Use Save As to write a copy."
+        )
+    return SaveIssue(
+        "This package was opened in recovery mode, and the SDK left content "
+        f"out. {report.summary()} The package cannot overwrite its source. "
+        "Use Save As to write a copy, which will not have this content "
+        "either, because it was not read.",
+        _listed(issue.describe() for issue in report.by_weight()),
+        LOAD_REPORT,
+    )
 
 
 def _same_file(first: Path, second: Path) -> bool:

@@ -25,6 +25,19 @@ from aas_editor.domain.load_report import Outcome
 from aas_editor.domain.load_report import Scope
 from aas_editor.domain.walking import descendants
 
+from tests.medium.failsafe_causes import TEMPLATES_DIR
+
+# A template that opens only in failsafe mode: the SDK leaves out one submodel
+# and one entity, and the file holds 40 idShort entries to the 20 that load.
+LOSES_A_SUBMODEL = (
+    TEMPLATES_DIR
+    / "Hierarchical Structures enabling Bills of Material"
+    / "Extension based on IEC 81346"
+    / "1"
+    / "0"
+    / "IDTA 02011-1_Template_BoM_ExtensionbasedonIEC81346.aasx"
+)
+
 _AAS_NAMESPACES = (
     "https://admin-shell.io/aas/3/1",
     "https://admin-shell.io/aas/3/0",
