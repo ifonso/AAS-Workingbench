@@ -22,6 +22,7 @@ from aas_editor.domain.validation import Severity
 from aas_editor.domain.validation import validate
 from aas_editor.domain.validation.context import ValidationContext
 from aas_editor.domain.validation.field_checks import copy_name_problem
+from aas_editor.domain.validation.field_checks import field_problem
 from aas_editor.domain.validation.field_checks import global_asset_id_problem
 from aas_editor.domain.validation.field_checks import id_short_problem
 from aas_editor.domain.validation.field_checks import key_value_problem
@@ -222,3 +223,43 @@ def test_tolerant_validate_still_runs_the_other_rules(
     assert any(
         "TEST-BROKEN" in record.getMessage() for record in caplog.records
     )
+
+
+# ---------------------------------------------------------------------------
+# The hint under a field of a dialog
+# ---------------------------------------------------------------------------
+
+
+def test_field_problem_names_the_id_short_and_what_is_required() -> None:
+    problem = field_problem("Property", "id_short", "1abc")
+
+    assert problem is not None
+    assert problem.startswith("The idShort '1abc' must have at least two")
+
+
+def test_field_problem_says_nothing_about_an_empty_id_short() -> None:
+    assert field_problem("Property", "id_short", "") is None
+
+
+def test_field_problem_says_nothing_about_a_good_id_short() -> None:
+    assert field_problem("Property", "id_short", "Pump") is None
+
+
+def test_field_problem_finds_a_copy_name_in_an_id_short() -> None:
+    assert field_problem("Property", "id_short", "Pump---1") is not None
+
+
+def test_field_problem_checks_the_value_of_a_key_only() -> None:
+    assert field_problem("Key", "value", "urn:a b") is not None
+    assert field_problem("Property", "value", "urn:a b") is None
+
+
+def test_field_problem_says_nothing_for_an_unknown_field() -> None:
+    assert field_problem("Property", "category", "x y") is None
+
+
+def test_field_problem_agrees_with_the_rule_for_the_same_id_short() -> None:
+    element = make_property("X", "1")
+    rule_message = validate(store_with(element)).of_rule("AASd-002")[0].message
+
+    assert field_problem("Property", "id_short", "X") == rule_message

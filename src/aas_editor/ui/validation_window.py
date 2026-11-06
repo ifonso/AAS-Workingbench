@@ -1,9 +1,9 @@
 """Puts the validation dock and the hints into the main window.
 
 The main window is generated code and legacy code, so this module adds what
-validation needs from the outside: a dock at the bottom, an entry in the View
-menu, and the connections between the package tree and the dock. The window
-calls `install_validation` once, after its menus and handlers exist.
+validation needs from the outside: a dock at the bottom, and the connections
+between the package tree and the dock. The window calls `install_validation`
+once, before it builds the menus that list the dock and the hints action.
 """
 
 from typing import Any
@@ -13,7 +13,6 @@ from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QMainWindow
-from PyQt6.QtWidgets import QMenu
 
 from aas_editor.application.hints import hints_mode
 from aas_editor.domain.validation import Finding
@@ -34,8 +33,9 @@ class ValidationController:
         """Adds the dock and the menu entries to the window.
 
         Args:
-            window: The main window. It needs `mainTreeView`, `packTreeModel`
-                and `menuView`, as `EditorApp` has them.
+            window: The main window. It needs `mainTreeView` and
+                `packTreeModel`, as `EditorApp` has them. The window puts
+                `dock.toggleViewAction()` and `hints_action` into its menu.
         """
         self._window = window
         self._tree = cast("Any", window).mainTreeView
@@ -56,11 +56,6 @@ class ValidationController:
         )
         self.hints_action.toggled.connect(hints_mode().set_on)
         hints_mode().subscribe(self._on_hints_mode)
-
-        menu = cast("QMenu", cast("Any", window).menuView)
-        menu.addSection("Validation")
-        menu.addAction(self.dock.toggleViewAction())
-        menu.addAction(self.hints_action)
 
         selection = self._tree.selectionModel()
         selection.currentChanged.connect(self._follow_package)

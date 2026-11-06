@@ -11,7 +11,6 @@ from basyx.aas import model
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMainWindow
-from PyQt6.QtWidgets import QMenu
 import pytest
 from pytestqt.qtbot import QtBot
 from tests.factories import make_file_element
@@ -353,7 +352,6 @@ def window(qtbot: QtBot, views):
     qtbot.addWidget(main)
     main.mainTreeView = shown.view  # type: ignore[attr-defined]
     main.packTreeModel = shown.table  # type: ignore[attr-defined]
-    main.menuView = QMenu("View", main)  # type: ignore[attr-defined]
     controller = install_validation(main)
     controller.dock.set_active(True)
 
