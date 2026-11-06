@@ -93,7 +93,7 @@ def _list_item_of_the_wrong_type() -> object:
     items = model.SubmodelElementList(
         "L", model.Property, value_type_list_element=model.datatypes.String
     )
-    items.value.add(model.MultiLanguageProperty(None))
+    items.value.add(model.MultiLanguageProperty(None))  # pyright: ignore[reportArgumentType]
     return items
 
 

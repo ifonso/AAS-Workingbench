@@ -8,6 +8,7 @@ the SDK does not check. The helpers here build the valid starting point.
 from collections.abc import Iterable
 
 from basyx.aas import model
+from basyx.aas.model.concept import ConceptDescription
 from tests.factories import make_external_reference
 from tests.factories import make_shell
 from tests.factories import make_store
@@ -43,7 +44,7 @@ def model_reference_to_submodel(id_: str) -> model.ModelReference:
 
 def concept_with_value_list(
     id_: str, values: Iterable[tuple[str, str]]
-) -> model.ConceptDescription:
+) -> ConceptDescription:
     """Builds a concept description with an IEC 61360 value list.
 
     Args:
@@ -59,7 +60,7 @@ def concept_with_value_list(
         preferred_name=model.PreferredNameTypeIEC61360({"en": "Color"}),
         value_list=pairs,
     )
-    return model.ConceptDescription(
+    return ConceptDescription(
         id_=id_,
         embedded_data_specifications=[
             model.EmbeddedDataSpecification(

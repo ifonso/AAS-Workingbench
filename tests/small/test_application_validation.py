@@ -7,7 +7,6 @@ from pathlib import Path
 
 from basyx.aas import model
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
-import pyecma376_2
 from tests.factories import make_annotated_relationship
 from tests.factories import make_file_element
 from tests.factories import make_property
@@ -21,6 +20,7 @@ from aas_editor.application.save import SaveOptions
 from aas_editor.application.save import check_save
 from aas_editor.application.validation import save_check_for
 from aas_editor.application.validation import validate_package
+from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import Thumbnail
 
 DOCUMENT = "/aasx/files/document.pdf"
@@ -37,7 +37,7 @@ class FakeSource:
         default_factory=DictSupplementaryFileContainer
     )
     thumbnail: Thumbnail | None = None
-    core_properties: pyecma376_2.OPCCoreProperties | None = None
+    core_properties: CoreProperties | None = None
     partial: bool = False
     source_file: Path | None = None
 

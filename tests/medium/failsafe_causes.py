@@ -18,6 +18,7 @@ import re
 from typing import Any
 
 from basyx.aas import model
+from basyx.aas.model.concept import ConceptDescription
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 from basyx.aas.adapter.json import AASToJsonEncoder
 from basyx.aas.adapter.json.json_deserialization import AASFromJsonDecoder
@@ -162,11 +163,11 @@ def duplicate_kinds(path: Path) -> DuplicateKinds:
             continue
         types = {type(obj) for obj in group}
         texts = {json.dumps(obj, cls=AASToJsonEncoder) for obj in group}
-        if types == {model.ConceptDescription} and len(texts) == 1:
+        if types == {ConceptDescription} and len(texts) == 1:
             kinds.identical += 1
-        elif types == {model.ConceptDescription}:
+        elif types == {ConceptDescription}:
             kinds.different += 1
-        elif model.Submodel in types and model.ConceptDescription in types:
+        elif model.Submodel in types and ConceptDescription in types:
             kinds.submodel_and_concept += 1
         else:
             kinds.other += 1
@@ -199,25 +200,38 @@ def _recording_decoders(
 ) -> tuple[type[Any], type[Any]]:
     class Xml(AASFromXmlDecoder):
         @classmethod
-        def construct_submodel(cls, element: Any, **kwargs: Any) -> Any:
-            obj = super().construct_submodel(element, **kwargs)
+        def construct_submodel(
+            cls,
+            element: Any,
+            object_class: Any = model.Submodel,
+            **kwargs: Any,
+        ) -> Any:
+            obj = super().construct_submodel(element, object_class, **kwargs)
             record(obj)
             return obj
 
         @classmethod
         def construct_concept_description(
-            cls, element: Any, **kwargs: Any
+            cls,
+            element: Any,
+            object_class: Any = ConceptDescription,
+            **kwargs: Any,
         ) -> Any:
-            obj = super().construct_concept_description(element, **kwargs)
+            obj = super().construct_concept_description(
+                element, object_class, **kwargs
+            )
             record(obj)
             return obj
 
         @classmethod
         def construct_asset_administration_shell(
-            cls, element: Any, **kwargs: Any
+            cls,
+            element: Any,
+            object_class: Any = model.AssetAdministrationShell,
+            **kwargs: Any,
         ) -> Any:
             obj = super().construct_asset_administration_shell(
-                element, **kwargs
+                element, object_class, **kwargs
             )
             record(obj)
             return obj
