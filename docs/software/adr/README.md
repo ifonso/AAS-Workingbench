@@ -23,6 +23,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0016](0016-reference-fields-and-creation-dialogs.md) | Reference fields wrap the generated forms, and creation has its own dialogs | Accepted |
 | [0017](0017-presets-and-the-pattern-language.md) | Presets are SDK JSON files, and bulk changes use a small pattern language | Accepted |
 | [0018](0018-load-report.md) | A package that opens in failsafe mode lists what the SDK left out | Accepted |
+| [0019](0019-defaults-and-notices-of-new-objects.md) | New objects start with the defaults of the user, and the editor says what the SDK refuses | Accepted |
 | [0020](0020-selection-locations-and-clipboard.md) | A selection moves as a block, and the panel, locations, and clipboard fallback that go with it | Accepted |
 | [0021](0021-order-of-the-file-and-concept-description-gaps.md) | The package keeps the order of the file, and the concept description gaps close in the view | Accepted |
 | [0022](0022-attribute-vocabulary.md) | Tabs name attributes with a vocabulary of the metamodel, and show what the editor edits unchanged | Accepted |

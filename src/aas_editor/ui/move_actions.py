@@ -22,6 +22,16 @@ from aas_editor.application.commands import ReadOnlyError
 from aas_editor.application.operations.bulk_move import bulk_move_commands
 from aas_editor.application.operations.bulk_move import can_bulk_move
 from aas_editor.application.operations.bulk_move import plan_bulk_move
+from aas_editor.additional.classes import DictItem
+from aas_editor.application.operations.language_order import (
+    can_move_languages,
+)
+from aas_editor.application.operations.language_order import (
+    language_move_command,
+)
+from aas_editor.application.operations.language_order import (
+    plan_language_move,
+)
 from aas_editor.application.operations.move import MoveKind
 from aas_editor.domain import containers
 from aas_editor.domain import ordering
@@ -88,8 +98,40 @@ def _selection(context: ActionContext) -> list[tuple[object, object]] | None:
     return placements or None
 
 
+def _language_selection(
+    context: ActionContext,
+) -> tuple[model.LangStringSet, list[str]] | None:
+    """Returns the multi-language text and the languages of the selected rows.
+
+    The rows of a display name, a description, or the value of a
+    MultiLanguageProperty are `DictItem`s of a `LangStringSet`. They move
+    within it (F-EDT-06 AC15). None when a selected row is something else, or
+    the rows belong to different texts.
+    """
+    texts: model.LangStringSet | None = None
+    languages: list[str] = []
+    for index in selected_rows(context):
+        item = index.data(OBJECT_ROLE)
+        parent = index.parent()
+        holder = parent.data(OBJECT_ROLE) if parent.isValid() else None
+        if not isinstance(item, DictItem) or not isinstance(
+            holder, model.LangStringSet
+        ):
+            return None
+        if texts is not None and holder is not texts:
+            return None
+        texts = holder
+        languages.append(item.key)
+    if texts is None:
+        return None
+    return texts, languages
+
+
 def _enabled(kind: MoveKind):
     def check(context: ActionContext) -> bool:
+        texts = _language_selection(context)
+        if texts is not None:
+            return can_move_languages(texts[0], texts[1], kind)
         found = _selection(context)
         # Package Explorer offers no move for variables of different
         # directions (F-EDT-09 AC19). Cut and Copy stay.
@@ -111,8 +153,31 @@ def _natural_order(context: ActionContext) -> None:
             header.currSortSection = -1
 
 
+def _move_languages(
+    context: ActionContext,
+    texts: model.LangStringSet,
+    languages: list[str],
+    kind: MoveKind,
+) -> None:
+    plan = plan_language_move(texts, languages, kind)
+    if plan is None:
+        return
+    try:
+        context.push(language_move_command(observer_for(context.package), plan))
+    except ReadOnlyError as error:
+        QMessageBox.warning(context.view, "Move", str(error))
+    except Exception as error:  # noqa: BLE001
+        QMessageBox.warning(
+            context.view, "Move", f"The move was refused: {error}"
+        )
+
+
 def _runner(kind: MoveKind):
     def run(context: ActionContext) -> None:
+        texts = _language_selection(context)
+        if texts is not None:
+            _move_languages(context, texts[0], texts[1], kind)
+            return
         found = _selection(context)
         package: Any = context.package
         if found is None or package is None:

@@ -266,6 +266,38 @@ def reorder_members(container: object, order: list[Any]) -> None:
     raise TypeError(f"A {type(container).__name__} has no order")
 
 
+def reorder_keys(mapping: object, order: list[Any]) -> None:
+    """Puts the entries of a mapping into a new order, by their keys.
+
+    The SDK's `LangStringSet` is a mapping whose order is saved in the file.
+    It has no insert, so each entry is taken out and added again at the end,
+    in the new order. An entry is only taken out while another one is left,
+    because the set must never be empty.
+
+    Args:
+        mapping: A mutable mapping, such as a `LangStringSet`.
+        order: Every key exactly once, in the new order.
+
+    Raises:
+        TypeError: If the container is no mapping.
+        ValueError: If `order` is not a permutation of the keys. Nothing
+            changes then.
+    """
+    if not _is_mapping(mapping):
+        raise TypeError(f"A {type(mapping).__name__} is no mapping")
+    entries = cast("MutableMapping[Any, Any]", mapping)
+    if sorted(order, key=repr) != sorted(entries, key=repr) or len(
+        set(order)
+    ) != len(order):
+        raise ValueError("Order must list every key exactly once")
+    if len(order) < 2:
+        return
+    for key in order:
+        value = entries[key]
+        del entries[key]
+        entries[key] = value
+
+
 def _add_pair(
     mapping: MutableMapping[Any, Any], pair: object, index: int | None
 ) -> int:

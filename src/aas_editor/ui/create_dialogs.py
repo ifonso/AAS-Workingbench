@@ -38,9 +38,9 @@ from aas_editor.domain.asset_information import ASSET_KINDS
 from aas_editor.domain.asset_information import DEFAULT_ASSET_KIND
 from aas_editor.domain.asset_information import AssetInformationError
 from aas_editor.domain.asset_information import build_specific_asset_id
-from aas_editor.domain.asset_information import new_global_asset_id
-from aas_editor.domain.ids import new_identifier
+from aas_editor.domain.id_templates import IdKind
 from aas_editor.domain.references import describe_object
+from aas_editor.ui.user_defaults import new_id
 
 _PROBLEM_STYLE = PROBLEM_STYLE
 NO_SHELL_TEXT = "(none: a Submodel that no AAS refers to)"
@@ -109,7 +109,7 @@ class CreateShellDialog(_ValidatedDialog):
         """
         super().__init__("Create AAS", parent)
         self._objects = list(objects)
-        self.id_edit = QLineEdit(new_identifier(), self)
+        self.id_edit = QLineEdit(new_id(IdKind.AAS), self)
         self.id_short_edit = QLineEdit(self)
         self.kind_box = QComboBox(self)
         for kind in ASSET_KINDS:
@@ -117,10 +117,10 @@ class CreateShellDialog(_ValidatedDialog):
         self.kind_box.setCurrentIndex(
             self.kind_box.findData(DEFAULT_ASSET_KIND)
         )
-        self.global_id_edit = QLineEdit(new_global_asset_id(), self)
+        self.global_id_edit = QLineEdit(new_id(IdKind.ASSET), self)
         self.generate_button = QPushButton("Generate", self)
         self.generate_button.clicked.connect(
-            lambda: self.global_id_edit.setText(new_global_asset_id())
+            lambda: self.global_id_edit.setText(new_id(IdKind.ASSET))
         )
         self.asset_type_edit = QLineEdit(self)
         self.specific_table = QTableWidget(0, 2, self)
@@ -228,11 +228,13 @@ class CreateSubmodelDialog(_ValidatedDialog):
         """
         super().__init__("Create Submodel", parent)
         self._objects = list(objects)
-        self.id_edit = QLineEdit(new_identifier(), self)
+        self._generated_id = new_id(IdKind.SUBMODEL_INSTANCE)
+        self.id_edit = QLineEdit(self._generated_id, self)
         self.id_short_edit = QLineEdit(self)
         self.kind_box = QComboBox(self)
         self.kind_box.addItem("Instance", model.ModellingKind.INSTANCE)
         self.kind_box.addItem("Template", model.ModellingKind.TEMPLATE)
+        self.kind_box.currentIndexChanged.connect(self._follow_kind)
         self.shell_box = QComboBox(self)
         self.shell_box.addItem(NO_SHELL_TEXT, None)
         for candidate in shells:
@@ -254,6 +256,22 @@ class CreateSubmodelDialog(_ValidatedDialog):
     def selected_shell(self) -> model.AssetAdministrationShell | None:
         """Returns the shell that will refer to the submodel, or None."""
         return self.shell_box.currentData()
+
+    def _follow_kind(self) -> None:
+        """Takes the id of the other kind, when the user has not typed one.
+
+        A template and an instance have each their own id template (F-EDT-03
+        AC2). An id that the user changed is theirs, and stays.
+        """
+        if self.id_edit.text() != self._generated_id:
+            return
+        kind = (
+            IdKind.SUBMODEL_TEMPLATE
+            if self.kind_box.currentData() is model.ModellingKind.TEMPLATE
+            else IdKind.SUBMODEL_INSTANCE
+        )
+        self._generated_id = new_id(kind)
+        self.id_edit.setText(self._generated_id)
 
     def build(self) -> model.Submodel:
         """Makes the submodel from the fields.

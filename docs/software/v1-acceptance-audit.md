@@ -25,20 +25,20 @@ A criterion with a test that covers part of it is `P`, with the missing part nam
 | Document | T | P | I | D | O | G | N | Total |
 |---|---|---|---|---|---|---|---|---|
 | F-EDT-01 Editor framework | 4 | 4 | 5 | 0 | 1 | 0 | 1 | 15 |
-| F-EDT-02 Environment, AAS, AssetInformation | 3 | 5 | 1 | 0 | 6 | 2 | 0 | 17 |
-| F-EDT-03 Submodel and SubmodelRef | 0 | 9 | 3 | 1 | 1 | 1 | 1 | 16 |
-| F-EDT-04 SubmodelElements | 5 | 5 | 1 | 6 | 2 | 3 | 0 | 22 |
+| F-EDT-02 Environment, AAS, AssetInformation | 4 | 4 | 1 | 1 | 7 | 0 | 0 | 17 |
+| F-EDT-03 Submodel and SubmodelRef | 1 | 8 | 3 | 1 | 2 | 0 | 1 | 16 |
+| F-EDT-04 SubmodelElements | 9 | 4 | 1 | 6 | 2 | 0 | 0 | 22 |
 | F-EDT-05 ConceptDescription and IEC 61360 | 9 | 1 | 1 | 6 | 2 | 0 | 0 | 19 |
-| F-EDT-06 Common attribute modules | 6 | 5 | 0 | 1 | 2 | 2 | 0 | 16 |
-| F-EDT-07 Qualifiers and Extensions | 1 | 2 | 0 | 3 | 5 | 2 | 0 | 13 |
+| F-EDT-06 Common attribute modules | 9 | 4 | 0 | 2 | 1 | 0 | 0 | 16 |
+| F-EDT-07 Qualifiers and Extensions | 3 | 2 | 0 | 3 | 5 | 0 | 0 | 13 |
 | F-EDT-08 Copy, paste, reorder | 8 | 5 | 0 | 3 | 4 | 0 | 0 | 20 |
 | F-EDT-09 Multi-element editing | 8 | 4 | 0 | 8 | 0 | 0 | 1 | 21 |
-| F-EDT-10 Supplementary files | 8 | 3 | 0 | 2 | 1 | 2 | 2 | 18 |
+| F-EDT-10 Supplementary files | 10 | 3 | 0 | 2 | 1 | 0 | 2 | 18 |
 | F-EDT-11 References, semantics, lookups | 8 | 2 | 0 | 2 | 10 | 0 | 0 | 22 |
-| **All** | **39** | **52** | **14** | **26** | **41** | **22** | **5** | **199** |
+| **All** | **73** | **41** | **11** | **34** | **35** | **0** | **5** | **199** |
 
-Of 199 criteria, 39 have a test that asserts them, and 52 more are tested in part.
-The 22 gaps are in [What remains after v1](../planning/v1-editor-plan.md#what-remains-after-v1), ranked by what they cost a user.
+Of 199 criteria, 73 have a test that asserts them, and 41 more are tested in part.
+No criterion is left as a gap. WP13 to WP17 closed the 22 that WP12 found, or reclassified them with a reason given in the rows and the ADRs. What still costs a user is in [What remains after v1](../planning/v1-editor-plan.md#what-remains-after-v1).
 Most O rows are ECLASS (F-EDT-04 AC21, F-EDT-11 AC8 to AC14, AC18 and AC22) and repository features, which the plan keeps out of v1. Nine rest only on a "Known limit" of the changelog, and not on a row of the plan's table: F-EDT-03 AC15, F-EDT-05 AC14 and AC16, F-EDT-06 AC1 and AC14, F-EDT-08 AC5, F-EDT-10 AC5 and AC12, and F-EDT-11 AC1.
 
 ## What this audit checked itself
@@ -53,10 +53,10 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | F-EDT-09 AC3 and AC4: Move up on rows 2 and 4 of 6. | The code moves each selected row one place, to 1 and 3. The original makes them adjacent, at 1 and 2, and does nothing when the first selected row is at the top, while the code moves the others. Not recorded anywhere as a decision. `P`. **Closed by WP15**: the move is the original's, with a mirrored Down, and ADR 0020 records it. Both are `T` now. |
 | F-EDT-10 AC8: a `.zip` gets `text/plain` for parity. | The code guesses from the extension, and gives `application/x-zip-compressed` on this machine, the registry of Windows, and `application/octet-stream` for an unknown one. The test asserts only "not text/plain". `D`, and the answer depends on the platform. |
 | F-EDT-04 AC22: a null `orderRelevant` is shown as the default (true). | The SDK has a bool that is true by default, and a file without `orderRelevant` reads as true (probe). The case cannot occur. `P`, because the tests assert the default only for a new list. |
-| F-EDT-04 AC9 and F-EDT-10 AC14, AC15: Base64 to binary and back for a Blob. | No code. The editor shows the bytes as text or hex. A gap. |
+| F-EDT-04 AC9 and F-EDT-10 AC14, AC15: Base64 to binary and back for a Blob. | No code. The editor shows the bytes as text or hex. A gap. **Closed by WP14**: two actions of the Blob, `T`. |
 | F-EDT-01 AC10, AC11: push and pop of an editing location. | No code. Back after Jump to target, and Back in the tabs, are the nearest thing. A gap. **Closed by WP15**: `T`. |
 | F-EDT-05 AC10: the view orders of concept descriptions. | Four of six: name, idShort, id, first use. "List index", "By SubmodelElements" and the structured order are not offered. A gap. **Closed in WP16**: the store of the package keeps the order of the file now, so the list index exists, and all six are offered ([ADR 0021](adr/0021-order-of-the-file-and-concept-description-gaps.md)). |
-| F-EDT-04 AC2: new MultiLanguageProperty has a row for each default language. | No setting of default languages. A gap. |
+| F-EDT-04 AC2: new MultiLanguageProperty has a row for each default language. | No setting of default languages. A gap. **Closed by WP14**: a setting, `T`. |
 
 ## F-EDT-01 Editor framework
 
@@ -82,7 +82,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | P | `test_create_flows.py::test_the_action_makes_a_shell_with_valid_asset_information`: `urn:uuid:` id, valid AssetInformation, reload, undo. The kind is Instance, not NotApplicable, and not recorded as a decision. Selection after the add is not asserted. |
+| 1 | D | [ADR 0019](adr/0019-defaults-and-notices-of-new-objects.md): a new AAS is an Instance, where the original makes NotApplicable (its own notice says Instance is usual). `test_create_flows.py::TestCreateShell::test_the_action_makes_a_shell_with_valid_asset_information`: kind Instance, the new row is selected, `urn:uuid:` id, valid AssetInformation, reload, undo. `test_asset_kind.py::test_a_new_shell_is_an_instance_unless_the_user_chooses_another`. |
 | 2 | P | `test_create_flows.py::test_template_kind_and_no_shell_make_a_free_submodel`. |
 | 3 | T | `test_shell_copy_actions.py::test_on_the_node_of_the_shells_it_asks_which_to_copy`, `::test_the_environment_and_a_submodel_have_no_copy_of_an_aas`. "Copy AAS with new Submodel ids..." is on an AAS and on the shells node, and not on the package. |
 | 4 | T | `test_shell_copy_actions.py::test_the_copy_has_new_ids_and_refers_to_new_submodels`, `tests/small/test_copy_shell.py` (new ids, references resolve to the copies, the original is unchanged, one undo step). A pasted shell keeps referring to the same Submodels (D13). |
@@ -92,9 +92,9 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 8 | P | `test_rename.py::test_rename_updates_the_references_of_the_shell`. The failure warning is not tested. |
 | 9 | P | `test_hints.py::test_inline_hint_says_that_the_global_asset_id_is_empty`, a hint in the create dialog. The advisory in a panel, and the duplicate, are rules with tests in `test_validation_hints.py`, not in a panel. |
 | 10 | P | `test_create_flows.py::test_every_asset_kind_of_v3_1_is_offered`. The serialized output is not compared. |
-| 11 | G | `Batch` is not handled. The plan has no decision. |
+| 11 | O | The plan's row "Metamodel V3.2": `Batch` is a literal of V3.2 and the SDK has no such kind (probe). A file with it is refused as a whole, and failsafe mode leaves the shell out (`test_asset_kind.py::test_a_file_with_batch_is_refused_as_a_whole`, `::test_in_failsafe_mode_the_shell_with_batch_is_left_out_and_the_package_partial`). The four kinds of V3.1 are read and written as they are (`::test_each_kind_of_v3_1_is_read_and_written_as_it_is`). |
 | 12 | O | Plan: "Print code sheet". |
-| 13 | G | The list of specific asset ids stays empty, and an empty one is refused when the last is removed (AASd-131), which is a decision of the create flow, not this criterion. |
+| 13 | T | `test_specific_asset_id_delete.py::test_the_last_specific_asset_id_goes_and_the_file_has_no_list`: the model has an empty list, which the SDK has no null for, and the file has none. `::test_the_last_asset_id_of_a_shell_without_a_global_one_is_kept` for AASd-131. One undo step: `::test_the_removal_is_one_undo_step`. |
 | 14 | T | `test_package_files_ui.py::test_the_default_thumbnail_is_removed_after_a_question_and_the_file_stays`, `::test_a_removed_default_thumbnail_can_be_chosen_again`. The question comes first, and the file stays in the package. |
 | 15 | O | Plan: "Stubs and Fetch". |
 | 16 | O | Plan: "Stubs and Fetch". |
@@ -104,7 +104,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | P | `test_create_flows.py::test_with_a_shell_the_submodel_and_its_reference_are_one_step`. Kind Instance and focus are not asserted. |
+| 1 | T | `test_create_flows.py::TestCreateSubmodel::test_with_a_shell_the_submodel_and_its_reference_are_one_step`: kind Instance, the new row is selected (focus), one reference with the Submodel, one undo step. |
 | 2 | P | `test_create_flows.py::test_template_kind_and_no_shell_make_a_free_submodel`. The id pattern of templates is not asserted. |
 | 3 | P | `test_paste_into_shell_action.py::test_a_pasted_reference_is_added_and_the_submodel_stays_shared`. |
 | 4 | P | `test_paste_into_shell_action.py::test_a_copied_submodel_is_added_with_a_new_id_and_a_reference`. |
@@ -116,7 +116,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 10 | I | `application/operations/concepts.py`. The record with the preferred name from the idShort is tested in `test_concept_actions.py`, but not through the Submodel with a cancel. |
 | 11 | P | `test_create_flows.py::test_all_qualifiers_go_in_one_step_and_the_question_names_them`. |
 | 12 | P | `test_rename.py::test_rename_updates_semantic_ids_of_a_concept_description`. |
-| 13 | G | No dynamic environment, so no read-only id. |
+| 13 | O | The plan's row "Stubs and Fetch": a dynamic environment exists only after a fetch, and the editor edits local files. There is no such environment to make the id read-only (searched: no code for it), and Rename is offered for every shell, submodel and concept description. |
 | 14 | O | Plan: "Stubs and Fetch". |
 | 15 | D | The tab of a submodel shows the description that its semantic id names, read-only and collapsed, and the notice of the original when it names none ([ADR 0021](adr/0021-order-of-the-file-and-concept-description-gaps.md)): `test_embedded_concept.py::TestPanel::test_a_submodel_shows_its_description_too`, `::test_a_semantic_id_that_names_nothing_shows_the_notice`. The original's display is an editor. |
 | 16 | N | Scripting. |
@@ -126,14 +126,14 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | AC | Class | Evidence |
 |---|---|---|
 | 1 | P | `test_element_types.py::test_element_is_made_edited_undone_saved_and_read_again` for all 14 types. The defaults of the table are not asserted, because each case fills every field. |
-| 2 | G | No default languages. |
+| 2 | T | `test_user_defaults.py::TestDefaultLanguages::test_a_new_multi_language_property_has_an_empty_row_for_each_language` (`en,de` gives two rows, and the texts become the value). A row that stays empty is left out and no text gives no value, because the SDK refuses an empty text (`::test_a_row_without_text_is_left_out`, `::test_no_text_at_all_means_no_value`). `test_default_languages.py` for the setting. |
 | 3 | P | `test_conversion.py::test_a_property_becomes_a_range_with_its_value_as_minimum_and_maximum`. What a Property keeps is tested for another target. |
 | 4 | T | `test_element_conversion.py::test_a_file_becomes_a_blob_with_the_content_of_the_stored_file`, `::..._with_its_path_when_the_content_is_declined`. |
 | 5 | D | [ADR 0012](adr/0012-replacing-an-element-shows-what-is-lost.md): items that do not fit are named, and the idShorts of list items are not written. `test_conversion.py::test_a_collection_becomes_a_list_that_keeps_the_items_that_fit`. |
 | 6 | T | `test_conversion.py::test_an_operation_keeps_every_variable_when_it_becomes_a_collection`. |
 | 7 | T | `tests/large/test_typed_values_flow.py`. Large, so not in CI. |
 | 8 | P | `test_value_editor.py::TestValueEdit::test_refuses_to_give_a_value_when_the_text_is_wrong`. |
-| 9 | G | No Base64 conversion of a Blob. |
+| 9 | T | `test_blob_actions.py::test_base64_text_becomes_the_bytes_in_one_undoable_step` (`SGVsbG8=` gives the bytes of `Hello` in the domain test), `::test_text_that_is_no_base64_is_refused_with_a_reason` (unchanged, with the character that is wrong; the original logs). No question first: undo replaces it (ADR 0019). |
 | 10 | D | The Blob editor shows hex when the content is no text (`test_value_editor.py::TestBinaryEdit`). No question before editing. |
 | 11 | D | The add dialog of a list offers only its type, so there is nothing to warn about (changelog). |
 | 12 | D | The SDK refuses or drops the item, and the editor says so (ADR 0012). |
@@ -141,8 +141,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 14 | D | The most common semantic id of the items, not the first child (ADR 0012). |
 | 15 | O | Plan: "Emit event". |
 | 16 | T | `test_element_types.py` for BasicEventElement, and `::test_form_and_attributes_have_every_attribute_of_the_class`. |
-| 17 | G | No default for a new Entity and no notice for the asset id. |
-| 18 | P | The Operation case adds to the input list. The output list is not exercised. |
+| 17 | T | `test_entity_form.py::test_a_new_entity_is_self_managed_and_asks_for_the_global_asset_id`: the type is preset, the form says "Please choose the global identifier for the SelfManagedEntity" until the field has text. `test_validation_hints.py::test_a_self_managed_entity_without_a_global_asset_id_gets_a_notice` for the same notice in the bar of a tab. |
+| 18 | T | `test_element_types.py::test_a_variable_goes_into_the_list_it_was_added_under_only`, for the input, output and in/out lists: the variable is in that list only, one undo step, saved and reloaded. The Operation case of `test_element_types.py` adds to the input and the output list. The three lists share one namespace, so a name used in one is refused in another (AASd-022). |
 | 19 | I | Generic paste (`test_paste_actions.py`). No test with an Operation as parent. |
 | 20 | D | An element has an idShort. Items of a list do not, and the case is not covered (ADR 0014). |
 | 21 | O | Plan: ECLASS. |
@@ -176,11 +176,11 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | O | Limit: the notices for missing descriptions, and "Create w/ default". |
+| 1 | D | [ADR 0019](adr/0019-defaults-and-notices-of-new-objects.md). The notices for a missing or one-language display name and description are hint rules (`test_validation_hints.py::test_a_missing_display_name_and_description_are_notices`, `::test_texts_in_one_language_get_the_notice_for_several_languages`). "Create w/ default" starts the dialog with one row in the first default language, and the row waits for text, because the SDK refuses an empty entry (`test_user_defaults.py::TestDefaultLanguages::test_creating_a_display_name_starts_with_one_row_in_the_first_language`). |
 | 2 | T | `test_ids.py::test_fix_replaces_blank_and_symbols_for_aas_criterion_2`. |
 | 3 | T | `test_ids.py::test_fix_uses_prefix_and_digits_when_nothing_is_usable`. |
 | 4 | T | `test_hints.py::test_inline_hint_says_why_an_id_short_is_wrong_while_typing`. The editor also fixes a leading digit, which the original does not. |
-| 5 | G | No id template with digits (`urn:x:DDDD`). |
+| 5 | T | `test_user_defaults.py::test_generate_in_the_rename_dialog_follows_the_template_and_renames`: Generate twice gives `urn:x:` and four digits, and the rename and its references follow. `test_id_templates.py` for the format (`D`, `X`, `A`, the backslash, random digits). The create dialogs and the generic forms use the templates too. |
 | 6 | O | Plan: repositories. |
 | 7 | T | `test_reference_picker_fields.py::TestFreeEntry::test_a_typed_external_reference_is_kept`. |
 | 8 | T | `test_reference_picker_fields.py::TestFreeEntry::test_the_target_type_follows_the_last_key_type`. |
@@ -190,8 +190,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 12 | P | `test_hints.py::test_read_mode_shows_no_row_for_a_null_attribute`. No test that no action button is on screen. |
 | 13 | P | `test_data_spec_operations.py::TestFixKeys`. The action has another name and no log line. |
 | 14 | D | Same as F-EDT-05 AC16: no blank record can exist, and the preset adds the one record (`test_blank_member_probes.py`, `test_preset_actions.py::test_a_data_specification_preset_gives_one_record_and_no_blank_one`, ADR 0021). |
-| 15 | G | Language entries cannot be moved. |
-| 16 | P | The hint exists (`test_validation_hints.py::test_category_is_an_info_hint_when_an_element_has_one`). The category is not read-only. |
+| 15 | T | `test_language_moves.py::test_move_down_changes_the_order_and_the_rows_follow` (rows are read again), `::test_the_move_is_one_undo_step_and_is_saved`, and `test_language_order.py` for the plan and the order in the file. |
+| 16 | T | `test_category_row.py`: a category with content is a row that cannot be edited and gives a reason when typed over, an element without one has no row in Edit or Read mode, Delete removes it in one undo step, and the package tree column refuses it too. The hint is `test_validation_hints.py::test_category_is_an_info_hint_when_an_element_has_one`. The dialog of a new element still has the field (ADR 0019). |
 
 ## F-EDT-07 Qualifiers and Extensions
 
@@ -201,14 +201,14 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 2 | D | A missing preset file is listed in the dialog and the dialog still opens (ADR 0017). |
 | 3 | T | `test_preset_actions.py::test_a_qualifier_on_the_clipboard_is_added`. |
 | 4 | P | `test_preset_actions.py::test_bad_clipboard_content_is_refused_with_a_message`. Only "add from clipboard" exists, not "paste". |
-| 5 | G | Pasting into an existing qualifier does not exist, so the kind rule has no case. Not listed in the plan. |
+| 5 | T | `test_paste_qualifier_action.py::test_the_content_is_pasted_and_the_kind_stays` and `test_paste_qualifier.py::test_the_content_is_taken_over_and_the_kind_stays`: parity, the kind of the target stays (ADR 0019). A type another qualifier has is refused (AASd-021), and a text that is no qualifier changes nothing and says why (AC4 for this action). |
 | 6 | P | Move of elements is tested. No test moves a qualifier or an extension, although the changelog says they move. |
 | 7 | O | Plan: "Upgrade qualifiers". |
 | 8 | O | Plan: "Migrate to Extensions". |
 | 9 | O | Plan: "SMT attribute records". |
 | 10 | O | Same row. |
 | 11 | D | A specific asset id without a value asks for it (ADR 0017). |
-| 12 | G | No hint for a blank name of an extension or a specific asset id. |
+| 12 | T | `test_validation_hints.py::test_a_blank_name_of_an_extension_or_specific_asset_id_is_a_hint`, and `test_entity_form.py::test_a_blank_name_of_an_extension_shows_the_hint_in_its_form`. The dialog of a specific asset id refuses a blank name with `A specific asset id needs a name` (`test_create_flows.py::TestAssetIds::test_the_dialog_needs_a_name_and_a_value`). The SDK refuses a blank name, so no object has one. |
 | 13 | O | Same row as 9. |
 
 ## F-EDT-08 Copy, paste, reorder
@@ -279,8 +279,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 11 | T | `test_package_files_ui.py::test_removing_a_file_asks_about_its_references`. |
 | 12 | O | Plan: "Centralize file", a repository feature that writes to a remote store at once ([ADR 0020](adr/0020-selection-locations-and-clipboard.md)). "Move file to folder" is the local counterpart. |
 | 13 | T | `test_blob_actions.py::test_loading_a_file_sets_the_bytes_in_one_undoable_step`. |
-| 14 | G | No Base64 conversion. |
-| 15 | G | The size label is shown. "Binary to Base64" is not offered. |
+| 14 | T | `test_blob_content.py::test_decode_base64_spells_the_bytes_of_the_text` (`SGVsbG8=` gives `Hello`) and `test_blob_actions.py::test_base64_text_becomes_the_bytes_in_one_undoable_step`. |
+| 15 | T | The size label is shown (`test_value_editor.py::TestBinaryEdit::test_shows_content_that_is_no_text_as_hex`: "9 bytes, binary"), and "Blob: Bytes to Base64 text" is offered for every Blob with content (`test_blob_actions.py::test_bytes_become_base64_text_in_one_undoable_step`, `::test_the_conversion_there_and_back_gives_the_bytes_again`). |
 | 16 | T | `test_element_conversion.py::test_a_file_becomes_a_blob_with_the_content_of_the_stored_file`. |
 | 17 | N | Browser. |
 | 18 | N | Browser. |

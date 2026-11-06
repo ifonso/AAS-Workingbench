@@ -16,11 +16,19 @@ from PyQt6.QtCore import pyqtSignal, Qt, QTimer
 from PyQt6.QtWidgets import (
     QGroupBox,
     QFormLayout,
+    QLabel,
     QWidget,
     QPushButton,
     QDialog,
 )
-from basyx.aas.model import LangStringSet, Referable, ModelReference
+from basyx.aas.model import (
+    Entity,
+    EntityType,
+    LangStringSet,
+    ModelReference,
+    MultiLanguageProperty,
+    Referable,
+)
 
 import aas_editor.widgets as widgets
 import aas_editor.widgets.buttons
@@ -52,7 +60,11 @@ from aas_editor.utils.util_type import (
     getArgs,
 )
 from aas_editor.utils.util import isValOk4Typehint
+from aas_editor.application.hints import hints_mode
 from aas_editor.domain.language_tags import check_language_tags
+from aas_editor.domain.validation.field_checks import (
+    entity_global_asset_id_problem,
+)
 from aas_editor.ui.inline_hints import attach_inline_hint
 from aas_editor.domain.typed_values import check_new_object
 from aas_editor.widgets.editWidgets import (
@@ -184,6 +196,7 @@ class ObjGroupBox(GroupBox):
         self.reqParamsDict = dict(sortedReqInitParamsTypehints)
         self.kwargs = kwargs.copy() if kwargs else {}
         self.initLayout()
+        self._initNotice()
 
     def initLayout(self):
         if self.reqParamsDict:
@@ -209,6 +222,11 @@ class ObjGroupBox(GroupBox):
 
     def getInitialInputWidget(self, param: str, val, **kwargs) -> QWidget:
         paramTypeHint = self.reqParamsDict[param]
+        if self._startsWithLanguages(param) and val is None:
+            # A new MultiLanguageProperty starts with a row for each default
+            # language, not with a button that makes the text (F-EDT-04 AC2).
+            kwargs["optional"] = True
+            return self.getInputWidget(param, val, **kwargs)
         if isOptional(paramTypeHint):
             if val is None or (
                 isinstance(val, PreObject)
@@ -218,8 +236,20 @@ class ObjGroupBox(GroupBox):
                 return self.getCreatePushBtn(param)
         return self.getInputWidget(param, val, **kwargs)
 
+    def _startsWithLanguages(self, param: str) -> bool:
+        """Tell whether a parameter is the text of a new MultiLanguageProperty."""
+        return (
+            self.objVal is None
+            and param == "value"
+            and self.objTypeHint is MultiLanguageProperty
+        )
+
     def getInputWidget(self, param: str, val, **kwargs) -> QWidget:
         paramTypeHint = self.reqParamsDict[param]
+        if self._startsWithLanguages(param):
+            from aas_editor.ui.user_defaults import default_languages
+
+            kwargs["startLanguages"] = default_languages()
         print(f"Getting widget for param: {param} of type: {paramTypeHint}")
         # A parameter named by the caller takes a text of several lines.
         kwargs["multiline"] = param in kwargs.get("multilineParams", ())
@@ -227,6 +257,14 @@ class ObjGroupBox(GroupBox):
             paramTypeHint, objVal=val, **kwargs
         )
         self.paramWidgets[param] = widget
+        if self.objTypeHint is Entity and param in (
+            "entity_type",
+            "global_asset_id",
+        ):
+            signal = getattr(widget.widget, "currentIndexChanged", None) or (
+                widget.widget.textChanged
+            )
+            signal.connect(self._refreshNotice)
         # Advice under the fields that the rules know, while hints mode is on
         attach_inline_hint(
             getattr(self.objTypeHint, "__name__", ""), param, widget
@@ -290,6 +328,59 @@ class ObjGroupBox(GroupBox):
                 )
                 self._linkedWidgets[widget] = contentTypeWidget
 
+    def _initNotice(self):
+        """Add the line that asks a new self-managed entity for its asset id.
+
+        It sits under the row of the global asset id, which is a button until
+        the user creates the field, and follows the type and the text
+        (F-EDT-04 AC17).
+        """
+        self.noticeLabel = None
+        if self.objTypeHint is not Entity or "entity_type" not in (
+            self.reqParamsDict
+        ):
+            return
+        label = QLabel(self)
+        label.setWordWrap(True)
+        label.setStyleSheet("font-style: italic;")
+        self.noticeLabel = label
+        row = self._rowOfParam("global_asset_id")
+        self.layout().insertRow(
+            row + 1 if row is not None else self.layout().rowCount(), label
+        )
+        self._refreshNotice()
+
+    def _rowOfParam(self, param: str):
+        layout = self.layout()
+        title = self.getWidgetTitle(param)
+        for row in range(layout.rowCount()):
+            item = layout.itemAt(row, QFormLayout.ItemRole.LabelRole)
+            if item is not None and getattr(item.widget(), "text", None):
+                if item.widget().text() == title:
+                    return row
+        return None
+
+    def _refreshNotice(self, *_):
+        """Show or hide the entity notice for the current type and text."""
+        label = getattr(self, "noticeLabel", None)
+        if label is None:
+            return
+        typeWidget = self.paramWidgets.get("entity_type")
+        textWidget = self.paramWidgets.get("global_asset_id")
+        selfManaged = (
+            typeWidget is not None
+            and typeWidget.widget.currentData()
+            is EntityType.SELF_MANAGED_ENTITY
+        )
+        text = textWidget.widget.text() if textWidget is not None else ""
+        problem = (
+            entity_global_asset_id_problem(selfManaged, text)
+            if hints_mode().is_on
+            else None
+        )
+        label.setText(problem or "")
+        label.setVisible(problem is not None)
+
     def getWidgetTitle(self, param: str):
         title = param.strip("_")
         if param not in self.defaultParams:
@@ -350,6 +441,7 @@ class ObjGroupBox(GroupBox):
                 widgetRow, self.getWidgetTitle(paramName), btn
             )
             self.delInputWidget(widget)
+        self._refreshNotice()
         self.layout().update()
 
     def findWidgetRow(self, widget: QWidget):
@@ -537,20 +629,64 @@ class IterableGroupBox(GroupBox):
 
 
 class LangStringSetGroupBox(IterableGroupBox):
+    """The rows of a multi-language text, a language and a text each.
+
+    A new row starts with the first default language that no row has yet, and
+    `startLanguages` gives a new box an empty row for each of them (F-EDT-04
+    AC2). A row whose text stays empty is left out of the text that is made,
+    because the SDK refuses an empty text, and so is the whole text when no
+    row has one.
+    """
+
     def __init__(self, objTypeHint, **kwargs):
         self.langStringTypeHint = objTypeHint
         objTypeHint = Dict[str, str]
         # The text of a language may have line breaks, its language may not.
         kwargs["multilineParams"] = {"value"}
+        # Only this box starts with rows, so its rows must not get the wish.
+        startLanguages = tuple(kwargs.pop("startLanguages", ()))
         super().__init__(objTypeHint, **kwargs)
+        if not self.inputWidgets:
+            for language in startLanguages:
+                self._addInputWidget(DictItem(language, ""))
+
+    def _addInputWidget(self, objVal=None):
+        # The button passes its `checked` state as the first argument.
+        if objVal is None or isinstance(objVal, bool):
+            objVal = DictItem(self._nextLanguage(), "")
+        super()._addInputWidget(objVal)
+
+    def _nextLanguage(self) -> str:
+        """Return the first default language that no row has, or nothing."""
+        from aas_editor.ui.user_defaults import default_languages
+
+        used = set()
+        for widget in self.inputWidgets:
+            row = getattr(widget, "inputWidget", widget)
+            key = getattr(row, "paramWidgets", {}).get("key")
+            if key is not None:
+                used.add(key.widget.text().lower())
+        return next(
+            (tag for tag in default_languages() if tag.lower() not in used),
+            "",
+        )
+
+    def _filledWidgets(self):
+        """Return the rows that have a text."""
+        return [
+            widget for widget in self.inputWidgets if widget.getObj2add().value
+        ]
 
     def getPreObj(self):
         problems = check_language_tags(
-            widget.getObj2add().key for widget in self.inputWidgets
+            widget.getObj2add().key for widget in self._filledWidgets()
         )
         if problems:
             raise ValueError("\n".join(problems))
-        preObjDict = super().getPreObj()
+        listObj = [widget.getPreObj() for widget in self._filledWidgets()]
+        if not listObj and self.optional:
+            return PreObject.useExistingObject(None)
+        preObjDict = PreObject(typeHintToType(Dict[str, str]), (listObj,), {})
         return PreObject(self.langStringTypeHint, (preObjDict,), {})
 
     def setVal(self, val):

@@ -243,3 +243,50 @@ class AppSettings:
         WRITE_PRETTY_JSON,
         SORT_KEYS_IN_JSON,
     ]
+
+    # Settings that the user types. Each is a text, and the dialog of the
+    # settings checks it with the function of its `aas_editor.domain` module.
+    DEFAULT_LANGUAGES = Setting(
+        name="defaultLanguages",
+        display_name="Default languages",
+        description="Language tags separated by commas, such as en,de. A new "
+        "MultiLanguageProperty starts with an empty row for each of them, and "
+        "a new row of a language list starts with the first one.",
+        default="en",
+        type=str,
+    )
+    ID_TEMPLATE_AAS = Setting(
+        name="idTemplateAas",
+        display_name="Id template for shells",
+        default="",
+        type=str,
+    )
+    ID_TEMPLATE_ASSET = Setting(
+        name="idTemplateAsset",
+        display_name="Id template for global asset ids",
+        default="",
+        type=str,
+    )
+    ID_TEMPLATE_SUBMODEL_INSTANCE = Setting(
+        name="idTemplateSubmodelInstance",
+        display_name="Id template for submodels of kind Instance",
+        default="",
+        type=str,
+    )
+    ID_TEMPLATE_SUBMODEL_TEMPLATE = Setting(
+        name="idTemplateSubmodelTemplate",
+        display_name="Id template for submodels of kind Template",
+        default="",
+        type=str,
+    )
+    ID_TEMPLATE_CONCEPT_DESCRIPTION = Setting(
+        name="idTemplateConceptDescription",
+        display_name="Id template for concept descriptions",
+        default="",
+        type=str,
+    )
+    ID_TEMPLATE_DESCRIPTION = (
+        "D is replaced by a digit, X by a hexadecimal digit and A by a "
+        "letter, at random. A backslash makes the next character literal. "
+        "Leave it empty for a urn:uuid: id."
+    )

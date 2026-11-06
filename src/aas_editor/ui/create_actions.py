@@ -40,6 +40,7 @@ from aas_editor.application.operations.create import shell_of
 from aas_editor.application.operations.create import unlinked_submodels
 from aas_editor.application.operations.rename import RenameError
 from aas_editor.domain.asset_information import AssetInformationError
+from aas_editor.domain.id_templates import IdKind
 from aas_editor.package import Package
 from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.app_settings import OBJECT_ROLE
@@ -54,6 +55,7 @@ from aas_editor.ui.create_dialogs import CreateSubmodelDialog
 from aas_editor.ui.create_dialogs import LinkSubmodelsDialog
 from aas_editor.ui.create_dialogs import SpecificAssetIdDialog
 from aas_editor.ui.reference_jump import find_row
+from aas_editor.ui.user_defaults import id_generator
 
 TITLE = "Create"
 CREATE_SHELL_ID = "create.shell"
@@ -206,7 +208,9 @@ def generate_global_asset_id(
     """Gives a shell a new global asset id, as one undo step."""
     try:
         package.commandStack.push(
-            generate_global_asset_id_command(observer_for(package), shell)
+            generate_global_asset_id_command(
+                observer_for(package), shell, id_generator(IdKind.ASSET)
+            )
         )
     except (CreateError, ReadOnlyError) as error:
         show_problem(str(error), view)

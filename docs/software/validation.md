@@ -24,7 +24,7 @@ check = save_check_for(report)
 | Engine | `domain/validation/engine.py` | `validate(objects, stored_files=None, rules=ALL_RULES, tolerant=False)` returns a `ValidationReport`. A rule that raises is a defect and is not caught, unless `tolerant` is true: then it is logged and reported as a warning of the rule `EDT-RULE-FAILED`. |
 | Findings | `domain/validation/findings.py` | `Finding` (rule id, severity, message, subject, anchor, attribute, `blocks_save`) and `ValidationReport` (`errors`, `warnings`, `blocking`, `of_rule`, `counts_by_rule`). |
 | Coverage | `domain/validation/coverage.py` | The table below, as data. A test keeps it in step with the rules. |
-| Hint rules | `domain/validation/rules/hints.py` | `HINT_RULES`: six rules for hints mode, outside `ALL_RULES`. |
+| Hint rules | `domain/validation/rules/hints.py` | `HINT_RULES`: eleven rules for hints mode, outside `ALL_RULES`. |
 | Field checks | `domain/validation/field_checks.py` | The checks of single texts, which the rules and the hints under dialog fields share. |
 | Application | `application/validation.py` | `validate_package(source)`, `save_check_for(report)`, and `SaveGate`, the check of a save. |
 | Service | `ui/validation_service.py` | One for each package. It runs the rules, debounced, for the dock and the hints. |
@@ -130,7 +130,7 @@ No bundled template has a template qualifier in an instance submodel, so the exc
 
 ## Hints
 
-Hints mode adds the findings of six hint rules to the report. A hint that Package Explorer calls High is a warning, and a Notice is info. The dock and the save gate do not list them.
+Hints mode adds the findings of eleven hint rules to the report. A hint that Package Explorer calls High is a warning, and a Notice is info. The dock and the save gate do not list them.
 
 | Rule | Severity | Hint | Source |
 |---|---|---|---|
@@ -140,8 +140,13 @@ Hints mode adds the findings of six hint rules to the report. A hint that Packag
 | `EDT-HINT-ASSET-ID-EMPTY` | Warning | The global asset id of a shell is blank | F-EDT-02 AC9 |
 | `EDT-HINT-ASSET-ID-DUPLICATE` | Warning | Two shells share a global asset id | F-EDT-02 AC9 |
 | `EDT-HINT-NO-DATA-SPEC` | Warning | A concept description has no data specification. One with a SAMM element is left out | F-EDT-05 AC18 |
+| `EDT-HINT-ENTITY-GLOBAL-ID` | Info | A self-managed entity has no global asset id (a specific asset id satisfies AASd-014, the original asks for the global one) | F-EDT-04 AC17 |
+| `EDT-HINT-DISPLAY-NAME-MISSING` | Info | A Referable has no display name | F-EDT-06 AC1 |
+| `EDT-HINT-DISPLAY-NAME-ONE-LANGUAGE` | Info | A display name has one language | F-EDT-06 AC1 |
+| `EDT-HINT-DESCRIPTION-MISSING` | Info | A Referable has no description | F-EDT-06 AC1 |
+| `EDT-HINT-DESCRIPTION-ONE-LANGUAGE` | Info | A description has one language | F-EDT-06 AC1 |
 
-The tab shows the findings and hints whose anchor is its object. The create dialogs show `field_problem` for the idShort, the value of a key, and the global asset id while the user types: the idShort check is the one of AASd-002, so a field and the rule give one message. The notices of Package Explorer about missing descriptions, display names and semantic ids are not done.
+The tab shows the findings and hints whose anchor is its object. The create dialogs show `field_problem` for the idShort, the value of a key, the global asset id, and the name of an extension or a specific asset id while the user types: the idShort check is the one of AASd-002, so a field and the rule give one message. The form of a new Entity shows the notice for its global asset id. The notice of Package Explorer about a missing semantic id is not done.
 
 ## The rules on the 132 templates
 

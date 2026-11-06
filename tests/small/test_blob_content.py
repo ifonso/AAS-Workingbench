@@ -124,3 +124,51 @@ def test_guess_extension_follows_the_media_type() -> None:
     assert blob_content.guess_extension("image/png; charset=binary") == ".png"
     assert blob_content.guess_extension("application/x-unknown-thing") == ""
     assert blob_content.guess_extension(None) == ""
+
+
+def test_decode_base64_spells_the_bytes_of_the_text() -> None:
+    assert blob_content.decode_base64(b"SGVsbG8=") == b"Hello"
+
+
+def test_decode_base64_ignores_blanks_and_line_breaks() -> None:
+    assert blob_content.decode_base64(b"SGVs\r\nbG8 =\n") == b"Hello"
+
+
+def test_decode_base64_reads_bytes_that_are_no_text() -> None:
+    assert blob_content.decode_base64(b"AAEC/w==") == b"\x00\x01\x02\xff"
+
+
+@pytest.mark.parametrize(
+    ("data", "reason"),
+    [
+        (b"SGVsbG8!", "'!' at character 8 is not in the Base64 alphabet"),
+        (b"SGVs\xffbG8=", "the byte 0xff at character 5"),
+        (b"SGVsbG8", "it has 7 characters, and Base64 needs a multiple of 4"),
+        (b"", "nothing to decode"),
+        (b" \n", "nothing to decode"),
+    ],
+    ids=["bad character", "no ASCII", "bad length", "empty", "only blanks"],
+)
+def test_decode_base64_refuses_with_the_reason(
+    data: bytes, reason: str
+) -> None:
+    with pytest.raises(InvalidValueError, match=reason):
+        blob_content.decode_base64(data)
+
+
+def test_encode_base64_spells_the_bytes_as_text() -> None:
+    assert blob_content.encode_base64(b"\x00\x01\x02\xff") == b"AAEC/w=="
+
+
+def test_encode_base64_refuses_nothing() -> None:
+    with pytest.raises(InvalidValueError, match="nothing to encode"):
+        blob_content.encode_base64(b"")
+
+
+@pytest.mark.parametrize(
+    "data", [b"x", b"Hello, world", bytes(range(256)), b"\xff" * 1000]
+)
+def test_decoding_the_base64_of_bytes_gives_the_bytes_back(
+    data: bytes,
+) -> None:
+    assert blob_content.decode_base64(blob_content.encode_base64(data)) == data

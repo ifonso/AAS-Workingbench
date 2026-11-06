@@ -49,7 +49,7 @@ The rationale for the first two is in [ADR 0005](../software/adr/0005-metamodel-
 | D11 | Delete | Shows usages when something references the target, then offers to remove those references or leave them. |
 | D12 | Cut | Stays immediate, as today. Undo restores it. |
 | D13 | Duplicates on paste | idShort gets a numeric suffix automatically (`Name_1`). Copied Identifiables get a new id. Cut then paste keeps the id, because changing it would leave references dangling, a defect the original has. |
-| D14 | Generated ids | `urn:uuid:<uuid4>`, replacing the fixed `https://www.example.com/`. |
+| D14 | Generated ids | `urn:uuid:<uuid4>`, replacing the fixed `https://www.example.com/`. A template that the user sets (`urn:x:DDDD`) replaces it, see [ADR 0019](../software/adr/0019-defaults-and-notices-of-new-objects.md). |
 | D15 | File location | New files default to `/aasx/files/<name>`. Collisions are shown, and `File.value` follows the stored name. |
 | D16 | Reorder | Offered within Submodel, SMC, SML, Entity, Operation variables, and annotations, where probes show order surviving a JSON and XML round trip. Warn when index references (AASd-128) are affected. Concept description sort only changes the view. |
 | D17 | SML child idShort | Hide the SDK's generated names, as today. Never serialize them. |
@@ -299,19 +299,13 @@ Nothing here was started in WP12, because each needs a design.
    49 of the 132 bundled templates open this way, and D6 makes them Save As only, so the source file is safe.
    Since WP13 the editor lists what the SDK left out (a dialog on open, a context menu action, and the text of the refused save), so the loss is no longer silent. Of the 49, 45 load fewer `idShort` entries than their file has, and the report names the places for all of them. The three Bill of Materials extension templates load 20 of 40, because the submodel is gone, and the Hierarchical Structures template 3 of 13, because one entity with its statements is gone.
    The content itself is not kept. The SDK refuses to construct it, and no reader option or flag changes that. A second object with an id that another has cannot be kept next to it, because the store holds one object for each id, and the others break constraints that the model enforces. Keeping them needs a repair that chooses a value, or a reader of our own, which D3 rules out.
-2. **A Blob cannot be converted between Base64 text and bytes** (F-EDT-04 AC9, F-EDT-10 AC14 and AC15).
-   A Blob that holds Base64 text is common, and the user has to decode it elsewhere.
-5. **Defaults and notices that the original gives for new objects** (F-EDT-04 AC2, AC17; F-EDT-06 AC1, AC5; F-EDT-07 AC12; F-EDT-02 AC11, AC13).
-   Default languages of a new MultiLanguageProperty, the notice for the asset id of an Entity, "Create w/ default" and the notices about missing descriptions, ids made from a template (`urn:x:DDDD`), a hint for a blank name of an extension, `Batch` as an asset kind.
-7. **Small gaps in the editors.**
-   Move language entries (F-EDT-06 AC15), a read-only category (AC16), paste into an existing qualifier (F-EDT-07 AC5).
-8. **The package tree still speaks Python.**
+2. **The package tree still speaks Python.**
    The tabs name attributes, types and entries as the metamodel does (WP17, [ADR 0022](../software/adr/0022-attribute-vocabulary.md)), but the tree of packages still shows `concept_descriptions`, `fileStore` and `input_variable` as nodes, and the class of the SDK in its type column.
    The editor finds those nodes by that name, so the names need a separate display role first.
-9. **The context menu is still long.**
+3. **The context menu is still long.**
    An element has 25 to 27 entries, down from 38 (WP17).
    Move and paste, rename, and the sections of concept descriptions, qualifiers and files are in it, and a user who needs fewer has no way to choose.
    The sizes of docks that a user changed are restored from the last session without a version, as the columns of the tabs were.
-10. **What is not verified.**
+4. **What is not verified.**
     The pictures of this audit came from an offscreen platform, so they show layout and text, and not the behavior of a real display: scaling on a high-resolution screen, the theme colors on real monitors, the preview of media (it was black offscreen), and keyboard focus.
     The large tests run only by hand, and not in CI.

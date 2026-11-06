@@ -22,6 +22,9 @@ from aas_editor.domain.validation import Severity
 from aas_editor.domain.validation import validate
 from aas_editor.domain.validation.context import ValidationContext
 from aas_editor.domain.validation.field_checks import copy_name_problem
+from aas_editor.domain.validation.field_checks import (
+    entity_global_asset_id_problem,
+)
 from aas_editor.domain.validation.field_checks import field_problem
 from aas_editor.domain.validation.field_checks import global_asset_id_problem
 from aas_editor.domain.validation.field_checks import id_short_problem
@@ -45,8 +48,11 @@ def test_hint_rules_are_not_part_of_the_package_rules() -> None:
     assert all(rule_id.startswith("EDT-HINT-") for rule_id in hint_ids)
 
 
-def test_a_valid_environment_has_no_hint() -> None:
-    assert _hints(make_valid_environment()) == {}
+def test_a_valid_environment_has_only_the_notices_about_missing_texts() -> None:
+    assert set(_hints(make_valid_environment())) == {
+        "EDT-HINT-DISPLAY-NAME-MISSING",
+        "EDT-HINT-DESCRIPTION-MISSING",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -71,6 +77,36 @@ def test_id_short_problem_says_what_is_required_when_the_text_breaks_it(
 
     assert problem is not None
     assert "at least two characters" in problem
+
+
+@pytest.mark.parametrize("owner", ["Extension", "SpecificAssetId"])
+@pytest.mark.parametrize("text", ["", "   "])
+def test_a_blank_name_of_an_extension_or_specific_asset_id_is_a_hint(
+    owner: str, text: str
+) -> None:
+    problem = field_problem(owner, "name", text)
+
+    assert problem is not None
+    assert "needs a name" in problem
+
+
+def test_a_name_with_text_or_of_another_class_has_no_hint() -> None:
+    assert field_problem("Extension", "name", "BOM.Args") is None
+    assert field_problem("Qualifier", "name", "") is None
+
+
+def test_an_entity_asks_for_its_global_asset_id_only_when_self_managed() -> (
+    None
+):
+    assert entity_global_asset_id_problem(True, None) is not None
+    assert entity_global_asset_id_problem(True, " ") is not None
+    assert entity_global_asset_id_problem(True, "urn:x") is None
+    assert entity_global_asset_id_problem(False, None) is None
+
+
+def test_the_field_of_an_entity_has_no_hint_about_an_empty_asset_id() -> None:
+    assert field_problem("Entity", "global_asset_id", "") is None
+    assert field_problem("AssetInformation", "global_asset_id", "") is not None
 
 
 def test_copy_name_problem_is_found_when_the_name_has_three_dashes() -> None:
@@ -165,6 +201,81 @@ def test_duplicate_asset_id_is_reported_on_every_shell_that_shares_it() -> None:
 
     anchors = [f.anchor for f in report.of_rule("EDT-HINT-ASSET-ID-DUPLICATE")]
     assert anchors == [first, second] or anchors == [second, first]
+
+
+def _texts(count: int) -> dict[str, str]:
+    return dict(list({"en": "x", "de": "y"}.items())[:count])
+
+
+def test_a_missing_display_name_and_description_are_notices() -> None:
+    element = make_property("Pump")
+
+    report = validate(store_with(element), rules=HINT_RULES)
+
+    for rule_id in (
+        "EDT-HINT-DISPLAY-NAME-MISSING",
+        "EDT-HINT-DESCRIPTION-MISSING",
+    ):
+        findings = [f for f in report.of_rule(rule_id) if f.anchor is element]
+        assert [f.severity for f in findings] == [Severity.INFO]
+    assert (
+        "human readable name"
+        in report.of_rule("EDT-HINT-DISPLAY-NAME-MISSING")[0].message
+    )
+
+
+def test_texts_in_one_language_get_the_notice_for_several_languages() -> None:
+    element = make_property("Pump")
+    element.display_name = model.MultiLanguageNameType(_texts(1))
+    element.description = model.MultiLanguageTextType(_texts(1))
+
+    report = validate(store_with(element), rules=HINT_RULES)
+
+    kinds = {f.rule_id for f in report.findings if f.anchor is element}
+    assert kinds == {
+        "EDT-HINT-DISPLAY-NAME-ONE-LANGUAGE",
+        "EDT-HINT-DESCRIPTION-ONE-LANGUAGE",
+    }
+
+
+def test_texts_in_two_languages_have_no_notice() -> None:
+    element = make_property("Pump")
+    element.display_name = model.MultiLanguageNameType(_texts(2))
+    element.description = model.MultiLanguageTextType(_texts(2))
+
+    report = validate(store_with(element), rules=HINT_RULES)
+
+    assert [f for f in report.findings if f.anchor is element] == []
+
+
+def test_a_self_managed_entity_without_a_global_asset_id_gets_a_notice() -> (
+    None
+):
+    entity = model.Entity(
+        "Ent",
+        model.EntityType.SELF_MANAGED_ENTITY,
+        specific_asset_id=[model.SpecificAssetId("serial", "4711")],
+    )
+
+    report = validate(store_with(entity), rules=HINT_RULES)
+
+    (finding,) = report.of_rule("EDT-HINT-ENTITY-GLOBAL-ID")
+    assert finding.anchor is entity
+    assert finding.severity is Severity.INFO
+    assert "global identifier for the SelfManagedEntity" in finding.message
+
+
+def test_an_entity_with_a_global_asset_id_or_co_managed_has_no_notice() -> None:
+    named = model.Entity(
+        "Named",
+        model.EntityType.SELF_MANAGED_ENTITY,
+        global_asset_id="urn:asset:1",
+    )
+    co_managed = model.Entity("Co", model.EntityType.CO_MANAGED_ENTITY)
+
+    report = validate(store_with(named, co_managed), rules=HINT_RULES)
+
+    assert report.of_rule("EDT-HINT-ENTITY-GLOBAL-ID") == ()
 
 
 def test_hints_do_not_change_the_package_rules() -> None:

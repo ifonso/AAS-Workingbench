@@ -1,12 +1,20 @@
-"""Context menu actions to load and save the bytes of a Blob.
+"""Context menu actions to load, save, and convert the bytes of a Blob.
 
-The Blob editor does the same in its dialog. These two actions skip the dialog,
-and work for content that is too large for the editor to show. Loading is one
-step of the history of the package, and sets the media type to the one of the
-file extension when the Blob has none. Saving changes nothing, so it also works
-in Read mode.
+The Blob editor does the same in its dialog. The load and save actions skip the
+dialog, and work for content that is too large for the editor to show. Loading
+is one step of the history of the package, and sets the media type to the one
+of the file extension when the Blob has none. Saving changes nothing, so it
+also works in Read mode.
+
+"Base64 text to bytes" and "Bytes to Base64 text" (F-EDT-04 AC9, F-EDT-10 AC14
+and AC15) change the bytes themselves: the content of a Blob that holds Base64
+text becomes the bytes it spells, and the other way round. They are not about
+how a file stores a Blob, which is always Base64 in JSON and XML. Each is one
+undo step, which is why there is no question before it (the original asks
+because it cannot undo).
 """
 
+from collections.abc import Callable
 from pathlib import Path
 
 from basyx.aas import model
@@ -16,6 +24,7 @@ from PyQt6.QtWidgets import QMessageBox
 from aas_editor.application.changes import observer_for
 from aas_editor.application.edits import SetAttribute
 from aas_editor.domain import blob_content
+from aas_editor.domain.value_types import InvalidValueError
 from aas_editor.settings.app_settings import OBJECT_ROLE
 from aas_editor.ui.actions import ActionContext
 from aas_editor.ui.actions import ActionSpec
@@ -25,6 +34,8 @@ from aas_editor.ui.actions import ViewKind
 
 LOAD_ACTION_ID = "blob.load_content"
 SAVE_ACTION_ID = "blob.save_content"
+FROM_BASE64_ACTION_ID = "blob.from_base64"
+TO_BASE64_ACTION_ID = "blob.to_base64"
 
 
 def _blob(context: ActionContext) -> model.Blob | None:
@@ -87,8 +98,43 @@ def save_content(context: ActionContext) -> None:
         _show_error(context, f"The file could not be written: {error}")
 
 
+def _convert(
+    context: ActionContext,
+    convert: Callable[[bytes], bytes],
+    description: str,
+) -> None:
+    """Replaces the bytes of the Blob by the converted ones, or says why not."""
+    blob = _blob(context)
+    if blob is None or blob.value is None or context.package is None:
+        return
+    try:
+        converted = convert(blob.value)
+    except InvalidValueError as error:
+        _show_error(context, f"The content was not changed. {error}.")
+        return
+    context.push(
+        SetAttribute(
+            observer_for(context.package),
+            blob,
+            "value",
+            converted,
+            description=f"{description} of {blob.id_short or 'Blob'}",
+        )
+    )
+
+
+def base64_text_to_bytes(context: ActionContext) -> None:
+    """Takes the content as Base64 text and keeps the bytes that it spells."""
+    _convert(context, blob_content.decode_base64, "Base64 text to bytes")
+
+
+def bytes_to_base64_text(context: ActionContext) -> None:
+    """Replaces the bytes by their Base64 text."""
+    _convert(context, blob_content.encode_base64, "Bytes to Base64 text")
+
+
 def register_blob_actions() -> None:
-    """Adds the two actions to the registry, once.
+    """Adds the actions to the registry, once.
 
     Call it before the first view is created, from the composition root.
     """
@@ -118,5 +164,31 @@ def register_blob_actions() -> None:
                 views=ViewKind.PACKAGES,
                 status_tip="Write the content of the Blob into a file",
                 order=201,
+            )
+        )
+    if FROM_BASE64_ACTION_ID not in registered:
+        register_action(
+            ActionSpec(
+                action_id=FROM_BASE64_ACTION_ID,
+                text="Blob: Base64 text to bytes",
+                run=base64_text_to_bytes,
+                is_enabled=_has_content,
+                views=ViewKind.PACKAGES,
+                status_tip="The content is Base64 text. Replace it by the "
+                "bytes that it spells",
+                order=202,
+            )
+        )
+    if TO_BASE64_ACTION_ID not in registered:
+        register_action(
+            ActionSpec(
+                action_id=TO_BASE64_ACTION_ID,
+                text="Blob: Bytes to Base64 text",
+                run=bytes_to_base64_text,
+                is_enabled=_has_content,
+                views=ViewKind.PACKAGES,
+                status_tip="Replace the bytes of the content by their Base64 "
+                "text",
+                order=203,
             )
         )

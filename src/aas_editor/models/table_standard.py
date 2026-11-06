@@ -672,6 +672,7 @@ class StandardTable(QAbstractItemModel):
                     # report, so the model shows the edit by itself.
                     self._syncAfterEdit(index, command)
                     self.update(index)
+                    self._dropClearedCategory(index, command)
                 return True
             except EditCancelled:
                 # The user said no to a question, so this is no failure.
@@ -772,6 +773,15 @@ class StandardTable(QAbstractItemModel):
             raise InvalidValueError(
                 "The position of an item in a list cannot be edited."
             )
+        if (
+            name == "category"
+            and isinstance(owner, Referable)
+            and value is not None
+        ):
+            raise InvalidValueError(
+                "The category is deprecated, so it cannot be set or changed. "
+                "Delete it, and use a semantic id or a qualifier instead."
+            )
         renamed = self.renameCommand(index, owner, name, value)
         if renamed is not _NOT_RENAMED:
             return renamed
@@ -854,6 +864,21 @@ class StandardTable(QAbstractItemModel):
         elif isinstance(command, SetValueType) and item.objName == "value_type":
             item.obj = command.value_type
             self._syncValueRows(item, command)
+
+    def _dropClearedCategory(self, index: QModelIndex, command: Command):
+        """Remove the row of a category that was deleted (F-EDT-06 AC16).
+
+        The category is shown only while it has content, so the row goes with
+        the value, and the tab does not need to be opened again.
+        """
+        item = self.objByIndex(index)
+        if (
+            isinstance(command, SetAttribute)
+            and command.name == "category"
+            and getattr(item, "readOnly", False)
+            and getattr(command.owner, "category", None) is None
+        ):
+            self._repopulate(index.parent())
 
     def _syncValueRows(self, item: StandardItem, command: SetValueType):
         """Show the values that a change of the value type converted"""

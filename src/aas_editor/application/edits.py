@@ -378,6 +378,52 @@ class ReorderMembers(Command):
                 )
 
 
+class ReorderLanguages(Command):
+    """Puts the entries of a multi-language text into another order.
+
+    The order of the languages is saved in the file, like the order of the
+    elements of a submodel, so a move is a change worth an undo step. Entries
+    are named by their language, because a mapping does not hold objects.
+    """
+
+    def __init__(
+        self,
+        observer: ModelChangeObserver,
+        texts: object,
+        order: Sequence[str],
+        description: str | None = None,
+    ) -> None:
+        """Creates the command without changing anything.
+
+        Args:
+            observer: Where to report the change.
+            texts: A `LangStringSet`.
+            order: Every language of the set once, in the new order.
+            description: Text for Undo and Redo.
+        """
+        self.description = description or "Move language"
+        self._observer = observer
+        self._texts = texts
+        self._order = list(order)
+        self._previous: list[str] = []
+
+    @property
+    def is_noop(self) -> bool:
+        """Whether the set has this order already."""
+        return list(cast("Iterable[str]", self._texts)) == self._order
+
+    def apply(self) -> None:
+        """Reorders the set and tells the views to read it again."""
+        self._previous = list(cast("Iterable[str]", self._texts))
+        containers.reorder_keys(self._texts, self._order)
+        self._observer.notify(Change.changed(self._texts))
+
+    def revert(self) -> None:
+        """Puts the previous order back."""
+        containers.reorder_keys(self._texts, self._previous)
+        self._observer.notify(Change.changed(self._texts))
+
+
 class ReplaceMember(Command):
     """Swaps a member of a container for another object in place."""
 

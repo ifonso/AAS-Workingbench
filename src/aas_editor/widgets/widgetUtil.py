@@ -167,6 +167,12 @@ class InputWidgetUtil:
                 objTypes, **kwargs
             )
         elif issubtype(objTypeHint, LangStringSet):
+            if kwargs.get("objVal") is None and "startLanguages" not in kwargs:
+                # "Create w/ default": a new text starts with one empty row in
+                # the default language (F-EDT-06 AC1).
+                from aas_editor.ui.user_defaults import first_default_language
+
+                kwargs["startLanguages"] = (first_default_language(),)
             widget = widgets.groupBoxes.LangStringSetGroupBox(
                 objTypeHint, **kwargs
             )

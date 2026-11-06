@@ -22,6 +22,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from basyx.aas import model
 from PyQt6.QtWidgets import QApplication
 
 from aas_editor.application.changes import observer_for
@@ -29,6 +30,15 @@ from aas_editor.application.operations.attach import AttachPlan
 from aas_editor.application.operations.attach import attach_commands
 from aas_editor.application.operations.attach import can_hold
 from aas_editor.application.operations.attach import plan_attach
+from aas_editor.application.operations.paste_qualifier import (
+    PasteQualifierError,
+)
+from aas_editor.application.operations.paste_qualifier import (
+    paste_qualifier_commands,
+)
+from aas_editor.application.operations.paste_qualifier import (
+    plan_paste_into_qualifier,
+)
 from aas_editor.domain.clipboard_json import ClipboardError
 from aas_editor.domain.clipboard_json import load_members
 from aas_editor.domain.member_json import Member
@@ -161,6 +171,54 @@ def _from_clipboard(kind: MemberKind) -> Callable[[ActionContext], None]:
     return run
 
 
+PASTE_QUALIFIER_ID = "clipboard.paste_qualifier"
+
+
+def _selected_qualifier(context: ActionContext) -> model.Qualifier | None:
+    """Returns the one qualifier that the selection is, or None."""
+    rows = selected_rows(context)
+    if len(rows) != 1:
+        return None
+    obj = rows[0].data(OBJECT_ROLE)
+    return obj if isinstance(obj, model.Qualifier) else None
+
+
+def _can_paste_into_qualifier(context: ActionContext) -> bool:
+    return (
+        context.package is not None and _selected_qualifier(context) is not None
+    )
+
+
+def _paste_into_qualifier(context: ActionContext) -> None:
+    """Takes the qualifier on the clipboard into the selected qualifier.
+
+    The kind stays as the selected qualifier has it (F-EDT-07 AC5). A text
+    that is no qualifier, and a type that another qualifier has, are refused
+    with a message and change nothing (AC4).
+    """
+    target = _selected_qualifier(context)
+    package: Any = context.package
+    title = "Paste into qualifier"
+    if target is None or package is None:
+        return
+    text = QApplication.clipboard().text()  # pyright: ignore[reportOptionalMemberAccess]
+    try:
+        members = load_members(text, MemberKind.QUALIFIER)
+        if len(members) != 1:
+            raise ClipboardError(
+                f"The clipboard has {len(members)} qualifiers. Paste into a "
+                "qualifier takes one"
+            )
+        pasted = members[0]
+        assert isinstance(pasted, model.Qualifier)
+        plan = plan_paste_into_qualifier(target, pasted)
+        commands = paste_qualifier_commands(observer_for(package), plan)
+    except (ClipboardError, PasteQualifierError) as error:
+        bulk_dialogs.show_problem(title, str(error), context.view)
+        return
+    run_group(context, title, plan.description, commands)
+
+
 _PRESETS = (
     (MemberKind.QUALIFIER, "qualifier", 440),
     (MemberKind.EXTENSION, "extension", 441),
@@ -206,6 +264,18 @@ def register_preset_actions() -> None:
                 order=order,
             )
         )
+    specs.append(
+        ActionSpec(
+            action_id=PASTE_QUALIFIER_ID,
+            text="Paste qualifier from clipboard into this qualifier",
+            run=_paste_into_qualifier,
+            is_enabled=_can_paste_into_qualifier,
+            views=ViewKind.ANY,
+            status_tip="Take the type, value, and semantic ids of the "
+            "qualifier on the clipboard (JSON). The kind stays",
+            order=453,
+        )
+    )
     for spec in specs:
         if spec.action_id not in registered:
             register_action(spec)

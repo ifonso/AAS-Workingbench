@@ -65,6 +65,7 @@ from aas_editor.ui.delete_flow import DeleteCancelled
 from aas_editor.ui.delete_flow import prepare_delete
 from aas_editor.ui.iec61360_dialog import ask_iec61360
 from aas_editor.ui.tree_navigation import select_object
+from aas_editor.ui.user_defaults import first_default_language
 from aas_editor.ui.value_list_dialog import ask_value_list
 
 TITLE = concept_dialogs.TITLE
@@ -223,7 +224,11 @@ def _can_sort(context: ActionContext) -> bool:
 def _run_create_from_semantic_id(context: ActionContext) -> None:
     roots = _holder_roots(context)
     plan = ops.plan_create(
-        _all_objects(context), roots, adaptive=True, below=False
+        _all_objects(context),
+        roots,
+        adaptive=True,
+        below=False,
+        language=first_default_language(),
     )
     if not plan.new:
         _show(context, _why_nothing_created(plan, roots))
@@ -258,7 +263,10 @@ def _why_nothing_created(
 
 def _run_create_from_all(context: ActionContext) -> None:
     roots = _holder_roots(context)
-    plan = ops.plan_create(_all_objects(context), roots, adaptive=True)
+    language = first_default_language()
+    plan = ops.plan_create(
+        _all_objects(context), roots, adaptive=True, language=language
+    )
     if not plan.new:
         _show(context, f"Nothing to create. {plan.summary}")
         return
@@ -266,7 +274,9 @@ def _run_create_from_all(context: ActionContext) -> None:
     if adaptive is None:
         return
     if not adaptive:
-        plan = ops.plan_create(_all_objects(context), roots, adaptive=False)
+        plan = ops.plan_create(
+            _all_objects(context), roots, adaptive=False, language=language
+        )
     commands = ops.create_commands(
         observer_for(context.package), _store(context), plan
     )
@@ -294,7 +304,9 @@ def _run_from_pairs(context: ActionContext) -> None:
     concept = _concept(context)
     if concept is None:
         return
-    plan = ops.plan_from_pairs(_all_objects(context), concept)
+    plan = ops.plan_from_pairs(
+        _all_objects(context), concept, first_default_language()
+    )
     if not plan.new:
         notes = [f"{pair.value}: {reason}" for pair, reason in plan.skipped]
         _show(
@@ -469,7 +481,7 @@ def _run_delete_invalid(context: ActionContext) -> None:
 def _default_draft(concept: ConceptDescription) -> Iec61360Draft:
     """Starts the preferred name from the idShort, as Sync does in the original."""
     return Iec61360Draft(
-        preferred_name=[(DEFAULT_LANGUAGE, concept.id_short or "")]
+        preferred_name=[(first_default_language(), concept.id_short or "")]
     )
 
 

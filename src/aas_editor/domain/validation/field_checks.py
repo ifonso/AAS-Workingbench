@@ -93,6 +93,53 @@ def global_asset_id_problem(value: str | None) -> str | None:
     return None
 
 
+ENTITY_GLOBAL_ID_NOTICE = (
+    "Please choose the global identifier for the SelfManagedEntity"
+)
+
+_NAMED = {
+    "Extension": "An extension",
+    "SpecificAssetId": "A specific asset id",
+}
+
+
+def entity_global_asset_id_problem(
+    is_self_managed: bool, global_asset_id: str | None
+) -> str | None:
+    """Tells that a self-managed entity should name its global asset id.
+
+    Args:
+        is_self_managed: Whether the entity type is `SelfManagedEntity`.
+        global_asset_id: The global asset id, or None if there is none.
+
+    Returns:
+        A sentence, or None for a co-managed entity and for a self-managed
+        one that has a global asset id. A specific asset id would satisfy
+        AASd-014 too, but the original asks for the global one, as the
+        preferred way to name the asset (F-EDT-04 AC17).
+    """
+    if is_self_managed and not (global_asset_id or "").strip():
+        return ENTITY_GLOBAL_ID_NOTICE
+    return None
+
+
+def blank_name_problem(owner: str, text: str) -> str | None:
+    """Tells that the name of an extension or a specific asset id is blank.
+
+    Args:
+        owner: The name of the class: `Extension` or `SpecificAssetId`.
+        text: The name that the user typed.
+
+    Returns:
+        A sentence, or None if the owner has no name or the text has some.
+        The SDK refuses a blank name (F-EDT-07 AC12).
+    """
+    kind = _NAMED.get(owner)
+    if kind is not None and not text.strip():
+        return f"{kind} needs a name. The name is empty"
+    return None
+
+
 def field_problem(owner: str, param: str, text: str) -> str | None:
     """Tells what the rules say about a text that is typed into a form field.
 
@@ -115,6 +162,9 @@ def field_problem(owner: str, param: str, text: str) -> str | None:
         return copy_name_problem(text)
     if owner == "Key" and param == "value":
         return key_value_problem(text)
-    if param == "global_asset_id":
+    if param == "name":
+        return blank_name_problem(owner, text)
+    if param == "global_asset_id" and owner != "Entity":
+        # An entity names its asset in its own notice, which knows its type.
         return global_asset_id_problem(text)
     return None
