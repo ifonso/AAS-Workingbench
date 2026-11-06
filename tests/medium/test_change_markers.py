@@ -191,3 +191,26 @@ def test_the_tree_is_repainted_when_a_save_clears_the_marker(
 
     with qtbot.waitSignal(world.table.dataChanged, timeout=1000):
         world.stack.mark_saved()
+
+
+def test_the_index_row_of_a_list_item_that_was_removed_can_still_be_painted(
+    model_support,
+) -> None:
+    from tests.factories import make_list
+
+    first = model.Property(None, value_type=model.datatypes.String, value="a")
+    second = model.Property(None, value_type=model.datatypes.String, value="b")
+    items = make_list("Items", [first, second])
+    pack = model_support.pack_table(make_submodel(elements=[items]))
+    from aas_editor.models import DetailedInfoTable
+
+    list_index = model_support.find_path(
+        pack, "", "submodels", "Submodel", "Items"
+    )
+    tab = DetailedInfoTable(pack.index(1, 0, list_index))
+    index_row = model_support.find(tab, "index")
+    items.value.remove(second)
+
+    shown = index_row.siblingAtColumn(1).data(Qt.ItemDataRole.DisplayRole)
+
+    assert shown == "-1"

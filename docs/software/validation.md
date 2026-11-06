@@ -21,14 +21,18 @@ check = save_check_for(report)
 |---|---|---|
 | Rules | `domain/validation/rules/` | 20 rules, one module for each topic. A rule takes a `ValidationContext` and yields `Finding`s. |
 | Context | `domain/validation/context.py` | The package walked once for all rules: elements, qualifiers, extensions, semantic holders, language texts, file references, coded values. |
-| Engine | `domain/validation/engine.py` | `validate(objects, stored_files=None, rules=ALL_RULES)` returns a `ValidationReport`. A rule that raises is a defect and is not caught. |
+| Engine | `domain/validation/engine.py` | `validate(objects, stored_files=None, rules=ALL_RULES, tolerant=False)` returns a `ValidationReport`. A rule that raises is a defect and is not caught, unless `tolerant` is true: then it is logged and reported as a warning of the rule `EDT-RULE-FAILED`. |
 | Findings | `domain/validation/findings.py` | `Finding` (rule id, severity, message, subject, anchor, attribute, `blocks_save`) and `ValidationReport` (`errors`, `warnings`, `blocking`, `of_rule`, `counts_by_rule`). |
 | Coverage | `domain/validation/coverage.py` | The table below, as data. A test keeps it in step with the rules. |
-| Application | `application/validation.py` | `validate_package(source)` and `save_check_for(report)`. |
+| Hint rules | `domain/validation/rules/hints.py` | `HINT_RULES`: five rules for hints mode, outside `ALL_RULES`. |
+| Field checks | `domain/validation/field_checks.py` | The checks of single texts, which the rules and the hints under dialog fields share. |
+| Application | `application/validation.py` | `validate_package(source)`, `save_check_for(report)`, and `SaveGate`, the check of a save. |
+| Service | `ui/validation_service.py` | One for each package. It runs the rules, debounced, for the dock and the hints. |
+| Dock | `ui/validation_dock.py` | The findings with the severity and rule filters. |
 
-**For the validation dock (WP5b):** a finding has `anchor`, the shell, submodel, concept description or element to select when the user opens it, and `subject`, the object that is wrong (a `Qualifier`, a `SpecificAssetId`, or a file name).
+**The validation dock (WP5b):** a finding has `anchor`, the shell, submodel, concept description or element to select when the user opens it, and `subject`, the object that is wrong (a `Qualifier`, a `SpecificAssetId`, or a file name).
 `anchor` is `None` for a finding about the package, such as a file that nothing refers to.
-`ValidationReport.of(findings)` sorts errors first and keeps the document order within a severity, but the order inside a severity follows an unordered set for shells, submodels, and descriptions.
+The dock lists them with severity, rule, location and message, filters by severity and by rule, and selects the `anchor` on a double click. `ValidationReport.of(findings)` sorts errors first and keeps the document order within a severity, but the order inside a severity follows an unordered set for shells, submodels, and descriptions.
 
 ### Severity and the save gate (D5)
 
@@ -42,7 +46,9 @@ check = save_check_for(report)
 These are the refusals that `application/save.py` already makes with the same `domain.file_references` functions, so `check_save` is unchanged.
 `tests/small/test_application_validation.py` checks that the blocking findings and the blockers of `check_save` agree.
 `save_check_for` maps a report to a `SaveCheck`: blocking findings are blockers, and the other errors are the warnings that the user may confirm.
-WP5b merges it into the check and drops the duplicate file blockers.
+`SaveGate.check` merges it with `check_save`. The two file rules are left out of the merge, because `check_save` blocks them with the target format in mind (a JSON target needs no stored file). The other errors are asked about once for each package and session: the same rule, place and message do not ask again after "Save anyway", and a new or changed error does. The warnings of `check_save` (D7) ask on every save.
+
+Six bundled templates have one-letter idShorts, so a save asks once. This fits D5, which wants errors shown and not skipped, and it stops a user who cannot fix a template from confirming 120 errors on every save ([ADR 0014](adr/0014-validation-in-the-editor.md)).
 
 A control character in the value of a Property (`AASd-130`) does not block: the XML writer of the SDK raises `ValueError` for it, which the save flow reports with the target untouched, and JSON writes it.
 
@@ -115,6 +121,20 @@ They added AASd-002, 005, 020, 109, 116, 118 and 130.
 
 AASd-129 follows the V3.1 text, without the exception of V3.2 for operation variables.
 No bundled template has a template qualifier in an instance submodel, so the exception changes nothing for them.
+
+## Hints
+
+Hints mode adds the findings of five hint rules to the report. A hint that Package Explorer calls High is a warning, and a Notice is info. The dock and the save gate do not list them.
+
+| Rule | Severity | Hint | Source |
+|---|---|---|---|
+| `EDT-HINT-KEY-WHITESPACE` | Warning | A key of a semantic id or supplemental semantic id has whitespace | F-EDT-06 AC9 |
+| `EDT-HINT-CATEGORY` | Info | A category is deprecated | F-EDT-06 AC16 |
+| `EDT-HINT-COPY-NAME` | Warning | An idShort has three dashes, as a copy of the original names it | F-EDT-06 |
+| `EDT-HINT-ASSET-ID-EMPTY` | Warning | The global asset id of a shell is blank | F-EDT-02 AC9 |
+| `EDT-HINT-ASSET-ID-DUPLICATE` | Warning | Two shells share a global asset id | F-EDT-02 AC9 |
+
+The tab shows the findings and hints whose anchor is its object. The create dialogs show `field_problem` for the idShort, the value of a key, and the global asset id while the user types: the idShort check is the one of AASd-002, so a field and the rule give one message. The notices of Package Explorer about missing descriptions, display names and semantic ids are not done.
 
 ## The rules on the 132 templates
 
@@ -235,5 +255,5 @@ Two quieter findings make D6 safer, and are not a reduction:
 - `AASd-012` and `AASd-115` have no check.
 - Dangling references cannot tell an error from a reference into another package, so they are warnings.
 - A rule sees the objects the SDK could read. A failsafe package is checked without what it dropped.
-- Validation runs when asked. Nothing runs it on a save yet (WP5b).
+- Validation runs on a save, and in the dock and hints after a pause of 250 ms in the changes. It runs in the thread of the UI.
 - The order of findings within a severity follows the order of an unordered set for shells, submodels and descriptions.

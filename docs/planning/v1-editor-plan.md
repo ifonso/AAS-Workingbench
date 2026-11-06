@@ -39,7 +39,7 @@ The rationale for the first two is in [ADR 0005](../software/adr/0005-metamodel-
 | D2 | Validation | Our own rule set over BaSyx objects. `aas-test-engines` stays as a separate tool labeled V3.0, because no V3.1 release exists. |
 | D3 | Data access | All AAS reading, writing, and mutation goes through `basyx`. No hand-written AAS JSON, XML, or OPC handling. Narrow exceptions, each isolated in `infrastructure/package_io.py` and covered by tests: a reader subclass overriding the SDK's `_add_supplementary_file` and `_collect_supplementary_files`, reading thumbnail metadata through `reader.reader`, and a writer subclass that marks an already written part as the package thumbnail. The SDK is pinned, so these stay stable until a deliberate upgrade. See [ADR 0006](../software/adr/0006-safe-save.md). |
 | D4 | Saving | Validate, write to a temporary file with `failsafe=False`, then replace the target atomically. Failures leave the original untouched, and also leave `Package.file` unchanged on a failed Save As. |
-| D5 | Validation gate | Errors are shown before saving, with Cancel and Save anyway. Nothing is skipped silently. Refusals with no Save anyway: a File pointing to a package path with no stored file, because the SDK cannot write that package or reopen it. |
+| D5 | Validation gate | Errors are shown before saving, with Cancel and Save anyway. Nothing is skipped silently. Refusals with no Save anyway: a File pointing to a package path with no stored file, because the SDK cannot write that package or reopen it. Save anyway is asked once for each error in a session, see [ADR 0014](../software/adr/0014-validation-in-the-editor.md). |
 | D6 | Partial loads | Every package opened through the failsafe branch is treated as partial, because the SDK does not report what it skipped. It must use Save As, and cannot overwrite its source. |
 | D7 | Lost content | Saving warns before dropping anything: unreferenced supplementary files in AASX, all files in JSON and XML. The check walks annotations as well, using our own walker. |
 | D8 | Auto-link | Saving no longer adds Submodel references to the first AAS. It becomes an explicit action. |
@@ -266,7 +266,7 @@ All ─ WP12
 | WP3b | `feat/command-undo` | Done |
 | WP4 | `feat/reference-integrity` | Done |
 | WP5a | `feat/validation-rules` | Done |
-| WP5b | `feat/validation-ui` | Not started |
+| WP5b | `feat/validation-ui` | Done |
 | WP6 | `feat/structure-operations` | Done |
 | WP7 | `feat/create-and-reference-flows` | Not started |
 | WP8a | `feat/value-editors` | Done |

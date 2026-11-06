@@ -120,8 +120,15 @@ class ListIndexItem(DetailedInfoItem):
         super().__init__(self.position(), name=name, typehint=int, **kwargs)
 
     def position(self) -> int:
-        """Return the position of the element in its list."""
-        position = position_of(self.element.parent.value, self.element)
+        """Return the position of the element in its list, -1 if it has left it.
+
+        A row can be asked for its data after its element was removed, for
+        example when the view repaints before the row itself is removed.
+        """
+        parent = self.element.parent
+        if parent is None:
+            return -1
+        position = position_of(parent.value, self.element)
         return -1 if position is None else position
 
     def data(self, role, column=settings.ATTRIBUTE_COLUMN, column_name=""):
