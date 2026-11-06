@@ -264,7 +264,7 @@ All ─ WP12
 | WP2 | `feat/safe-save` | Done |
 | WP3a | `refactor/model-change-observer` | Done |
 | WP3b | `feat/command-undo` | Done |
-| WP4 | `feat/reference-integrity` | Not started |
+| WP4 | `feat/reference-integrity` | Done |
 | WP5a | `feat/validation-rules` | Not started |
 | WP5b | `feat/validation-ui` | Not started |
 | WP6 | `feat/structure-operations` | Not started |

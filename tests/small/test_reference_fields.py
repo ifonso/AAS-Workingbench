@@ -19,8 +19,13 @@ from tests.factories import make_asset_information
 from tests.factories import make_property
 from tests.factories import make_submodel
 
+from aas_editor.application.changes import ModelChangeObserver
+from aas_editor.application.commands import CommandStack
+from aas_editor.application.operations.references import ReferenceChange
+from aas_editor.application.operations.references import reference_commands
 from aas_editor.domain.references import chain
 from aas_editor.domain.references import iter_slots
+from aas_editor.domain.references import map_keys
 
 _Built = tuple[model.Identifiable, list[model.Reference]]
 _Builder = Callable[[dict[str, Any]], _Built]
@@ -270,10 +275,10 @@ def test_every_sdk_class_with_a_reference_field_has_a_builder() -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "cls", _classes_with_reference_fields(), ids=lambda cls: cls.__name__
-)
-def test_iter_slots_finds_every_reference_field_of_the_sdk(cls: type) -> None:
+def _host_with_references(
+    cls: type,
+) -> tuple[model.Identifiable, list[model.Reference]]:
+    """Builds an object of the SDK class with every reference field set."""
     fields = _reference_parameters(cls)
     refs = {
         name: (
@@ -283,8 +288,6 @@ def test_iter_slots_finds_every_reference_field_of_the_sdk(cls: type) -> None:
         )
         for name, annotation in fields.items()
     }
-    if "supplemental_semantic_id" in refs and "semantic_id" not in refs:
-        raise AssertionError("A semantic id is needed for the supplemental ids")
     refs = {
         name: (
             set(value)
@@ -293,8 +296,15 @@ def test_iter_slots_finds_every_reference_field_of_the_sdk(cls: type) -> None:
         )
         for name, value in refs.items()
     }
+    return _BUILDERS[cls](refs)
 
-    host, expected = _BUILDERS[cls](refs)
+
+@pytest.mark.parametrize(
+    "cls", _classes_with_reference_fields(), ids=lambda cls: cls.__name__
+)
+def test_iter_slots_finds_every_reference_field_of_the_sdk(cls: type) -> None:
+    host, expected = _host_with_references(cls)
+
     found = [
         reference
         for slot in iter_slots(host)
@@ -303,8 +313,45 @@ def test_iter_slots_finds_every_reference_field_of_the_sdk(cls: type) -> None:
 
     assert {id(reference) for reference in found} == {
         id(reference) for reference in expected
-    }, f"{cls.__name__} has fields that iter_slots does not find: {fields}"
+    }, f"{cls.__name__} has fields that iter_slots does not find"
     assert len(found) == len(expected)
+
+
+def _stored(host: model.Identifiable) -> list[str]:
+    return sorted(
+        key.value for slot in iter_slots(host) for key in slot.reference.key
+    )
+
+
+@pytest.mark.parametrize(
+    "cls", _classes_with_reference_fields(), ids=lambda cls: cls.__name__
+)
+def test_every_reference_field_of_the_sdk_can_be_replaced_and_restored(
+    cls: type,
+) -> None:
+    host, _ = _host_with_references(cls)
+    before = _stored(host)
+    changes = [
+        ReferenceChange(slot, _renamed(slot.reference))
+        for slot in iter_slots(host)
+    ]
+    stack = CommandStack()
+
+    with stack.group("Replace"):
+        for command in reference_commands(ModelChangeObserver(), changes):
+            stack.push(command)
+    replaced = _stored(host)
+    stack.undo()
+
+    assert replaced == sorted(f"{value}-new" for value in before)
+    assert _stored(host) == before
+
+
+def _renamed(reference: model.Reference) -> model.Reference:
+    return map_keys(
+        reference,
+        lambda _ref, _position, key: model.Key(key.type, f"{key.value}-new"),
+    )
 
 
 def test_iter_slots_finds_the_referred_semantic_id_of_a_reference() -> None:

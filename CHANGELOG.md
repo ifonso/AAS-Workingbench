@@ -27,6 +27,13 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - An Edit mode and a Read mode in the View menu. Edit mode is the default. In Read mode every change, including undo and redo, is refused with a message, the editing actions are disabled, and nothing can be edited in a cell.
 - A registry for actions in `aas_editor.ui.actions`, so that features add actions to the context menus and the toolbar without changing the tree views. See the [architecture guide](docs/software/architecture.md#registering-an-action).
 - A tab whose object was deleted, in another tab or by undo, now closes, and so does a tab of a closed package.
+- Rename id for shells, submodels and concept descriptions, and Rename idShort for elements, in the context menu of the package tree. Both update every reference that has the old id or goes through the old idShort, in semantic ids, supplemental semantic ids, value ids, `refers_to`, the references of a shell, relationships, data specifications and every other field, and in list positions. A preview lists the references that change. The rename and the updates are one undo step. An id or idShort typed in a cell takes the same path.
+- Delete shows what refers to the objects, and offers to remove those references or leave them. A reference that is required, such as the end of a relationship, stays. Deleting a shell, submodel or concept description, or an element with elements below it, asks first, and Shift skips that question. Deleting several objects shows one dialog and is one undo step. Cut asks nothing and leaves the references.
+- Deleting an item of a list moves the references to the items behind it up by one, so they keep pointing at the same item.
+- Fix References in the context menu repairs references that name an object by its idShort instead of its id, and keys that have the wrong type. It lists what it cannot repair.
+- Sync idShort copies the idShort of an element to the concept description of its semantic id, where that has no idShort or short name.
+- An invalid idShort, or one that a sibling has, gets a suggestion such as `My_motor` or `Name_1`, which the user can accept.
+- A test that reads every class of the SDK and fails when the walk over references misses a reference field.
 
 ### Changed
 
@@ -51,6 +58,11 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Adding a reference that a shell has already, or an entry with a key that a mapping has, replaces nothing silently. A reference is refused with an error, and an entry replaces the old one as an edit that can be undone.
 
 ### Fixed
+
+- Setting the semantic id of an element moved it to the end of its siblings, and undo did not put it back. The position is kept for every attribute now.
+- Giving an item of a list a semantic id that differs from its siblings was refused, as AASd-114 demands, but the SDK had taken the item out of the list by then, and it was lost. The item stays now.
+- An id edited in an attribute or a cell could be the id of another object, and left every reference to the old id pointing at nothing. The edit is refused for a duplicate, and updates the references.
+- The add dialogs for shells and submodels proposed the fixed id `https://www.example.com/`, so the second new object failed. They propose a new `urn:uuid:` id, and so does the dialog for a concept description.
 
 - Installation failed because the `aas_manager/v301` branch of the SDK fork no longer exists.
 - The Excel import tool raised `NameError` instead of showing an error dialog when an operation failed.

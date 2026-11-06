@@ -66,6 +66,9 @@ class ReferenceSlot:
         owner: The object whose attribute holds the reference, or holds the
             list or set of references.
         attribute: The public name of that attribute, such as `semantic_id`.
+        field: The name to assign to when the reference is replaced. It is
+            `attribute`, except for a read-only property of the SDK, such as
+            `semantic_id_list_element`, where it is the field behind it.
         reference: The reference as stored.
         container: The list or set that holds the reference, or None if the
             attribute holds the reference itself.
@@ -77,6 +80,7 @@ class ReferenceSlot:
 
     owner: object
     attribute: str
+    field: str
     reference: model.Reference
     container: object | None
     owner_container: object | None
@@ -331,10 +335,12 @@ def iter_slots(root: model.Identifiable) -> Iterator[ReferenceSlot]:
             if kind is _Kind.OTHER:
                 continue
             attribute = _public_name(owner_type, name)
+            field = _assignable_name(owner_type, name, attribute)
             if kind is _Kind.REFERENCE:
                 yield ReferenceSlot(
                     owner,
                     attribute,
+                    field,
                     cast("model.Reference", value),
                     None,
                     owner_container,
@@ -349,6 +355,7 @@ def iter_slots(root: model.Identifiable) -> Iterator[ReferenceSlot]:
                         yield ReferenceSlot(
                             owner,
                             attribute,
+                            field,
                             cast("model.Reference", member),
                             container,
                             owner_container,
@@ -683,6 +690,28 @@ def _model_reference(
     if isinstance(reference, model.ModelReference):
         return cast("model.ModelReference[Any]", reference)
     return None
+
+
+@functools.cache
+def _assignable_name(cls: type, name: str, attribute: str) -> str:
+    """Returns the name to assign to for a stored field.
+
+    A property with a setter is assigned by its public name, so the SDK runs
+    its checks. One without a setter cannot be assigned, so the field behind
+    it is.
+
+    The semantic id is assigned behind its setter too. The setter takes the
+    element out of its namespace and adds it again, which checks the element
+    against its siblings. Replacing the semantic ids of all items of a list one
+    by one would break AASd-114 at the first item, and no namespace of the SDK
+    indexes the semantic id, so nothing else depends on that check.
+    """
+    descriptor = cast("object", getattr(cls, attribute, None))
+    if isinstance(descriptor, property) and (
+        descriptor.fset is None or attribute == "semantic_id"
+    ):
+        return name
+    return attribute
 
 
 @functools.cache

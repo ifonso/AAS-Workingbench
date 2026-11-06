@@ -72,6 +72,43 @@ def test_set_attribute_keeps_the_position_when_it_renames(
     assert (renamed, _ids(submodel)) == (["z", "b", "c"], ["a", "b", "c"])
 
 
+def test_set_attribute_keeps_the_element_when_the_sdk_refuses_a_semantic_id(
+    observer: ModelChangeObserver,
+) -> None:
+    # AASd-114: the items of a list must have equal semantic ids. The SDK takes
+    # the item out of the list before it checks, and then loses it.
+    items = model.SubmodelElementList(
+        "Items",
+        type_value_list_element=model.Property,
+        value_type_list_element=model.datatypes.String,
+        value=[
+            model.Property(
+                None,
+                model.datatypes.String,
+                value=text,
+                semantic_id=make_external_reference("urn:same"),
+            )
+            for text in ("a", "b", "c")
+        ],
+    )
+    second = list(items.value)[1]
+    stack = CommandStack()
+
+    with pytest.raises(model.AASConstraintViolation):
+        stack.push(
+            SetAttribute(
+                observer,
+                second,
+                "semantic_id",
+                make_external_reference("urn:different"),
+            )
+        )
+
+    assert [item.value for item in items.value] == ["a", "b", "c"]
+    assert second.semantic_id == make_external_reference("urn:same")
+    assert not stack.can_undo
+
+
 def test_set_attribute_keeps_the_position_when_it_sets_a_semantic_id(
     observer: ModelChangeObserver,
 ) -> None:

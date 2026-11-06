@@ -2,8 +2,11 @@
 
 from basyx.aas import model
 import pytest
+from tests.factories import make_concept_description
 from tests.factories import make_external_reference
 from tests.factories import make_property
+from tests.factories import make_store
+from tests.factories import make_submodel
 from tests.reference_factories import CONCEPT_ID
 from tests.reference_factories import MAIN_ID
 from tests.reference_factories import make_linked
@@ -240,6 +243,43 @@ class TestRenameId:
             _keys(reference)[0]
             for reference in linked.name.supplemental_semantic_id
         ] == ["urn:before", CONCEPT_ID, "urn:after"]
+
+    def test_rename_updates_the_semantic_ids_of_all_items_of_a_list_at_once(
+        self, observer: ModelChangeObserver
+    ) -> None:
+        # AASd-114 wants equal semantic ids in a list, so one item cannot be
+        # changed alone. The list also names its semantic id (AASd-107).
+        concept = make_concept_description("urn:cd", "Cd")
+        items = model.SubmodelElementList(
+            "Items",
+            type_value_list_element=model.Property,
+            value_type_list_element=model.datatypes.String,
+            semantic_id_list_element=make_external_reference("urn:cd"),
+            value=[
+                model.Property(
+                    None,
+                    model.datatypes.String,
+                    value=text,
+                    semantic_id=make_external_reference("urn:cd"),
+                )
+                for text in ("a", "b", "c")
+            ],
+        )
+        store = make_store(make_submodel("urn:sm", "Sm", [items]), concept)
+        original = snapshot(store)
+        stack = CommandStack()
+
+        stack.push(
+            RenameCommand(observer, plan_rename_id(store, concept, "urn:cd2"))
+        )
+
+        assert _keys(items.semantic_id_list_element) == ["urn:cd2"]
+        assert [_keys(item.semantic_id) for item in items.value] == [
+            ["urn:cd2"]
+        ] * 3
+        assert [item.value for item in items.value] == ["a", "b", "c"]
+        stack.undo()
+        assert snapshot(store) == original
 
     def test_rename_replaces_a_specific_asset_id_that_cannot_change(
         self, observer: ModelChangeObserver

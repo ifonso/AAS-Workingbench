@@ -89,7 +89,7 @@ def reference_commands(
                 SetAttribute(
                     observer,
                     slot.owner,
-                    slot.attribute,
+                    slot.field,
                     change.after,
                     description=f"Edit {slot.attribute}",
                 )
