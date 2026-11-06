@@ -60,12 +60,17 @@ def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
     """The main window with one package and fixed answers for its dialogs."""
     from aas_editor.editorApp import EditorApp
     from aas_editor.ui import file_dialogs
+    from aas_editor.ui.actions import ViewKind
     from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.file_actions import action_ids
     from aas_editor.ui.file_actions import register_file_actions
+    from aas_editor.ui.move_actions import register_move_actions
+    from aas_editor.ui.paste_actions import register_paste_actions
     from aas_editor.ui.save_warnings import IssuesDialog
 
+    before = {s.action_id for s in default_registry().specs_for(ViewKind.ANY)}
     register_file_actions()
+    register_move_actions()
+    register_paste_actions()
     # pytest-qt closes the window after the test, while the package still has
     # changes. Closing would ask whether to save, and wait for ever.
     monkeypatch.setattr(
@@ -149,8 +154,9 @@ def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
     editor.stack.mark_saved()
     window._recoveryTimer.stop()
     window.close()
-    for action_id in action_ids():
-        default_registry().unregister(action_id)
+    for spec in default_registry().specs_for(ViewKind.ANY):
+        if spec.action_id not in before:
+            default_registry().unregister(spec.action_id)
 
 
 def _index(view, *names: str) -> QModelIndex:
@@ -369,7 +375,8 @@ def test_pasting_an_element_into_another_package_copies_its_file(
             submodels_index = proxy.index(0, 0, child)
     assert submodels_index is not None
     _select(editor.view, submodels_index)
-    editor.view.onPaste()
+    editor.view.updateActions(submodels_index)
+    editor.view.registeredActions.find("structure.paste_into").trigger()
     target = editor.tmp_path / "other_saved.aasx"
     saved = editor.view.savePack(other, target.as_posix())
     reloaded = _reload(target)

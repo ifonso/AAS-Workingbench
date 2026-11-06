@@ -18,6 +18,7 @@ from aas_editor.application.file_transfer import CopySource
 from aas_editor.application.file_transfer import plan_transfer
 from aas_editor.application.file_transfer import transfer_reports
 from aas_editor.application.file_transfer import with_copied_files
+from aas_editor.application.operations.companions import gather_companions
 from aas_editor.domain.file_references import references_in
 
 DOC = "/aasx/files/doc.pdf"
@@ -253,6 +254,19 @@ def test_a_copy_source_can_be_cleared() -> None:
     source.forget()
 
     assert source.store is None
+
+
+def test_the_companions_of_a_copy_list_its_file_references() -> None:
+    element = make_file_element("Doc", DOC)
+    group = make_submodel(elements=[element])
+
+    with_files = gather_companions([group], [], True)
+    without = gather_companions([group], [])
+
+    assert [ref.holder for ref in with_files.files] == [element]
+    assert not with_files.is_empty
+    assert without.files == ()
+    assert without.is_empty
 
 
 def test_the_thumbnail_of_a_copied_shell_follows() -> None:
