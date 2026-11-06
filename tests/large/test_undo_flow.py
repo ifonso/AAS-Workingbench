@@ -7,6 +7,7 @@ package exactly as it was read, in the SDK serialization.
 
 from pathlib import Path
 import shutil
+from types import SimpleNamespace
 
 from basyx.aas import model
 from PyQt6.QtCore import QItemSelectionModel
@@ -39,10 +40,7 @@ def editor(qapp: object, qtbot, tmp_path: Path, request):
     window.show()
     window.mainTreeView.expandAll()
 
-    class Editor:
-        pass
-
-    editor = Editor()
+    editor = SimpleNamespace()
     editor.window = window
     editor.view = window.mainTreeView
     editor.tabs = window.mainTabWidget

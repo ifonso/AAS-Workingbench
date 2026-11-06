@@ -12,9 +12,7 @@ from basyx.aas import model
 from basyx.aas.adapter.json import write_aas_json_file
 
 
-def snapshot(
-    objects: model.AbstractObjectStore[str, model.Identifiable],
-) -> str:
+def snapshot(objects: model.AbstractObjectStore[Any, Any]) -> str:
     """Serializes the objects of a package with the SDK, as text.
 
     The order inside every object is kept, because it is saved. The shells,

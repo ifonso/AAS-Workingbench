@@ -620,7 +620,11 @@ class TabWithTreeView(QWidget):
 
     def onModelChange(self, change: Change):
         if change.kind in (ChangeKind.REMOVED, ChangeKind.CHANGED):
-            self._scheduleStaleCheck()
+            try:
+                self._scheduleStaleCheck()
+            except RuntimeError:
+                # The tab was deleted, and the subscription outlived it.
+                pass
 
     def _scheduleStaleCheck(self):
         # The change is still being made, and other models still have to

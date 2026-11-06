@@ -426,11 +426,15 @@ class TreeView(BasicTreeView):
         return self.editEnabled and edit_mode().is_editing
 
     def onEditModeChanged(self, editing: bool):
-        if self.model() is None:
-            return
-        self.updateActions(self.currentIndex())
-        # The flags of the items decide whether they can be edited inline.
-        self.viewport().update()
+        try:
+            if self.model() is None:
+                return
+            self.updateActions(self.currentIndex())
+            # The flags of the items decide whether they can be edited inline.
+            self.viewport().update()
+        except RuntimeError:
+            # The view was deleted with its tab, and the subscription outlived it.
+            pass
 
     def activePackage(self):
         """Return the package that undo and redo act on in this view"""

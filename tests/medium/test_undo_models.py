@@ -7,6 +7,7 @@ object must show the same state as the first.
 """
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from basyx.aas import model
 from PyQt6.QtCore import QModelIndex
@@ -53,10 +54,7 @@ def world(model_support):
     model_support.watch(table)
     package = model_support.package_of(table)
 
-    class World:
-        pass
-
-    world = World()
+    world = SimpleNamespace()
     world.table = table
     world.package = package
     world.stack = package.commandStack

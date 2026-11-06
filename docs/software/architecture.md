@@ -179,7 +179,9 @@ def mark_as_parameter(context: ActionContext) -> None:
     element = context.index.data(OBJECT_ROLE)
     # One step in the history of the package. Read mode refuses it.
     context.push(
-        SetAttribute(observer_for(context.package), element, "category", "PARAMETER")
+        SetAttribute(
+            observer_for(context.package), element, "category", "PARAMETER"
+        )
     )
 
 
