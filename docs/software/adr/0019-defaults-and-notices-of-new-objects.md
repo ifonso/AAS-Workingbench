@@ -20,7 +20,7 @@ Probes against the pinned SDK (commit `412a53f`) found:
 
 - **A new AAS has the asset kind Instance.** The decision of the specification's D2 is open ("unify after a product decision, and document the choice"). Instance is the kind that the original's own notice names as usual, and the dialog lets the user choose any of the four kinds. A new submodel is an Instance too, as in the original.
 - **`Batch` is not offered and not read.** The editor targets V3.1 (D1). A file with it is refused as a whole, and failsafe mode drops the shell and marks the package partial (D6), which the question at opening already says.
-- **The category is read-only.** It shows when it has content, cannot be typed over in a tab or in the package tree, and goes with Delete as one undo step. The original has no way to remove it, and the specification suggests one. The generated form of a new element keeps its field, because the field comes from the SDK constructor, and a test requires a field for every constructor parameter.
+- **The category stays editable, with the deprecation hint.** The specification asks for a read-only row (F-EDT-06 AC16), as the original has. The metamodel V3.1 still has the attribute, the rules AASc-3a-004 to 007 tie the category of a concept description to its data type, so a user has to be able to correct it, and the editor could edit it before. A hint says that it is deprecated.
 - **Default languages and id templates are settings, kept as texts.** `domain/default_languages.py` and `domain/id_templates.py` read and check the texts, and `ui/user_defaults.py` is the one place that reads `AppSettings`, so dialogs never ask the settings themselves. A text that cannot be read gives English or a `urn:uuid:` id, so a hand-edited file does no harm. The template format of the original is kept (`D`, `X` and `A`), with a backslash to make a character literal, which its specification recommends, and with the random digits from `secrets`. A template without a placeholder is refused in the settings dialog, because every id would be the same. D14 stays the default.
 - **An empty language row is a row of the dialog, not of the model.** A new MultiLanguageProperty shows one row for each default language. A row that stays empty is left out when the element is made, and no row with a text gives no value.
 - **Notices are hint rules.** A missing or one-language display name and description, and a self-managed entity without a global asset id, are `Info` findings of `domain/validation/rules/hints.py`. The form of a new entity shows the same sentence while the global asset id is empty, and the form of an extension says that a name is needed while it is blank. Hints mode switches them off, and they never block.
@@ -33,13 +33,12 @@ Probes against the pinned SDK (commit `412a53f`) found:
 - The Settings dialog has two more boxes, and scrolls on a small screen.
 - Tests of hints must give their objects a display name and a description in two languages to expect no hint. The new notices appear in the bar of every plain element of a package.
 - The default of Create AAS differs from Package Explorer's `Add AAS`. A user who wants NotApplicable chooses it in the dialog.
-- A category that a file holds is kept and shown, and a user who wants it gone deletes it. A new category can still be set by the dialog that makes the element, or by a command.
 - `Batch` becomes possible with the SDK that implements V3.2, and the default kind and the list in `domain/asset_information.py` are the places to change.
 
 ## Alternatives considered
 
 - **NotApplicable as the default, for parity.** Rejected: the original's own notice says that Instance is the usual choice, and a user would be asked to correct the default almost every time.
 - **Creating the empty language entry anyway.** Rejected: the SDK refuses it, and a workaround would need a hand-made text that the model could not hold (D3).
-- **Making the category read-only in the model and the forms.** Rejected for the forms: the test of every constructor parameter would lose its meaning, and a new element made from a template could not carry one.
+- **Making the category read-only, as the specification says.** Tried and rejected: it removes an edit that users have, and with it a finding of AASc-3a-004 to 007 could be fixed only by changing the data type.
 - **Asking before a Base64 conversion.** Rejected: the question exists in the original because nothing can be undone there.
 - **One setting for all id templates.** Rejected: the original has one for each kind, and users write them for one kind at a time.

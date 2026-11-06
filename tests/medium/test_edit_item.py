@@ -75,11 +75,11 @@ def test_edit_keeps_text_none_when_value_is_the_string_none(
     details = edit_support.detail_table(table, "shells", "Shell")
 
     edited = details.setData(
-        edit_support.find(details, "id_short"), "None", Qt.ItemDataRole.EditRole
+        edit_support.find(details, "category"), "None", Qt.ItemDataRole.EditRole
     )
 
     assert edited
-    assert shell.id_short == "None"
+    assert shell.category == "None"
 
 
 def test_edit_clears_optional_value_when_value_is_none(edit_support) -> None:
@@ -122,14 +122,16 @@ def test_edit_keeps_text_none_when_editing_a_column_of_the_pack_table(
     shell_index = edit_support.find(
         table, "Shell", edit_support.find(table, "shells", table.index(0, 0))
     )
-    column = edit_support.column(table, "id_short")
+    category_column = edit_support.column(table, "category")
 
     edited = table.setData(
-        shell_index.siblingAtColumn(column), "None", Qt.ItemDataRole.EditRole
+        shell_index.siblingAtColumn(category_column),
+        "None",
+        Qt.ItemDataRole.EditRole,
     )
 
     assert edited
-    assert shell.id_short == "None"
+    assert shell.category == "None"
 
 
 def test_edit_refuses_clearing_asset_information_of_a_shell(

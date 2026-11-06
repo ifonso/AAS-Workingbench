@@ -29,17 +29,17 @@ A criterion with a test that covers part of it is `P`, with the missing part nam
 | F-EDT-03 Submodel and SubmodelRef | 1 | 8 | 3 | 1 | 2 | 0 | 1 | 16 |
 | F-EDT-04 SubmodelElements | 9 | 4 | 1 | 6 | 2 | 0 | 0 | 22 |
 | F-EDT-05 ConceptDescription and IEC 61360 | 9 | 1 | 1 | 6 | 2 | 0 | 0 | 19 |
-| F-EDT-06 Common attribute modules | 9 | 4 | 0 | 2 | 1 | 0 | 0 | 16 |
+| F-EDT-06 Common attribute modules | 8 | 4 | 0 | 3 | 1 | 0 | 0 | 16 |
 | F-EDT-07 Qualifiers and Extensions | 3 | 2 | 0 | 3 | 5 | 0 | 0 | 13 |
 | F-EDT-08 Copy, paste, reorder | 8 | 5 | 0 | 3 | 4 | 0 | 0 | 20 |
 | F-EDT-09 Multi-element editing | 8 | 4 | 0 | 8 | 0 | 0 | 1 | 21 |
 | F-EDT-10 Supplementary files | 10 | 3 | 0 | 2 | 1 | 0 | 2 | 18 |
 | F-EDT-11 References, semantics, lookups | 8 | 2 | 0 | 2 | 10 | 0 | 0 | 22 |
-| **All** | **73** | **41** | **11** | **34** | **35** | **0** | **5** | **199** |
+| **All** | **72** | **41** | **11** | **35** | **35** | **0** | **5** | **199** |
 
-Of 199 criteria, 73 have a test that asserts them, and 41 more are tested in part.
+Of 199 criteria, 72 have a test that asserts them, and 41 more are tested in part.
 No criterion is left as a gap. WP13 to WP17 closed the 22 that WP12 found, or reclassified them with a reason given in the rows and the ADRs. What still costs a user is in [What remains after v1](../planning/v1-editor-plan.md#what-remains-after-v1).
-Most O rows are ECLASS (F-EDT-04 AC21, F-EDT-11 AC8 to AC14, AC18 and AC22) and repository features, which the plan keeps out of v1. Nine rest only on a "Known limit" of the changelog, and not on a row of the plan's table: F-EDT-03 AC15, F-EDT-05 AC14 and AC16, F-EDT-06 AC1 and AC14, F-EDT-08 AC5, F-EDT-10 AC5 and AC12, and F-EDT-11 AC1.
+Most O rows are ECLASS (F-EDT-04 AC21, F-EDT-11 AC8 to AC14, AC18 and AC22) and repository features, which the plan keeps out of v1.
 
 ## What this audit checked itself
 
@@ -191,7 +191,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 13 | P | `test_data_spec_operations.py::TestFixKeys`. The action has another name and no log line. |
 | 14 | D | Same as F-EDT-05 AC16: no blank record can exist, and the preset adds the one record (`test_blank_member_probes.py`, `test_preset_actions.py::test_a_data_specification_preset_gives_one_record_and_no_blank_one`, ADR 0021). |
 | 15 | T | `test_language_moves.py::test_move_down_changes_the_order_and_the_rows_follow` (rows are read again), `::test_the_move_is_one_undo_step_and_is_saved`, and `test_language_order.py` for the plan and the order in the file. |
-| 16 | T | `test_category_row.py`: a category with content is a row that cannot be edited and gives a reason when typed over, an element without one has no row in Edit or Read mode, Delete removes it in one undo step, and the package tree column refuses it too. The hint is `test_validation_hints.py::test_category_is_an_info_hint_when_an_element_has_one`. The dialog of a new element still has the field (ADR 0019). |
+| 16 | D | `test_category_row.py`: the category stays editable, with the deprecation hint (`test_validation_hints.py::test_category_is_an_info_hint_when_an_element_has_one`). The spec asks for read-only, but the rules AASc-3a-004 to 007 tie the category of a concept description to its data type, so a user must be able to change it, and the V3.1 metamodel still has it (ADR 0019). |
 
 ## F-EDT-07 Qualifiers and Extensions
 

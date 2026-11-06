@@ -46,7 +46,7 @@ def test_the_first_entry_moves_down_and_the_texts_stay_with_their_language() -> 
         (["fr"], MoveKind.TO_TOP, ("fr", "en", "de")),
         (["en"], MoveKind.TO_END, ("de", "fr", "en")),
         (["de", "fr"], MoveKind.UP, ("de", "fr", "en")),
-        (["en", "fr"], MoveKind.DOWN, ("de", "en", "fr")),
+        (["en", "de"], MoveKind.DOWN, ("fr", "en", "de")),
     ],
 )
 def test_each_kind_of_move_gives_its_order(
@@ -133,3 +133,7 @@ def test_reorder_keys_works_for_a_plain_mapping_and_refuses_a_list() -> None:
     assert list(mapping.items()) == [("c", 3), ("a", 1), ("b", 2)]
     with pytest.raises(TypeError):
         containers.reorder_keys([1, 2], [2, 1])
+
+
+def test_a_selection_with_the_last_entry_does_not_move_down() -> None:
+    assert plan_language_move(_texts(), ["en", "fr"], MoveKind.DOWN) is None
