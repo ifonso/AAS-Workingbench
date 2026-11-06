@@ -1421,6 +1421,8 @@ class TreeView(BasicTreeView):
             self._applyListChildDefaults(parent, objTypeHint, objVal, kwargs)
             objTypeHint = kwargs.pop("objTypeHint", objTypeHint)
             objVal = kwargs.pop("objVal", objVal)
+            # Adding to a list is for one new entry, which is there already.
+            kwargs["firstEntry"] = True
         kwargs["parent"] = self
         kwargs["objTypeHint"] = objTypeHint
         kwargs["objVal"] = objVal

@@ -167,8 +167,6 @@ class TestPickingATarget:
     def test_a_submodel_reference_of_a_shell_offers_only_submodels(
         self, views, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from PyQt6.QtWidgets import QPushButton
-
         from aas_editor.dialogs import EditObjDialog
         from aas_editor.ui.reference_picker import ReferencePickerDialog
 
@@ -190,9 +188,10 @@ class TestPickingATarget:
             picker.select(first)
 
         def fill(dialog: Any) -> None:
+            # The dialog for a new reference has its one entry already.
             group = dialog.inputWidget
-            group.findChild(QPushButton).click()
-            field = group.inputWidgets[-1]
+            assert len(group.inputWidgets) == 1
+            field = group.inputWidgets[0]
             with answering(monkeypatch, ReferencePickerDialog, inspect_picker):
                 field.choose_from_package()
 
