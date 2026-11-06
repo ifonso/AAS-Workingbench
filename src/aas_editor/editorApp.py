@@ -404,6 +404,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.onSelectedPackItemChanged
         )
         self.mainTreeView.doubleClicked.connect(self.onDoubleClicked)
+        # The Find key searches the tree while the focus is on its side of the
+        # window. Each tab has its own bar for the same key.
+        self.searchBarPack.bindFind(self.mainLayoutWidget)
 
         self.mainTreeView.wheelClicked.connect(
             self.mainTabWidget.openItemInBgTab

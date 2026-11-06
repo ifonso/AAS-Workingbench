@@ -167,10 +167,14 @@ class SearchProxyModel(QSortFilterProxyModel):
         for column in filterColumns:
             self.setFilterKeyColumn(column)
 
-            # save found items in column
+            # Save the rows that match in this column. With recursive
+            # filtering the proxy also shows the parents of a match, so each
+            # row is asked itself, and a parent kept for its children is not
+            # counted as a match.
             for index in self.iterItems():
                 srcIndex = self.mapToSource(index.siblingAtColumn(column))
-                foundItems.append(QPersistentModelIndex(srcIndex))
+                if self._matchesItself(srcIndex):
+                    foundItems.append(QPersistentModelIndex(srcIndex))
 
         if not filter:
             self.show_all_items()
@@ -180,6 +184,12 @@ class SearchProxyModel(QSortFilterProxyModel):
             for i in foundItems
         ]
         return foundItems
+
+    def _matchesItself(self, srcIndex: QModelIndex) -> bool:
+        """Tell whether a row matches the filter, not only a row below it."""
+        return QSortFilterProxyModel.filterAcceptsRow(
+            self, srcIndex.row(), srcIndex.parent()
+        )
 
     def show_all_items(self):
         self.setFilterRegularExpression(QRegularExpression(""))
