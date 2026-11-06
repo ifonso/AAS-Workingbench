@@ -43,19 +43,35 @@ _PYPROJECT_FILE = next(
 PYPROJECT_TOML = toml.load(_PYPROJECT_FILE)
 
 VERSION = PYPROJECT_TOML["project"]["version"]
-APPLICATION_NAME = "AAS Manager"
+APPLICATION_NAME = "AAS Workingbench"
+# The name under which a user's recent files are stored (`QSettings(IAT, ...)`).
+# It stays what earlier releases used, so that a rename of the application does
+# not make a user lose them.
+SETTINGS_APPLICATION_NAME = "AAS Manager"
 APPLICATION_INFO = PYPROJECT_TOML["project"]["description"]
 COPYRIGHT_YEAR = datetime.datetime.now().year
+# The authors keep their credit, and the maintainers are the ones to write to.
 CONTRIBUTORS = ", ".join(
     [
-        f"{author['name']}: {author['email']}"
-        for author in PYPROJECT_TOML["project"]["authors"]
+        *(
+            f"{author['name']} (original author)"
+            for author in PYPROJECT_TOML["project"]["authors"]
+        ),
+        *(
+            f"{maintainer['name']} (maintainer)"
+            for maintainer in PYPROJECT_TOML["project"]["maintainers"]
+        ),
     ]
 )
-DEVELOPER_WEB = "www.iat.rwth-aachen.de"
-CONTACT = PYPROJECT_TOML["project"]["authors"][0]["email"]
+DEVELOPER_WEB = "https://github.com/ifonso"
+CONTACT = PYPROJECT_TOML["project"]["maintainers"][0]["email"]
 REPORT_ERROR_LINK = PYPROJECT_TOML["project"]["urls"]["Issues"]
 APPLICATION_LINK = PYPROJECT_TOML["project"]["urls"]["Homepage"]
+# The project that this one is based on, which the About dialog credits.
+BASED_ON_NAME = "AAS Manager"
+BASED_ON_AUTHORS = "Igor Garmaev and RWTH Aachen IAT"
+BASED_ON_LINK = "https://github.com/rwth-iat/aas_manager"
+# The organization of the stored settings of a user, as in earlier releases.
 IAT = "IAT"
 LICENSE = PYPROJECT_TOML["project"]["license"]["text"]
 AAS_METAMODEL_VERSION = "3.1"

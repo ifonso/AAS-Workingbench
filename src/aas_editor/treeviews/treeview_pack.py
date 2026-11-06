@@ -63,7 +63,7 @@ from aas_editor.settings import (
     NOT_GIVEN,
     REFERABLE_INHERITORS_ATTRS,
     AAS_FILE_TYPES,
-    APPLICATION_NAME,
+    SETTINGS_APPLICATION_NAME,
     IAT,
     SUBMODELS,
 )
@@ -1197,14 +1197,14 @@ class PackTreeView(TreeView):
         if self.isRecoveryFile(file):
             return
         self.removeFromRecentFiles(file)
-        settings = QSettings(IAT, APPLICATION_NAME)
+        settings = QSettings(IAT, SETTINGS_APPLICATION_NAME)
         files = settings.value("recentFiles", [])
         files.insert(0, file)
         del files[MAX_RECENT_FILES:]
         settings.setValue("recentFiles", files)
 
     def removeFromRecentFiles(self, file: str):
-        settings = QSettings(IAT, APPLICATION_NAME)
+        settings = QSettings(IAT, SETTINGS_APPLICATION_NAME)
         files = settings.value("recentFiles", [])
         try:
             files.remove(file)
@@ -1215,7 +1215,7 @@ class PackTreeView(TreeView):
         settings.setValue("recentFiles", files)
 
     def updateRecentFileActs(self):
-        settings = QSettings(IAT, APPLICATION_NAME)
+        settings = QSettings(IAT, SETTINGS_APPLICATION_NAME)
         files = settings.value("recentFiles", [])
         try:
             files = files[:MAX_RECENT_FILES]

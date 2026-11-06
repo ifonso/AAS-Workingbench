@@ -1,6 +1,6 @@
 # Handover Documentation tool
 
-The Handover Documentation Tool is an extension of the AAS Manager that allows users to generate a Handover Documentation Submodel from a given PDF file with the usage of LLMs.
+The Handover Documentation Tool is an extension of AAS Workingbench that allows users to generate a Handover Documentation Submodel from a given PDF file with the usage of LLMs.
 
 ## Usage
 

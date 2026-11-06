@@ -1,6 +1,6 @@
 # Architecture
 
-AAS Manager is a desktop viewer and editor for Asset Administration Shell packages, built on PyQt6 and the Eclipse BaSyx Python SDK.
+AAS Workingbench is a desktop viewer and editor for Asset Administration Shell packages, built on PyQt6 and the Eclipse BaSyx Python SDK.
 This page describes the code as it is today, and the structure that new code should follow.
 
 ## Repository layout
