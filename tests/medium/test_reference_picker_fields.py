@@ -529,3 +529,32 @@ def test_every_reference_field_gets_the_picker(
 
     assert isinstance(widget, ReferenceFieldMixin)
     widget.deleteLater()
+
+
+def test_the_package_is_found_through_a_tab_widget_in_the_parents(
+    qapp: object, qtbot: Any
+) -> None:
+    from PyQt6.QtWidgets import QDialog
+    from PyQt6.QtWidgets import QTabWidget
+    from PyQt6.QtWidgets import QWidget
+
+    from aas_editor.settings.app_settings import PACKAGE_ROLE
+    from aas_editor.ui.reference_fields import package_of
+
+    package = object()
+
+    class Index:
+        def data(self, role: int) -> object | None:
+            return package if role == PACKAGE_ROLE else None
+
+    class ViewLike(QWidget):
+        def currentIndex(self) -> Index:  # noqa: N802
+            return Index()
+
+    view = ViewLike()
+    qtbot.addWidget(view)
+    tabs = QTabWidget(view)  # its currentIndex is a number
+    dialog = QDialog(tabs)
+    inner = QWidget(dialog)
+
+    assert package_of(inner) is package
