@@ -20,6 +20,7 @@ from aas_editor.application.save import SaveOptions
 from aas_editor.application.save import check_save
 from aas_editor.application.validation import save_check_for
 from aas_editor.application.validation import validate_package
+from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import Thumbnail
 
@@ -40,6 +41,7 @@ class FakeSource:
     core_properties: CoreProperties | None = None
     partial: bool = False
     source_file: Path | None = None
+    load_report: LoadReport = field(default_factory=LoadReport)
 
 
 def _source(objects: model.SetIdentifiableStore) -> FakeSource:

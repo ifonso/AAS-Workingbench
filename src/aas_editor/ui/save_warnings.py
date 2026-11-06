@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
 from aas_editor.application.save import DANGLING_FILES
+from aas_editor.application.save import LOAD_REPORT
 from aas_editor.application.save import SaveCheck
 from aas_editor.application.save import SaveIssue
 from aas_editor.application.save import UNREFERENCED_FILES
@@ -166,6 +167,7 @@ def show_save_refused(
     check: SaveCheck,
     parent: QWidget | None = None,
     repair_files: Callable[[], None] | None = None,
+    show_load_report: Callable[[], None] | None = None,
 ) -> None:
     """Tells the user why a package cannot be saved.
 
@@ -175,17 +177,30 @@ def show_save_refused(
         repair_files: Opens the repair of the file references. When a File
             points to a file that is not in the package, the dialog offers a
             button for it.
+        show_load_report: Shows the full list of what the SDK left out when
+            the package was opened. When that is why the package cannot be
+            saved, the dialog offers a button for it, because it lists only
+            the first items.
     """
     offer_repair = repair_files is not None and _has_code(
         check.blockers, DANGLING_FILES
     )
+    offer_report = show_load_report is not None and _has_code(
+        check.blockers, LOAD_REPORT
+    )
+    extra_text = None
+    on_extra = None
+    if offer_repair:
+        extra_text, on_extra = "Repair file references...", repair_files
+    elif offer_report:
+        extra_text, on_extra = "Show the full list...", show_load_report
     IssuesDialog(
         "Package cannot be saved",
         "The package was not saved, and nothing was changed.",
         check.blockers,
         parent=parent,
-        extra_text="Repair file references..." if offer_repair else None,
-        on_extra=repair_files if offer_repair else None,
+        extra_text=extra_text,
+        on_extra=on_extra,
     ).exec()
 
 

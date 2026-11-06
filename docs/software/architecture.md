@@ -72,7 +72,9 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/file_references.py` | Lists the paths that objects use to refer to files in the package, finds those with no stored file, and finds stored files that nothing refers to. A URL is not a package path. |
 | `domain/parts.py` | Values for the parts of an AASX besides its objects: the thumbnail, the core properties, and a missing file. |
 | `application/save.py` | The save flow. `check_save` returns blockers (no way around them) and warnings (save anyway), and `save` writes only when there are no blockers and the user confirms the warnings. It takes a `SaveSource` protocol and explicit `SaveOptions`, never `Package` or `AppSettings`. |
-| `infrastructure/package_io.py` | Reads and writes AASX, JSON and XML through BaSyx. A write goes to a temporary file with `failsafe=False` and replaces the target in one step. It does not import `Package`. |
+| `domain/load_report.py` | What the SDK left out when it read a package: turns its log records into issues (left out, kept, or not understood, with the kind, line or id, part, reason, and the full text), and writes a summary and a text to copy. It does no logging and reads no files. |
+| `infrastructure/package_io.py` | Reads and writes AASX, JSON and XML through BaSyx. A write goes to a temporary file with `failsafe=False` and replaces the target in one step. A read listens to the log of the SDK for its length, and gives the report of what a failsafe read skipped. It does not import `Package`. |
+| `ui/load_report_dialog.py`, `ui/load_report_actions.py` | The dialog that lists what was left out of a package, and the context menu action that shows it again. |
 | `ui/save_warnings.py` | The dialogs for blockers, warnings, and missing files. They show decisions that `application/save.py` made. |
 | `ui/actions.py` | The registry where features add actions to the context menus and the toolbar. It also decides the order of the menu: sections by the prefix of the action id, separators, submenus for the crowded sections, and hiding what does not apply (see [Registering an action](#registering-an-action)). |
 | `ui/colors.py` | The two colors of problems and advisories in dialogs, which read on the light and on the dark themes. The themes are style sheets of the application, so the palette does not tell which one is on. |
@@ -154,7 +156,8 @@ These modules exist today. Each layer is created by the first work package that 
 3. `package_io.write_package` writes, and `Package.recordSaved` changes `Package.file` only afterwards, so a failed Save As leaves the package where it was.
 
 A package that was opened through the failsafe branch is partial (D6). It cannot overwrite the file it was read from.
-The SDK does not say what failsafe mode skipped, so every such package counts.
+The SDK logs what failsafe mode skips, and `package_io.read_package` captures those records into `PackageParts.load_report` (`domain/load_report.py`, [ADR 0018](adr/0018-load-report.md)). The editor shows the list when the package opens, from the context menu later, and in the text of the refused save. The report does not bring the content back, so every failsafe package still counts, also when its report is empty.
+A package that opened strictly is partial too, when an object has the id of a different object in an earlier part, because the SDK skips it without a record. `_TolerantReader` finds those.
 
 Saving does not add Submodel references to the first AAS (D8). `Package.all_submodels_to_aas` is an explicit action in the context menu.
 

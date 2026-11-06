@@ -7,6 +7,7 @@ workaround can go.
 """
 
 import io
+import logging
 import os
 from pathlib import Path
 import subprocess
@@ -35,7 +36,9 @@ from tests.package_factories import ANNOTATION_BYTES
 from tests.package_factories import ANNOTATION_PART
 from tests.package_factories import DOCUMENT_PART
 from tests.package_factories import MISSING_PART
+from tests.package_factories import SHARED_ID
 from tests.package_factories import write_package_with_file_in_annotation
+from tests.package_factories import write_package_with_same_id_in_two_parts
 from tests.package_factories import write_package_with_missing_file
 
 OPTIONS = SaveOptions()
@@ -284,6 +287,42 @@ def test_sdk_reader_raises_key_error_when_part_is_missing_even_if_failsafe(
         reader.read_into(
             model.SetIdentifiableStore(), DictSupplementaryFileContainer()
         )
+
+
+@pytest.mark.parametrize("failsafe", [False, True])
+def test_sdk_reader_skips_an_object_of_a_second_part_without_a_log_record(
+    tmp_path: Path, failsafe: bool
+) -> None:
+    # Without it, the tolerant reader no longer needs to find these objects
+    # itself, and would report each of them twice.
+    path = write_package_with_same_id_in_two_parts(tmp_path / "two.aasx")
+    records: list[logging.LogRecord] = []
+
+    class Collect(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    logger = logging.getLogger("basyx")
+    handler = Collect(level=logging.DEBUG)
+    old_level = logger.level
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    try:
+        with AASXReader(path.as_posix(), failsafe=failsafe) as reader:
+            store = model.SetIdentifiableStore[model.Identifiable]()
+            reader.read_into(store, DictSupplementaryFileContainer())
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(old_level)
+
+    kept = store.get(SHARED_ID)
+    assert isinstance(kept, model.Submodel)
+    assert kept.id_short == "First"
+    assert [
+        record.getMessage()
+        for record in records
+        if record.levelno > logging.DEBUG and SHARED_ID in record.getMessage()
+    ] == []
 
 
 def test_sdk_reader_skips_file_when_it_is_under_an_annotation(

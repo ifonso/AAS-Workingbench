@@ -1,7 +1,7 @@
 """Why 49 of the 132 bundled templates open only in failsafe mode.
 
 D6 treats every package that is opened through the failsafe branch as partial,
-because the SDK does not report what it skipped. These tests pin the causes for
+because it lacks what the SDK refused to read. These tests pin the causes for
 the whole corpus, so the table in `docs/software/validation.md` is
 reproducible, and so that a change of the SDK or of the templates shows up.
 

@@ -1,9 +1,10 @@
 """Why a package needs the failsafe branch, found by reading it both ways.
 
 The editor opens a package strictly first, and offers the failsafe branch when
-that raises (D6). The SDK does not say what failsafe mode skipped, but it logs
-every object it drops. These helpers read a package in both modes and turn the
-exception and the log records into short labels, so that a test can pin the
+that raises (D6). The SDK logs every object that failsafe mode drops, and
+`read_package` turns those records into a load report (ADR 0018). These helpers
+count the same records by cause, with a handler of their own, and turn the
+exception of the strict read into a short label, so that a test can pin the
 causes for the whole corpus and the documentation can count them.
 """
 

@@ -40,6 +40,7 @@ from aas_editor.application.save import SaveOptions
 from aas_editor.application.validation import SaveGate
 from aas_editor.domain.file_references import file_references
 from aas_editor.domain.file_references import unreferenced_files
+from aas_editor.domain.load_report import LoadReport
 from aas_editor.infrastructure.package_io import (
     PackageParts,
     read_package,
@@ -73,9 +74,12 @@ class Package:
         self.coreProperties = None
         # File elements that pointed to a part missing in the package on open.
         self.missingFiles = ()
-        # True if opened in failsafe mode: the SDK does not report what it
-        # skipped, so the package must not overwrite its source (D6).
+        # True if opened in failsafe mode: it may lack what the SDK skipped,
+        # so the package must not overwrite its source (D6).
         self.partial = False
+        # What the SDK logged about the objects it skipped. It can be empty
+        # for a partial package, because the SDK does not log everything.
+        self.loadReport = LoadReport()
         # The file the content was read from, or None for a new package.
         self.sourceFile = None
         # Hashes of the supplementary files as read, to find the files that
@@ -146,6 +150,7 @@ class Package:
             missing_files=self.missingFiles,
             partial=self.partial,
             source_file=self.sourceFile,
+            load_report=self.loadReport,
         )
 
     def __str__(self):
@@ -165,6 +170,7 @@ class Package:
         self.coreProperties = parts.core_properties
         self.missingFiles = parts.missing_files
         self.partial = parts.partial
+        self.loadReport = parts.load_report
         self.sourceFile = parts.source_file
         self._loadedFileHashes = self._file_hashes()
 
@@ -251,6 +257,7 @@ class Package:
                     "original_path": original_file.as_posix(),
                     "recovery_filename": rec_path.name,
                     "partial": self.partial,
+                    "load_report": self.loadReport.to_data(),
                 },
                 f,
             )
@@ -383,6 +390,7 @@ class Package:
         pack.file = original_path
         pack.sourceFile = pack.file
         pack.partial = cls._recovery_was_partial(recovery) or pack.partial
+        pack.loadReport = cls._recovery_load_report(recovery)
         if pack.file.suffix.lower() == ".aasx":
             if pack.file.exists():
                 original = read_package(pack.file, failsafe=True)
@@ -440,6 +448,16 @@ class Package:
                 return bool(json.load(f).get("partial", False))
         except (OSError, ValueError):
             return False
+
+    @staticmethod
+    def _recovery_load_report(recovery: Path) -> LoadReport:
+        """What the SDK left out when the package was first opened."""
+        meta = recovery.parent / f"{recovery.stem}.meta.json"
+        try:
+            with open(meta, encoding="utf-8") as f:
+                return LoadReport.from_data(json.load(f).get("load_report", []))
+        except (OSError, ValueError, KeyError, TypeError):
+            return LoadReport()
 
     def all_submodels_to_aas(self) -> int:
         """Add references of all existing submodels to the first AAS.
