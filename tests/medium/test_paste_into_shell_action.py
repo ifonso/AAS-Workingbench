@@ -211,3 +211,27 @@ def test_the_action_is_off_in_read_mode(pasting) -> None:
 
     assert not enabled
     assert len(lab.shell.submodel) == 0
+
+
+def test_submodel_json_typed_into_the_box_is_added_to_the_shell(
+    pasting, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.domain.clipboard_json import dump_objects
+    from aas_editor.ui import paste_dialogs
+
+    lab = pasting()
+    typed = make_submodel(id_="urn:sm:typed", id_short="Typed")
+    monkeypatch.setattr(
+        paste_dialogs,
+        "ask_paste_text",
+        lambda places, parent=None: (dump_objects([typed]), "into"),
+    )
+    lab.select("shells", "Shell")
+
+    lab.view.registeredActions.find("structure.paste_text").trigger()
+
+    (added,) = list(lab.shell.submodel)
+    assert added.key[0].value != "urn:sm:typed"
+    assert lab.package.objStore.get_item(added.key[0].value).id_short == "Typed"
+    lab.stack.undo()
+    assert len(lab.shell.submodel) == 0

@@ -10,6 +10,9 @@ come from another package ask whether the concept descriptions that their
 semantic ids refer to should come along (see `companions.py`). The whole
 paste is one undo step.
 
+Paste from text takes the JSON from a box instead of the clipboard, for a
+platform that does not let the program read it.
+
 The buffer is the `treeClipboard` of the tree views. Text on the system
 clipboard that is AAS JSON becomes objects in it, so a copy from another
 program or another instance pastes like an internal one.
@@ -61,6 +64,7 @@ ABOVE_ID = "structure.paste_above"
 BELOW_ID = "structure.paste_below"
 INTO_ID = "structure.paste_into"
 CLEAR_ID = "structure.clear_buffer"
+PASTE_TEXT_ID = "structure.paste_text"
 
 # Rows of these attributes hold qualifiers or extensions, not elements.
 _NOT_ELEMENTS = ("qualifier", "extension")
@@ -167,26 +171,35 @@ def _single_row(context: ActionContext) -> QModelIndex | None:
     return rows[0] if len(rows) == 1 else None
 
 
-def _can_paste_beside(context: ActionContext) -> bool:
+def _beside_ok(context: ActionContext) -> bool:
+    """Whether the selected row has a place for a paste above or below."""
     row = _single_row(context)
-    if row is None or context.package is None or not _has_buffer(context):
+    if row is None or context.package is None:
         return False
     return container_of_row(row) is not None or isinstance(
         row.data(OBJECT_ROLE), model.Identifiable
     )
 
 
-def _can_paste_into(context: ActionContext) -> bool:
+def _into_ok(context: ActionContext) -> bool:
+    """Whether the selected row can take a paste into it."""
     row = _single_row(context)
     return (
         row is not None
         and context.package is not None
-        and _has_buffer(context)
         and (
             child_container(row) is not None
             or isinstance(row.data(OBJECT_ROLE), model.AssetAdministrationShell)
         )
     )
+
+
+def _can_paste_beside(context: ActionContext) -> bool:
+    return _has_buffer(context) and _beside_ok(context)
+
+
+def _can_paste_into(context: ActionContext) -> bool:
+    return _has_buffer(context) and _into_ok(context)
 
 
 def _position(
@@ -236,7 +249,13 @@ def _ask_companions(
     )
 
 
-def _paste(context: ActionContext, where: str) -> None:
+def _paste(context: ActionContext, where: str, text: str | None = None) -> None:
+    """Pastes the buffer, or the JSON in `text`, above, below or into a row.
+
+    Text comes from the dialog of Paste from text. It is read as AAS JSON,
+    never evaluated, and counts as a copy from another program: it has no
+    source package and is never a cut.
+    """
     package: Any = context.package
     stack = context.stack
     row = _single_row(context)
@@ -245,10 +264,10 @@ def _paste(context: ActionContext, where: str) -> None:
     view: Any = context.view
     shell = row.data(OBJECT_ROLE)
     if where == "into" and isinstance(shell, model.AssetAdministrationShell):
-        _paste_into_shell(context, row, shell)
+        _paste_into_shell(context, row, shell, text)
         return
     try:
-        items = buffer_objects(view)
+        items = buffer_objects(view) if text is None else load_objects(text)
         if where == "into":
             container = child_container(row)
             index = None
@@ -259,10 +278,10 @@ def _paste(context: ActionContext, where: str) -> None:
             container,
             items,
             index,
-            keep_ids=buffer.cut,
+            keep_ids=buffer.cut and text is None,
             taken_ids={o.id for o in package.objStore},
         )
-        source = buffer.source
+        source = buffer.source if text is None else None
         companion_commands: list[Any] = []
         file_before: list[Any] = []
         file_after: list[Any] = []
@@ -299,7 +318,8 @@ def _paste(context: ActionContext, where: str) -> None:
         paste_dialogs.show_problem(f"The paste was refused: {error}", view)
         return
     # The next paste of a cut is a copy again: the objects are in the package.
-    buffer.cut = False
+    if text is None:
+        buffer.cut = False
     _select_pasted(context, row, where, [item.copy for item in plan.items])
 
 
@@ -307,6 +327,7 @@ def _paste_into_shell(
     context: ActionContext,
     row: QModelIndex,
     shell: model.AssetAdministrationShell,
+    text: str | None = None,
 ) -> None:
     """Pastes Submodels, or references to them, into an AAS (F-EDT-08 AC11, 12).
 
@@ -318,14 +339,19 @@ def _paste_into_shell(
     view: Any = context.view
     buffer = view.treeClipboard
     try:
-        items = cast("list[Any]", buffer_objects(view, allow_references=True))
-        source = buffer.source
+        items = cast(
+            "list[Any]",
+            buffer_objects(view, allow_references=True)
+            if text is None
+            else load_objects(text),
+        )
+        source = buffer.source if text is None else None
         other = source if source is not None and source is not package else None
         plan = plan_paste_into_shell(
             shell,
             items,
             package.objStore,
-            keep_ids=buffer.cut,
+            keep_ids=buffer.cut and text is None,
             source_objects=other.objStore if other is not None else None,
         )
         if plan.is_empty:
@@ -365,7 +391,8 @@ def _paste_into_shell(
     except Exception as error:  # noqa: BLE001
         paste_dialogs.show_problem(f"The paste was refused: {error}", view)
         return
-    buffer.cut = False
+    if text is None:
+        buffer.cut = False
     if plan.dangling:
         paste_dialogs.show_problem(
             f"{len(plan.dangling)} pasted reference"
@@ -411,6 +438,36 @@ def _runner(where: str):
     return run
 
 
+_PLACES = (
+    ("below", "Below the selected row"),
+    ("above", "Above the selected row"),
+    ("into", "Into the selected row"),
+)
+
+
+def _can_paste_text(context: ActionContext) -> bool:
+    return _beside_ok(context) or _into_ok(context)
+
+
+def _paste_text(context: ActionContext) -> None:
+    """Asks for the JSON of copied elements, and pastes it (F-EDT-08 AC8).
+
+    This does not read the system clipboard or the buffer, so it works when
+    the platform does not let the program read the clipboard.
+    """
+    available = {
+        "below": _beside_ok(context),
+        "above": _beside_ok(context),
+        "into": _into_ok(context),
+    }
+    places = [(key, text) for key, text in _PLACES if available[key]]
+    answer = paste_dialogs.ask_paste_text(places, context.view)
+    if answer is None:
+        return
+    text, where = answer
+    _paste(context, where, text)
+
+
 def register_paste_actions() -> None:
     """Adds the paste actions and Clear paste buffer to the registry, once."""
     registered = {
@@ -448,6 +505,18 @@ def register_paste_actions() -> None:
             shortcut=QKeySequence("Ctrl+Shift+Alt+V"),
             status_tip="Add the pasted elements at the end of the selected one",
             order=312,
+        ),
+        ActionSpec(
+            action_id=PASTE_TEXT_ID,
+            text="Paste from text...",
+            run=_paste_text,
+            is_enabled=_can_paste_text,
+            views=ViewKind.PACKAGES,
+            status_tip=(
+                "Paste the JSON of copied elements that you type or paste "
+                "into a box, when the clipboard cannot be read"
+            ),
+            order=314,
         ),
         ActionSpec(
             action_id=CLEAR_ID,
