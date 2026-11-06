@@ -303,6 +303,28 @@ class ReferenceGroupBox(ReferenceFieldMixin, TypeOptionObjGroupBox):
         super().__init__(objTypes, defType, **kwargs)  # pyright: ignore[reportUnknownMemberType]
         self._form_kwargs = {**kwargs, "parent": self, "title": ""}
         self._start_reference_field(rule_for_hint(model.Reference))
+        self._hide_picker_of_inner_form()
+
+    def replaceGroupBoxWidget(  # noqa: N802
+        self, objType: Any, **kwargs: Any
+    ) -> None:
+        """Changes the form for the kind, and keeps one picker on screen."""
+        super().replaceGroupBoxWidget(objType, **kwargs)  # pyright: ignore[reportUnknownMemberType]
+        self._hide_picker_of_inner_form()
+
+    def _hide_picker_of_inner_form(self) -> None:
+        """Hides the picker of the form inside, because this form has one.
+
+        The form of each kind brings its own button and status line. Both
+        showed, one under the other, and did the same.
+        """
+        inner: Any = self.widget  # pyright: ignore[reportUnknownMemberType]
+        if inner is self:
+            return
+        for name in ("_picker_button", "_status_label"):
+            widget = getattr(inner, name, None)
+            if widget is not None:
+                widget.hide()
 
     def _reference_box(self) -> Any:
         return self.widget
