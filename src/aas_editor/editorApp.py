@@ -53,6 +53,7 @@ from aas_editor.widgets.tab import TabWidget
 from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
 from aas_editor.treeviews.base import HeaderView
+from aas_editor.ui.command_palette import install_palette
 from aas_editor.ui.validation_window import install_validation
 
 
@@ -84,6 +85,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # The validation dock and hints mode, before the menus that list them
         self.validationController = install_validation(self)
         self.initDocks()
+        # Ctrl+K, which lists the actions of the menus that follow
+        self.commandPalette = install_palette(self)
         self.initActions()
         self.initMenu()
         self.initToolbars()
@@ -112,6 +115,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self._modeStatusLabel = QLabel()
         self._modeStatusLabel.setObjectName("modeStatusLabel")
         self.statusBar().addPermanentWidget(self._modeStatusLabel)
+        # The counts of errors, warnings and hints of the current package
+        self.statusBar().addPermanentWidget(self.validationController.status)
         self._unsavedStatusLabel = QLabel()
         self._unsavedStatusLabel.setObjectName("unsavedStatusLabel")
         self.statusBar().addPermanentWidget(self._unsavedStatusLabel)
@@ -364,8 +369,17 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuValidate.addAction(self.testEnginesToolDialogAct)
 
         self.menuNavigate = QMenu("&Navigate", self.menubar)
+        self.menuNavigate.addAction(self.commandPalette.action)
+        self.menuNavigate.addSeparator()
         self.menuNavigate.addAction(self.mainTreeView.autoScrollToSrcAct)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollFromSrcAct)
+        self.menuNavigate.addSeparator()
+        self.menuNavigate.addAction(
+            self.validationController.next_finding_action
+        )
+        self.menuNavigate.addAction(
+            self.validationController.previous_finding_action
+        )
         self.menuNavigate.addSeparator()
         for actionId in ("navigate.push_location", "navigate.pop_location"):
             locationAct = self.mainTreeView.registeredActions.find(actionId)

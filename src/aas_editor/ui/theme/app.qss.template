@@ -564,6 +564,58 @@ QStatusBar::item {
     border: none;
 }
 
+/* The counts of findings and hints in the status bar, and the note of the
+   Validation panel. The text of a finding is colored by its worst severity. */
+
+QToolButton#validationStatusFindings {
+    padding: 0 6px;
+}
+
+QToolButton#validationStatusFindings[state="error"] {
+    color: $status_error;
+}
+
+QToolButton#validationStatusFindings[state="warning"] {
+    color: $status_warning;
+}
+
+QLabel#validationStatusHints,
+QLabel#validationNote {
+    color: $fg_secondary;
+}
+
+/* The command palette. Its rows are painted from the tokens, so the sheet has
+   only the frame, the field, and the note. */
+
+QDialog#commandPalette {
+    background-color: $bg_content;
+    border: 1px solid $stroke_default;
+}
+
+QDialog#commandPalette QLineEdit {
+    background-color: $bg_content;
+    border: none;
+    border-bottom: 1px solid $stroke_subtle;
+    border-radius: 0;
+    padding: 8px 12px;
+}
+
+QDialog#commandPalette QLineEdit:focus {
+    border-bottom: 1px solid $accent;
+}
+
+QListView#commandPaletteList {
+    background-color: $bg_content;
+    border: none;
+}
+
+QLabel#commandPaletteNote {
+    background-color: $bg_chrome;
+    color: $fg_secondary;
+    border-top: 1px solid $stroke_subtle;
+    padding: 4px 12px;
+}
+
 /* Groups and progress */
 
 QGroupBox {

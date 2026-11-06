@@ -80,6 +80,12 @@ def qapp() -> Iterator[QApplication]:
     import time, which require an active QApplication.
     """
     app = QApplication.instance() or QApplication(sys.argv)
+    # The editor names Inter, which Qt finds only once the file is registered.
+    # Without it a test that measures text would measure a fallback font, and
+    # the numbers would depend on which test registered the font first.
+    from aas_editor.ui.theme.fonts import install_fonts
+
+    install_fonts()
     yield app
 
 
