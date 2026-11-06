@@ -21,3 +21,4 @@ htmlcov/
 .idea/
 *.log
 /src/aas_editor/settings/recovery/
+/src/aas_editor/settings/presets/

@@ -25,6 +25,12 @@ from basyx.aas import model
 from basyx.aas.adapter.json import AASToJsonEncoder
 from basyx.aas.adapter.json import StrictAASFromJsonDecoder
 
+from aas_editor.domain.member_json import Member
+from aas_editor.domain.member_json import MemberJsonError
+from aas_editor.domain.member_json import MemberKind
+from aas_editor.domain.member_json import dump_text
+from aas_editor.domain.member_json import members_from_data
+
 # Text beyond this size is not a copied element. It is a file or a mistake.
 MAX_CLIPBOARD_CHARS = 20_000_000
 
@@ -120,3 +126,56 @@ def clone(obj: model.Referable) -> model.Referable:
     """
     (copied,) = load_objects(dump_objects([obj]))
     return copied
+
+
+def load_members(text: str, kind: MemberKind) -> list[Member]:
+    """Reads qualifiers, extensions, or the like from JSON text.
+
+    Args:
+        text: A JSON object, or an array of objects, each in the
+            serialization of the metamodel.
+        kind: What the objects are.
+
+    Returns:
+        New members, detached from any owner.
+
+    Raises:
+        ClipboardError: If the text is not JSON, is too large, or holds
+            something that is no member of the kind. The message says what
+            is wrong.
+    """
+    if len(text) > MAX_CLIPBOARD_CHARS:
+        raise ClipboardError("The clipboard text is too large to be a member")
+    if not looks_like_json(text):
+        raise ClipboardError("The clipboard does not hold AAS JSON")
+    try:
+        loaded = cast("object", json.loads(text))
+    except json.JSONDecodeError as error:
+        raise ClipboardError(
+            f"The clipboard text is not valid JSON: {error}"
+        ) from error
+    except RecursionError as error:
+        raise ClipboardError(
+            "The clipboard JSON is nested too deeply"
+        ) from error
+    items = (
+        cast("list[object]", loaded) if isinstance(loaded, list) else [loaded]
+    )
+    if not items:
+        raise ClipboardError("The clipboard JSON holds no object")
+    try:
+        return members_from_data(items, kind)
+    except MemberJsonError as error:
+        raise ClipboardError(f"The clipboard JSON: {error}") from error
+
+
+def dump_members(members: Iterable[Member]) -> str:
+    """Serializes qualifiers, extensions, or the like to a JSON array.
+
+    Args:
+        members: The members to serialize.
+
+    Returns:
+        Indented JSON text that `load_members` reads back.
+    """
+    return dump_text(members)
