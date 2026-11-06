@@ -55,6 +55,11 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Clear paste buffer in the context menu empties the paste buffer and the system clipboard.
 - Pasting elements into another package asks whether the concept descriptions that their semantic ids refer to should be copied. A description that the package has with the same content is reused, and one with the same id and other content asks whether to keep the existing one or to add the copy under a new id, which the pasted elements then use. Adding the descriptions is part of the paste's undo step.
 - `application/operations/companions.py` gathers what goes with a copy between packages, as one place for later work to add the supplementary files.
+- Convert to another element type, in the context menu of an element (F-EDT-04 Refactor). A Property becomes a Range, a collection becomes a list, an Operation becomes a collection, and so on. The idShort, names, descriptions, semantic ids, qualifiers, and extensions carry over. Before anything changes, a dialog lists what the new type cannot hold, such as the maximum of a Range, the other languages of a text, or the items a list does not accept, and Cancel is the default. A conversion that loses nothing asks nothing. The element keeps its position, the references to it keep pointing at it, and the conversion is one undo step. The original editor drops extensions, the second end of a relationship, and all variables of an Operation without a message. See [ADR 0012](docs/software/adr/0012-replacing-an-element-shows-what-is-lost.md) for what each pair carries over.
+- A File converts to a Blob with the content of the stored file, or with its path as text, as the user chooses.
+- Change list settings, in the context menu of a SubmodelElementList. It rebuilds the list with another type of items, value type, semantic id, or order flag, which the SDK fixes when the list is made. The items that fit stay, in order, and the ones that do not are named before the list changes. "Detect from the items" fills the settings from what the items share. Editing one of these attributes in a cell now points to this action.
+- An item of a SubmodelElementList shows a read-only `index` row with its position, where it showed the name that the SDK generates. The row follows items that are added, removed, or moved.
+- A text of several lines can be typed. An `xs:string` value has a box of several lines in the value dialog and in the add and edit forms, and so does the text of each language of a MultiLanguageProperty, a description, or a display name. The text comes back exactly as it was while nothing is edited, including Windows line breaks. An `xs:normalizedString` stays a line, because the SDK refuses a line break in it.
 
 ### Changed
 
@@ -127,8 +132,6 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Known limits
 
-- The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
-- A string with line breaks is shown in a value line but cannot be typed there.
 - 49 of the 132 bundled templates open only in failsafe mode, and so can only be saved with Save As. Their packages have defects that the SDK refuses to read: 30 share an id between objects, and the others break constraints such as AASd-014, 021, 022, 109, 123 or 131. No reader option can keep that content, so the rule stays. See [the causes](docs/software/validation.md#why-49-of-the-132-templates-open-only-in-failsafe-mode).
 - The validation rules check what the SDK leaves open, and cannot check AASd-012, or AASd-006 and AASd-007 when `valueId` points outside the package. Saving does not run them yet.
 - Shells, submodels, concept descriptions and the Submodel references of a shell cannot be moved, because the SDK keeps them in sets whose order is not saved (D16). Their view is sorted by name.
@@ -136,6 +139,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Cut still removes the element at once (D12), so Escape or a missing paste does not bring it back, except by undo.
 - A paste of elements into a SubmodelElementList does not check the type of the list in advance. The SDK refuses a wrong element (AASd-107), the paste is undone as a whole, and the message says why.
 - The paste buffer and the system clipboard are one: a newer copy anywhere replaces the buffer. The original keeps its internal buffer first.
+- Converting a text or a Property to a File can give a path that no stored file has. Saving reports such a File.
+- The item of a SubmodelElementList cannot be converted to another type, because the list fixes it. Change the list settings instead.
+- A cell of the package tree or of a tab is still one line. Use Edit to type line breaks.
 
 ## 0.4.13 - 2026-08-28
 

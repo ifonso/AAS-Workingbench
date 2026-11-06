@@ -37,7 +37,12 @@ from PyQt6.QtWidgets import (
 from basyx.aas.model.datatypes import Date
 
 from aas_editor.additional.classes import DictItem
-from aas_editor.ui.value_editor import BinaryEdit, ValueEdit, ValueTypeBox
+from aas_editor.ui.value_editor import (
+    BinaryEdit,
+    MultiLineTextEdit,
+    ValueEdit,
+    ValueTypeBox,
+)
 from aas_editor.utils.util import inheritors
 from aas_editor.utils.util_classes import PreObject
 from aas_editor.utils.util_type import isoftype, issubtype, getTypeName, getArgs
@@ -414,6 +419,9 @@ class StandardInputWidget(QWidget):
     def _initWidget(self, **kwargs):
         if issubtype(self.objType, bool):
             widget = QCheckBox(self)
+        elif issubtype(self.objType, str) and kwargs.get("multiline"):
+            # A text that may hold line breaks, like the text of a language.
+            widget = MultiLineTextEdit(self)
         elif issubtype(self.objType, str):
             widget = LineEdit(self)
             if kwargs.get("completions"):

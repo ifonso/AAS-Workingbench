@@ -47,6 +47,7 @@ from aas_editor.application.edits import (
 from aas_editor.application.listeners import Subscription
 from aas_editor.domain.containers import is_list_like
 from aas_editor.domain.language_tags import check_language_tag
+from aas_editor.domain.list_settings import fixed_attribute_hint
 from aas_editor.domain.typed_values import (
     is_value_attr,
     is_value_type_attr,
@@ -183,8 +184,11 @@ class StandardTable(QAbstractItemModel):
             return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
         flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-        # Read mode (D18): nothing is edited, not even inline.
-        if edit_mode().is_editing:
+        # Read mode (D18): nothing is edited, not even inline. The position of
+        # an item in a list is no attribute, so it is never edited.
+        if edit_mode().is_editing and not getattr(
+            self.objByIndex(index), "readOnly", False
+        ):
             flags |= Qt.ItemFlag.ItemIsEditable
         return flags
 
@@ -693,6 +697,12 @@ class StandardTable(QAbstractItemModel):
         :raise InvalidValueError: if the value does not fit the value type, or
             the attribute is fixed once the object is made
         """
+        if name == "index" and getattr(
+            self.objByIndex(index), "readOnly", False
+        ):
+            raise InvalidValueError(
+                "The position of an item in a list cannot be edited."
+            )
         renamed = self.renameCommand(index, owner, name, value)
         if renamed is not _NOT_RENAMED:
             return renamed
@@ -702,7 +712,7 @@ class StandardTable(QAbstractItemModel):
             # children of a SubmodelElementList.
             raise InvalidValueError(
                 f"'{name}' cannot be changed after the "
-                f"{type(owner).__name__} is made. Make a new one"
+                f"{type(owner).__name__} is made. {fixed_attribute_hint(owner)}"
             )
         observer = self._observerFor(index)
         if is_value_type_attr(owner, name):
