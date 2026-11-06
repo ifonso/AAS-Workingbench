@@ -134,7 +134,7 @@ These have no direct equivalent in the P0 and P1 list, so keep them while workin
 - Excel import with mappings
 - LLM-assisted Handover Documentation
 - Validation with AAS Test Engines
-- Theme selection, with light as the default and a dark theme, both checked for contrast ([ADR 0025](adr/0025-design-tokens-and-theme-architecture.md)), and split tabs
+- Theme selection, with light as the default and a dark theme, both checked for contrast ([ADR 0025](adr/0025-design-tokens-and-theme-architecture.md)), split tabs, and compact trees with a setting for the row density (UI plan phase F)
 
 ## Working on a feature
 

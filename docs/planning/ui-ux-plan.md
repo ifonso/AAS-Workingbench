@@ -518,6 +518,7 @@ Proposed only, none added now:
 
 - **C, `feat/form-vocabulary`: done.** Forms read in the words of ADR 0022, with the description as the tooltip, and the add dialog of a list starts with one entry and the focus in its first field. [ADR 0026](../software/adr/0026-forms-read-in-words-of-the-metamodel.md). Not built: the "More" line for optional attributes, a new shortcut, and a new text for the "Create" button.
 - **D, done** on `feat/design-tokens`: tokens, generated style sheet, palette, and theme manager, with Fusion, as `fluent-light`, `fluent-dark`, and `fluent-system` in the theme list. The light theme is the default of a first run. `ui/colors.py` reads the tokens. [ADR 0025](../software/adr/0025-design-tokens-and-theme-architecture.md).
+- **F, done** on `feat/compact-trees`: the delegate gives the row height (28, 24, 20 by density, more for a zoomed font) and paints a bar on the selected row and a dot on a changed or added name, one level of emphasis in the fonts (V1), no stripes, indent 16, colors of links, marks, and search matches from the tokens, a setting "Row density", the header versions 4 and 2, and the migration of a saved 12 pt. Not built, because the package of this phase did not name them: the chevrons in place of the Fusion branch arrows, the headers `Package` and `Type`, and the tooltip with the full name. No ADR: section 6 names none for F. Measured on offscreen Qt 6.12 on Windows, not on a real window.
 
 ## 7. Decisions for the owner
 
