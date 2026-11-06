@@ -29,6 +29,7 @@ from basyx.aas.model import (
     ModelReference,
 )
 
+from aas_editor.application.change_marks import ChangeMarks
 from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import CommandStack
 from aas_editor.application.commands import PACKAGE_HISTORY_LIMIT
@@ -54,6 +55,8 @@ class Package:
         self.commandStack = CommandStack(
             PACKAGE_HISTORY_LIMIT, lambda: edit_mode().is_editing
         )
+        # What differs from the saved file, for the colours of the trees.
+        self.changeMarks = ChangeMarks(observer_for(self), self.commandStack)
         # The questions of a save, and the errors the user confirmed (D5).
         self.saveGate = SaveGate()
         self.objStore = SetIdentifiableStore()
