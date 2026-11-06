@@ -2,6 +2,7 @@
 
 import decimal
 from typing import Any
+from typing import Optional
 
 from basyx.aas import model
 from basyx.aas.model import datatypes
@@ -23,6 +24,33 @@ def _range(
     maximum: Any = None,
 ) -> model.Range:
     return model.Range("Range", value_type=value_type, min=minimum, max=maximum)
+
+
+def test_is_value_hint_is_true_for_the_type_of_a_value_with_or_without_optional() -> (
+    None
+):
+    assert typed_values.is_value_hint(datatypes.AnyXSDType)
+    assert typed_values.is_value_hint(Optional[datatypes.AnyXSDType])  # noqa: UP045
+    assert typed_values.is_value_hint(datatypes.AnyXSDType | None)
+
+
+def test_is_value_hint_is_false_for_other_hints() -> None:
+    assert not typed_values.is_value_hint(str)
+    assert not typed_values.is_value_hint(Optional[str])  # noqa: UP045
+    assert not typed_values.is_value_hint(model.base.DataTypeDefXsd)
+
+
+def test_is_value_type_hint_is_true_for_the_class_of_a_value_type() -> None:
+    assert typed_values.is_value_type_hint(model.base.DataTypeDefXsd)
+    assert typed_values.is_value_type_hint(
+        Optional[model.base.DataTypeDefXsd]  # noqa: UP045
+    )
+
+
+def test_is_value_type_hint_is_false_for_other_hints() -> None:
+    assert not typed_values.is_value_type_hint(type[model.Property])
+    assert not typed_values.is_value_type_hint(datatypes.AnyXSDType)
+    assert not typed_values.is_value_type_hint(int)
 
 
 def test_value_attrs_names_the_attributes_that_hold_values() -> None:

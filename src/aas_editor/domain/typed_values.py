@@ -13,10 +13,13 @@ the rules of editing such an attribute:
 * A Property in a SubmodelElementList keeps the value type of the list (AASd-109).
 """
 
+import types
+import typing
 from typing import Any
 from typing import cast
 
 from basyx.aas import model
+from basyx.aas.model import datatypes
 
 from aas_editor.domain import value_types
 from aas_editor.domain.value_types import InvalidValueError
@@ -31,6 +34,38 @@ _VALUE_ATTRS: tuple[tuple[type, tuple[str, ...]], ...] = (
 )
 # The attributes that name the type of a value.
 _TYPE_ATTRS = ("value_type",)
+
+
+def is_value_hint(hint: object) -> bool:
+    """Tells whether a type hint is `ValueDataType`, a value of any XSD type.
+
+    Args:
+        hint: The type hint of an attribute, with or without `Optional`.
+    """
+    return _without_none(hint) == datatypes.AnyXSDType
+
+
+def is_value_type_hint(hint: object) -> bool:
+    """Tells whether a type hint is `DataTypeDefXsd`, the class of an XSD type.
+
+    Args:
+        hint: The type hint of an attribute, with or without `Optional`.
+    """
+    plain = _without_none(hint)
+    return typing.get_origin(plain) is type and typing.get_args(plain) == (
+        datatypes.AnyXSDType,
+    )
+
+
+def _without_none(hint: object) -> object:
+    if typing.get_origin(hint) not in (typing.Union, types.UnionType):
+        return hint
+    members = [
+        member for member in typing.get_args(hint) if member is not type(None)
+    ]
+    if len(members) == 1:
+        return members[0]
+    return typing.Union[tuple(members)]  # pyright: ignore[reportUnknownVariableType]
 
 
 def value_attrs(owner: object) -> tuple[str, ...]:
