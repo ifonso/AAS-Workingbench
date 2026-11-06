@@ -25,6 +25,7 @@ from aas_editor.settings.app_settings import (
     COLUMN_NAME_ROLE,
     NAME_ROLE,
 )
+from aas_editor.utils.util import getAttrTypeHint
 from aas_editor.utils.util_classes import ClassesInfo
 
 
@@ -59,10 +60,16 @@ class PacksTable(StandardTable):
             return super(PacksTable, self).data(index, role)
 
     def editItem(self, index: QModelIndex, value):
-        value = None if str(value) == "None" else value
         if index.data(COLUMN_NAME_ROLE) not in DEFAULT_COLUMNS_IN_PACKS_TABLE:
             parentObj = index.data(OBJECT_ROLE)
             objName = index.data(COLUMN_NAME_ROLE)
+            try:
+                typehint = getAttrTypeHint(
+                    type(parentObj), objName, delOptional=False
+                )
+            except KeyError:
+                typehint = None
+            self._checkClearable(objName, typehint, value)
             oldValue = getattr(parentObj, objName)
             setattr(parentObj, objName, value)
             return value, oldValue
