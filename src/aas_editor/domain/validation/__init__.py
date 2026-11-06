@@ -16,15 +16,19 @@ Example:
 the SDK enforces it, a rule here does, or neither.
 """
 
+from aas_editor.domain.validation.engine import RULE_FAILED
 from aas_editor.domain.validation.engine import validate
 from aas_editor.domain.validation.findings import Finding
 from aas_editor.domain.validation.findings import Severity
 from aas_editor.domain.validation.findings import ValidationReport
 from aas_editor.domain.validation.rule import Rule
 from aas_editor.domain.validation.rules import ALL_RULES
+from aas_editor.domain.validation.rules import HINT_RULES
 
 __all__ = [
     "ALL_RULES",
+    "HINT_RULES",
+    "RULE_FAILED",
     "Finding",
     "Rule",
     "Severity",

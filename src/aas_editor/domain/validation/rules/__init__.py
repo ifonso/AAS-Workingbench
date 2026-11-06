@@ -3,6 +3,7 @@
 from aas_editor.domain.validation.rule import Rule
 from aas_editor.domain.validation.rules import assets
 from aas_editor.domain.validation.rules import files
+from aas_editor.domain.validation.rules import hints
 from aas_editor.domain.validation.rules import identity
 from aas_editor.domain.validation.rules import references
 from aas_editor.domain.validation.rules import templates
@@ -17,3 +18,6 @@ ALL_RULES: tuple[Rule, ...] = (
     *assets.RULES,
     *templates.RULES,
 )
+
+# Advice for hints mode. Not part of the package check or the save gate.
+HINT_RULES: tuple[Rule, ...] = hints.HINT_RULES
