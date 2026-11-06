@@ -16,10 +16,11 @@ from aas_editor.application.operations.data_specs import iec_records
 from aas_editor.application.operations.data_specs import import_commands
 from aas_editor.application.operations.data_specs import plan_fix_keys
 from aas_editor.application.operations.data_specs import plan_value_list_import
-from aas_editor.application.operations.data_specs import replace_record_commands
+from aas_editor.application.operations.data_specs import set_content_commands
 from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 from aas_editor.domain.data_specifications import Iec61360Draft
 from aas_editor.domain.data_specifications import TemplateMatch
+from aas_editor.domain.data_specifications import build_content
 from aas_editor.domain.data_specifications import build_record
 from aas_editor.domain.data_specifications import match_template
 
@@ -77,20 +78,25 @@ class TestRecords:
         assert concept.embedded_data_specifications == [record]
         assert snapshot(store) == done
 
-    def test_replacing_a_record_keeps_its_position(
+    def test_editing_a_record_keeps_its_place_and_its_reference(
         self, observer: ModelChangeObserver
     ) -> None:
-        first, second = _record(), _record()
+        older = "http://admin-shell.io/DataSpecificationTemplates/DataSpecificationIEC61360/3/0"
+        first, second = _record(older), _record()
         concept = _concept("urn:cd:1", first, second)
-        new = build_record(Iec61360Draft(preferred_name=[("en", "New")]))
+        new = build_content(Iec61360Draft(preferred_name=[("en", "New")]))
         stack = CommandStack()
 
-        for command in replace_record_commands(observer, concept, first, new):
+        for command in set_content_commands(observer, concept, first, new):
             stack.push(command)
 
-        assert concept.embedded_data_specifications == [new, second]
-        stack.undo()
         assert concept.embedded_data_specifications == [first, second]
+        assert first.data_specification_content is new
+        assert first.data_specification == make_external_reference(older)
+        stack.undo()
+        assert dict(first.data_specification_content.preferred_name) == {
+            "en": "N"
+        }  # type: ignore[attr-defined]
 
     def test_read_mode_refuses_a_new_record(
         self, observer: ModelChangeObserver

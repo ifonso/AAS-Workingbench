@@ -1,8 +1,8 @@
 """Editing the data specification records of concept descriptions.
 
-- `add_record_commands` and `replace_record_commands` put an IEC 61360 record
-  made from a draft (`aas_editor.domain.data_specifications`) on a concept
-  description, or in place of its record.
+- `add_record_commands` puts an IEC 61360 record made from a draft
+  (`aas_editor.domain.data_specifications`) on a concept description, and
+  `set_content_commands` gives a record new content.
 - `plan_fix_keys` finds records whose reference does not name the IEC 61360
   template, which is what the original calls `Fix data specs wrt. content`.
   Content decides, as it does in the original: a record with IEC 61360 content
@@ -31,7 +31,6 @@ from basyx.aas.model.concept import ConceptDescription
 from aas_editor.application.changes import ModelChangeObserver
 from aas_editor.application.commands import Command
 from aas_editor.application.edits import AddMember
-from aas_editor.application.edits import ReplaceMember
 from aas_editor.application.edits import SetAttribute
 from aas_editor.domain.data_specifications import TemplateMatch
 from aas_editor.domain.data_specifications import empty_attributes
@@ -75,19 +74,23 @@ def add_record_commands(
     ]
 
 
-def replace_record_commands(
+def set_content_commands(
     observer: ModelChangeObserver,
     concept: ConceptDescription,
-    old: model.EmbeddedDataSpecification,
-    new: model.EmbeddedDataSpecification,
+    record: model.EmbeddedDataSpecification,
+    content: model.DataSpecificationIEC61360,
 ) -> list[Command]:
-    """Builds the command that puts a new record in the place of an old one."""
+    """Builds the command that gives a record new content.
+
+    The record keeps its place and its reference to the template, whatever
+    spelling that has. Undo gives the old content back.
+    """
     return [
-        ReplaceMember(
+        SetAttribute(
             observer,
-            concept.embedded_data_specifications,
-            old,
-            new,
+            record,
+            "data_specification_content",
+            content,
             description=f"Edit IEC 61360 record of {describe_object(concept)}",
         )
     ]
