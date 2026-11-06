@@ -45,6 +45,9 @@ from aas_editor.application.edits import (
     SetValueType,
 )
 from aas_editor.application.listeners import Subscription
+from aas_editor.application.supplementary_files import FileOperationError
+from aas_editor.application.supplementary_files import RemoveFile
+from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 from aas_editor.domain.containers import is_list_like
 from aas_editor.domain.language_tags import check_language_tag
 from aas_editor.domain.typed_values import (
@@ -108,6 +111,7 @@ REFUSALS = (
     InvalidValueError,
     AASConstraintViolation,
     RenameError,
+    FileOperationError,
 )
 
 # What `renameCommand` returns for an edit that is no rename.
@@ -880,7 +884,15 @@ class StandardTable(QAbstractItemModel):
 
         for currRow in range(row + count - 1, row - 1, -1):
             child = parentItem.children()[currRow]
-            if isMemberContainer(parentObj):
+            if isinstance(parentObj, AbstractSupplementaryFileContainer):
+                # A stored file is removed from the container of the package.
+                self._run(
+                    parent,
+                    RemoveFile(
+                        self._observerFor(parent), parentObj, child.obj.name
+                    ),
+                )
+            elif isMemberContainer(parentObj):
                 # A mapping member is a pair, and the item shows it as such.
                 self._run(
                     parent,

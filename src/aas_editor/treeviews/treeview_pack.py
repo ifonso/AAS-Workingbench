@@ -102,6 +102,7 @@ from aas_editor.application.commands import ReadOnlyError
 from aas_editor.application.editing import edit_mode
 from aas_editor.treeviews.base import HeaderView, TreeView
 from aas_editor.ui.actions import ViewKind
+from aas_editor.ui.file_controller import prepare_file_delete
 from aas_editor.ui.save_warnings import (
     confirm_save,
     show_missing_files,
@@ -1213,6 +1214,22 @@ class PackTreeView(TreeView):
         for url in e.mimeData().urls():
             file = str(url.toLocalFile())
             self.openPack(file)
+
+    def prepareDelete(self, indexes, confirm):
+        # Stored files are no AAS objects, but File elements refer to them.
+        stored = [index.data(OBJECT_ROLE) for index in indexes]
+        if (
+            confirm
+            and indexes
+            and edit_mode().is_editing
+            and all(isinstance(obj, StoredFile) for obj in stored)
+        ):
+            return prepare_file_delete(
+                indexes[0].data(PACKAGE_ROLE),
+                [obj.name for obj in stored],
+                self,
+            )
+        return super().prepareDelete(indexes, confirm)
 
     def deletableObject(self, index: QModelIndex):
         # Only the object columns delete the object. The others clear an

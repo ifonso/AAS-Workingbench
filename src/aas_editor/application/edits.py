@@ -390,18 +390,25 @@ class AddSupplementaryFile(Command):
         self._shown = shown
         self._on_stored = on_stored
         self._stored_name: str | None = None
+        self._created = False
 
     def apply(self) -> None:
-        """Adds the file to the store."""
+        """Adds the file to the store.
+
+        A file that the store holds already under the name, with the same
+        content and media type, is not added again, and undo leaves it alone.
+        """
+        existed = self._name in self._file_store
         self._stored_name = self._file_store.add_file(
             self._name, io.BytesIO(self._data), self._content_type
         )
+        self._created = not (existed and self._stored_name == self._name)
         self._on_stored(self._stored_name)
         self._observer.notify(Change.added(self._file_store, self._shown))
 
     def revert(self) -> None:
-        """Deletes the file from the store."""
-        if self._stored_name is not None:
+        """Deletes the file from the store, if the command added it."""
+        if self._stored_name is not None and self._created:
             self._file_store.delete_file(self._stored_name)
         self._on_stored(None)
         self._observer.notify(Change.removed(self._file_store, self._shown))
