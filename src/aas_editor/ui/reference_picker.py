@@ -37,6 +37,7 @@ from aas_editor.domain.reference_picker import PickerSource
 from aas_editor.domain.reference_picker import candidates_in
 from aas_editor.domain.reference_picker import reference_to
 from aas_editor.domain.references import describe_reference
+from aas_editor.ui.dialog_layout import finish_dialog
 
 TITLE = "Pick what the reference points to"
 MODEL_TEXT = "Model reference through the path of the target"
@@ -178,6 +179,7 @@ class ReferencePickerDialog(QDialog):
         layout.addWidget(self.tree)
         layout.addWidget(self.preview)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.kind_box.currentIndexChanged.connect(self._reload)
         self.filter_box.currentIndexChanged.connect(self._reload)

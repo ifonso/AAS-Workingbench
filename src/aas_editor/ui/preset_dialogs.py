@@ -31,6 +31,7 @@ from aas_editor.domain.presets import Preset
 from aas_editor.infrastructure.preset_files import USER
 from aas_editor.infrastructure.preset_files import LoadedPresets
 from aas_editor.infrastructure.preset_files import ensure_user_dir
+from aas_editor.ui.dialog_layout import finish_dialog
 
 
 class PresetDialog(QDialog):
@@ -95,6 +96,7 @@ class PresetDialog(QDialog):
         layout.addLayout(problems)
         layout.addWidget(self.folderButton)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.filterEdit.textChanged.connect(self._fill)
         self.list.currentRowChanged.connect(self._row_changed)

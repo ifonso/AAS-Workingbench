@@ -35,6 +35,7 @@ A probe of what finds a field of a form found these places:
 - A test that pressed "Add Item" in the first step of an add dialog for a list (the submodel references of a shell) was changed: the entry is there already.
 - A later class or attribute that the vocabulary lacks fails the walk of the forms, as it fails the walk of the tabs.
 - The class name that titles an entry (`Qualifier 1`) and the labels `key` and `value` of a language entry are not translated by this change. The first is the class of the SDK, and the second is what the vocabulary says for `DictItem`.
+  - *Settled in phase K:* an entry is titled by `entry_title` (`Text 1` for a language entry, `Reference 1` for a model or external reference), a language entry reads `language` and `text` in a form only, and a box no longer hands its title to the list or reference inside it, which showed `Qualifier 1` over the supplemental semantic ids.
 - The buttons "Create", "Add Item" and "Choose from local", and the styling of the forms, are for later phases.
 
 ## Alternatives considered

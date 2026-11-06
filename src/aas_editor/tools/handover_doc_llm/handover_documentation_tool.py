@@ -19,6 +19,7 @@ from jsonschema import validate, ValidationError
 
 from PyQt6.QtWidgets import (
     QDialog,
+    QDialogButtonBox,
     QPushButton,
     QVBoxLayout,
     QFileDialog,
@@ -49,6 +50,7 @@ from aas_editor.tools.handover_doc_llm.documentation_generator import (
     documents2handover_documentation,
 )
 from aas_editor.settings.icons import INFO_ICON
+from aas_editor.ui.dialog_layout import finish_dialog
 
 from aas_editor.tools.handover_doc_llm.config import (
     PROMPT,
@@ -320,9 +322,10 @@ class AnswerDialog(QDialog):
         self.text = JSONEditor(self)
         self.text.setText(self.VDI2770_CLASSIFICATION_SYSTEM + answer)
         layout.addWidget(self.text)
-        ok_button = QPushButton("OK", self)
-        ok_button.clicked.connect(self.accept)
-        layout.addWidget(ok_button)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok, self)
+        buttons.accepted.connect(self.accept)
+        layout.addWidget(buttons)
+        finish_dialog(self)
 
 
 class HandoverDocumentationToolDialog(QDialog):

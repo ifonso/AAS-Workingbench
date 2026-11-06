@@ -5,6 +5,8 @@ import pytest
 from aas_editor.domain.design_tokens import CONTRAST_PAIRS
 from aas_editor.domain.design_tokens import DARK
 from aas_editor.domain.design_tokens import DEFAULT_DENSITY
+from aas_editor.domain.design_tokens import DIALOG_GAP
+from aas_editor.domain.design_tokens import DIALOG_PADDING
 from aas_editor.domain.design_tokens import ICON_CONTRAST
 from aas_editor.domain.design_tokens import LIGHT
 from aas_editor.domain.design_tokens import ROW_HEIGHTS
@@ -140,6 +142,14 @@ def test_a_value_that_is_not_a_color_is_refused():
 
 def test_spacing_follows_the_ramp_of_fluent():
     assert SPACING == (0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32)
+
+
+def test_a_dialog_has_12_pixels_of_padding_and_8_between_its_parts():
+    assert (DIALOG_PADDING, DIALOG_GAP) == (12, 8)
+
+
+def test_the_spacing_of_dialogs_is_on_the_ramp():
+    assert {DIALOG_PADDING, DIALOG_GAP} <= set(SPACING)
 
 
 def test_rows_are_28_24_and_20_pixels_high():

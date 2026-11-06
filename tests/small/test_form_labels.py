@@ -3,6 +3,8 @@
 from basyx.aas import model
 import pytest
 
+from aas_editor.additional.classes import DictItem
+from aas_editor.domain.form_labels import entry_title
 from aas_editor.domain.form_labels import field_label
 
 
@@ -65,3 +67,32 @@ def test_something_that_is_not_a_class_has_no_names() -> None:
     label = field_label(None, "value_type", "value_type", required=False)
 
     assert (label.text, label.tooltip) == ("value_type", "")
+
+
+def test_a_language_entry_asks_for_a_language_and_a_text() -> None:
+    language = field_label(DictItem, "key", "key", required=True)
+    text = field_label(DictItem, "value", "value", required=True)
+
+    assert (language.text, text.text) == ("language*", "text*")
+
+
+def test_a_language_entry_keeps_the_description_of_its_attribute() -> None:
+    label = field_label(DictItem, "key", "key", required=True)
+
+    assert label.tooltip == "The language of the text, such as en."
+
+
+@pytest.mark.parametrize(
+    ("class_name", "position", "title"),
+    [
+        ("Qualifier", 1, "Qualifier 1"),
+        ("DictItem", 1, "Text 1"),
+        ("ModelReference", 2, "Reference 2"),
+        ("ExternalReference", 3, "Reference 3"),
+        ("Key", 1, "Key 1"),
+    ],
+)
+def test_an_entry_is_titled_with_the_name_of_the_metamodel(
+    class_name: str, position: int, title: str
+) -> None:
+    assert entry_title(class_name, position) == title

@@ -62,6 +62,7 @@ from aas_editor.utils.util_type import (
 from aas_editor.utils.util import isValOk4Typehint
 from aas_editor.application.hints import hints_mode
 from aas_editor.domain.form_labels import FieldLabel
+from aas_editor.domain.form_labels import entry_title
 from aas_editor.domain.form_labels import field_label
 from aas_editor.domain.language_tags import check_language_tags
 from aas_editor.domain.validation.field_checks import (
@@ -197,6 +198,9 @@ class ObjGroupBox(GroupBox):
         )
         self.reqParamsDict = dict(sortedReqInitParamsTypehints)
         self.kwargs = kwargs.copy() if kwargs else {}
+        # The title belongs to this box. A list inside it was given it too,
+        # and showed the heading of its owner: `Qualifier 1`.
+        self.kwargs.pop("title", None)
         self.initLayout()
         self._initNotice()
 
@@ -621,7 +625,9 @@ class IterableGroupBox(GroupBox):
 
         self.kwargs.update(
             {
-                "title": f"{getTypeName(itemType)} {len(self.inputWidgets) + 1}",
+                "title": entry_title(
+                    getTypeName(itemType), len(self.inputWidgets) + 1
+                ),
                 "rmDefParams": self.rmDefParams,
                 "objVal": objVal,
             }

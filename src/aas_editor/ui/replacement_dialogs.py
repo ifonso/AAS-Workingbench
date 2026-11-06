@@ -13,7 +13,6 @@ from basyx.aas import model
 from PyQt6.QtWidgets import QCheckBox
 from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QDialog
-from PyQt6.QtWidgets import QDialogButtonBox
 from PyQt6.QtWidgets import QFormLayout
 from PyQt6.QtWidgets import QInputDialog
 from PyQt6.QtWidgets import QLabel
@@ -31,27 +30,13 @@ from aas_editor.domain.list_settings import detect_settings
 from aas_editor.domain.list_settings import settings_of
 from aas_editor.domain.references import describe_reference
 from aas_editor.domain.replacement import ReplacementPlan
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import make_button_box
 from aas_editor.ui.reference_dialogs import ReferenceTable
 from aas_editor.ui.reference_dialogs import usage_rows
 from aas_editor.ui.value_editor import ValueTypeBox
 
 ElementType = type[model.SubmodelElement]
-
-
-def _buttons(dialog: QDialog, accept_text: str) -> QDialogButtonBox:
-    """Builds an accept and a cancel button, with cancel as the default."""
-    buttons = QDialogButtonBox()
-    go_on = buttons.addButton(
-        accept_text, QDialogButtonBox.ButtonRole.AcceptRole
-    )
-    cancel = buttons.addButton(QDialogButtonBox.StandardButton.Cancel)
-    if go_on is not None:
-        go_on.setAutoDefault(False)
-    if cancel is not None:
-        cancel.setDefault(True)
-    buttons.accepted.connect(dialog.accept)
-    buttons.rejected.connect(dialog.reject)
-    return buttons
 
 
 def _answered_yes(dialog: QDialog) -> bool:
@@ -118,7 +103,7 @@ class ReplacementDialog(QDialog):
         self.orphaned_table.set_rows(usage_rows(updates.orphaned))
         self.orphaned_label.setVisible(bool(updates.orphaned))
         self.orphaned_table.setVisible(bool(updates.orphaned))
-        self.buttons = _buttons(self, accept_text)
+        self.buttons = make_button_box(self, accept_text, safe_default=True)
         layout = QVBoxLayout(self)
         layout.addWidget(self.intro_label)
         layout.addWidget(self.losses_table)
@@ -127,6 +112,7 @@ class ReplacementDialog(QDialog):
         layout.addWidget(self.orphaned_label)
         layout.addWidget(self.orphaned_table)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
 
 def confirm_replacement(
@@ -271,7 +257,7 @@ class ListSettingsDialog(QDialog):
             " before anything changes."
         )
         self.hint_label.setWordWrap(True)
-        self.buttons = _buttons(self, "Rebuild list")
+        self.buttons = make_button_box(self, "Rebuild list", safe_default=True)
 
         form = QFormLayout()
         form.addRow("Type of the items", self.type_box)
@@ -284,6 +270,7 @@ class ListSettingsDialog(QDialog):
         layout.addWidget(self.detect_button)
         layout.addWidget(self.hint_label)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.show_settings(current)
         self.type_box.currentIndexChanged.connect(self._update_enabled)

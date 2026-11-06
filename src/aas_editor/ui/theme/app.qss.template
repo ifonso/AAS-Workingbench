@@ -140,30 +140,39 @@ QPushButton:focus {
     padding: 2px 11px;
 }
 
+/* The button that Enter presses has an accent outline. The main action of a
+   dialog is filled (ui/dialog_layout.py sets "primary"), and so is the default
+   button of a message box. */
+
 QPushButton:default {
+    border: 1px solid $accent;
+}
+
+QPushButton[primary="true"],
+QMessageBox QPushButton:default {
     background-color: $accent;
     color: $accent_on;
     border: 1px solid $accent;
 }
 
-QPushButton:default:hover,
-QPushButton:default:pressed {
+QPushButton[primary="true"]:hover,
+QPushButton[primary="true"]:pressed,
+QMessageBox QPushButton:default:hover,
+QMessageBox QPushButton:default:pressed {
     background-color: $accent_hover;
     border-color: $accent_hover;
 }
 
-QPushButton:default:focus {
+QPushButton:default:focus,
+QPushButton[primary="true"]:focus,
+QMessageBox QPushButton:default:focus {
     border: ${focus_stroke}px solid $focus;
     padding: 2px 11px;
 }
 
-QPushButton:disabled {
-    background-color: $bg_chrome;
-    color: $fg_disabled;
-    border-color: $stroke_subtle;
-}
-
-QPushButton:default:disabled {
+QPushButton:disabled,
+QPushButton:default:disabled,
+QPushButton[primary="true"]:disabled {
     background-color: $bg_chrome;
     color: $fg_disabled;
     border-color: $stroke_subtle;

@@ -15,6 +15,7 @@ from collections.abc import Sequence
 
 from basyx.aas import model
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QShowEvent
 from PyQt6.QtGui import QStandardItem
 from PyQt6.QtGui import QStandardItemModel
 from PyQt6.QtWidgets import QAbstractItemView
@@ -33,8 +34,8 @@ from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
 from aas_editor.domain.references import describe_reference
-from aas_editor.ui.colors import advisory_style
-from aas_editor.ui.colors import problem_style
+from aas_editor.ui.colors import style_as_advisory
+from aas_editor.ui.colors import style_as_problem
 from aas_editor.domain.data_specifications import DATA_TYPE_GROUPS
 from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 from aas_editor.domain.data_specifications import LEVEL_TYPE_LABELS
@@ -43,9 +44,11 @@ from aas_editor.domain.data_specifications import MAX_PREFERRED_NAME
 from aas_editor.domain.data_specifications import MAX_SHORT_NAME
 from aas_editor.domain.data_specifications import Iec61360Draft
 from aas_editor.domain.data_specifications import check_draft
-from aas_editor.ui.concept_dialogs import accept_button
 from aas_editor.ui.concept_dialogs import answered_yes
-from aas_editor.ui.concept_dialogs import make_buttons
+from aas_editor.ui.dialog_layout import accept_button
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import focus_first_field
+from aas_editor.ui.dialog_layout import make_button_box
 from aas_editor.ui.user_defaults import default_languages
 
 
@@ -255,11 +258,11 @@ class Iec61360Dialog(QDialog):
 
         self.problems_label = QLabel()
         self.problems_label.setWordWrap(True)
-        self.problems_label.setStyleSheet(problem_style())
+        style_as_problem(self.problems_label)
         self.advisories_label = QLabel()
         self.advisories_label.setWordWrap(True)
-        self.advisories_label.setStyleSheet(advisory_style())
-        self.buttons = make_buttons(self, accept_text)
+        style_as_advisory(self.advisories_label)
+        self.buttons = make_button_box(self, accept_text, safe_default=True)
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
@@ -275,6 +278,7 @@ class Iec61360Dialog(QDialog):
         layout.addWidget(self.problems_label)
         layout.addWidget(self.advisories_label)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.preferred_name.set_rows(draft.preferred_name)
         self.short_name.set_rows(draft.short_name)
@@ -296,6 +300,11 @@ class Iec61360Dialog(QDialog):
         for check in self.level_checks.values():
             check.stateChanged.connect(self._update)
         self._update()
+
+    def showEvent(self, event: QShowEvent | None) -> None:  # noqa: N802
+        """Starts in the first field, not on the scroll area."""
+        super().showEvent(event)
+        focus_first_field(self)
 
     @staticmethod
     def _data_type_box() -> QComboBox:

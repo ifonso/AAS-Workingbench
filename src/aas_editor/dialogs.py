@@ -27,7 +27,11 @@ from PyQt6.QtWidgets import (
 
 import aas_editor.widgets.buttons
 import aas_editor.widgets.editWidgets
+from aas_editor.domain.design_tokens import DIALOG_GAP
+from aas_editor.domain.design_tokens import DIALOG_PADDING
 from aas_editor.settings import ATTRIBUTE_COLUMN
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import focus_first_field
 from aas_editor.utils.util import actualizeAASParents
 from aas_editor.utils.util_type import getTypeName, isoftype
 from aas_editor.utils.util_classes import PreObject
@@ -91,18 +95,31 @@ class EditDialog(QDialog):
         self.setMinimumWidth(self.MIN_WIDTH)
         self.setMaximumHeight(self.MAX_HEIGHT)
 
+        # The form scrolls and the buttons do not, so each has its own padding
+        # and the dialog has none.
         self.verticalLayout = QVBoxLayout(self)
-        self.buttonBox.setContentsMargins(
-            *self.verticalLayout.getContentsMargins()
-        )
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
         self.verticalLayout.addWidget(self.scrollArea)
         self.verticalLayout.addWidget(self.buttonBox)
+        self.buttonBox.setContentsMargins(
+            DIALOG_PADDING, DIALOG_GAP, DIALOG_PADDING, DIALOG_PADDING
+        )
         self.verticalLayoutScroll = QVBoxLayout(self.scrollAreaWidgetContents)
-        self.verticalLayoutScroll.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayoutScroll.setContentsMargins(
+            DIALOG_PADDING, DIALOG_PADDING, DIALOG_PADDING, 0
+        )
+        self.verticalLayoutScroll.setSpacing(DIALOG_GAP)
+        finish_dialog(self, pad=False)
 
         self.restorePosition()
         self.restoreSize()
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        # The buttons were made before the form, so they come first in the
+        # order of the Tab key, and held the focus when the dialog opened.
+        focus_first_field(self)
 
     def adjustSize(self) -> None:
         layoutSize = self.layout().sizeHint()

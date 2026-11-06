@@ -18,11 +18,30 @@ Example:
 """
 
 from dataclasses import dataclass
+from typing import Final
 
 from aas_editor.domain.attribute_vocabulary import attribute_info
 
 REQUIRED_MARK = "*"
 """The mark behind the name of a field that the class cannot do without."""
+
+_FORM_FIELD_NAMES: Final = {
+    ("DictItem", "key"): "language",
+    ("DictItem", "value"): "text",
+}
+"""Fields that a form names differently from the tabs.
+
+An entry of a text in several languages is a `DictItem` of the editor. The tabs
+show its `key` and `value`, as they show what the editor holds. A form asks for
+what the metamodel calls them, the `language` and the `text` of a
+`LangStringTextType` (Part 1, IDTA-01001)."""
+
+_ENTRY_NAMES: Final = {
+    "DictItem": "Text",
+    "ModelReference": "Reference",
+    "ExternalReference": "Reference",
+}
+"""The names of the metamodel for the classes of the SDK that title an entry."""
 
 
 @dataclass(frozen=True)
@@ -63,5 +82,22 @@ def field_label(
     if isinstance(owner, type):
         info = attribute_info(owner, attribute) or attribute_info(owner, plain)
     name = plain if info is None else info.name
+    if isinstance(owner, type):
+        name = _FORM_FIELD_NAMES.get((owner.__name__, plain), name)
     text = f"{name}{REQUIRED_MARK}" if required else name
     return FieldLabel(text, name, "" if info is None else info.description)
+
+
+def entry_title(class_name: str, position: int) -> str:
+    """Returns the title of one entry of a list in a form.
+
+    Args:
+        class_name: The name of the class of the entry in the SDK, such as
+            `Qualifier` or `ModelReference`.
+        position: The place of the entry, counted from 1.
+
+    Returns:
+        The name of the metamodel for the class, and the position: `Qualifier
+        1`, `Reference 2`, `Text 1`.
+    """
+    return f"{_ENTRY_NAMES.get(class_name, class_name)} {position}"

@@ -21,6 +21,8 @@ from aas_editor.application.save import SaveCheck
 from aas_editor.application.save import SaveIssue
 from aas_editor.application.save import UNREFERENCED_FILES
 from aas_editor.domain.parts import MissingFile
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import make_button_box
 
 # How many paths the dialog about missing files lists.
 MAX_LISTED_PATHS = 10
@@ -83,25 +85,16 @@ class IssuesDialog(QDialog):
             for detail in issue.details:
                 self.issues_list.addItem(f"    {detail}")
 
-        self.buttons = QDialogButtonBox()
         if accept_text is None:
+            self.buttons = QDialogButtonBox()
             ok = self.buttons.addButton(QDialogButtonBox.StandardButton.Ok)
             if ok is not None:
                 ok.setDefault(True)
             self.buttons.accepted.connect(self.accept)
         else:
-            go_on = self.buttons.addButton(
-                accept_text, QDialogButtonBox.ButtonRole.AcceptRole
+            self.buttons = make_button_box(
+                self, accept_text, cancel_text, safe_default=True
             )
-            cancel = self.buttons.addButton(
-                cancel_text, QDialogButtonBox.ButtonRole.RejectRole
-            )
-            if go_on is not None:
-                go_on.setAutoDefault(False)
-            if cancel is not None:
-                cancel.setDefault(True)
-            self.buttons.accepted.connect(self.accept)
-            self.buttons.rejected.connect(self.reject)
 
         self.extra_button = None
         if extra_text is not None and on_extra is not None:
@@ -118,6 +111,7 @@ class IssuesDialog(QDialog):
         layout.addWidget(self.summary_label)
         layout.addWidget(self.issues_list)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
     def _run_extra(self, action: Callable[[], None]) -> None:
         self.reject()

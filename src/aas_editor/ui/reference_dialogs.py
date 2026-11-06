@@ -25,7 +25,9 @@ from PyQt6.QtWidgets import QTableWidgetItem
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
-from aas_editor.ui.colors import problem_style
+from aas_editor.ui.colors import style_as_problem
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import make_button_box
 from aas_editor.application.operations.delete import DeletePlan
 from aas_editor.application.operations.references import ReferenceChange
 from aas_editor.application.operations.rename import InvalidIdShortError
@@ -107,26 +109,6 @@ def usage_rows(usages: Sequence[Usage]) -> list[list[str]]:
     ]
 
 
-def _buttons(
-    dialog: QDialog, accept_text: str, cancel_text: str = "Cancel"
-) -> QDialogButtonBox:
-    """Builds an accept and a cancel button, with cancel as the default."""
-    buttons = QDialogButtonBox()
-    go_on = buttons.addButton(
-        accept_text, QDialogButtonBox.ButtonRole.AcceptRole
-    )
-    cancel = buttons.addButton(
-        cancel_text, QDialogButtonBox.ButtonRole.RejectRole
-    )
-    if go_on is not None:
-        go_on.setAutoDefault(False)
-    if cancel is not None:
-        cancel.setDefault(True)
-    buttons.accepted.connect(dialog.accept)
-    buttons.rejected.connect(dialog.reject)
-    return buttons
-
-
 def _answered_yes(dialog: QDialog) -> bool:
     dialog.exec()
     return dialog.result() == QDialog.DialogCode.Accepted.value
@@ -171,12 +153,13 @@ class ReferenceChangesDialog(QDialog):
         self.notes_label = QLabel("\n".join(notes))
         self.notes_label.setWordWrap(True)
         self.notes_label.setVisible(bool(notes))
-        self.buttons = _buttons(self, accept_text)
+        self.buttons = make_button_box(self, accept_text, safe_default=True)
         layout = QVBoxLayout(self)
         layout.addWidget(self.intro_label)
         layout.addWidget(self.table)
         layout.addWidget(self.notes_label)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
 
 class RenameDialog(QDialog):
@@ -231,12 +214,12 @@ class RenameDialog(QDialog):
         self.edit = QLineEdit(text)
         self.error_label = QLabel()
         self.error_label.setWordWrap(True)
-        self.error_label.setStyleSheet(problem_style())
+        style_as_problem(self.error_label)
         self.preview_label = QLabel()
         self.table = ReferenceTable(["Where", "Before", "After"])
         self.fix_button: QPushButton | None = None
         self.generate_button: QPushButton | None = None
-        self.buttons = _buttons(self, "Rename")
+        self.buttons = make_button_box(self, "Rename", safe_default=True)
 
         row = QVBoxLayout()
         row.addWidget(QLabel(label))
@@ -261,6 +244,7 @@ class RenameDialog(QDialog):
         layout.addWidget(self.preview_label)
         layout.addWidget(self.table)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.edit.textChanged.connect(self._update)
         self._update(text)
@@ -364,7 +348,7 @@ class DeleteDialog(QDialog):
         self.remove_button.setEnabled(bool(plan.removals))
         if not plan.removals:
             self.keep_button.setChecked(True)
-        self.buttons = _buttons(self, "Delete")
+        self.buttons = make_button_box(self, "Delete", safe_default=True)
         layout = QVBoxLayout(self)
         layout.addWidget(self.summary_label)
         layout.addWidget(self.table)
@@ -372,6 +356,7 @@ class DeleteDialog(QDialog):
         layout.addWidget(self.remove_button)
         layout.addWidget(self.keep_button)
         layout.addWidget(self.buttons)
+        finish_dialog(self, destructive=True)
 
     @property
     def remove_references(self) -> bool:

@@ -12,7 +12,6 @@ from basyx.aas.model.concept import ConceptDescription
 from PyQt6.QtWidgets import QAbstractItemView
 from PyQt6.QtWidgets import QCheckBox
 from PyQt6.QtWidgets import QDialog
-from PyQt6.QtWidgets import QDialogButtonBox
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtWidgets import QMessageBox
@@ -24,32 +23,12 @@ from aas_editor.application.operations.data_specs import FixKeysPlan
 from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 from aas_editor.domain.data_specifications import iec_content_of
 from aas_editor.domain.references import describe_reference
+from aas_editor.ui.dialog_layout import accept_button
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import make_button_box
 from aas_editor.ui.reference_dialogs import ReferenceTable
 
 TITLE = "Concept descriptions"
-
-
-def make_buttons(dialog: QDialog, accept_text: str) -> QDialogButtonBox:
-    buttons = QDialogButtonBox()
-    go_on = buttons.addButton(
-        accept_text, QDialogButtonBox.ButtonRole.AcceptRole
-    )
-    cancel = buttons.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
-    if go_on is not None:
-        go_on.setAutoDefault(False)
-    if cancel is not None:
-        cancel.setDefault(True)
-    buttons.accepted.connect(dialog.accept)
-    buttons.rejected.connect(dialog.reject)
-    return buttons
-
-
-def accept_button(buttons: QDialogButtonBox):
-    """Returns the button of a button box that accepts the dialog."""
-    for button in buttons.buttons():
-        if buttons.buttonRole(button) is QDialogButtonBox.ButtonRole.AcceptRole:
-            return button
-    return None
 
 
 def answered_yes(dialog: QDialog) -> bool:
@@ -120,12 +99,13 @@ class PreviewDialog(QDialog):
         self.notes_label = QLabel("\n".join(notes))
         self.notes_label.setWordWrap(True)
         self.notes_label.setVisible(bool(notes))
-        self.buttons = make_buttons(self, accept_text)
+        self.buttons = make_button_box(self, accept_text, safe_default=True)
         layout = QVBoxLayout(self)
         layout.addWidget(self.intro_label)
         layout.addWidget(self.table)
         layout.addWidget(self.notes_label)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
         if selectable:
             self.table.itemSelectionChanged.connect(self._update_accept)
             self._update_accept()
@@ -292,12 +272,13 @@ class ConceptPickerDialog(QDialog):
         self.table.setSelectionMode(
             QAbstractItemView.SelectionMode.SingleSelection
         )
-        self.buttons = make_buttons(self, "Assign")
+        self.buttons = make_button_box(self, "Assign", safe_default=True)
         layout = QVBoxLayout(self)
         layout.addWidget(self.current_label)
         layout.addWidget(self.filter_edit)
         layout.addWidget(self.table)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
         self.filter_edit.textChanged.connect(self._filter)
         self.table.itemSelectionChanged.connect(self._update_accept)
         self.table.itemDoubleClicked.connect(self._on_double_click)
@@ -398,12 +379,13 @@ class FixKeysDialog(QDialog):
             "template in another spelling or version (such as http or 3/0)"
         )
         self.other_check.setVisible(bool(plan.other_spelling))
-        self.buttons = make_buttons(self, "Fix keys")
+        self.buttons = make_button_box(self, "Fix keys", safe_default=True)
         layout = QVBoxLayout(self)
         layout.addWidget(intro)
         layout.addWidget(self.table)
         layout.addWidget(self.other_check)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
         self.table.setVisible(bool(plan.unknown))
         self.other_check.stateChanged.connect(self._update_accept)
         self._plan = plan
