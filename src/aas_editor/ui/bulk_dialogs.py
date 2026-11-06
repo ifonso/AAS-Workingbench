@@ -134,6 +134,8 @@ class ChangeAttributeDialog(QDialog):
         if header is not None:
             header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
             header.setStretchLastSection(True)
+            # The element names what changes, so it gets the room.
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel,

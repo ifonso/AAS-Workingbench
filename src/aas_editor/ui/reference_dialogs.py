@@ -59,6 +59,9 @@ class ReferenceTable(QTableWidget):
         if header is not None:
             header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.setMinimumHeight(140)
+        self.setWordWrap(True)
+        # The end of an id tells ids apart, so the middle is left out.
+        self.setTextElideMode(Qt.TextElideMode.ElideMiddle)
 
     def set_rows(self, rows: Sequence[Sequence[str]]) -> None:
         """Replaces the content of the table."""
@@ -68,6 +71,7 @@ class ReferenceTable(QTableWidget):
                 item = QTableWidgetItem(text)
                 item.setToolTip(text)
                 self.setItem(row, column, item)
+        self.resizeRowsToContents()
 
     def texts(self) -> list[list[str]]:
         """Returns the text of every cell, row by row."""

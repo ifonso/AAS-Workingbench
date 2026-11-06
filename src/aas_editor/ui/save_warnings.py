@@ -7,6 +7,7 @@ them, and returns the answer of the user.
 from collections.abc import Callable
 from collections.abc import Sequence
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog
 from PyQt6.QtWidgets import QDialogButtonBox
 from PyQt6.QtWidgets import QLabel
@@ -64,12 +65,18 @@ class IssuesDialog(QDialog):
         """
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.setMinimumWidth(480)
+        # Messages name the rule, the place, and the problem, and ran past
+        # 480 pixels.
+        self.setMinimumWidth(720)
 
         self.summary_label = QLabel(summary)
         self.summary_label.setWordWrap(True)
 
         self.issues_list = QListWidget()
+        self.issues_list.setWordWrap(True)
+        self.issues_list.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         for issue in issues:
             self.issues_list.addItem(issue.message)
             for detail in issue.details:
