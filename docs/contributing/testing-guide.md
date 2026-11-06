@@ -23,7 +23,15 @@ Tests use Qt's `offscreen` platform by default, so they need no display.
 To watch a large test on screen, set `QT_QPA_PLATFORM=windows` (or `xcb` on Linux) first.
 
 Large tests stub the modal dialogs, because a dialog that opens blocks the event loop.
-The full large run takes several minutes.
+The full large run takes about a quarter of an hour on a laptop, in one process: each test opens the main window with a real package, which takes 8 to 25 seconds, and the three walks of `test_main_window.py` take half a minute to a minute each.
+It is slow, not stuck, but `pytest -q | tail` prints nothing until the end, so run it with `-v` and a log file when you wait for it, and with `-o faulthandler_timeout=240` to get a traceback of a test that does stick.
+
+Several large files in one process share what the process keeps, so a test must leave it as it found it:
+
+- **Held keys.** `QTest.keySequence` presses `Ctrl` for a shortcut and does not release it on the offscreen platform, so `QGuiApplication.keyboardModifiers()` says `Ctrl` for the rest of the process, and a later test that selects a row or clicks a button in a dialog does it with `Ctrl` held. `tests/large/conftest.py` releases the modifiers after each test.
+- **The registry of actions** is global. A test that registers actions takes them out again, as `tests/large/test_package_files_flow.py` and `tests/large/test_main_window_layout.py` do.
+- **The settings file** is read by every window and written when one closes. A test that shows a panel would start the next window with that panel open, so `tests/large/conftest.py` removes the saved dock arrangement around each test, and a test that saves its own session keeps it in memory (see `tests/large/test_main_window_layout.py`).
+- **A loop that never ends.** An exception in a slot does not end `QApplication.exec`: pytest-qt records it, and a timer that fires again raises it again. A test that runs the event loop until a step says it is done starts a watchdog that ends the loop with a failure (see `tests/large/test_main_window.py`).
 
 ## Test sizes
 
