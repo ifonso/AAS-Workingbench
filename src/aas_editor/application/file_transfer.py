@@ -211,10 +211,42 @@ def with_copied_files(
         return command
     if not isinstance(obj, (model.Identifiable, model.SubmodelElement)):
         return command
-    plan = plan_transfer(references_in(obj), source, target)
-    if plan.is_empty:
+    before, after = transfer_commands(
+        observer, references_in(obj), source, target
+    )
+    if not before and not after:
         return command
-    steps: list[Command] = [
+    return CommandGroup(command.description, [*before, command, *after])
+
+
+def transfer_commands(
+    observer: ModelChangeObserver,
+    references: Iterable[FileReference],
+    source: AbstractSupplementaryFileContainer,
+    target: AbstractSupplementaryFileContainer,
+) -> tuple[list[Command], list[Command]]:
+    """Builds the commands that bring the files of copied objects along.
+
+    The plan is announced to `transfer_reports`, so that the window can tell
+    the user what was copied, reused, or numbered.
+
+    Args:
+        observer: Where the commands report.
+        references: The references of the copies that are pasted. Their
+            holders are the objects of the copies, not of the original.
+        source: The files of the package the objects were copied from.
+        target: The files of the package they are pasted into.
+
+    Returns:
+        The commands that add the files, which come before the commands that
+        insert the copies, and the commands that point the pasted paths at the
+        stored names, which come after. Both are empty when there is nothing
+        to bring.
+    """
+    plan = plan_transfer(references, source, target)
+    if plan.is_empty:
+        return [], []
+    adds: list[Command] = [
         AddFile(
             observer,
             target,
@@ -225,10 +257,10 @@ def with_copied_files(
         )
         for copy in plan.copies
     ]
-    steps.append(command)
+    updates: list[Command] = []
     for reference, new in plan.changes:
         holder: Any = reference.holder
-        steps.append(
+        updates.append(
             SetAttribute(
                 observer,
                 holder,
@@ -243,7 +275,7 @@ def with_copied_files(
             [*plan.missing, *plan.invalid],
         )
     transfer_reports.notify(plan)
-    return CommandGroup(command.description, steps)
+    return adds, updates
 
 
 # Called with the plan when a paste brings files along, so that the window can
@@ -251,31 +283,53 @@ def with_copied_files(
 transfer_reports: Listeners[[TransferPlan]] = Listeners()
 
 
-class CopySource:
-    """Remembers the files of the package that objects were last copied from.
+class PackageContent:
+    """The objects and files of a package that was read to copy from it.
 
-    The copied objects hold paths only. The model that pastes them asks here
-    where the files are. The container is held weakly, so a closed package is
-    forgotten.
+    Attributes:
+        objStore: The shells, submodels, and concept descriptions.
+        fileStore: The supplementary files.
+    """
+
+    def __init__(
+        self,
+        objects: model.AbstractObjectStore[
+            model.Identifier, model.Identifiable
+        ],
+        files: AbstractSupplementaryFileContainer,
+    ) -> None:
+        self.objStore = objects
+        self.fileStore = files
+
+
+class CopySource:
+    """Remembers the package that objects were last copied from.
+
+    The copied objects hold paths only. The model that adds them asks here
+    where the files are. The package is held weakly, so a closed package is
+    forgotten. Anything with a `fileStore` can be the source, such as a
+    template that was read for its submodels.
     """
 
     def __init__(self) -> None:
-        self._store: weakref.ref[AbstractSupplementaryFileContainer] | None = (
-            None
-        )
+        self._source: weakref.ref[Any] | None = None
 
-    def remember(self, store: AbstractSupplementaryFileContainer) -> None:
-        """Remembers the files of the package that is copied from."""
-        self._store = weakref.ref(store)
+    def remember(self, source: object) -> None:
+        """Remembers the package that is copied from."""
+        self._source = weakref.ref(source)
 
     def forget(self) -> None:
         """Forgets the source, for example when the clipboard is cleared."""
-        self._store = None
+        self._source = None
 
     @property
     def store(self) -> AbstractSupplementaryFileContainer | None:
         """The files of the source package, or None if unknown or closed."""
-        return self._store() if self._store is not None else None
+        source = self._source() if self._source is not None else None
+        store: AbstractSupplementaryFileContainer | None = getattr(
+            source, "fileStore", None
+        )
+        return store
 
 
 copy_source = CopySource()

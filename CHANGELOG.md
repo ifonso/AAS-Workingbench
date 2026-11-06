@@ -55,6 +55,17 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Context menu "Find dangling file references...": lists the File elements and thumbnails whose file is not in the package, and repairs them by choosing a stored file, adding a file, or clearing the path.
 - The dialog that refuses a save because a File points to a missing file has a button "Repair file references...". The warning about stored files that nothing refers to has a button "Show package files...", which cancels the save so the files can be linked first.
 - Copying objects to another open package, with copy and paste or with "Add existing submodel" from a template, copies the files that they refer to, in the same undo step as the paste. A file with the same name and the same content is reused. A different file with the same name, or one that differs only in case, is never overwritten: the copy gets a numbered name such as `doc_0001.pdf` and the pasted paths follow it. The status bar tells what was copied or renamed.
+- Validation rules over the objects of a package, in `aas_editor.domain.validation`: 20 rules for the constraints of metamodel V3.1 that the SDK does not enforce (AASd-002, 005, 006, 007, 020, 109, 116, 118, 119, 129, 130, 133), and for duplicate ids, dangling references, missing and unreferenced files, values that do not fit their type, a Range with min above max, and language tags. `validate_package` in `aas_editor.application.validation` runs them in about 45 ms for the largest bundled template. A one-letter idShort is an error, as the metamodel pattern needs two characters, although the SDK accepts it and six bundled templates use it. There is no window for the rules yet.
+- A table in `docs/software/validation.md` of which constraints the SDK enforces, which a rule enforces, and which neither can, with a probe of the SDK for each, and what the rules find in the 132 bundled templates.
+- A test that pins why 49 of the 132 bundled templates open only in failsafe mode, counted by cause.
+- Move up, Move down, Move to top and Move to end for the elements of a submodel, collection, list, entity and annotated relationship, the variables of an operation, and the qualifiers and extensions of an object, in the context menu and with Shift+Ctrl+Up, Down, Home and End. Move up and down are on the toolbar. A move of several selected rows is one undo step, and the rows stay selected. The actions are disabled when the move would change nothing, such as Move up on the first row, and in Read mode.
+- Moving an item of a SubmodelElementList gives the references to the items that changed position their new keys in the same undo step (AASd-128).
+- Paste above, Paste below and Paste into, with Ctrl+Alt+V, Ctrl+Shift+V and Ctrl+Shift+Alt+V. A paste inserts copies at the position, so pasting again gives a further duplicate, and several copied rows keep their order. Pasting into the annotations of an annotated relationship works. A paste is one undo step, and a refused object leaves the package as it was.
+- A pasted element whose idShort a sibling has gets a number (`Pump_1`), and a pasted shell, submodel or concept description gets a new id. A pasted cut keeps its id. The existing Paste does the same.
+- Copy puts the SDK's JSON on the system clipboard, and paste reads JSON from the clipboard through the SDK, so elements can move between instances of the editor. Text that is no valid AAS object is refused with a message. Nothing from the clipboard is evaluated.
+- Clear paste buffer in the context menu empties the paste buffer and the system clipboard.
+- Pasting elements into another package asks whether the concept descriptions that their semantic ids refer to should be copied. A description that the package has with the same content is reused, and one with the same id and other content asks whether to keep the existing one or to add the copy under a new id, which the pasted elements then use. Adding the descriptions is part of the paste's undo step.
+- `application/operations/companions.py` gathers what goes with a copy between packages, as one place for later work to add the supplementary files.
 
 ### Changed
 
@@ -79,6 +90,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Adding a reference that a shell has already, or an entry with a key that a mapping has, replaces nothing silently. A reference is refused with an error, and an entry replaces the old one as an edit that can be undone.
 - "Add file" in the package tree uses the same flow as the panel: the name is `/aasx/files/<name>` and can be edited, a taken name is never overwritten, and the add is one undo step. It stored the file as `/<name>` before.
 - Crash recovery writes a complete AASX whenever a stored file was added, removed, renamed, or changed since the package was opened, not only when a file was added.
+- The package tree and the tabs show the order that is saved in the file. They sorted every level by name, descending, so a moved element stayed where it was. Levels with a saved order, such as the elements of a submodel, show that order, and the shells, submodels and concept descriptions, which the SDK keeps in sets, are sorted by name, ascending. A click on a column header still sorts the whole tree, and a move puts the tree back to the saved order. The sort is no longer restored from the last session. See [ADR 0011](docs/software/adr/0011-natural-order-in-trees.md).
+- Copying an element or an object puts its JSON on the system clipboard instead of its display text.
+- The actions of the tree views update when the selection, the rows, or the paste buffer change.
 
 ### Fixed
 
@@ -118,6 +132,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Deleting a stored file in the package tree failed with "Unknown parent object type". It removes the file now, and can be undone.
 - A file that was added in the session and that nothing refers to yet was lost after a crash, because the SDK writes only the files that a File element or the thumbnail refers to. Such files are kept next to the recovery file now. A file that was renamed or removed in the session came back as it was in the original after a restore, and is restored as it was.
 - Undo of adding a file that the package held already, with the same content, removed that file.
+- The Paste action could add the object of the paste buffer itself, so a second paste, or a paste into a collection that has the idShort, failed. It adds a copy with a free name.
+- Undoing the delete of a shell, submodel or concept description put the row at the end of its list. The rows of such lists are sorted by name, so the row returns to its sorted place.
 
 ### Removed
 
@@ -134,6 +150,13 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Only the default thumbnail of a shell is linked to a file. The package thumbnail (the image that Windows shows for the file) is kept as it was, and cannot be changed.
 - Files cannot be dropped on the panel, and "Centralize file" to an external store and the conversion of a File to a Blob are not done. The second belongs to the conversion of element types.
 - Selecting a stored file in the package tree opens a preview tab with QtWebEngine, which crashes a test process when it exits. The large tests switch the preview off.
+- 49 of the 132 bundled templates open only in failsafe mode, and so can only be saved with Save As. Their packages have defects that the SDK refuses to read: 30 share an id between objects, and the others break constraints such as AASd-014, 021, 022, 109, 123 or 131. No reader option can keep that content, so the rule stays. See [the causes](docs/software/validation.md#why-49-of-the-132-templates-open-only-in-failsafe-mode).
+- The validation rules check what the SDK leaves open, and cannot check AASd-012, or AASd-006 and AASd-007 when `valueId` points outside the package. Saving does not run them yet.
+- Shells, submodels, concept descriptions and the Submodel references of a shell cannot be moved, because the SDK keeps them in sets whose order is not saved (D16). Their view is sorted by name.
+- Paste into an AAS is not offered. A pasted submodel is added to the package without a reference from a shell. Link it with the action that links the submodels.
+- Cut still removes the element at once (D12), so Escape or a missing paste does not bring it back, except by undo.
+- A paste of elements into a SubmodelElementList does not check the type of the list in advance. The SDK refuses a wrong element (AASd-107), the paste is undone as a whole, and the message says why.
+- The paste buffer and the system clipboard are one: a newer copy anywhere replaces the buffer. The original keeps its internal buffer first.
 
 ## 0.4.13 - 2026-08-28
 

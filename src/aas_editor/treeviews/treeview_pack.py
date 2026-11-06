@@ -102,7 +102,7 @@ from aas_editor.application.commands import ReadOnlyError
 from aas_editor.application.editing import edit_mode
 from aas_editor.treeviews.base import HeaderView, TreeView
 from aas_editor.ui.actions import ViewKind
-from aas_editor.application.file_transfer import copy_source
+from aas_editor.application.file_transfer import PackageContent
 from aas_editor.ui.file_controller import FileController, prepare_file_delete
 from aas_editor.ui.save_warnings import (
     confirm_save,
@@ -276,7 +276,7 @@ class PackTreeView(TreeView):
                     # that is copied from it.
                     self.copyBufferFiles[
                         smFile.relative_to(sm_templates_path)
-                    ] = parts.files
+                    ] = PackageContent(parts.objects, parts.files)
                 else:
                     raise TypeError("Wrong file type:", smFile.suffix)
                 # Save path to the file relative to the submodel folder
@@ -485,22 +485,21 @@ class PackTreeView(TreeView):
         if action:
             submodel = copy.deepcopy(action.data())
             key = action.property("copyBufferKey")
-            files = next(
+            source = next(
                 (
-                    store
-                    for file, store in self.copyBufferFiles.items()
+                    content
+                    for file, content in self.copyBufferFiles.items()
                     if str(file) == key
                 ),
                 None,
             )
-            self.pasteSubmodel(submodel, files)
+            self.pasteSubmodel(submodel, source)
 
-    def pasteSubmodel(self, submodel: Submodel, files=None):
-        """Paste a submodel. The files it refers to are in ``files``."""
+    def pasteSubmodel(self, submodel: Submodel, source=None):
+        """Paste a submodel. ``source`` has the files that it refers to."""
         self.treeClipboard.clear()
         self.treeClipboard.append(submodel)
-        if files is not None:
-            copy_source.remember(files)
+        self.treeClipboard.source = source
         self.onPaste()
 
     def onEditCreate(self, objVal=None, index=QModelIndex()) -> bool:

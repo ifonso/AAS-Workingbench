@@ -47,7 +47,7 @@ def _source_index(shown, package: int):
 def _paste_submodel(shown, source, submodel) -> model.Submodel:
     pasted = copy.deepcopy(submodel)
     pasted.id = "urn:uuid:pasted"
-    copy_source.remember(source.fileStore)
+    copy_source.remember(source)
     shown.table.addItem(pasted, _source_index(shown, package=1))
     return pasted
 
@@ -124,7 +124,7 @@ def test_copying_in_the_tree_remembers_the_files_of_that_package(
 
 def test_a_copy_inside_the_same_package_does_not_touch_its_files(views) -> None:
     shown, source, _, submodel = _two_packages(views, None)
-    copy_source.remember(source.fileStore)
+    copy_source.remember(source)
     pasted = copy.deepcopy(submodel)
     pasted.id = "urn:uuid:again"
 

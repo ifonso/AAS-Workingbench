@@ -62,11 +62,18 @@ from aas_editor.application.changes import observer_for
 from aas_editor.application.commands import CommandStack, ReadOnlyError
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import copy_source
+from aas_editor.domain.clipboard_json import (
+    ClipboardError,
+    dump_objects,
+    load_objects,
+    looks_like_json,
+)
 from aas_editor.domain.list_children import child_defaults
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.utils.util_type import getTypeName
 from aas_editor.ui.actions import ActionContext, ViewActions, ViewKind
 from aas_editor.ui.delete_flow import DeleteCancelled, prepare_delete
+from aas_editor.ui.paste_actions import pasteCopyFor
 from aas_editor.settings.app_settings import *
 from aas_editor.additional.classes import DictItem
 from aas_editor.delegates import EditDelegate
@@ -136,7 +143,8 @@ class HeaderView(QHeaderView):
         self.setStretchLastSection(True)
         self.setFixedHeight(TOOLBARS_HEIGHT)
 
-        self.sortIndicatorChanged.connect(lambda a, b: print(a, b))
+        # Natural order is the default: the user sorts by clicking a column.
+        self.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
         self.currSortSection = self.sortIndicatorSection()
         self.currOrder = self.sortIndicatorOrder()
 
@@ -159,8 +167,13 @@ class HeaderView(QHeaderView):
     def restoreState(
         self, state: typing.Union[QtCore.QByteArray, bytes, bytearray]
     ) -> bool:
-        super(HeaderView, self).restoreState(state)
+        result = super(HeaderView, self).restoreState(state)
+        # A sort is not restored. The order of the tree is the saved order of
+        # the package until the user sorts again.
+        self.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
+        self.currSortSection = -1
         self.updateMenu()
+        return result
 
     def updateMenu(self):
         self.updateShowSectionActs()
@@ -268,12 +281,29 @@ class TreeClipboard:
     def __init__(self):
         self.objects: List[Any] = []
         self.objStrings: List[str] = []
+        # Where the copy comes from and whether it was cut, for the paste.
+        self._source = None
+        self.cut = False
+
+    @property
+    def source(self):
+        """The package the copy comes from, or an object with its fileStore"""
+        return self._source
+
+    @source.setter
+    def source(self, value):
+        self._source = value
+        # The add of the pasted objects brings the files of the source along.
+        if value is None:
+            copy_source.forget()
+        else:
+            copy_source.remember(value)
 
     def clear(self):
         self.objects.clear()
         self.objStrings.clear()
-        # The files that the copied objects refer to are no longer wanted.
-        copy_source.forget()
+        self.source = None
+        self.cut = False
 
     def append(self, obj, objRepr: str = None):
         self.objects.append(obj)
@@ -793,6 +823,10 @@ class TreeView(BasicTreeView):
         self.model().dataChanged.connect(self.onDataChanged)
         self.model().rowsInserted.connect(self.onRowsInserted)
         self.model().rowsRemoved.connect(self.onRowsRemoved)
+        # Move up and down depend on the place of the rows and the selection.
+        self.model().rowsMoved.connect(self.onRowsMoved)
+        self.model().layoutChanged.connect(self.onRowsMoved)
+        self.selectionModel().selectionChanged.connect(self.onRowsMoved)
         history = getattr(self.sourceModel(), "historyChanged", None)
         if history is not None:
             history.connect(self.onHistoryChanged)
@@ -899,6 +933,9 @@ class TreeView(BasicTreeView):
             self.setCurrentIndex(self.model().index(last, 0, parent))
         elif self._intent == "delete":
             self.setCurrentIndex(parent)
+
+    def onRowsMoved(self, *args):
+        self.updateActions(self.currentIndex())
 
     def onRowsRemoved(self, parent: QModelIndex, first: int, last: int):
         if self._intent == "delete" and self._stash is None:
@@ -1103,26 +1140,21 @@ class TreeView(BasicTreeView):
             self.onOneItemCopy(indexes[0])
         elif indexes:
             self.onMultipleItemsCopy(indexes)
+        # The paste actions depend on what the buffer holds now.
+        self.updateActions(self.currentIndex())
 
     def onOneItemCopy(self, index: QModelIndex):
         data2copy = index.data(COPY_ROLE)
         text2copy = index.data(Qt.ItemDataRole.DisplayRole)
+        if isinstance(data2copy, Referable):
+            # The system clipboard gets the SDK's JSON, which can be pasted.
+            text2copy = dump_objects([data2copy])
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
-        self.rememberCopySource(index)
+        self.treeClipboard.source = index.data(PACKAGE_ROLE)
         clipboard = QApplication.clipboard()
         clipboard.setText(text2copy, QClipboard.Mode.Clipboard)
         self.pasteAct.setEnabled(self.canEdit() and self.isPasteOk(index))
-
-    @staticmethod
-    def rememberCopySource(index: QModelIndex):
-        """Remember the files of the package that was copied from.
-
-        Pasting into another package brings the files along.
-        """
-        package = index.data(PACKAGE_ROLE)
-        if package is not None:
-            copy_source.remember(package.fileStore)
 
     def onMultipleItemsCopy(self, indexes: List[QModelIndex]):
         # Get top level indexes
@@ -1141,8 +1173,6 @@ class TreeView(BasicTreeView):
         )
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
-        if top_same_level_indexes:
-            self.rememberCopySource(top_same_level_indexes[0])
         clipboard = QApplication.clipboard()
         clipboard.setText(
             self.treeClipboard.objStrings[-1], QClipboard.Mode.Clipboard
@@ -1218,11 +1248,33 @@ class TreeView(BasicTreeView):
         if not txtInSystemClipboard:
             return
         elif self.treeClipboard.isEmpty():
-            self.treeClipboard.append(txtInSystemClipboard)
+            self._appendClipboardText(txtInSystemClipboard)
         # If text in clipboard and in treeObjClipboard doesn't match, last copy element is not from AASM and is actual
         elif self.treeClipboard.objStrings[-1] != txtInSystemClipboard:
             self.treeClipboard.clear()
-            self.treeClipboard.append(txtInSystemClipboard)
+            self._appendClipboardText(txtInSystemClipboard)
+        if self.model() is not None:
+            self.updateActions(self.currentIndex())
+
+    def _appendClipboardText(self, text: str):
+        """Put text from the system clipboard in the buffer.
+
+        Text that is AAS JSON becomes objects, read by the SDK's adapter. Any
+        other text stays text, and the paste actions say what is wrong with
+        JSON that is no valid AAS object.
+        """
+        objects = None
+        if looks_like_json(text):
+            try:
+                objects = load_objects(text)
+            except ClipboardError:
+                objects = None
+        if objects:
+            self.treeClipboard.append(
+                objects if len(objects) > 1 else objects[0], objRepr=text
+            )
+        else:
+            self.treeClipboard.append(text)
 
     def onPaste(self):
         index = self.currentIndex()
@@ -1268,6 +1320,7 @@ class TreeView(BasicTreeView):
             )
 
     def _onPasteAdd(self, index, obj2paste, withDialog, **kwargs):
+        obj2paste = pasteCopyFor(self, index, obj2paste)
         if withDialog:
             self.addItemWithDialog(
                 parent=index,
@@ -1294,6 +1347,8 @@ class TreeView(BasicTreeView):
     def onCut(self):
         self.onCopy()
         # Cut is immediate, and the objects come back with the paste (D12).
+        # A pasted cut keeps the ids of its objects (D13).
+        self.treeClipboard.cut = not self.treeClipboard.isEmpty()
         self.onDelClear(confirm=False)
 
     def addItemWithDialog(

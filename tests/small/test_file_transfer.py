@@ -218,21 +218,37 @@ def test_the_plan_is_announced_for_the_status_bar() -> None:
     assert "doc_0001.pdf" in reports[0]
 
 
+class _Package:
+    """Anything with a `fileStore` can be the source of a copy."""
+
+    def __init__(self) -> None:
+        self.fileStore = DictSupplementaryFileContainer()
+
+
+def test_a_copy_source_knows_the_files_of_its_package() -> None:
+    source = CopySource()
+    package = _Package()
+
+    source.remember(package)
+
+    assert source.store is package.fileStore
+
+
 def test_a_copy_source_is_forgotten_when_its_package_is_gone() -> None:
     source = CopySource()
-    store = DictSupplementaryFileContainer()
+    package = _Package()
 
-    source.remember(store)
-    known = source.store
-    del store, known
+    source.remember(package)
+    del package
     gc.collect()
+
     assert source.store is None
 
 
 def test_a_copy_source_can_be_cleared() -> None:
     source = CopySource()
-    store = DictSupplementaryFileContainer()
-    source.remember(store)
+    package = _Package()
+    source.remember(package)
 
     source.forget()
 
