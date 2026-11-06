@@ -1,4 +1,4 @@
-# ADR 0014: Presets are SDK JSON files, and bulk changes use a small pattern language
+# ADR 0015: Presets are SDK JSON files, and bulk changes use a small pattern language
 
 **Status:** Accepted
 

@@ -1,7 +1,7 @@
 # Bulk editing and presets
 
 This guide describes the actions that change many selected objects at once, the pattern language of "Change attribute with a pattern...", and the preset files.
-The design decisions are in [ADR 0014](adr/0014-presets-and-the-pattern-language.md).
+The design decisions are in [ADR 0015](adr/0015-presets-and-the-pattern-language.md).
 
 All actions are in the context menu of the package tree.
 Each one is a single undo step, is disabled in Read mode, and either changes everything or nothing.

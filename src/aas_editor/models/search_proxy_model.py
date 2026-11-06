@@ -16,11 +16,12 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
-from collections.abc import Set
+from collections.abc import Mapping, Set
 from typing import List, Any, Optional
 
 from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 from basyx.aas.model import AbstractObjectStore
+from basyx.aas.model.concept import ConceptDescription
 
 from PyQt6.QtCore import (
     QSortFilterProxyModel,
@@ -32,6 +33,7 @@ from PyQt6.QtCore import (
     QRegularExpression,
 )
 
+from aas_editor.domain.concept_order import ConceptOrder, sort_key
 from aas_editor.settings.app_settings import OBJECT_ROLE
 
 
@@ -58,6 +60,10 @@ class SearchProxyModel(QSortFilterProxyModel):
         # Natural order: levels with a saved order show it, the others are
         # sorted by name. A click on a column header sorts every level.
         self._natural = True
+        # How concept descriptions are listed, which the user can change. It
+        # changes the view only (decision D16).
+        self._conceptOrder = ConceptOrder.NAME
+        self._conceptRanks: Mapping[str, int] = {}
         super().sort(0, Qt.SortOrder.AscendingOrder)
         if sourceModel:
             self.setSourceModel(sourceModel)
@@ -76,7 +82,32 @@ class SearchProxyModel(QSortFilterProxyModel):
         # case when the natural order is the sort of column 0.
         self.invalidate()
 
+    def setConceptOrder(
+        self, order: ConceptOrder, ranks: Optional[Mapping[str, int]] = None
+    ) -> None:
+        """Choose how the concept descriptions are listed.
+
+        :param order: the order of the view, which never changes the package
+        :param ranks: for the first use order, the rank of each description
+        """
+        self._conceptOrder = order
+        self._conceptRanks = dict(ranks or {})
+        self.invalidate()
+
+    def conceptOrder(self) -> ConceptOrder:
+        """Tell how the concept descriptions are listed."""
+        return self._conceptOrder
+
     def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
+        if self._natural:
+            first, second = left.data(OBJECT_ROLE), right.data(OBJECT_ROLE)
+            if isinstance(first, ConceptDescription) and isinstance(
+                second, ConceptDescription
+            ):
+                # The set of the package has no order, so the view decides.
+                return sort_key(
+                    self._conceptOrder, first, self._conceptRanks
+                ) < sort_key(self._conceptOrder, second, self._conceptRanks)
         if self._natural and hasSavedOrder(
             left.parent().data(OBJECT_ROLE) if left.parent().isValid() else None
         ):

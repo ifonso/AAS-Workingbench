@@ -56,6 +56,10 @@ def main():
 
     register_paste_actions()
 
+    from aas_editor.ui.concept_actions import register_concept_actions
+
+    register_concept_actions()
+
     from aas_editor.ui.conversion_actions import register_conversion_actions
 
     register_conversion_actions()
