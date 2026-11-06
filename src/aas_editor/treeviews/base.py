@@ -1171,8 +1171,15 @@ class TreeView(BasicTreeView):
                 if i.isValid()
             ]
         )
+        if data2copy and all(isinstance(o, Referable) for o in data2copy):
+            # As for one item, the system clipboard gets the SDK's JSON, which
+            # can be pasted, in this program or in another one.
+            text2copy = dump_objects(data2copy)
         self.treeClipboard.clear()
         self.treeClipboard.append(data2copy, objRepr=text2copy)
+        # The package is what tells a paste into another package to bring
+        # the concept descriptions and files of the copies.
+        self.treeClipboard.source = indexes[0].data(PACKAGE_ROLE)
         clipboard = QApplication.clipboard()
         clipboard.setText(
             self.treeClipboard.objStrings[-1], QClipboard.Mode.Clipboard
