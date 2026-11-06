@@ -247,7 +247,13 @@ class ReferenceFieldMixin:
         combo = type_widget.widget
         if wanted is None or combo.findData(wanted) < 0:
             return
-        if combo.currentData() in (self._derived_type, None):
+        # At first the entry is the one that the list starts with, so the
+        # form takes the type of the last key. A type that the user chose later
+        # is kept.
+        if self._derived_type is None or combo.currentData() in (
+            self._derived_type,
+            None,
+        ):
             with QSignalBlocker(combo):
                 combo.setCurrentIndex(combo.findData(wanted))
         self._derived_type = wanted
