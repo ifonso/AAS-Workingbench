@@ -83,11 +83,45 @@ Breeze stylesheets (src/aas_editor/themes/dark.qss and light.qss)
     other files in src/aas_editor/themes/, such as grey.qss and default.qss,
     state no license of their own.
 
-Icons (src/aas_editor/icons/)
-    The application icons and logos are part of the AAS Manager code base.
-    Several file names, such as content-copy.svg and arrow-expand-vertical.svg,
-    match the Material Design Icons set. The origin and license of the icons
-    are not recorded in the repository.
+Tabler Icons (src/aas_editor/icons/tabler/)
+    Version 3.50.0 of https://github.com/tabler/tabler-icons, the outline
+    style. The 53 SVG files are unmodified copies, and are the icons of
+    actions in the toolbars, menus and trees. MIT License, "Copyright (c)
+    2020-2026 Paweł Kuna". The license text is in the file LICENSE of that
+    folder, and is the text of the same release. The editor draws the files
+    in a color of the theme, and does not change them.
+
+Inter (src/aas_editor/fonts/)
+    The font of the user interface. Inter is by The Inter Project Authors
+    (https://github.com/rsms/inter), and the font file states "Copyright 2016
+    The Inter Project Authors". SIL Open Font License, Version 1.1. The font
+    has no Reserved Font Name. The file Inter-Variable.ttf is the variable
+    font, version "4.001;git-66647c0bb" (release 4.1 of the project), copied
+    unmodified from the Google Fonts repository
+    (https://github.com/google/fonts, folder ofl/inter, commit e1d6480) under
+    the name Inter[opsz,wght].ttf, and renamed only to avoid brackets in a
+    file name. The license is in the file OFL.txt of that folder, which is
+    LICENSE.txt of release 4.1. The copy in the Google Fonts repository has
+    the year 2020 in its first line and the same text otherwise. The font
+    states that "Inter UI and Inter is a trademark of rsms". The license
+    grants no right to that name beyond what it says, and this project does
+    not use the name for anything but the font itself.
+    The OFL asks that each copy of the font carries its license. The folder
+    does, and so does the stand-alone build, which also ships this NOTICE.
+
+Logos (src/aas_editor/icons/logo.*, full_logo.*, full_logo3.svg)
+    Part of the AAS Manager code base. Their origin and license are not
+    recorded in the repository. They are the only files of icons.
+
+Of unrecorded origin
+    Still of unrecorded origin after the icons of actions were replaced: the
+    logos above, the schema file in aas_test_engines/ (see above), and the
+    style sheets of src/aas_editor/themes/ that name no license (see above).
+    The old icons of actions, whose names matched the Material Design Icons
+    set and whose origin was not recorded, were removed from the repository.
+    The icons that show the kinds of AAS elements in the trees are not files.
+    They are letters that the code draws with the font "Monospace" of the
+    system, and are to be replaced by icons of this project.
 
 
 Software that the editor installs

@@ -138,6 +138,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Changed
 
+- The font of the whole interface is Inter (SIL Open Font License 1.1), bundled with the editor at 13 pixels, in place of the font of the platform. Text is a little wider than in Segoe UI. The zoom of the trees works as before: the point size that was saved, and the zoom actions, are unchanged. See [ADR 0027](docs/software/adr/0027-bundled-font-and-themed-icons.md).
+- The 38 icons of actions are Tabler icons (MIT), drawn in a color of the theme: a switch of theme recolors them, a disabled one is dimmed, and they are sharp on a screen with a pixel ratio above 1. Their contrast on the light theme is 7 to 1 or more, where it was 1.66 to 1. `Add` is a plain plus, and `Save all` is a stack of layers.
+- `NOTICE` lists Inter and Tabler with their versions and licenses, and says which files are still of unrecorded origin. The stand-alone build ships `NOTICE`, the fonts folder with its `OFL.txt`, and the license of Tabler.
 - The texts that this project took from AASX Package Explorer are written in its own words: the hints for display names, descriptions, a deprecated category, whitespace in a key and an idShort with three dashes, the notice for the global asset id of a self-managed entity, the refusal of a sort order, the missing concept description, the missing semantic id, the empty or unfit paste buffer, the header of the selection panel, and the title of the reference picker. The behavior is the same, and the tests assert the new sentences. The design documents of Package Explorer stay the reference for what a feature does.
 - The application is called AAS Workingbench in the About dialog, the window title and the import tools. The package, the build output `AAS_Manager`, and the name under which the settings of a user are stored keep their names, so that nothing a user saved is lost.
 - The About dialog gives `contato@ifonso.com.br` and `https://github.com/ifonso/AAS-Workingbench` as the contact and the project page, and the issues of that repository for bug reports. It credits the project that this one is based on, AAS Manager by Igor Garmaev and RWTH Aachen IAT, with a link, and lists Igor Garmaev as the original author and ifonso as the maintainer. `pyproject.toml` has the same contacts, and the contact is read from the first maintainer.
@@ -199,6 +202,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- The default font of the trees had the weight 40, which Qt 5 read as Normal and Qt 6 reads as below Thin. With a font that has a Thin style, such as Inter, every row would be a hairline. It is Normal.
 - The release workflow no longer names metamodel V3.0 (it reads the version that the editor supports from `app_settings.py`), no longer stops when the repository has no tag, where the notes list every commit, and gives the Windows zip the type `application/zip`.
 - A search in the package tree counted the parents of a match as matches: searching `Speed` found 4 rows, the first being the package, so the selection did not move to the element. It finds the rows that match, selects the first, and the bar shows the position and the number of matches, such as "1 of 3".
 - Copying a qualifier, extension, specific asset id, or data specification row puts its JSON on the clipboard, so "Add ... from clipboard" and "Paste qualifier" can read it. It was the text of the cell.
@@ -268,6 +272,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Removed
 
+- The 38 old icon files of actions in `src/aas_editor/icons/` (their origin was not recorded), and `initialize_all_icons` and `transform_svg_to_icon` of `settings/icons.py`, which painted them in one blue. The logos stay.
 - `Guidelines.md`, replaced by `docs/contributing/style-guide.md`.
 - The setting "Automatically add refs of existing submodels to AAS when saving file". Saving no longer links Submodels to the first AAS, and it was on by default.
 - The undo list of 10 steps in each tab. The history of a package replaces it.

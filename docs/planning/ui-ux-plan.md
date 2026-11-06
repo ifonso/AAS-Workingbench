@@ -520,6 +520,7 @@ Proposed only, none added now:
 - **D, done** on `feat/design-tokens`: tokens, generated style sheet, palette, and theme manager, with Fusion, as `fluent-light`, `fluent-dark`, and `fluent-system` in the theme list. The light theme is the default of a first run. `ui/colors.py` reads the tokens. [ADR 0025](../software/adr/0025-design-tokens-and-theme-architecture.md).
 - [x] A, `fix/tree-search-results`, done on `fix/search-save-status`: U1 defect fixed, `Ctrl+F` in the tree, result count. Search of values, `F3` and `Shift+F3` are not done.
 - [x] B, `fix/save-and-status-clarity`, done on `fix/search-save-status`: status bar with mode and unsaved count, Save before Save All, `Ctrl+S` and `Ctrl+Shift+S` by decision 6. The explanation of hints against findings (U3) waits for J.
+- **E, `feat/fonts-and-icons`: done.** Inter 4.1 (one variable file, OFL) and 53 Tabler 3.50.0 icons (MIT) are bundled, with their licenses and `NOTICE` entries. `ThemedIconEngine` colors an icon by token when it draws, at the pixel ratio of the screen, and the 38 action icons use it. The 38 old icon files are removed. The application font is Inter at 13 pixels, and the zoom of the trees is untouched. `aas_manager.spec` bundles the fonts and `NOTICE`, and a frozen build was run. [ADR 0027](../software/adr/0027-bundled-font-and-themed-icons.md). Differs from the plan: `MIME_IMAGE_ICON` is `photo`, not `file-type-jpg`, and the default font weight (40, thin in Qt 6) was fixed. Not done: kind icons (G), and the old theme lines of the spec (M).
 
 ## 7. Decisions for the owner
 

@@ -26,12 +26,12 @@ logging.basicConfig(
 def main():
     app = QtWidgets.QApplication(sys.argv)
 
-    from aas_editor.settings.icons import initialize_all_icons
+    from aas_editor.ui.theme.fonts import apply_application_font
 
-    # Initialize icons after QApp initialization to fix PyInstaller build errors.
-    # QPixmap requires an active QApplication context; importing them earlier
-    # causes the application to crash during initialization.
-    initialize_all_icons()
+    # Before the first module of the editor is imported, because some of them
+    # read the font of the application when they are imported. The icons need
+    # nothing here: they draw when they are shown, in the colors of the theme.
+    apply_application_font(app)
 
     # Features add their actions before the first view exists.
     from aas_editor.ui.blob_actions import register_blob_actions

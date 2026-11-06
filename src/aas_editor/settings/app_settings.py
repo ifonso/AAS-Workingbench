@@ -17,6 +17,7 @@ from PyQt6.QtCore import QSize, QSettings, QDir
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6 import QtCore
 
+from aas_editor.domain.design_tokens import FONT_FAMILY
 from aas_editor.settings.util_constants import NOT_GIVEN
 
 # Anchor: aas_editor/ package directory (this file lives in aas_editor/settings/)
@@ -118,8 +119,10 @@ TOOLBAR_ROOM = 24
 DEFAULT_MAINWINDOW_SIZE = QSize(1194, 624)
 MAX_FONT_SIZE = 60
 MIN_FONT_SIZE = 6
-DEFAULT_FONT = QFont()
-DEFAULT_FONT.setWeight(40)
+DEFAULT_FONT = QFont(FONT_FAMILY)
+# 40 was a weight of Qt 5. In Qt 6 it is below Thin, and a font with a Thin
+# style, such as Inter, then draws every row hairline thin.
+DEFAULT_FONT.setWeight(QFont.Weight.Normal)
 DEFAULT_FONT.setPointSize(12)
 
 MAX_RECENT_FILES = 10

@@ -9,10 +9,14 @@ a = Analysis(['src/aas_editor/__main__.py'],
              binaries=[],
              datas=[
                 ('LICENSE', '.'),
+                ('NOTICE', '.'),
                 ('pyproject.toml', '.'),
                 ('src/aas_editor/settings/settings.ini', 'aas_editor/settings'),
                 ('src/aas_editor/custom_column_lists.json', 'aas_editor'),
+                # The folder holds the logos and icons/tabler with its LICENSE.
                 ('src/aas_editor/icons', 'aas_editor/icons'),
+                # Inter, with OFL.txt, which the license asks to travel with it.
+                ('src/aas_editor/fonts', 'aas_editor/fonts'),
                 ('src/aas_editor/presets', 'aas_editor/presets'),
                 ('src/aas_editor/ui/theme/app.qss.template', 'aas_editor/ui/theme'),
                 ('src/aas_editor/themes/grey', 'aas_editor/themes/grey'),
