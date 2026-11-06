@@ -168,11 +168,13 @@ Test foundation and the defects that silently corrupt data.
 ### WP5a: `feat/validation-rules` (M), after WP4
 
 - `domain/validation/`: duplicates, dangling references, missing files, BCP47 tags, and the constraints the SDK does not enforce: AASd-006, 007, 012, 013, 077, 119, 129, 133, 134. Verify that list against the SDK while implementing.
+- Find out why 53 of the 132 templates only open in failsafe mode. Report what strict reading rejects, and reduce how many packages D6 forces into Save As where this is safe.
 
 ### WP5b: `feat/validation-ui` (M), after WP5a
 
 - Validation dock, and the save gate (D5).
 - Hints mode, and inline hints in create dialogs for the same rules.
+- Hide null attributes in read mode (F-EDT-01 AC1), and clear the "changed" marker after saving and when undo returns to the saved state (F-EDT-01 AC3).
 
 ### WP6: `feat/structure-operations` (M), after WP4
 
