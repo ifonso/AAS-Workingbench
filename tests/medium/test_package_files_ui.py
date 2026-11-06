@@ -572,15 +572,16 @@ def test_the_package_thumbnail_is_changed_saved_and_read_back(
 
     thumbnail = world.package.thumbnail
     assert (thumbnail.name, thumbnail.content_type, thumbnail.data) == (
-        "/docProps/thumbnail.png",
+        "/thumbnail.png",
         "image/png",
         b"\x89PNG cover",
     )
-    assert "/docProps/thumbnail.png" not in world.package.fileStore
+    assert "/thumbnail.png" not in world.package.fileStore
     saved = tmp_path / "with_thumbnail.aasx"
     world.package.write(saved)
     reloaded = Package(saved).thumbnail
     assert reloaded is not None and reloaded.data == b"\x89PNG cover"
+    assert reloaded.name == "/thumbnail.png"
     world.package.commandStack.undo()
     assert world.package.thumbnail is None
 
@@ -665,7 +666,7 @@ def test_the_panel_says_which_package_thumbnail_there_is(
     panel.refresh()
 
     assert "No package thumbnail" in before
-    assert "/docProps/thumbnail.png" in panel.summary_label.text()
+    assert "/thumbnail.png" in panel.summary_label.text()
 
 
 def test_the_package_thumbnail_button_is_off_in_read_mode(world, panel) -> None:

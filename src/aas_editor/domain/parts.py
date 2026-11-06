@@ -19,7 +19,7 @@ class Thumbnail:
     captured when the package is opened, to write the same part again.
 
     Attributes:
-        name: The OPC part name, such as `/docProps/thumbnail.png`.
+        name: The OPC part name, such as `/thumbnail.png`.
         content_type: The media type of the image.
         data: The content of the image.
     """
@@ -42,8 +42,8 @@ class MissingFile:
     path: str
 
 
-THUMBNAIL_FOLDER = "/docProps"
-"""Where the part of a package thumbnail goes, as in packages of the original."""
+THUMBNAIL_FOLDER = ""
+"""The folder of the part of a package thumbnail: the root, as in the original."""
 
 _EXTENSION = re.compile(r"^\.[a-z0-9]{1,10}$")
 
@@ -62,7 +62,8 @@ def new_thumbnail(file_name: str, data: bytes, content_type: str) -> Thumbnail:
         content_type: The media type of the image.
 
     Returns:
-        The thumbnail, as `/docProps/thumbnail` and the extension of the file.
+        The thumbnail, as `/thumbnail` and the extension of the file, in the
+        root of the package as the original puts it (F-EDT-10 AC5).
 
     Raises:
         ThumbnailError: If the file is no image, is empty, or has no usable

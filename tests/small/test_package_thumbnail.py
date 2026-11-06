@@ -21,14 +21,12 @@ class TestNewThumbnail:
     def test_the_part_is_named_after_the_extension_of_the_file(self) -> None:
         thumbnail = new_thumbnail("My Logo.PNG", b"png", "image/png")
 
-        assert thumbnail == Thumbnail(
-            "/docProps/thumbnail.png", "image/png", b"png"
-        )
+        assert thumbnail == Thumbnail("/thumbnail.png", "image/png", b"png")
 
     def test_a_windows_path_gives_its_extension(self) -> None:
         thumbnail = new_thumbnail("C:\\pics\\logo.jpeg", b"j", "image/jpeg")
 
-        assert thumbnail.name == "/docProps/thumbnail.jpeg"
+        assert thumbnail.name == "/thumbnail.jpeg"
 
     @pytest.mark.parametrize(
         ("name", "data", "content_type", "reason"),
