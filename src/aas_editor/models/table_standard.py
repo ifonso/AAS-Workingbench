@@ -57,7 +57,7 @@ from aas_editor.utils.util import actualizeAASParents
 
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.additional.classes import DictItem
-from aas_editor.utils.util_type import isIterable
+from aas_editor.utils.util_type import getArgs, isIterable
 
 SetDataItem = namedtuple("SetDataItem", ("index", "value", "role"))
 
@@ -474,8 +474,10 @@ class StandardTable(QAbstractItemModel):
         return False
 
     def editItem(self, index: QModelIndex, value):
-        newValue = None if str(value) == "None" else value
+        # Only a real None clears a value. The text "None" is ordinary text.
+        newValue = value
         item = self.objByIndex(index)
+        self._checkClearable(item.objName, item.typehint, newValue)
 
         parentObj = item.parentObj
         if (
@@ -504,25 +506,27 @@ class StandardTable(QAbstractItemModel):
             parentObj.update([item.obj])
         else:
             oldValue = getattr(parentObj, item.objName)
-            try:
-                setattr(parentObj, item.objName, newValue)
-            except TypeError as e:
-                # FIXME: Warning:pyi40aas specific code part for setting Property.value
-                try:
-                    valueTypeItem = self.match(
-                        QModelIndex(),
-                        Qt.ItemDataRole.DisplayRole,
-                        "value_type",
-                        1,
-                    )[0]
-                    self.setData(
-                        valueTypeItem, type(newValue), Qt.ItemDataRole.EditRole
-                    )
-                except IndexError:
-                    raise e
-                setattr(parentObj, item.objName, newValue)
+            # A value the SDK rejects, such as text for an integer Property,
+            # raises here and the edit is refused. The value_type stays as it is.
+            setattr(parentObj, item.objName, newValue)
             item.obj = getattr(parentObj, item.objName)
         return newValue, oldValue
+
+    @staticmethod
+    def _checkClearable(name: str, typehint, newValue):
+        """Refuse to set a mandatory attribute to None.
+
+        :raise ValueError if the type hint does not allow None
+        """
+        if newValue is not None:
+            return
+        if (
+            typehint is None
+            or typehint is Any
+            or type(None) in getArgs(typehint)
+        ):
+            return
+        raise ValueError(f"'{name}' is mandatory and cannot be cleared")
 
     def setChanged(self, topLeft: QModelIndex, bottomRight: QModelIndex = None):
         """Set the item and all parents as changed"""

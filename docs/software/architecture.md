@@ -33,7 +33,7 @@ This page describes the code as it is today, and the structure that new code sho
 | `settings/` | Application constants, AAS type metadata, icons, shortcuts, and persistent settings. |
 | `utils/` | Type hint introspection (`util_type.py`), general helpers, recovery, and the exception hook. |
 | `additional/` | Extra AAS classes used by the editor. |
-| `tools/aas_test/` | Validates files with `aas-test-engines`. |
+| `tools/aas_test/` | Checks files with `aas-test-engines`, which supports metamodel V3.0 only. |
 | `tools/handover_doc_llm/` | Generates Handover Documentation from PDFs using LLMs. |
 | `tools/import_feature/` | Generates AAS files from Excel using mappings. |
 | `submodel_templates/` | IDTA templates, available when adding Submodels. |
@@ -86,7 +86,7 @@ infrastructure ──────┘
 - UI code holds no business logic, and only translates between user events and use cases.
 - Code does no significant work at import time.
 - Long-running work, such as network calls, must not block the UI thread.
-- The first feature to use a layer creates its package, and adds an automated check of these import rules.
+- The first feature to use a layer creates its package. `tests/medium/test_layers.py` imports every module of `domain` and `application` in a clean subprocess, and fails if PyQt6 is loaded. It skips a layer that does not exist yet.
 
 ### Working with legacy code
 

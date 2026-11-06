@@ -103,6 +103,8 @@ aas_editor = ["**/*"]
 testpaths = ["tests"]
 addopts = ["--strict-markers", "--strict-config", "-ra"]
 qt_api = "pyqt6"
+# Lets tests import shared helpers as `tests.factories`.
+pythonpath = ["."]
 markers = [
     "small: no I/O, sleeps or network; runs in milliseconds (tests/small).",
     "medium: single machine, may touch the filesystem (tests/medium).",

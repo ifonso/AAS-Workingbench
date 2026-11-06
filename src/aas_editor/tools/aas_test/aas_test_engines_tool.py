@@ -7,9 +7,9 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
-import aas_test_engines.file as test_engines_file_check
 from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QFileDialog
 from aas_editor.settings import FILTER_AAS_FILES
+from aas_editor.tools.aas_test.file_check import CHECKED_VERSION, checkFile
 from aas_editor.widgets.messsageBoxes import ErrorMessageBox
 from aas_editor.widgets.dropfilebox import DropFileQWebEngineView
 
@@ -18,10 +18,15 @@ class AasTestEnginesToolDialog(QDialog):
     def __init__(self, parent=None):  # <1>
         super().__init__(parent)
         self._initLayout()
-        self.setWindowTitle("AAS-Test-Engines Tool")
+        self.setWindowTitle(f"AAS-Test-Engines Tool (checks {CHECKED_VERSION})")
         self.setMinimumSize(500, 300)
 
-        description = "Official test tooling for the Asset Administration Shell: https://github.com/admin-shell-io/aas-test-engines"
+        description = (
+            "Official test tooling for the Asset Administration Shell: "
+            "https://github.com/admin-shell-io/aas-test-engines<br>"
+            f"This tool checks files against Metamodel {CHECKED_VERSION}. "
+            "A valid V3.1 file can be reported with findings."
+        )
         self.html_renderer = DropFileQWebEngineView(
             self,
             emptyViewMsg="Drop AAS file to test here",
@@ -57,15 +62,7 @@ class AasTestEnginesToolDialog(QDialog):
 
     def checkFile(self, file):
         try:
-            with open(file, "r") as f:
-                if file.endswith(".xml"):
-                    result = test_engines_file_check.check_xml_file(f)
-                elif file.endswith(".json"):
-                    result = test_engines_file_check.check_json_file(f)
-                elif file.endswith(".aasx"):
-                    result = test_engines_file_check.check_aasx_file(f)
-                else:
-                    raise TypeError("File of unknown type:", file)
+            result = checkFile(file)
             self.html_renderer.setHtml(result.to_html())
         except Exception as e:
             ErrorMessageBox.withTraceback(self, str(e)).exec()

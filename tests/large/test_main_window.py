@@ -26,6 +26,9 @@ NAME_ROLE = None
 AASX_FILE = Path(__file__).parents[1] / "data" / "TestPackage.aasx"
 
 
+# The session QApplication outlives every test. When each test created and
+# dropped its own, Qt deleted objects that the widgets share between windows.
+@pytest.mark.usefixtures("qapp")
 class TestUi(TestCase):
     def setUp(self) -> None:
         self.app = QApplication.instance() or QApplication(sys.argv)
@@ -51,6 +54,7 @@ class TestUi(TestCase):
         self.timer.setInterval(0)
 
     def tearDown(self) -> None:
+        self.timer.stop()
         self.window.close()
 
     def testViews(self):
@@ -110,9 +114,9 @@ class TestUi(TestCase):
             try:
                 if self.attrsTreeView.editCreateInDialogAct.isEnabled():
                     # Edit current item if possible
+                    # The stubbed dialog returns at once. Closing the active
+                    # window here would close the main window and end the run.
                     self.attrsTreeView.editCreateInDialogAct.trigger()
-                    if self.app.activeWindow():
-                        self.app.activeWindow().close()
                     self._nextItemInRightTree()
                     return
                 else:
@@ -128,7 +132,12 @@ class TestUi(TestCase):
     def _startTest(self, testFunc):
         self.timer.timeout.connect(testFunc)
         self.timer.start()
-        self.assertEqual(self.app.exec(), 0)
+        try:
+            self.assertEqual(self.app.exec(), 0)
+        finally:
+            # A timer that keeps firing would run the test step again later,
+            # against a window that is already closed.
+            self.timer.stop()
 
     def _nextItemInLeftTree(self):
         pack_index = next(self.itemsGenerator)
