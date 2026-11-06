@@ -12,8 +12,9 @@ import copy
 import logging
 import traceback
 from collections import namedtuple, deque
-from typing import Any, Iterable, Union, AbstractSet, List
+from typing import Any, Callable, Iterable, Union, AbstractSet, List
 
+from basyx.aas.model import NamespaceSet, Referable
 from PyQt6.QtCore import (
     QAbstractItemModel,
     QVariant,
@@ -25,6 +26,9 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import QFont
 
+from aas_editor.application.changes import Change, ChangeKind, observer_for
+from aas_editor.application.listeners import Subscription
+from aas_editor.domain import ordering
 from aas_editor.models import StandardItem
 from aas_editor.package import Package
 from aas_editor.settings.app_settings import (
@@ -73,6 +77,7 @@ class StandardTable(QAbstractItemModel):
         self.undo: deque[SetDataItem] = deque(maxlen=MAX_UNDOS)
         self.redo: List[SetDataItem] = []
         self.changedItems: List[QModelIndex] = []
+        self._changeSubscriptions: dict[int, Subscription] = {}
 
     def index(
         self, row: int, column: int = 0, parent: QModelIndex = QModelIndex()
@@ -101,6 +106,9 @@ class StandardTable(QAbstractItemModel):
         return self.createIndex(row, 0, parentObj)
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        # Only the first column of an item has children (Qt model contract).
+        if parent.isValid() and parent.column() > 0:
+            return 0
         return len(self.objByIndex(parent).children())
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -210,11 +218,18 @@ class StandardTable(QAbstractItemModel):
         self,
         obj: Union[Package, "SubmodelElement", Iterable],
         parent: QModelIndex = QModelIndex(),
+        row: int = None,
     ):
+        """Add obj to the parent object and show it as a row of the parent.
+
+        :param row: position among the siblings, None appends
+        """
         parent = parent.siblingAtColumn(0)
-        self._addItemObjToParentObj(obj, parent)
+        container = self._addItemObjToParentObj(obj, parent, row)
         itemInitKwargs = self._getKwargsForItemInit(obj, parent)
-        return self._addItem(parent, itemInitKwargs)
+        itemIndex = self._addItem(parent, itemInitKwargs, row)
+        self._publishAdded(parent, container, obj)
+        return itemIndex
 
     def _getKwargsForItemInit(
         self, obj: Union[Package, "SubmodelElement", Iterable], parent
@@ -230,25 +245,35 @@ class StandardTable(QAbstractItemModel):
         self,
         obj: Union[Package, "SubmodelElement", Iterable],
         parent: QModelIndex,
+        row: int = None,
     ):
+        """Add obj to the object of the parent item.
+
+        :param row: position in the parent object, None appends
+        :return: the container that obj was added to
+        """
         parentObj = parent.data(OBJECT_ROLE)
-        if isinstance(parentObj, AbstractSet):
+        if isinstance(parentObj, NamespaceSet) and row is not None:
+            ordering.insert_at(parentObj, obj, row)
+        elif isinstance(parentObj, AbstractSet):
             parentObj.add(obj)
         elif isinstance(parentObj, list):
-            parentObj.append(obj)
+            if row is None:
+                parentObj.append(obj)
+            else:
+                parentObj.insert(row, obj)
         elif isinstance(parentObj, dict):
             parentObj[obj.key] = obj.value
         else:
             raise AttributeError(
                 f"Object couldn't be added: parent obj type is not appendable: {type(parentObj)}"
             )
+        return parentObj
 
-    def _addItem(self, parent: QModelIndex, itemInitKwargs):
-        self.beginInsertRows(
-            parent, self.rowCount(parent), self.rowCount(parent)
+    def _addItem(self, parent: QModelIndex, itemInitKwargs, row: int = None):
+        (item,) = self.insertItems(
+            parent, row, lambda: self.itemTyp(**itemInitKwargs)
         )
-        item = self.itemTyp(**itemInitKwargs)
-        self.endInsertRows()
         itemIndex = self.index(item.row(), 0, parent)
         self.undo.append(
             SetDataItem(
@@ -260,46 +285,120 @@ class StandardTable(QAbstractItemModel):
         self.redo.clear()
         return itemIndex
 
-    def insertRows(
-        self, row: int, count: int, parent: QModelIndex = ...
-    ) -> bool:
-        self.beginInsertRows(parent, row, row + count - 1)
+    def insertItems(
+        self,
+        parent: QModelIndex,
+        row: int,
+        create: Callable[[], Any],
+    ) -> List[StandardItem]:
+        """Show the items that `create` makes as new rows of the parent.
+
+        Rows are the QObject children of the parent item, so `create` builds
+        the items with the parent item as their parent, which appends them.
+        They are then put at `row` and announced to the views.
+
+        :param parent: index of the parent item, invalid for the root
+        :param row: position among the siblings, None appends
+        :param create: builds the new items under the parent item
+        :return: the new items in the order they were created
+        """
+        parentItem = self.objByIndex(parent)
+        existing = parentItem.children()
+        create()
+        created = parentItem.children()[len(existing) :]
+        if not created:
+            return []
+        row = len(existing) if row is None else max(0, min(row, len(existing)))
+        trailing = existing[row:]
+        # The views must hear about rows before they exist, so the new items
+        # wait outside of the parent until then.
+        for child in created:
+            child.setParent(None)
+        self.beginInsertRows(parent, row, row + len(created) - 1)
+        # Qt appends a child, so the siblings behind the new rows move to the
+        # end again after them.
+        for child in trailing:
+            child.setParent(None)
+        for child in created + trailing:
+            child.setParent(parentItem)
         self.endInsertRows()
+        return created
+
+    def moveRows(
+        self,
+        sourceParent: QModelIndex,
+        sourceRow: int,
+        count: int,
+        destinationParent: QModelIndex,
+        destinationChild: int,
+    ) -> bool:
+        """Move rows among the children of the same parent.
+
+        Only the order of the rows changes. It follows the order of the AAS
+        objects, which the code that moves them changes.
+
+        :param destinationChild: the row to move before, as in Qt
+        :return: False if the parent differs or the move would change nothing
+        """
+        if sourceParent != destinationParent:
+            return False
+        if not self.beginMoveRows(
+            sourceParent,
+            sourceRow,
+            sourceRow + count - 1,
+            destinationParent,
+            destinationChild,
+        ):
+            return False
+        parentItem = self.objByIndex(sourceParent)
+        children = parentItem.children()
+        moved = children[sourceRow : sourceRow + count]
+        rest = children[:sourceRow] + children[sourceRow + count :]
+        target = (
+            destinationChild - count
+            if destinationChild > sourceRow
+            else destinationChild
+        )
+        newOrder = rest[:target] + moved + rest[target:]
+        first = min(sourceRow, target)
+        for child in newOrder[first:]:
+            child.setParent(None)
+        for child in newOrder[first:]:
+            child.setParent(parentItem)
+        self.endMoveRows()
         return True
+
+    def moveItem(self, index: QModelIndex, newRow: int) -> bool:
+        """Move the row of an item, so that it ends up at `newRow`."""
+        parent = index.parent()
+        row = index.row()
+        newRow = max(0, min(newRow, self.rowCount(parent) - 1))
+        if newRow == row:
+            return False
+        destination = newRow + 1 if newRow > row else newRow
+        return self.moveRows(parent, row, 1, parent, destination)
 
     def update(self, index: QModelIndex):
         """Update item: remove all children rows, then add updated rows"""
         if not index.isValid():
-            return QVariant()
-        if self.hasChildren(index):
-            self.beginRemoveRows(index, 0, max(self.rowCount(index) - 1, 0))
-            self.removeRows(0, self.rowCount(index), index)
-            self.endRemoveRows()
-            self.rowsRemoved.emit(index, 0, max(self.rowCount(index) - 1, 0))
-            self.dataChanged.emit(
-                index.siblingAtColumn(0),
-                index.model().index(
-                    self.rowCount(index) - 1, self.columnCount(index) - 1, index
-                ),
-            )
-
-        self.objByIndex(index).populate()
-        if self.hasChildren(index):
-            self.beginInsertRows(index, 0, max(self.rowCount(index) - 1, 0))
-            self.endInsertRows()
-            self.rowsInserted.emit(index, 0, max(self.rowCount(index) - 1, 0))
-            self.dataChanged.emit(
-                index.siblingAtColumn(0),
-                index.model().index(
-                    self.rowCount(index) - 1, self.columnCount(index) - 1, index
-                ),
-            )
-        else:
-            self.dataChanged.emit(
-                index.siblingAtColumn(0),
-                index.siblingAtColumn(self.columnCount()),
-            )
+            return False
+        index = index.siblingAtColumn(0)
+        self._repopulate(index)
+        self.dataChanged.emit(
+            index, index.siblingAtColumn(self.columnCount() - 1)
+        )
         return True
+
+    def _repopulate(self, index: QModelIndex):
+        """Replace the rows below an item by new ones read from its object
+
+        :param index: index of the item, invalid for the root item
+        """
+        item = self.objByIndex(index)
+        count = self.rowCount(index)
+        if count:
+            self.removeRows(0, count, index)
+        self.insertItems(index, None, item.populate)
 
     def data(self, index: QModelIndex, role: int = ...) -> Any:
         if role == Qt.ItemDataRole.ForegroundRole:
@@ -428,9 +527,11 @@ class StandardTable(QAbstractItemModel):
                 self.dataChanged.emit(index, index, [DATA_CHANGE_FAILED_ROLE])
         elif role == Qt.ItemDataRole.EditRole:
             try:
+                changedObj = self._changedObject(index)
                 newValue, oldValue = self.editItem(index, value)
                 self.setChanged(index)
                 self.update(index)
+                self._publish(index, Change.changed(changedObj, origin=self))
                 self.undo.append(
                     SetDataItem(
                         index=QPersistentModelIndex(index),
@@ -479,19 +580,17 @@ class StandardTable(QAbstractItemModel):
         item = self.objByIndex(index)
         self._checkClearable(item.objName, item.typehint, newValue)
 
-        parentObj = item.parentObj
-        if (
-            ClassesInfo.changedParentObject(type(parentObj))
-            and index.parent().isValid()
-        ):
-            parentObj = getattr(
-                parentObj, ClassesInfo.changedParentObject(type(parentObj))
-            )
+        parentObj = self._changedObject(index)
 
         if isinstance(parentObj, list):
             oldValue = item.obj
             objIndex = parentObj.index(item.obj)
             parentObj[objIndex] = newValue
+            item.obj = newValue
+        elif isinstance(parentObj, NamespaceSet):
+            oldValue = item.obj
+            # The replacement takes the place of the old element (D19).
+            ordering.replace_item(parentObj, item.obj, newValue)
             item.obj = newValue
         elif isinstance(parentObj, AbstractSet):
             oldValue = item.obj
@@ -508,9 +607,36 @@ class StandardTable(QAbstractItemModel):
             oldValue = getattr(parentObj, item.objName)
             # A value the SDK rejects, such as text for an integer Property,
             # raises here and the edit is refused. The value_type stays as it is.
-            setattr(parentObj, item.objName, newValue)
+            self._setAttribute(parentObj, item.objName, newValue)
             item.obj = getattr(parentObj, item.objName)
         return newValue, oldValue
+
+    @staticmethod
+    def _setAttribute(obj, name: str, value):
+        """Set an attribute, keeping the position when an idShort is renamed.
+
+        The SDK moves a renamed element to the end of its namespace.
+        """
+        if name == "id_short" and isinstance(obj, Referable):
+            ordering.set_id_short(obj, value)
+        else:
+            setattr(obj, name, value)
+
+    def _changedObject(self, index: QModelIndex):
+        """Return the object that an edit of the item changes.
+
+        That is the object that holds the attribute, or the container that
+        holds the item if it is an element of a list or a set.
+        """
+        parentObj = self.objByIndex(index).parentObj
+        if (
+            ClassesInfo.changedParentObject(type(parentObj))
+            and index.parent().isValid()
+        ):
+            parentObj = getattr(
+                parentObj, ClassesInfo.changedParentObject(type(parentObj))
+            )
+        return parentObj
 
     @staticmethod
     def _checkClearable(name: str, typehint, newValue):
@@ -608,6 +734,7 @@ class StandardTable(QAbstractItemModel):
                         f"{type(parentObj)}"
                     )
                 self.removeRow(currRow, parent)
+                self._publishRemoved(parent, parentObj, oldValue, currRow)
                 self.undo.append(
                     SetDataItem(
                         index=QPersistentModelIndex(parent),
@@ -624,6 +751,7 @@ class StandardTable(QAbstractItemModel):
                     # close package
                     oldValue = child.obj
                     self.removeRow(currRow, parent)
+                    self.unwatchPackage(oldValue)
                     self.undo.append(
                         SetDataItem(
                             index=QPersistentModelIndex(parent),
@@ -645,3 +773,170 @@ class StandardTable(QAbstractItemModel):
     ) -> bool:
         """Delete row if it is child of Iterable else set to Default"""
         return self.clearRows(row, 1, parent, defaultVal)
+
+    # Following the changes that other models and commands report
+
+    def watchPackage(self, package: Package):
+        """Follow the changes that are reported for the objects of a package.
+
+        The model then shows what other models, such as the ones of other tabs,
+        change in the package.
+        """
+        if package is None or id(package) in self._changeSubscriptions:
+            return
+        self._changeSubscriptions[id(package)] = observer_for(
+            package
+        ).subscribe(self.onModelChange)
+
+    def unwatchPackage(self, package: Package):
+        """Stop following the changes of a package, for example once closed."""
+        subscription = self._changeSubscriptions.pop(id(package), None)
+        if subscription:
+            subscription.cancel()
+
+    def onModelChange(self, change: Change):
+        """Show a change that the model has not made itself.
+
+        Changes are named by their AAS objects. This looks for the items that
+        show these objects, and updates them without touching the others.
+        """
+        if change.origin is self:
+            return
+        if change.kind is ChangeKind.CHANGED:
+            self._onObjectChanged(change.target)
+        else:
+            self._onContainerChanged(change)
+
+    def _onObjectChanged(self, target):
+        items = list(self._allItems())
+        for item in items:
+            # The index costs more than the test, so it is made only for hits.
+            if item.obj is not target and item.containerObj is not target:
+                continue
+            index = self._indexOf(item)
+            if index is None:
+                continue
+            if item.obj is target:
+                if item.repopulatesOnChange:
+                    self._repopulate(index)
+                if index.isValid():
+                    self._emitRowChanged(index)
+                self._refreshAncestors(item)
+            elif item.containerObj is target:
+                # The elements of the container changed, like after a replace.
+                self._repopulate(index)
+
+    def _onContainerChanged(self, change: Change):
+        for item in list(self._allItems()):
+            if (
+                item.obj is not change.parent
+                and item.containerObj is not change.parent
+            ):
+                continue
+            index = self._indexOf(item)
+            if index is None:
+                continue
+            if not item.supportsIncrementalRows:
+                self._repopulate(index)
+                continue
+            if change.kind is ChangeKind.ADDED:
+                self._showAdded(item, index, change)
+            else:
+                child = self._childShowing(item, change.target)
+                if child is None:
+                    continue
+                if change.kind is ChangeKind.REMOVED:
+                    self.removeRows(child.row(), 1, index)
+                elif change.index is not None:
+                    self.moveItem(self._indexOf(child), change.index)
+
+    def _showAdded(
+        self, item: StandardItem, index: QModelIndex, change: Change
+    ):
+        target = change.target
+        if not item.acceptsChild(target) or self._childShowing(item, target):
+            return
+        self.insertItems(
+            index, change.index, lambda: item.createChildFor(target)
+        )
+
+    @staticmethod
+    def _childShowing(item: StandardItem, obj):
+        for child in item.children():
+            if child.obj is obj:
+                return child
+        return None
+
+    def _allItems(self):
+        """Iterate over all items of the model, the root item first."""
+        stack = [self._rootItem]
+        while stack:
+            item = stack.pop()
+            yield item
+            stack.extend(reversed(item.children()))
+
+    def _indexOf(self, item: StandardItem):
+        """Return the index of the item, None if it is not in the model"""
+        if item is self._rootItem:
+            return QModelIndex()
+        top = item
+        while top.parent() is not None:
+            top = top.parent()
+        if top is not self._rootItem:
+            return None
+        return self.createIndex(item.row(), 0, item)
+
+    def _emitRowChanged(self, index: QModelIndex):
+        self.dataChanged.emit(
+            index.siblingAtColumn(0),
+            index.siblingAtColumn(self.columnCount() - 1),
+        )
+
+    def _refreshAncestors(self, item: StandardItem):
+        """Tell the views that the rows above an item show other values now"""
+        ancestor = item.parent()
+        while ancestor is not None and ancestor is not self._rootItem:
+            self._emitRowChanged(self._indexOf(ancestor))
+            ancestor = ancestor.parent()
+
+    def _packageOf(self, index: QModelIndex):
+        try:
+            return index.data(PACKAGE_ROLE)
+        except AttributeError:
+            return None
+
+    def _publish(self, index: QModelIndex, change: Change):
+        """Report a change to the other models of the package of an item"""
+        package = self._packageOf(index)
+        if package is not None:
+            observer_for(package).notify(change)
+
+    def _publishAdded(self, parent: QModelIndex, container, obj):
+        if container is None:
+            return
+        if isinstance(container, dict):
+            change = Change.changed(container, origin=self)
+        else:
+            change = Change.added(
+                container, obj, self._positionIn(container, obj), self
+            )
+        self._publish(parent, change)
+
+    def _publishRemoved(self, parent: QModelIndex, container, obj, row: int):
+        if isinstance(container, dict) or isinstance(obj, DictItem):
+            change = Change.changed(container, origin=self)
+        else:
+            change = Change.removed(container, obj, row, self)
+        self._publish(parent, change)
+
+    @staticmethod
+    def _positionIn(container, obj):
+        """Return the position of obj in an ordered container, else None"""
+        if isinstance(container, AbstractSet) and not isinstance(
+            container, NamespaceSet
+        ):
+            return None
+        for position, member in enumerate(container):
+            if member is obj:
+                return position
+        return None

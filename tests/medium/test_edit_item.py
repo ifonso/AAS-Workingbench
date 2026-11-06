@@ -205,3 +205,89 @@ def test_edit_sets_value_when_value_fits_the_value_type(edit_support) -> None:
     assert edited
     assert prop.value == 7
     assert prop.value_type is model.datatypes.Int
+
+
+def _ids(submodel: model.Submodel) -> list[str]:
+    return [element.id_short for element in submodel.submodel_element]
+
+
+def test_rename_keeps_position_when_id_short_is_edited_in_a_tab(
+    edit_support,
+) -> None:
+    submodel = make_submodel(
+        elements=[make_property("a"), make_property("b"), make_property("c")]
+    )
+    table = edit_support.pack_table(submodel)
+    details = edit_support.detail_table(table, "submodels", "Submodel", "a")
+
+    renamed = details.setData(
+        edit_support.find(details, "id_short"), "z", Qt.ItemDataRole.EditRole
+    )
+
+    assert renamed
+    assert _ids(submodel) == ["z", "b", "c"]
+
+
+def test_rename_keeps_position_when_id_short_is_edited_in_the_pack_table(
+    edit_support,
+) -> None:
+    submodel = make_submodel(
+        elements=[make_property("a"), make_property("b"), make_property("c")]
+    )
+    table = edit_support.pack_table(submodel)
+    row = edit_support.find(
+        table,
+        "b",
+        edit_support.find(
+            table,
+            "Submodel",
+            edit_support.find(table, "submodels", table.index(0, 0)),
+        ),
+    )
+
+    renamed = table.setData(
+        row.siblingAtColumn(edit_support.column(table, "id_short")),
+        "z",
+        Qt.ItemDataRole.EditRole,
+    )
+
+    assert renamed
+    assert _ids(submodel) == ["a", "z", "c"]
+
+
+def test_rename_is_refused_and_keeps_order_when_id_short_is_taken(
+    edit_support,
+) -> None:
+    submodel = make_submodel(
+        elements=[make_property("a"), make_property("b"), make_property("c")]
+    )
+    table = edit_support.pack_table(submodel)
+    details = edit_support.detail_table(table, "submodels", "Submodel", "a")
+
+    renamed = details.setData(
+        edit_support.find(details, "id_short"), "c", Qt.ItemDataRole.EditRole
+    )
+
+    assert not renamed
+    assert _ids(submodel) == ["a", "b", "c"]
+
+
+def test_replacing_an_element_keeps_its_position(edit_support) -> None:
+    submodel = make_submodel(
+        elements=[make_property("a"), make_property("b"), make_property("c")]
+    )
+    table = edit_support.pack_table(submodel)
+    row = edit_support.find(
+        table,
+        "a",
+        edit_support.find(
+            table,
+            "Submodel",
+            edit_support.find(table, "submodels", table.index(0, 0)),
+        ),
+    )
+
+    replaced = table.setData(row, make_property("n"), Qt.ItemDataRole.EditRole)
+
+    assert replaced
+    assert _ids(submodel) == ["n", "b", "c"]

@@ -26,6 +26,10 @@ from aas_editor.package import Package
 
 
 class DetailedInfoItem(StandardItem):
+    # The rows show attributes and their values, and the names of the rows of
+    # a list contain their position, so everything below is read again.
+    repopulatesOnChange = True
+
     def __init__(
         self, obj, name="", parent=None, package: Package = None, **kwargs
     ):
