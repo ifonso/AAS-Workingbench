@@ -25,7 +25,7 @@ This page describes the code as it is today, and the structure that new code sho
 | `__main__.py` | Entry point. Creates `QApplication`, loads icons, and opens `EditorApp`. |
 | `editorApp.py` | Main window, menus, toolbars, session save and restore. |
 | `design.py` | Generated main window layout, from `mainwindow_base.ui`. |
-| `package.py` | `Package`: reads and writes AASX, JSON, and XML through BaSyx, and handles crash recovery files. |
+| `package.py` | `Package`: holds the objects, files, thumbnail and properties of an opened package, adapts them to the layers below, and handles crash recovery files. |
 | `models/` | Qt item models that adapt packages and AAS objects to tree views. |
 | `treeviews/` | Tree views and their actions: `base.py` is shared, `treeview_pack.py` shows open packages, and `treeview_detailed.py` shows object attributes. |
 | `widgets/` | Tabs, editors, search bar, message boxes. `tab.py` also previews media content. |
@@ -59,6 +59,32 @@ This page describes the code as it is today, and the structure that new code sho
 | LLM and PDF dependencies are always installed. | Installs and builds are large, even for users who never open the Handover tool. |
 | Introspection logs hundreds of handled tracebacks when opening a package. | Real errors are hard to find in the log. |
 | `aas_editor` is a large module-level dependency web, with circular imports worked around at the end of `package.py`. | Import order is fragile. |
+
+## New layers in use
+
+These modules exist today. Each layer is created by the first work package that needs it.
+
+| Module | Responsibility |
+|---|---|
+| `domain/walking.py` | Walks every element of a submodel, including the annotations that `basyx.aas.util.traversal` skips. |
+| `domain/file_references.py` | Lists the paths that objects use to refer to files in the package, finds those with no stored file, and finds stored files that nothing refers to. A URL is not a package path. |
+| `domain/parts.py` | Values for the parts of an AASX besides its objects: the thumbnail, the core properties, and a missing file. |
+| `application/save.py` | The save flow. `check_save` returns blockers (no way around them) and warnings (save anyway), and `save` writes only when there are no blockers and the user confirms the warnings. It takes a `SaveSource` protocol and explicit `SaveOptions`, never `Package` or `AppSettings`. |
+| `infrastructure/package_io.py` | Reads and writes AASX, JSON and XML through BaSyx. A write goes to a temporary file with `failsafe=False` and replaces the target in one step. It does not import `Package`. |
+| `ui/save_warnings.py` | The dialogs for blockers, warnings, and missing files. They show decisions that `application/save.py` made. |
+
+### How saving works
+
+1. `PackTreeView.savePack` builds a `SaveSource` from the `Package` with `Package.save_source()`, and calls `application.save.save`.
+2. The check runs. A blocker shows a dialog and stops. A warning asks the user, with Cancel as the default.
+3. `package_io.write_package` writes, and `Package.recordSaved` changes `Package.file` only afterwards, so a failed Save As leaves the package where it was.
+
+A package that was opened through the failsafe branch is partial (D6). It cannot overwrite the file it was read from.
+The SDK does not say what failsafe mode skipped, so every such package counts.
+
+Saving does not add Submodel references to the first AAS (D8). `Package.all_submodels_to_aas` is an explicit action in the context menu.
+
+Crash recovery writes the objects as JSON. When files were added since the package was opened, it writes a complete AASX instead, so that restoring keeps them.
 
 ## Target structure
 

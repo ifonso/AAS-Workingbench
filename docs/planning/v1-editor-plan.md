@@ -37,7 +37,7 @@ The rationale for the first two is in [ADR 0005](../software/adr/0005-metamodel-
 |---|---|---|
 | D1 | Metamodel | Target V3.1.x. The app's label says so. V3.0 files are read as V3.1, as the SDK does. |
 | D2 | Validation | Our own rule set over BaSyx objects. `aas-test-engines` stays as a separate tool labeled V3.0, because no V3.1 release exists. |
-| D3 | Data access | All AAS reading, writing, and mutation goes through `basyx`. No hand-written AAS JSON, XML, or OPC handling. Two narrow exceptions, each isolated in `infrastructure/package_io.py` and covered by tests: a reader subclass overriding the SDK's `_add_supplementary_file`, and reading thumbnail metadata through `reader.reader`. The SDK is pinned, so these stay stable until a deliberate upgrade. |
+| D3 | Data access | All AAS reading, writing, and mutation goes through `basyx`. No hand-written AAS JSON, XML, or OPC handling. Narrow exceptions, each isolated in `infrastructure/package_io.py` and covered by tests: a reader subclass overriding the SDK's `_add_supplementary_file` and `_collect_supplementary_files`, reading thumbnail metadata through `reader.reader`, and a writer subclass that marks an already written part as the package thumbnail. The SDK is pinned, so these stay stable until a deliberate upgrade. See [ADR 0006](../software/adr/0006-safe-save.md). |
 | D4 | Saving | Validate, write to a temporary file with `failsafe=False`, then replace the target atomically. Failures leave the original untouched, and also leave `Package.file` unchanged on a failed Save As. |
 | D5 | Validation gate | Errors are shown before saving, with Cancel and Save anyway. Nothing is skipped silently. Refusals with no Save anyway: a File pointing to a package path with no stored file, because the SDK cannot write that package or reopen it. |
 | D6 | Partial loads | Every package opened through the failsafe branch is treated as partial, because the SDK does not report what it skipped. It must use Save As, and cannot overwrite its source. |
@@ -259,7 +259,7 @@ All ─ WP12
 | WP | Branch | Status |
 |---|---|---|
 | WP1 | `fix/editor-data-defects` | Done |
-| WP2 | `feat/safe-save` | Not started |
+| WP2 | `feat/safe-save` | Done |
 | WP3a | `refactor/model-change-observer` | Not started |
 | WP3b | `feat/command-undo` | Not started |
 | WP4 | `feat/reference-integrity` | Not started |
