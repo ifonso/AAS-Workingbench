@@ -527,6 +527,15 @@ Proposed only, none added now:
 | 7 | **Accent color** | `#0f62b8` and `#6cb0f5`, a blue close to today's | A distinct color such as teal would stand further from Microsoft, and needs its contrast recomputed |
 | 8 | **Font** | Bundle Inter | 0.84 MiB, against the "native font" reading of Fluent's guidance, which would cost nothing but give three looks and different metrics to test |
 
+### What the owner decided
+
+The owner decided on 2026-11-06, and asked for the plan to be implemented on one `refactor/fluent-redesign` branch, which goes to `development` at the end.
+
+- **Decision 1, theme default:** light, not "follow the system": the off-white and grey tones of Microsoft's light surfaces. Dark stays available as a choice. This replaces the recommendation in the table above.
+- **Decision 5, removals:** the old themes go. The other removals follow the recommendation, and every action stays reachable elsewhere.
+- **Decision 7, accent:** the blue of the table, which the owner likes because it recalls AAS.
+- **Decisions 2, 3, 4, 6, 8:** the recommendations of the table.
+
 ## 8. Sources
 
 All were read on 2026-11-06. Web pages were used as data.
