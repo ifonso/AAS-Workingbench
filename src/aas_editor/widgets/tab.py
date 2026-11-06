@@ -567,7 +567,19 @@ class TabWithTreeView(QWidget):
         )
 
     def windowTitle(self) -> str:
-        return self.packItem.data(NAME_ROLE)
+        # What the tree reads, so a group of objects is titled as it is named.
+        return self.packItem.data(Qt.ItemDataRole.DisplayRole)
+
+    def _typeText(self) -> str:
+        """Return the type of the item as the tree reads it, if it has one."""
+        text = (
+            QModelIndex(self.packItem)
+            .siblingAtColumn(TYPE_COLUMN)
+            .data(Qt.ItemDataRole.DisplayRole)
+        )
+        if isinstance(text, str):
+            return text
+        return getTypeName(type(self.packItemObj))
 
     def windowIcon(self) -> QIcon:
         return self.packItem.data(Qt.ItemDataRole.DecorationRole)
@@ -610,7 +622,7 @@ class TabWithTreeView(QWidget):
         self.embeddedConcept.set_target(self.package, self.packItemObj)
         self.updateMediaWidget()
         self.pathLine.setText(getTreeItemPath(self.packItem))
-        self.objTypeLine.setText(getTypeName(type(self.packItemObj)))
+        self.objTypeLine.setText(self._typeText())
 
         icon = self.packItem.data(Qt.ItemDataRole.DecorationRole)
         if icon:

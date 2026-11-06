@@ -30,6 +30,7 @@ from basyx.aas.model import NamespaceSet, Namespace, Reference, LangStringSet
 import aas_editor.additional.classes
 
 from aas_editor import settings
+from aas_editor.domain.readable_values import readable_text
 import aas_editor.utils.util_classes as util_classes
 import aas_editor.utils.util_type as util_type
 import logging
@@ -116,6 +117,15 @@ def removeHiddenAttrs(attrs: List[str], cls) -> List[str]:
 
 
 def simplifyInfo(obj, attrName: str = "") -> str:
+    """Return the text that a cell shows for a value.
+
+    The value itself is what is edited and copied. This is only what is read:
+    the name of an extension, the number of qualifiers, the last key of a
+    reference.
+    """
+    readable = readable_text(obj)
+    if readable is not None:
+        return readable
     res = str(obj)
     try:
         if isinstance(obj, settings.ATTR_INFOS_TO_SIMPLIFY):
