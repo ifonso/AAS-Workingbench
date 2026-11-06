@@ -377,7 +377,10 @@ class TestRefusals:
     def test_read_mode_refuses_the_edit_and_changes_nothing(
         self, picking
     ) -> None:
+        # Read mode hides a null attribute, so this one has a value.
         element = _property()
+        original = make_external_reference("urn:example:old")
+        element.semantic_id = original
         flow = picking(element)
         edit_mode().set_editing(False)
         try:
@@ -395,7 +398,7 @@ class TestRefusals:
             edit_mode().set_editing(True)
 
         assert not edited
-        assert element.semantic_id is None
+        assert element.semantic_id is original
 
 
 class TestFreeEntry:
