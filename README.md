@@ -102,5 +102,5 @@ Parts of the code descend from AAS Manager, copyright Igor Garmaev and contribut
 
 The Asset Administration Shell, its specifications and submodel templates, and the global dictionaries such as ECLASS and the IEC Common Data Dictionary belong to their owners.
 This project is not affiliated with or endorsed by them.
-The software includes no dictionary content, and grants no rights over any.
+The software ships no dictionary as such, although templates and packages may refer to dictionary entries or hold some, and it grants no rights over any.
 You are responsible for the licenses of the dictionaries and data that you load.

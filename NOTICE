@@ -57,7 +57,8 @@ Measurement units
     states the license CC BY 4.0.
 
 Dictionaries (ECLASS, IEC Common Data Dictionary, and others)
-    The software does not include the content of any global dictionary. A
+    The software does not ship a global dictionary as such. The submodel
+    templates above may refer to dictionary entries or hold some, and a
     package that a user opens, or a dictionary that a user loads or imports,
     may contain such content. The license of that content stays with its
     owner, and this project grants no rights over it. The user is responsible
