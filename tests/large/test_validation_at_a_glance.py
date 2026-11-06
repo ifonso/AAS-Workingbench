@@ -1,4 +1,4 @@
-"""The counts, F8 and the palette key in the real main window."""
+"""The counts and F8 in the real main window."""
 
 from pathlib import Path
 import shutil
@@ -53,6 +53,28 @@ def test_the_counts_are_in_the_status_bar_with_the_panel_hidden(editor) -> None:
     assert status.isVisible()
     assert status.counts == counts
     assert counts.findings > 0
+
+
+def test_f8_and_shift_f8_have_one_owner_each_in_the_window(editor) -> None:
+    from PyQt6.QtGui import QAction
+    from PyQt6.QtGui import QShortcut
+
+    def owners(key: str) -> list[object]:
+        wanted = QKeySequence(key)
+        found: list[object] = [
+            a
+            for a in editor.window.findChildren(QAction)
+            if wanted in a.shortcuts()
+        ]
+        found += [
+            s
+            for s in editor.window.findChildren(QShortcut)
+            if s.key() == wanted
+        ]
+        return found
+
+    assert owners("F8") == [editor.controller.next_finding_action]
+    assert owners("Shift+F8") == [editor.controller.previous_finding_action]
 
 
 def test_f8_goes_to_a_finding_in_the_package_tree(editor) -> None:

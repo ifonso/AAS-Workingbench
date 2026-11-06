@@ -11,9 +11,9 @@ from aas_editor.application.validation import finding_key
 from aas_editor.application.validation import step_finding
 from aas_editor.application.validation import stepping_findings
 from aas_editor.domain.validation import Finding
-from aas_editor.domain.validation.rules.hints import KEY_WHITESPACE
 from aas_editor.domain.validation import Severity
 from aas_editor.domain.validation import ValidationReport
+from aas_editor.domain.validation.rules.hints import KEY_WHITESPACE
 
 
 def _finding(severity: Severity, name: str = "A") -> Finding:

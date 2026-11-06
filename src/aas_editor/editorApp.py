@@ -49,6 +49,7 @@ from aas_editor.widgets.tab import TabWidget
 from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
 from aas_editor.treeviews.base import HeaderView
+from aas_editor.ui.command_palette import install_palette
 from aas_editor.ui.validation_window import install_validation
 
 
@@ -79,6 +80,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.initPackageFiles()
         # The validation dock and hints mode, before the menus that list them
         self.validationController = install_validation(self)
+        # Ctrl+K, which lists the actions of the menus that follow
+        self.commandPalette = install_palette(self)
         self.initActions()
         self.initMenu()
         self.initToolbars()
@@ -315,6 +318,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuView.addAction(self.mainTabWidget.zoomOutAct)
 
         self.menuNavigate = QMenu("&Navigate", self.menubar)
+        self.menuNavigate.addAction(self.commandPalette.action)
+        self.menuNavigate.addSeparator()
         self.menuNavigate.addAction(self.mainTreeView.autoScrollToSrcAct)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollFromSrcAct)
         self.menuNavigate.addSeparator()

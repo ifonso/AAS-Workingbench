@@ -53,6 +53,9 @@ from aas_editor.application.commands import Command
 from aas_editor.application.commands import CommandStack
 
 
+READ_MODE_REASON = "Read mode is on. Switch to Edit mode in the View menu"
+
+
 class ViewKind(enum.Flag):
     """The tree views that can show an action."""
 
@@ -210,6 +213,19 @@ def menu_section(action_id: str) -> int:
     return len(_MENU_SECTIONS)
 
 
+def menu_title(action_id: str) -> str:
+    """Returns the submenu of the context menu that holds an action.
+
+    Args:
+        action_id: The id of the action, such as "structure.move_up".
+
+    Returns:
+        The title of the submenu, or an empty text if the action is in the
+        menu itself.
+    """
+    return _SUBMENU_TITLES.get(menu_section(action_id), "")
+
+
 def default_registry() -> ActionRegistry:
     """Returns the registry that the tree views use."""
     return _registry
@@ -267,6 +283,30 @@ class ViewActions:
     def actions(self) -> list[QAction]:
         """All actions of the view, in order."""
         return [action for _, action in self._entries]
+
+    @property
+    def entries(self) -> list[tuple[ActionSpec, QAction]]:
+        """Each action of the view with the spec that made it, in order."""
+        return list(self._entries)
+
+    def disabled_reason(self, action: QAction) -> str:
+        """Says why an action of the view is disabled, if the spec knows.
+
+        Args:
+            action: An action of this view.
+
+        Returns:
+            A sentence, or an empty text when the action is enabled or the
+            reason is not known.
+        """
+        for spec, entry in self._entries:
+            if entry is not action:
+                continue
+            if spec.mutates and not self._can_edit():
+                return READ_MODE_REASON
+            if not spec.is_enabled(self._context()):
+                return "Does not apply to the selected row"
+        return ""
 
     @property
     def mutating_actions(self) -> list[QAction]:
