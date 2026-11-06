@@ -5,6 +5,7 @@ from pathlib import Path
 from basyx.aas import model
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QDialog
 from tests.factories import make_collection
 from tests.factories import make_list
 from tests.factories import make_property
@@ -161,6 +162,97 @@ class TestCutFromEveryKindOfParent:
         assert snapshot(package.objStore) == original
 
 
+class _FakeDialog:
+    """Stands in for the edit dialogs: accepts and returns a prepared object."""
+
+    answer: object = None
+
+    def __init__(self, **_: object) -> None:
+        pass
+
+    def exec(self) -> int:
+        return QDialog.DialogCode.Accepted
+
+    def result(self) -> int:
+        return QDialog.DialogCode.Accepted
+
+    def getObj2add(self) -> object:
+        return self.answer
+
+    def deleteLater(self) -> None:
+        pass
+
+
+class TestDialogFlows:
+    """The edit and add flows that open a dialog end in one undoable step."""
+
+    def test_replacing_an_element_through_a_dialog_is_one_undoable_step(
+        self, views
+    ) -> None:
+        collection = _collection()
+        shown = views()
+        package = shown.open_package(make_submodel(elements=[collection]))
+        original = snapshot(package.objStore)
+        dialog = type("Dialog", (_FakeDialog,), {"answer": make_property("n")})
+
+        shown.view.replItemWithDialog(
+            index=shown.index("submodels", "Submodel", "Collection", "y"),
+            objVal="{}",
+            editDialogType=dialog,
+        )
+        after_edit = _ids(collection)
+        shown.view.onUndo()
+
+        assert after_edit == ["x", "n", "z"]
+        assert snapshot(package.objStore) == original
+        assert not package.commandStack.can_undo
+
+    def test_adding_an_element_through_a_dialog_is_one_undoable_step(
+        self, views
+    ) -> None:
+        collection = _collection()
+        shown = views()
+        package = shown.open_package(make_submodel(elements=[collection]))
+        original = snapshot(package.objStore)
+        dialog = type("Dialog", (_FakeDialog,), {"answer": make_property("n")})
+
+        shown.view.addItemWithDialog(
+            parent=shown.index("submodels", "Submodel", "Collection"),
+            objTypeHint=model.Property,
+            editDialogType=dialog,
+        )
+        after_add = _ids(collection)
+        shown.view.onUndo()
+
+        assert after_add == ["x", "y", "z", "n"]
+        assert snapshot(package.objStore) == original
+        assert not package.commandStack.can_undo
+
+    def test_clearing_an_attribute_to_its_default_is_undone(
+        self, views
+    ) -> None:
+        prop = make_property("p")
+        prop.category = "Parameter"
+        shown = views()
+        package = shown.open_package(make_submodel(elements=[prop]))
+        original = snapshot(package.objStore)
+        source = shown.view.sourceModel()
+        column = [
+            source.headerData(section, Qt.Orientation.Horizontal, 0)
+            for section in range(source.columnCount())
+        ].index("category")
+        cell = shown.index("submodels", "Submodel", "p").siblingAtColumn(column)
+
+        shown.view.setCurrentIndex(cell)
+
+        shown.view.onOneItemDelClear(cell)
+        cleared = prop.category
+        shown.view.onUndo()
+
+        assert cleared is None
+        assert snapshot(package.objStore) == original
+
+
 class TestUndoActsOnTheActivePackage:
     def test_undo_takes_back_the_step_of_the_package_that_is_current(
         self, views
@@ -217,6 +309,20 @@ class TestUndoActsOnTheActivePackage:
 
         assert enabled_in_edited
         assert not shown.view.undoAct.isEnabled()
+
+    def test_undo_takes_back_the_step_of_the_only_package_without_a_selection(
+        self, views
+    ) -> None:
+        collection = _collection()
+        shown = views()
+        shown.open_package(make_submodel(elements=[collection]))
+        shown.select(shown.index("submodels", "Submodel", "Collection", "y"))
+        shown.view.onDelClear()
+        shown.view.setCurrentIndex(QModelIndex())
+
+        shown.view.onUndo()
+
+        assert _ids(collection) == ["x", "y", "z"]
 
     def test_attrs_view_undoes_the_package_it_shows(self, views) -> None:
         collection = _collection()

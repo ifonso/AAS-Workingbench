@@ -882,6 +882,18 @@ class PackTreeView(TreeView):
         super().onHistoryChanged()
         self.updateWindowModified()
 
+    def activePackage(self):
+        """Return the package of the current item.
+
+        Without a current item, the only open package is the one meant.
+        """
+        package = super().activePackage()
+        if package is None and self.model() is not None:
+            packages = self.model().data(QModelIndex(), OPENED_PACKS_ROLE)
+            if packages and len(packages) == 1:
+                (package,) = packages
+        return package
+
     def updateWindowModified(self) -> None:
         """Derive the shared window modified flag from the per-package changed flags.
 
