@@ -482,7 +482,6 @@ def register_paste_actions() -> None:
             views=ViewKind.PACKAGES,
             shortcut=QKeySequence("Ctrl+Alt+V"),
             status_tip="Insert the pasted elements before the selected one",
-            toolbar=True,
             order=310,
         ),
         ActionSpec(
@@ -493,7 +492,6 @@ def register_paste_actions() -> None:
             views=ViewKind.PACKAGES,
             shortcut=QKeySequence("Ctrl+Shift+V"),
             status_tip="Insert the pasted elements after the selected one",
-            toolbar=True,
             order=311,
         ),
         ActionSpec(

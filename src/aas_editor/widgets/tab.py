@@ -18,6 +18,7 @@
 import logging
 from typing import List
 
+from PyQt6 import sip
 from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import (
@@ -25,6 +26,7 @@ from PyQt6.QtCore import (
     QModelIndex,
     QPersistentModelIndex,
     QPoint,
+    QSize,
     QMimeData,
     QUrl,
     QStandardPaths,
@@ -53,7 +55,9 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QTabWidget,
     QHBoxLayout,
+    QApplication,
     QFrame,
+    QMainWindow,
     QTabBar,
     QMenu,
     QSplitter,
@@ -73,12 +77,15 @@ from aas_editor.settings.app_settings import *
 from aas_editor.settings.icons import (
     FORWARD_ICON,
     BACK_ICON,
+    COPY_ICON,
     SPLIT_VERT_ICON,
     SPLIT_HORIZ_ICON,
     ZOOM_IN_ICON,
     ZOOM_OUT_ICON,
-    SETTINGS_ICON,
 )
+from aas_editor.domain.design_tokens import CONTROL_HEIGHT
+from aas_editor.ui.breadcrumb import Breadcrumb
+from aas_editor.ui.theme.icons import tabler_icon
 from aas_editor.settings.shortcuts import SC_BACK, SC_FORWARD
 from aas_editor.utils.util_type import getTypeName
 from aas_editor.widgets import SearchBar, ToolBar
@@ -98,6 +105,9 @@ PREVIEW_DEFAULT_SHARE = 1 / 3
 # preview open: a narrower tab opens with the preview dragged shut.
 PREVIEW_MIN_ATTRIBUTES_WIDTH = 360
 PREVIEW_MIN_TAB_WIDTH = 720
+# A tab is as wide as its title, between these widths in pixels (plan, section 3).
+TAB_MIN_WIDTH = 120
+TAB_MAX_WIDTH = 240
 CASE_SENSITIVITY = Qt.CaseSensitivity.CaseInsensitive
 
 
@@ -182,7 +192,6 @@ class TabBar(QTabBar):
         super(TabBar, self).__init__(parent)
         self.menuIndexTab = None
 
-        self.setFixedHeight(TOOLBARS_HEIGHT)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.setElideMode(Qt.TextElideMode.ElideRight)
         self.setUsesScrollButtons(True)
@@ -193,6 +202,21 @@ class TabBar(QTabBar):
         self.initActions()
         self.initMenu()
         self.customContextMenuRequested.connect(self.openMenu)
+
+    def tabSizeHint(self, index: int) -> QSize:
+        """A tab is as wide as its title, between 120 and 240 pixels.
+
+        The width was fixed at 200 pixels, so a short title left the tab empty
+        and a long one was cut early. A title that does not fit is elided.
+        """
+        size = super().tabSizeHint(index)
+        size.setWidth(max(TAB_MIN_WIDTH, min(size.width(), TAB_MAX_WIDTH)))
+        size.setHeight(CONTROL_HEIGHT)
+        return size
+
+    def minimumTabSizeHint(self, index: int) -> QSize:
+        """A tab that the bar has to squeeze keeps the least width."""
+        return QSize(TAB_MIN_WIDTH, CONTROL_HEIGHT)
 
     def mousePressEvent(self, a0: QMouseEvent) -> None:
         if a0.button() == Qt.MouseButton.RightButton:
@@ -440,16 +464,24 @@ class TabWithTreeView(QWidget):
         )
         self.initActions()
 
+        # Back and forward are on the command bar of the window. A tab in a
+        # window of its own has no bar, so it keeps its own pair of buttons.
         self.pathToolBar = ToolBar(self)
+        self.pathToolBar.setFixedHeight(CONTROL_HEIGHT)
         self.pathToolBar.addAction(self.backAct)
         self.pathToolBar.addAction(self.forwardAct)
 
-        self.pathWidget = QWidget(self)
-        self.pathWidget.show()
+        # The path is read as segments. The line is what a click on the blank
+        # area edits, with the completer of the addresses.
         self.pathLine: AddressLine = AddressLine(self)
-        self.objTypeLine = LineEdit(self, placeholderText="Object Type")
-        self.objTypeLine.setFixedWidth(168)
-        self.objTypeLine.setReadOnly(True)
+        self.breadcrumb = Breadcrumb(self.pathLine, self)
+        self.breadcrumb.segment_activated.connect(self.openSegment)
+        self.copyPathBtn = QToolButton(self)
+        self.copyPathBtn.setIcon(COPY_ICON)
+        self.copyPathBtn.setAutoRaise(True)
+        self.copyPathBtn.setToolTip("Copy the path")
+        self.copyPathBtn.setAccessibleName("Copy the path")
+        self.copyPathBtn.clicked.connect(self.copyPath)
 
         globalSettings = QWebEngineProfile.defaultProfile().settings()
         globalSettings.setAttribute(
@@ -495,7 +527,6 @@ class TabWithTreeView(QWidget):
         )
         self.attrsTreeView.setFrameShape(QFrame.Shape.NoFrame)
 
-        self.initToolbar()
         self.searchBar = SearchBar(
             self.attrsTreeView,
             parent=self,
@@ -519,37 +550,26 @@ class TabWithTreeView(QWidget):
         else:
             self.openEmptyItem()
 
-    def initToolbar(self):
-        self.toolBar = ToolBar(self)
+    def pathSegments(self) -> list[tuple[str, QPersistentModelIndex]]:
+        """The names from the package down to the object, with their rows."""
+        segments = []
+        index = QModelIndex(self.packItem)
+        while index.isValid():
+            text = index.data(Qt.ItemDataRole.DisplayRole)
+            segments.append((str(text), QPersistentModelIndex(index)))
+            index = index.parent()
+        segments.reverse()
+        return segments
 
-        settingsBtn = QToolButton(icon=SETTINGS_ICON)
-        settingsBtn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        menuSettings = QMenu("Settings")
-        menuSettings.addAction(
-            QAction(
-                "Hide/show tabs bar",
-                self,
-                statusTip="Hide/show tabs bar",
-                toggled=lambda a: (
-                    self.tabWidget.tabBar().show()
-                    if a
-                    else self.tabWidget.tabBar().hide()
-                ),
-                checkable=True,
-                checked=not self.tabWidget.tabBar().isHidden(),
-            )
-        )
-        settingsBtn.setMenu(menuSettings)
-        self.toolBar.addWidget(settingsBtn)
+    def openSegment(self, position: int) -> None:
+        """Open the object of a segment of the path that the user clicked."""
+        segments = self.pathSegments()
+        if 0 <= position < len(segments) - 1:
+            self.openItem(QModelIndex(segments[position][1]))
 
-        self.toolBar.addAction(self.attrsTreeView.collapseAllAct)
-        self.toolBar.addAction(self.attrsTreeView.expandAllAct)
-        self.toolBar.addSeparator()
-        self.toolBar.addAction(self.attrsTreeView.undoAct)
-        self.toolBar.addAction(self.attrsTreeView.redoAct)
-        self.toolBar.addAction(self.attrsTreeView.editCreateInDialogAct)
-        self.toolBar.addAction(self.attrsTreeView.addAct)
-        self.toolBar.addSeparator()
+    def copyPath(self) -> None:
+        """Put the path of the object on the clipboard."""
+        QApplication.clipboard().setText(getTreeItemPath(self.packItem))
 
     # noinspection PyArgumentList
     def initActions(self):
@@ -631,7 +651,9 @@ class TabWithTreeView(QWidget):
         self.embeddedConcept.set_target(self.package, self.packItemObj)
         self.updateMediaWidget()
         self.pathLine.setText(getTreeItemPath(self.packItem))
-        self.objTypeLine.setText(self._typeText())
+        self.breadcrumb.set_path(
+            [name for name, _ in self.pathSegments()], self._typeText()
+        )
 
         icon = self.packItem.data(Qt.ItemDataRole.DecorationRole)
         if icon:
@@ -760,6 +782,9 @@ class TabWithTreeView(QWidget):
 
     def showEvent(self, a0):
         super().showEvent(a0)
+        # The command bar of the main window has Back and Forward, which follow
+        # the tab with the focus. A tab in a window of its own has no bar.
+        self.pathToolBar.setVisible(not isinstance(self.window(), QMainWindow))
         if self.mediaViewWidget.isVisibleTo(self) and not self._previewPlaced:
             # The layout has its width after this event.
             QTimer.singleShot(0, self._placePreview)
@@ -807,18 +832,21 @@ class TabWithTreeView(QWidget):
         toolBarWidget = QWidget()
         toolBarLayout = QHBoxLayout(toolBarWidget)
         toolBarLayout.setContentsMargins(0, 0, 0, 0)
-        # The address takes what is left, and does not claim its own width.
-        # Shared out by their hints, the buttons were cut into a "..." menu
-        # while the address kept its width.
-        self.pathLine.setMinimumWidth(40)
-        self.pathLine.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed
-        )
-        toolBarLayout.addWidget(self.toolBar)
+        toolBarLayout.setSpacing(0)
+        # The path takes what is left, and does not claim its own width.
         toolBarLayout.addWidget(self.pathToolBar)
-        toolBarLayout.addWidget(self.pathLine, 1)
-        toolBarLayout.addWidget(self.objTypeLine)
-        toolBarWidget.setFixedHeight(TOOLBARS_HEIGHT)
+        toolBarLayout.addWidget(self.breadcrumb, 1)
+        toolBarLayout.addWidget(self.copyPathBtn)
+        # The search of this tab, which Ctrl+F opens as well.
+        self.searchBtn = QToolButton(self)
+        self.searchBtn.setIcon(tabler_icon("search"))
+        self.searchBtn.setAutoRaise(True)
+        self.searchBtn.setToolTip("Search in this tab (Ctrl+F)")
+        self.searchBtn.setAccessibleName("Search in this tab")
+        self.searchBtn.clicked.connect(self.searchBar.showFocused)
+        toolBarLayout.addWidget(self.searchBtn)
+        toolBarWidget.setFixedHeight(CONTROL_HEIGHT)
+        self.pathBarWidget = toolBarWidget
 
         treeViewWidget = QWidget()
         treeViewLayout = QVBoxLayout(treeViewWidget)
@@ -880,9 +908,15 @@ class TabWidget(QTabWidget):
             else tabBarCls(self, **tabBarClsKwargs)
         )
         self.setAcceptDrops(True)
-        self.setStyleSheet("QTabBar::tab { height: 25px; width: 200px}")
         self.setCurrentIndex(-1)
         self.resize(QSize(800, 500))
+        # The tab widget of a main window that was deleted gets no close event,
+        # so it would stay here, and a package closed later would ask it.
+        TabWidget.openedTabWidgets[:] = [
+            tabWidget
+            for tabWidget in TabWidget.openedTabWidgets
+            if not sip.isdeleted(tabWidget)
+        ]
         TabWidget.openedTabWidgets.append(self)
         self.tabCls = tabCls
         self.tabClsKwargs = tabClsKwargs
@@ -921,8 +955,19 @@ class TabWidget(QTabWidget):
         self.tabCloseRequested.connect(self.removeTab)
         self.currentChanged.connect(self.onCurrTabChanged)
 
+    def tabRemoved(self, index):
+        super(TabWidget, self).tabRemoved(index)
+        self._syncCloseButtons()
+
+    def _syncCloseButtons(self):
+        """The last tab of a window that needs one cannot be closed, so it has no button."""
+        self.tabBar().setTabsClosable(
+            not (self.unclosable and self.count() <= 1)
+        )
+
     def tabInserted(self, index):
         super(TabWidget, self).tabInserted(index)
+        self._syncCloseButtons()
         tab: TabWithTreeView = self.widget(index)
         tab.windowTitleChanged.connect(
             lambda text: self.setTabText(self.indexOf(tab), text)

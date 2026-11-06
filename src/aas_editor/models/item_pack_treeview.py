@@ -124,7 +124,35 @@ class PackTreeViewItem(StandardItem):
                 return QVariant()
         elif column == TYPE_COLUMN:
             return self.typeText
+        elif column == ATTRIBUTE_COLUMN:
+            return self._fullNameTooltip(column, column_name)
         return super()._getTooltipRoleData(column, column_name)
+
+    @property
+    def pathText(self) -> str:
+        """Where the row is: the names from its package down to it."""
+        names = []
+        node = self
+        while isinstance(node, PackTreeViewItem) and node.obj is not None:
+            names.append(node.displayName)
+            node = node.parent()
+        return " / ".join(reversed(names))
+
+    def _fullNameTooltip(self, column, column_name):
+        """The whole name of a row, which the column may cut, and where it is.
+
+        The name is not cut here, and below it comes the path from the package,
+        which the indent of a deep row does not show.
+        """
+        name = self.displayName
+        tooltip = name
+        path = self.pathText
+        if path and path != name:
+            tooltip = f"{name}\n{path}"
+        extra = super()._getTooltipRoleData(column, column_name)
+        if isinstance(extra, str) and extra and extra != name:
+            tooltip = f"{tooltip}\n\n{extra}"
+        return tooltip
 
     def acceptsChild(self, obj) -> bool:
         # The shells, submodels and concept descriptions of a package share

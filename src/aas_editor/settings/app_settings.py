@@ -113,6 +113,12 @@ TAB_HEADER_LAYOUT_VERSION = 4
 # changes, so that a session of an older release does not hide the new default.
 PACK_TREE_HEADER_LAYOUT_VERSION = 2
 ZONES_LAYOUT_VERSION = 1
+# The version of the saved arrangement of the docks and the command bar, which
+# `QMainWindow.saveState` writes into the state. Raise it when a dock is added,
+# removed, or renamed, so that the state of an earlier release is not restored.
+DOCKS_LAYOUT_VERSION = 1
+# How high the panels of the bottom open at first, in pixels.
+DOCK_HEIGHT = 220
 PACK_TREE_OBJECT_COLUMN_WIDTH = 340
 # What the toolbar of the tree needs beyond the width of its buttons: the
 # margin of the toolbar and the frame of the tree.
@@ -185,6 +191,15 @@ DEFAULT_COLUMNS_IN_PACKS_TABLE = (
     TYPEHINT_COLUMN_NAME,
 )
 DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW = (OBJECT_COLUMN_NAME, TYPE_COLUMN_NAME)
+# What the header of the package tree says for the columns that the model names
+# `object`, `object value`, `type`, and `typehint`. The names stay what code and
+# the saved column lists find a column by, and the header and its menu read these.
+PACK_TREE_HEADER_LABELS = {
+    OBJECT_COLUMN_NAME: "Package",
+    OBJECT_VALUE_COLUMN_NAME: "Value",
+    TYPE_COLUMN_NAME: "Type",
+    TYPEHINT_COLUMN_NAME: "Python type",
+}
 ATTRIBUTE_COLUMN = 0
 VALUE_COLUMN = 1
 TYPE_COLUMN = 2
@@ -251,6 +266,9 @@ class AppSettings:
     PACKTREEVIEW_HEADER_LAYOUT = Setting("packTreeViewHeaderLayout", 0, int)
     # The layout that the saved sizes of the two zones were made for.
     ZONES_LAYOUT = Setting("zonesLayout", 0, int)
+    # Where the docks are, which are tabbed together, and which is shown, and
+    # whether the command bar is. The version is inside the state.
+    DOCK_STATE = Setting("dockState", None)
     # The version of the default font size that the saved sizes were made under.
     FONTSIZE_LAYOUT = Setting("fontSizeLayout", 0, int)
     PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE = CUSTOM_COLUMN_LISTS_FILE

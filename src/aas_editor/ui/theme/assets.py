@@ -35,7 +35,7 @@ def images(tokens: ColorTokens) -> dict[str, str]:
     Returns:
         The SVG text of each image, by file name. A tick, a dash, and a dot
         are in the color of text on the accent. The arrows are in the color of
-        labels.
+        labels, and the cross of a tab is muted until the pointer is on it.
     """
     return {
         "check.svg": _stroke("M3.5 8.5l3 3 6-6.5", tokens.accent_on, 1.8),
@@ -45,6 +45,11 @@ def images(tokens: ColorTokens) -> dict[str, str]:
             f'fill="{tokens.accent_on}"/></svg>'
         ),
         "chevron-down.svg": _stroke("M4 6l4 4 4-4", tokens.fg_secondary),
+        "chevron-right.svg": _stroke("M6 4l4 4-4 4", tokens.fg_secondary),
+        "close.svg": _stroke("M4.5 4.5l7 7M11.5 4.5l-7 7", tokens.fg_muted),
+        "close-hover.svg": _stroke(
+            "M4.5 4.5l7 7M11.5 4.5l-7 7", tokens.fg_primary
+        ),
         "chevron-up.svg": _stroke("M4 10l4-4 4 4", tokens.fg_secondary),
         "chevron-down-disabled.svg": _stroke(
             "M4 6l4 4 4-4", tokens.fg_disabled

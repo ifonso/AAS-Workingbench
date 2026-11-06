@@ -13,6 +13,7 @@ from typing import Optional
 from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import QToolBar, QWidget
 
+from aas_editor.domain.design_tokens import ICON_SIZE
 from aas_editor.settings.app_settings import TOOLBARS_HEIGHT
 
 
@@ -20,10 +21,11 @@ class ToolBar(QToolBar):
     def __init__(self, parent: Optional[QWidget] = ...):
         super(ToolBar, self).__init__(parent)
         self.setFixedHeight(TOOLBARS_HEIGHT)
-        self.setIconSize(QSize(TOOLBARS_HEIGHT, TOOLBARS_HEIGHT))
+        # 16 pixel icons in the button of a toolbar, as the plan sets.
+        self.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
 
     def toggleViewAction(self):
         action = super().toggleViewAction()
-        action.setText("Toolbar")
-        action.setStatusTip("Show/hide toolbar")
+        action.setText("Command bar")
+        action.setStatusTip("Show/hide the command bar")
         return action

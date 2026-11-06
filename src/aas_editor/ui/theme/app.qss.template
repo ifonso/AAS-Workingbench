@@ -439,6 +439,83 @@ QTabBar::tab:selected {
     border-bottom-color: $accent;
 }
 
+/* The close cross of a tab is quiet until the pointer is on it. */
+
+QTabBar::close-button {
+    image: url("$image_dir/close.svg");
+    subcontrol-position: right;
+    border-radius: ${radius_badge}px;
+    margin-right: 4px;
+}
+
+QTabBar::close-button:hover {
+    image: url("$image_dir/close-hover.svg");
+    background-color: $bg_pressed;
+}
+
+/* Chevrons for the branches of trees, in place of the arrows of the style */
+
+QTreeView::branch:closed:has-children {
+    border-image: none;
+    image: url("$image_dir/chevron-right.svg");
+}
+
+QTreeView::branch:open:has-children {
+    border-image: none;
+    image: url("$image_dir/chevron-down.svg");
+}
+
+/* The path of a tab, as segments that can be clicked */
+
+#breadcrumbSegment {
+    background-color: transparent;
+    color: $fg_secondary;
+    border: none;
+    border-radius: ${radius_control}px;
+    padding: 2px 4px;
+}
+
+#breadcrumbSegment:hover {
+    background-color: $bg_hover;
+}
+
+#breadcrumbSegment::menu-indicator {
+    image: none;
+    width: 0;
+}
+
+#breadcrumbSegment[current="true"] {
+    color: $fg_primary;
+}
+
+#breadcrumbSeparator {
+    color: $fg_muted;
+    padding: 0 1px;
+}
+
+#breadcrumbType {
+    color: $fg_muted;
+    padding-right: 8px;
+}
+
+/* The start of the window, while no package is open */
+
+#emptyHint {
+    color: $fg_muted;
+}
+
+#recentFile {
+    color: $link;
+    background-color: transparent;
+    border: none;
+    padding: 3px 0;
+}
+
+#recentFile:hover {
+    background-color: transparent;
+    text-decoration: underline;
+}
+
 /* Docks, splitters, and the status bar */
 
 QDockWidget {
