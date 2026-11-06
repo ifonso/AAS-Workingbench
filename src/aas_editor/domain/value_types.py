@@ -23,6 +23,7 @@ Example:
     "'abc' is not a valid xs:int: it must be a whole number such as 12 or -3"
 """
 
+from collections.abc import Callable
 import calendar
 import decimal
 import math
@@ -233,6 +234,34 @@ def format_value(value: Any) -> str:
     if isinstance(value, decimal.Decimal) and value.is_finite():
         return format(value, "f")
     return datatypes.xsd_repr(value)
+
+
+def cast_value(value: object, value_type: XsdType) -> Any:
+    """Gives a Python value the type, where the SDK allows it.
+
+    Args:
+        value: A Python value, such as the int 7 or a `datetime.date`.
+        value_type: The type to cast to.
+
+    Returns:
+        The value as an instance of the type. This is the cast that a
+        Property does when its value is set, so it never changes a meaning:
+        an int may become an `xs:int`, but a float never does.
+
+    Raises:
+        InvalidValueError: If the SDK refuses the cast or the range.
+    """
+    # The SDK leaves the parameter of trivial_cast untyped.
+    trivial_cast = cast(
+        "Callable[[object, XsdType], Any]",
+        datatypes.trivial_cast,  # pyright: ignore[reportUnknownMemberType]
+    )
+    try:
+        return trivial_cast(value, value_type)
+    except (TypeError, ValueError) as error:
+        raise InvalidValueError(
+            f"'{value}' is not a valid {type_name(value_type)}: {error}"
+        ) from None
 
 
 def convert(value: Any, value_type: XsdType) -> Any:

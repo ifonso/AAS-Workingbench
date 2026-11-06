@@ -32,6 +32,7 @@ from aas_editor.application.commands import Command
 from aas_editor.application.commands import CommandStack
 from aas_editor.domain import containers
 from aas_editor.domain import ordering
+from aas_editor.domain import typed_values
 
 
 def describe(obj: object) -> str:
@@ -140,6 +141,88 @@ class SetAttribute(Command):
             ordering.set_id_short(self._owner, value)  # pyright: ignore[reportArgumentType]
         else:
             setattr(self._owner, self._name, value)
+
+
+class SetValueType(Command):
+    """Changes the value type of an object, and its values with it.
+
+    A Property, a Range, a Qualifier, and an Extension hold values of their
+    value type. The values are converted through their text, in the same step
+    as the type, so undo gives back the old type and the old values together.
+    """
+
+    def __init__(
+        self,
+        observer: ModelChangeObserver,
+        owner: object,
+        value_type: Any,
+        description: str | None = None,
+        origin: object | None = None,
+    ) -> None:
+        """Creates the command without changing anything.
+
+        Args:
+            observer: Where to report the change.
+            owner: A Property, Range, Qualifier, or Extension.
+            value_type: The new value type, a class of
+                `basyx.aas.model.datatypes`.
+            description: Text for Undo and Redo.
+            origin: The subscriber that updates itself when it pushes the
+                command. Only the first report names it.
+
+        Raises:
+            InvalidValueError: If a value does not fit the new type. Nothing
+                has changed, and the message tells the user what to do.
+        """
+        self.description = description or (
+            f"Change the value type of {describe(owner)}"
+        )
+        self._observer = observer
+        self._owner: Any = owner
+        self._value_type = value_type
+        self._values = typed_values.type_change_values(owner, value_type)
+        self._previous_type: Any = None
+        self._previous_values: dict[str, Any] = {}
+        self._origin = origin
+
+    @property
+    def owner(self) -> object:
+        """The object that has the value type."""
+        return self._owner
+
+    @property
+    def value_type(self) -> Any:
+        """The value type that the command sets."""
+        return self._value_type
+
+    @property
+    def value_names(self) -> tuple[str, ...]:
+        """The names of the attributes whose values the command converts."""
+        return tuple(self._values)
+
+    @property
+    def is_noop(self) -> bool:
+        """Whether the owner has the new value type already."""
+        return getattr(self._owner, "value_type", None) is self._value_type
+
+    def apply(self) -> None:
+        """Sets the new type and the converted values."""
+        self._previous_type = self._owner.value_type
+        self._previous_values = {
+            name: getattr(self._owner, name) for name in self._values
+        }
+        self._owner.value_type = self._value_type
+        for name, value in self._values.items():
+            setattr(self._owner, name, value)
+        origin, self._origin = self._origin, None
+        self._observer.notify(Change.changed(self._owner, origin))
+
+    def revert(self) -> None:
+        """Sets the old type and the old values again."""
+        self._owner.value_type = self._previous_type
+        for name, value in self._previous_values.items():
+            setattr(self._owner, name, value)
+        self._observer.notify(Change.changed(self._owner))
 
 
 class AddMember(Command):

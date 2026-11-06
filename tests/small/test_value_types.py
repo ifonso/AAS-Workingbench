@@ -446,3 +446,20 @@ def test_keeps_whitespace_is_true_for_strings_only() -> None:
     assert value_types.keeps_whitespace(datatypes.NormalizedString) is True
     assert value_types.keeps_whitespace(datatypes.Int) is False
     assert value_types.keeps_whitespace(datatypes.AnyURI) is False
+
+
+def test_cast_value_gives_an_int_the_type_when_it_fits() -> None:
+    value = value_types.cast_value(7, datatypes.Short)
+
+    assert value == 7
+    assert isinstance(value, datatypes.Short)
+
+
+def test_cast_value_refuses_an_int_beyond_the_range_of_the_type() -> None:
+    with pytest.raises(InvalidValueError, match="xs:byte"):
+        value_types.cast_value(300, datatypes.Byte)
+
+
+def test_cast_value_refuses_a_float_for_an_integer_type() -> None:
+    with pytest.raises(InvalidValueError, match="xs:int"):
+        value_types.cast_value(1.5, datatypes.Int)
