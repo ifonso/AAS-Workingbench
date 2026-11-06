@@ -5,6 +5,7 @@
 | Set up the project and run common tasks | [Development guide](contributing/development.md) |
 | Understand how the code is organized | [Architecture](software/architecture.md) |
 | Know why a decision was made | [Decision records](software/adr/README.md) |
+| Change many objects at once, write a pattern, or add presets | [Bulk editing](software/bulk-editing.md) |
 | See which constraints the SDK and the validation rules enforce | [Validation](software/validation.md) |
 | See what is left to reach Package Explorer parity | [Feature parity](software/feature-parity.md) |
 | See the plan for the v1 editor | [V1 editor plan](planning/v1-editor-plan.md) |

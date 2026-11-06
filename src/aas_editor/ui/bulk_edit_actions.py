@@ -117,9 +117,10 @@ def _change(context: ActionContext) -> None:
 
 
 def _can_remove_extensions(context: ActionContext) -> bool:
+    # The state is asked when the current row changes, so it cannot depend on
+    # whether an object has extensions now: an add would leave it stale.
     return context.package is not None and any(
-        isinstance(obj, model.HasExtension) and len(obj.extension) > 0
-        for obj in selected_objects(context)
+        isinstance(obj, model.HasExtension) for obj in selected_objects(context)
     )
 
 

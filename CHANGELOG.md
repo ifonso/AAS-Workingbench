@@ -70,9 +70,16 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - A File converts to a Blob with the content of the stored file, or with its path as text, as the user chooses.
 - Change list settings, in the context menu of a SubmodelElementList. It rebuilds the list with another type of items, value type, semantic id, or order flag, which the SDK fixes when the list is made. The items that fit stay, in order, and the ones that do not are named before the list changes. "Detect from the items" fills the settings from what the items share. Editing one of these attributes in a cell now points to this action.
 - An item of a SubmodelElementList shows a read-only `index` row with its position, where it showed the name that the SDK generates. The row follows items that are added, removed, or moved.
+- Change attribute with a pattern, in the context menu of the package tree. It changes the idShort, description, display name, or text value of the selected objects. A table shows the result for every object before anything changes: changes, unchanged, skipped (such as an object without the chosen language), and refused with the reason. An invalid idShort, one that a sibling has, a text beyond the length the metamodel allows, and a value that does not fit its type are refused, and nothing applies until the pattern or the selection changes. The renames update the references in the same step, elements can swap names, and the change is one undo step. The pattern language is new and documented in [Bulk editing](docs/software/bulk-editing.md), with examples. The original's language is not used, and nothing in a pattern is evaluated.
+- Remove extensions, for the selected objects, by name or by semantic id, with the count of each, as one undo step.
+- Add a qualifier, extension, specific asset id, or data specification from a preset to all selected objects (F-EDT-07, F-EDT-06). The presets are JSON files in the SDK's serialization: those of the app are in `aas_editor/presets/`, and those of the user are in the `presets` folder next to `settings.ini`, where a preset replaces a shipped one of the same name. The preset files of Package Explorer can be copied there. A file that is missing, damaged, too large, or not JSON never stops the editor, and each refused entry is listed with its reason. A preset of a specific asset id without a value asks for it, because the SDK refuses an empty one. See [ADR 0014](docs/software/adr/0014-presets-and-the-pattern-language.md).
+- Add a qualifier, extension, or specific asset id from the clipboard, to all selected objects. The JSON is read by the SDK, and text that is not valid is refused with the reason, such as "This is a Property, not a Qualifier". An object that has the qualifier type (AASd-021), the extension name (AASd-077), or the member already is skipped and named, and the others still get it.
+- The preset and clipboard actions also work in a tab, on the row of `asset_information` or of `qualifier`, and on a shell in the package tree for specific asset ids.
 - A text of several lines can be typed. An `xs:string` value has a box of several lines in the value dialog and in the add and edit forms, and so does the text of each language of a MultiLanguageProperty, a description, or a display name. The text comes back exactly as it was while nothing is edited, including Windows line breaks. An `xs:normalizedString` stays a line, because the SDK refuses a line break in it.
 
 ### Changed
+
+- Move up, down, to top, and to end now work on a selection across several collections, lists, or submodels. Each selected element moves within its own container, as one undo step, and references through moved list items follow once for all of them. Before, the actions were off for such a selection.
 
 - The project is now managed only with uv, including CI and release builds, and `uv.lock` pins all dependencies.
 - The code moved to `src/aas_editor/`, and tests moved to `tests/`, organized by size.
@@ -165,6 +172,11 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Converting a text or a Property to a File can give a path that no stored file has. Saving reports such a File.
 - The item of a SubmodelElementList cannot be converted to another type, because the list fixes it. Change the list settings instead.
 - A cell of the package tree or of a tab is still one line. Use Edit to type line breaks.
+- Auto-detect and assign concept descriptions for a selection are not done, because they wait for the concept description work (WP10).
+- A selection cannot be moved into another parent, because that changes the path of each element and of every reference through it. Use Cut and Paste, which keeps no references.
+- A preset adds a member and never replaces a blank one, and a preset cannot be saved from the editor. Edit the file in the `presets` folder. Presets of other data specifications than IEC 61360 cannot be made, because the SDK has no content class for them.
+- Changing the attributes of a selection works on the selected rows of the package tree. The actions for presets and the clipboard also work on the rows of a tab, but the pattern change and the removal of extensions do not.
+- A bulk change of an idShort does not run the validation rules (for example a one-letter idShort is accepted as the SDK accepts it).
 
 ## 0.4.13 - 2026-08-28
 

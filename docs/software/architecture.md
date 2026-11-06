@@ -108,6 +108,15 @@ These modules exist today. Each layer is created by the first work package that 
 | `application/operations/paste.py` | `plan_paste` and `paste_commands`: copies with a free idShort or a new id, inserted at a position. |
 | `application/operations/companions.py` | `gather_companions`, `plan_concepts`, `concept_commands`, and `retarget_semantic_ids`: what goes with a copy between packages. It lists the file references of the copies too. |
 | `ui/move_actions.py`, `ui/paste_actions.py`, `ui/paste_dialogs.py` | The move and paste actions and the questions of a paste between packages. |
+| `domain/member_json.py` | Reads and writes qualifiers, extensions, specific asset ids, and data specifications as the SDK's JSON, by placing them in a holder that the SDK's decoder reads. `MemberKind`, `MemberJsonError`, `clone_member`. |
+| `domain/presets.py` | `parse_presets` turns the text of a preset file into `Preset`s and `Problem`s without raising, `merge_presets` lets the user's presets replace the shipped ones. |
+| `domain/rename_pattern.py` | The pattern language of bulk changes: `compile_pattern`, `render`, `PatternContext`, and `PatternError` (see [Bulk editing](bulk-editing.md)). |
+| `infrastructure/preset_files.py` | Reads the shipped files (`aas_editor/presets/`) and the files of the user, and reports each unreadable file as a problem. |
+| `application/operations/bulk_edit.py` | `plan_change_attribute` previews a pattern change of an idShort, description, display name, or value, and `change_commands` builds it. Also `group_extensions` and `remove_extension_commands`. |
+| `application/operations/bulk_move.py` | `plan_bulk_move` moves a selection in each of its containers, with one rewrite of the references through moved list items. |
+| `application/operations/attach.py` | `plan_attach` and `attach_commands` add a member to many owners and skip those that have it. |
+| `ui/bulk_dialogs.py`, `ui/bulk_edit_actions.py` | The dialog with the preview, the removal of extensions, and their actions. Registered by `__main__.py` with `register_bulk_edit_actions`. |
+| `ui/preset_dialogs.py`, `ui/preset_actions.py` | The preset list and the actions for presets and the clipboard. Registered with `register_preset_actions`. |
 
 ### Supplementary files
 
@@ -122,6 +131,7 @@ These modules exist today. Each layer is created by the first work package that 
 - **Copying to another package.** `TreeClipboard.source` records the package at copy time, and the clipboard hands it to `copy_source`. The paste actions (above, below, into) ask `gather_companions` for the file references of the copies and add the commands of `transfer_commands` to the paste group. The older Paste goes through `StandardTable.addItem`, which wraps the add with `with_copied_files`. Both add the files and update the pasted paths in the same undo step, and the window shows what was copied or numbered in the status bar.
 - **Save.** `check_save` returns the dangling Files as a blocker with the code `DANGLING_FILES`, and the stored files that nothing refers to as a warning with `UNREFERENCED_FILES`. The dialogs offer "Repair file references..." and "Show package files...".
 - **Crash recovery.** When any stored file differs from the opened state, the recovery is an AASX. The files that nothing refers to cannot be in it, so they are written to `<stem>.files.json` next to it, and `restore_from_recovery` reads them again.
+
 ### How saving works
 
 1. `PackTreeView.savePack` builds a `SaveSource` from the `Package` with `Package.save_source()`, and calls `application.save.save`.
@@ -313,6 +323,18 @@ register_action(
 - **Paste.** `plan_paste(container, items, index, keep_ids, taken_ids)` clones the items through `domain.clipboard_json.clone`, so the buffer can be pasted again and nothing keeps a parent. An idShort is made free with `unique_id_short`, and an identifiable gets `new_identifier()` unless it is a cut that can keep its id. `ui/paste_actions.py` reads the buffer, `TreeClipboard.objects`, where text on the system clipboard that is AAS JSON has already become objects (`TreeView._appendClipboardText`). The existing Paste uses `pasteCopyFor` for the same naming.
 - **Between packages.** `TreeClipboard.source` is the package a copy came from. A paste into another package calls `gather_companions` (the concept descriptions of the semantic ids of the items and of everything below them) and `plan_concepts` (add, reuse when the JSON is equal, conflict otherwise), asks through `ui/paste_dialogs.py`, and puts `concept_commands` in the same group as the paste. A description added under a new id is followed by `retarget_semantic_ids` on the copies before they are inserted. `Companions` is the place to add other things that travel with a copy, such as supplementary files.
 - **Actions.** `register_move_actions()` and `register_paste_actions()` add `structure.move_*`, `structure.paste_*` and `structure.clear_buffer`. The tree views refresh the enabled states when the selection, the rows, or the buffer change.
+
+### Bulk operations and presets
+
+[ADR 0014](adr/0014-presets-and-the-pattern-language.md) records the decisions, and [Bulk editing](bulk-editing.md) is the guide for users.
+
+- **Plan, preview, build.** Each operation first makes a plan without changing anything, as the other operations do. A dialog shows the plan, and `*_commands` builds the commands, which are pushed inside one `stack.group(...)`. Several objects change as one undo step, and a failure while pushing undoes what was done.
+- **Statuses.** A `BulkPlan` has an entry for each selected object: `CHANGE`, `UNCHANGED`, `SKIPPED` (nothing to change), or `REFUSED` (not allowed). One refused entry makes `can_apply` false. An `AttachPlan` has `ADD` and `SKIPPED`, and a skipped owner never stops the others.
+- **Renames.** The new idShorts are checked against the names after the whole change. Several renames share one `rewrite_keys` call, so a reference through a renamed parent and a renamed child is rewritten once. When a new name is the current name of another selected element, the commands rename through temporary names first, inside the same group.
+- **Moves.** `plan_move` still moves the members of one container. `plan_bulk_move` groups a selection by container and gives each its new order, and `ui/move_actions.py` uses it for every selection. The keys of references through moved list items are found once for all containers (`position_renames`). Nothing moves to another parent.
+- **Members from outside.** A preset and the clipboard both give JSON, which `domain/member_json.py` reads through the SDK. `Preset.make()` and `clone_member` give a new member for each owner, because the SDK lets a qualifier or extension belong to one owner only.
+- **Untrusted files.** `infrastructure/preset_files.py` never raises for a file. A bad entry is a `Problem`, and the dialog lists the problems.
+- **Actions.** `register_bulk_edit_actions()` and `register_preset_actions()` add `bulk.change_attribute`, `bulk.remove_extensions`, `preset.add_*`, and `clipboard.add_*` to the registry. The preset and clipboard actions also work in a tab, on the row of an attribute such as `asset_information` or `qualifier`.
 
 ### Working with legacy code
 

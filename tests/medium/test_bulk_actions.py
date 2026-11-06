@@ -278,11 +278,26 @@ def test_extensions_with_a_name_are_removed_in_one_step(bulk, tmp_path) -> None:
     assert [[e.name for e in p.extension] for p in props] == left
 
 
-def test_the_removal_is_off_when_nothing_has_an_extension(bulk) -> None:
-    lab = bulk(make_property("A"))
-    lab.select(("A",))
+def test_the_removal_is_available_after_an_extension_was_added(bulk) -> None:
+    from aas_editor.application.changes import observer_for
+    from aas_editor.application.edits import AddMember
 
-    assert not lab.action("bulk.remove_extensions").isEnabled()
+    prop = make_property("A")
+    lab = bulk(prop)
+    lab.select(("A",))
+    # The state of the action is worked out when the row changes, so it must
+    # not depend on whether the element has an extension at that moment.
+    lab.stack.push(
+        AddMember(
+            observer_for(lab.package), prop.extension, model.Extension("Note")
+        )
+    )
+
+    enabled = lab.action("bulk.remove_extensions").isEnabled()
+    lab.remove_extensions("Note (1)")
+
+    assert enabled
+    assert len(prop.extension) == 0
 
 
 def test_a_selection_across_collections_moves_in_each_collection(

@@ -273,5 +273,5 @@ All ─ WP12
 | WP8b | `feat/element-conversion` | Done |
 | WP9 | `feat/supplementary-files` | Done |
 | WP10 | `feat/concept-descriptions` | Not started |
-| WP11 | `feat/bulk-editing-and-presets` | Not started |
+| WP11 | `feat/bulk-editing-and-presets` | Done, except auto-detect and assign concept descriptions for a selection, which wait for WP10 |
 | WP12 | `docs/v1-editor-release` | Not started |
