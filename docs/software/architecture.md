@@ -89,6 +89,11 @@ These modules exist today. Each layer is created by the first work package that 
 | `ui/reference_actions.py`, `ui/delete_flow.py` | The actions Rename id, Rename idShort, Sync idShort and Fix References, and the questions that come before a delete. |
 | `domain/validation/` | The rules over BaSyx objects: `rules/` has 20 rules in six modules, `context.py` walks the package once for all of them, `engine.validate` runs them, `findings.py` has `Finding` and `ValidationReport`, and `coverage.py` records for each constraint whether the SDK, a rule, or neither enforces it (see [Validation](#validation)). |
 | `application/validation.py` | `validate_package(source)` runs the rules on anything that has `objects` and `files`, such as the result of `Package.save_source()`. `save_check_for(report)` maps a report to the blockers and warnings of a save (D5). |
+| `domain/clipboard_json.py` | AAS objects as the SDK's JSON for the system clipboard, and back, with `ClipboardError` for anything that is no valid AAS object. Also the copy that a paste inserts. |
+| `application/operations/move.py` | `plan_move` and `move_commands`: the new order for the moved members, and the keys that references through list items get (see [Structure operations](#structure-operations)). |
+| `application/operations/paste.py` | `plan_paste` and `paste_commands`: copies with a free idShort or a new id, inserted at a position. |
+| `application/operations/companions.py` | `gather_companions`, `plan_concepts`, `concept_commands`, and `retarget_semantic_ids`: what goes with a copy between packages. |
+| `ui/move_actions.py`, `ui/paste_actions.py`, `ui/paste_dialogs.py` | The move and paste actions and the questions of a paste between packages. |
 
 ### How saving works
 
@@ -249,6 +254,17 @@ register_action(
 - Add a rule by writing a function in a module of `rules/`, adding a `Rule` to its `RULES`, and a row to `coverage.COVERAGE` or `EDITOR_RULE_REASONS`. A test fails when the rules and the table disagree. Write the failing case with an edit or an argument that the SDK does not check, because the SDK refuses most invalid objects when they are made.
 - A rule goes over the views of the context, so a run is linear: 43 ms for Purchase Order.
 - Nothing runs the rules on a save or shows them yet. WP5b adds the dock and merges `save_check_for(report)` into `check_save`.
+
+### Structure operations
+
+[ADR 0011](adr/0011-natural-order-in-trees.md) records the order of the trees.
+
+- **Order.** `ReorderMembers` (in `application/edits.py`) puts a `NamespaceSet` or a list into a new order and reports `Change.moved` for each member that changed its row, lowest final row first, so a model that moves one row at a time ends in the new order. `domain.containers.reorder_members` does the work through `domain.ordering.reorder`. Shells, submodels, concept descriptions and the references of a shell live in sets and cannot move (D16).
+- **Moves.** `plan_move(container, selected, kind, objects)` returns a `MovePlan`, or None when the order would not change. For several selected members of one container, up and down move them as a block where they can, and top and end keep their order among themselves. For a `SubmodelElementList` the plan holds `rewrite_keys` changes with a `KeyRename` for every item whose position changed, and `move_commands` builds the reorder followed by `reference_commands`. Push them in one group.
+- **The tree shows the order.** `SearchProxyModel` is in the natural order unless the user clicked a header (`sort(-1)`): a level with a saved order compares source rows, other levels are sorted by name. A move resets a sorted header. The header neither starts sorted nor restores a sort.
+- **Paste.** `plan_paste(container, items, index, keep_ids, taken_ids)` clones the items through `domain.clipboard_json.clone`, so the buffer can be pasted again and nothing keeps a parent. An idShort is made free with `unique_id_short`, and an identifiable gets `new_identifier()` unless it is a cut that can keep its id. `ui/paste_actions.py` reads the buffer, `TreeClipboard.objects`, where text on the system clipboard that is AAS JSON has already become objects (`TreeView._appendClipboardText`). The existing Paste uses `pasteCopyFor` for the same naming.
+- **Between packages.** `TreeClipboard.source` is the package a copy came from. A paste into another package calls `gather_companions` (the concept descriptions of the semantic ids of the items and of everything below them) and `plan_concepts` (add, reuse when the JSON is equal, conflict otherwise), asks through `ui/paste_dialogs.py`, and puts `concept_commands` in the same group as the paste. A description added under a new id is followed by `retarget_semantic_ids` on the copies before they are inserted. `Companions` is the place to add other things that travel with a copy, such as supplementary files.
+- **Actions.** `register_move_actions()` and `register_paste_actions()` add `structure.move_*`, `structure.paste_*` and `structure.clear_buffer`. The tree views refresh the enabled states when the selection, the rows, or the buffer change.
 
 ### Working with legacy code
 
