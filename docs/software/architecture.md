@@ -46,6 +46,7 @@ This page describes the code as it is today, and the structure that new code sho
 3. Attributes and editors come from **runtime type introspection**: `utils/util_type.py` and `getAttrTypeHint` read the type hints of BaSyx classes.
    This is why the editor handles new SDK attributes with little code, and also why it relies heavily on SDK internals.
 4. Edits go through the model, which supports undo and redo, and mark the package as changed.
+   The model reports each edit, addition, and deletion to the package's change observer, so that the models of other tabs show the same objects again (see [Change observer and commands](#change-observer-and-commands)).
 5. Crash recovery writes changed packages to `settings/recovery/`, and the next start offers to restore them.
 
 ### Known structural problems
@@ -113,6 +114,28 @@ infrastructure ──────┘
 - Code does no significant work at import time.
 - Long-running work, such as network calls, must not block the UI thread.
 - The first feature to use a layer creates its package. `tests/medium/test_layers.py` imports every module of `domain` and `application` in a clean subprocess, and fails if PyQt6 is loaded. It skips a layer that does not exist yet.
+
+### Modules in the layers
+
+| Module | Layer | Responsibility |
+|---|---|---|
+| `domain/ordering.py` | Domain | Snapshot and restore of the order of a `NamespaceSet`, inserting, moving, and replacing members, and renaming an idShort without moving the element. Every change rolls back when the SDK refuses an object. |
+| `application/changes.py` | Application | `Change` (added, removed, moved, changed), `ModelChangeObserver`, and `observer_for(package)`. |
+| `application/commands.py` | Application | `Command`, `CommandGroup`, and `CommandStack` with undo, redo, atomic groups, and a saved-state marker. |
+| `application/listeners.py` | Application | The callback list behind both. It holds bound methods weakly. |
+
+### Change observer and commands
+
+[ADR 0007](adr/0007-command-stack-and-change-observer.md) records the design.
+
+- A command holds the BaSyx objects it changes, because each tab has its own item model, and rows or model indexes mean nothing to another tab.
+- A command reports what it did to `observer_for(package)`, both when applied and when reverted. The report names the object, and for added, removed, and moved ones also the container and the position.
+- `StandardTable` subscribes. It finds the items that show the object and updates them.
+  Items of the package tree add, remove, and move rows one by one, and items of the attribute tabs read their rows again.
+- A model that made a change itself passes itself as `origin`, so it does not update twice.
+
+The legacy mutation paths in `table_standard.py` (`setData` for edits, `addItem`, and `clearRows`) report their changes already, so tabs stay in sync.
+Moving them to commands, and the undo behavior that comes with it, is a separate work package.
 
 ### Working with legacy code
 

@@ -10,9 +10,11 @@
 
 from typing import Any, Union, Iterable
 
+from basyx.aas.model import NamespaceSet
 from PyQt6.QtCore import QModelIndex, Qt
 from PyQt6.QtGui import QFont
 
+from aas_editor.domain import ordering
 from aas_editor.models import StandardTable, PackTreeViewItem
 from aas_editor.package import Package
 from aas_editor.settings.app_settings import (
@@ -59,6 +61,17 @@ class PacksTable(StandardTable):
         else:
             return super(PacksTable, self).data(index, role)
 
+    def addItem(
+        self,
+        obj: Union[Package, "SubmodelElement", Iterable],
+        parent: QModelIndex = QModelIndex(),
+        row: int = None,
+    ):
+        itemIndex = super().addItem(obj, parent, row)
+        if isinstance(obj, Package):
+            self.watchPackage(obj)
+        return itemIndex
+
     def editItem(self, index: QModelIndex, value):
         if index.data(COLUMN_NAME_ROLE) not in DEFAULT_COLUMNS_IN_PACKS_TABLE:
             parentObj = index.data(OBJECT_ROLE)
@@ -71,31 +84,42 @@ class PacksTable(StandardTable):
                 typehint = None
             self._checkClearable(objName, typehint, value)
             oldValue = getattr(parentObj, objName)
-            setattr(parentObj, objName, value)
+            self._setAttribute(parentObj, objName, value)
             return value, oldValue
         else:
             return super().editItem(index, value)
+
+    def _changedObject(self, index: QModelIndex):
+        if index.data(COLUMN_NAME_ROLE) not in DEFAULT_COLUMNS_IN_PACKS_TABLE:
+            return index.data(OBJECT_ROLE)
+        return super()._changedObject(index)
 
     def _addItemObjToParentObj(
         self,
         obj: Union[Package, "SubmodelElement", Iterable],
         parent: QModelIndex,
+        row: int = None,
     ):
         parentObj = parent.data(OBJECT_ROLE)
         parentObjCls = type(parentObj)
         parentName = parent.data(NAME_ROLE)
         if isinstance(obj, Package):
-            return
+            return None
         elif parentName in ClassesInfo.packViewAttrs(Package):
             package: Package = parent.data(PACKAGE_ROLE)
             package.add(obj)
+            return package.objStore
         elif ClassesInfo.changedParentObject(parentObjCls):  # FIXME: Refactor
             parentObj = getattr(
                 parentObj, ClassesInfo.changedParentObject(parentObjCls)
             )
-            parentObj.add(obj)
+            if isinstance(parentObj, NamespaceSet) and row is not None:
+                ordering.insert_at(parentObj, obj, row)
+            else:
+                parentObj.add(obj)
+            return parentObj
         else:
-            return super()._addItemObjToParentObj(obj, parent)
+            return super()._addItemObjToParentObj(obj, parent, row)
 
     def _getKwargsForItemInit(
         self, obj: Union[Package, "SubmodelElement", Iterable], parent

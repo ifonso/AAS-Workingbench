@@ -58,6 +58,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - Closing a package with Save closed it even when the save failed or was refused, and the changes were lost. It stays open now.
 - Saving a File under an annotation lost the file without a message. An AASX save is refused instead.
 - Crash recovery lost files that were added since the package was opened, and the thumbnail and properties of the original.
+- Renaming an idShort, or replacing an element, moved it to the end of its parent in the saved file. It now keeps its position.
+- An edit, an added element, or a deleted element in one tab did not show in other tabs that show the same object. They now update.
 
 ### Removed
 

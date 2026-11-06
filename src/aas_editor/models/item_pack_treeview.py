@@ -27,6 +27,9 @@ from aas_editor.package import Package, StoredFile
 
 
 class PackTreeViewItem(StandardItem):
+    # The rows are the elements of the object, in the order of the object.
+    supportsIncrementalRows = True
+
     def __init__(self, obj, parent, **kwargs):
         super().__init__(obj, parent=parent, **kwargs)
         if obj is None and parent is None:
@@ -55,6 +58,18 @@ class PackTreeViewItem(StandardItem):
                 self._populateFileContainer(self.obj, **kwargs)
             else:
                 self._populateIterable(self.obj, **kwargs)
+
+    def acceptsChild(self, obj) -> bool:
+        # The shells, submodels and concept descriptions of a package share
+        # its object store, so the type of the object tells where it belongs.
+        parent = self.parent()
+        if parent is not None and isinstance(parent.obj, Package):
+            addType = ClassesInfo.addType(Package, self.objName)
+            return addType is None or isinstance(obj, addType)
+        return True
+
+    def createChildFor(self, obj):
+        return PackTreeViewItem(obj, parent=self, new=True)
 
     @staticmethod
     def _populateIterable(obj, **kwargs):

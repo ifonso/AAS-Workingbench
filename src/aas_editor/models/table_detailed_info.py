@@ -49,6 +49,8 @@ class DetailedInfoTable(StandardTable):
         super(DetailedInfoTable, self).__init__(
             DEFAULT_COLUMNS_IN_DETAILED_INFO, root
         )
+        # Other tabs may edit the objects that this one shows.
+        self.watchPackage(self.package)
 
     def data(self, index: QModelIndex, role: int = ...) -> Any:
         if role == PACK_ITEM_ROLE:

@@ -204,3 +204,44 @@ def write_aasx(
         if core_properties is not None:
             writer.write_core_properties(core_properties)
     return path
+
+
+def make_entity(
+    id_short: str = "Entity",
+    statements: Iterable[model.SubmodelElement] = (),
+) -> model.Entity:
+    """Builds a self-managed entity that holds the given statements."""
+    return model.Entity(
+        id_short=id_short,
+        entity_type=model.EntityType.SELF_MANAGED_ENTITY,
+        global_asset_id=DEFAULT_ASSET_ID,
+        statement=statements,
+    )
+
+
+def make_operation(
+    id_short: str = "Operation",
+    input_variables: Iterable[model.SubmodelElement] = (),
+    output_variables: Iterable[model.SubmodelElement] = (),
+    in_output_variables: Iterable[model.SubmodelElement] = (),
+) -> model.Operation:
+    """Builds an operation with the given variables."""
+    return model.Operation(
+        id_short=id_short,
+        input_variable=input_variables,
+        output_variable=output_variables,
+        in_output_variable=in_output_variables,
+    )
+
+
+def make_annotated_relationship(
+    id_short: str = "Relationship",
+    annotations: Iterable[model.DataElement] = (),
+) -> model.AnnotatedRelationshipElement:
+    """Builds an annotated relationship between two global references."""
+    return model.AnnotatedRelationshipElement(
+        id_short=id_short,
+        first=make_external_reference("urn:example:first"),
+        second=make_external_reference("urn:example:second"),
+        annotation=annotations,
+    )

@@ -126,6 +126,8 @@ def test_line_edit_emits_text_when_user_types(qtbot: QtBot) -> None:
 ```
 
 - Test `QAbstractItemModel` subclasses through the model API, without a view.
+  Watch each model, and the proxy in front of it, with `QAbstractItemModelTester` to catch violations of the signal contract.
+  In `tests/medium`, the `model_support` fixture builds the legacy models and offers `watch` and `violations` for this.
 - Modal dialogs block the event loop, so stub out `exec()` or have the code under test receive the answer as an argument.
 
 ## Testing AAS behavior

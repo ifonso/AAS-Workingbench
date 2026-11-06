@@ -47,6 +47,8 @@ class SearchProxyModel(QSortFilterProxyModel):
         hits: int = ...,
         flags: Qt.MatchFlag = ...,
     ) -> List[QModelIndex]:
+        # The source knows nothing about the indexes of the proxy.
+        start = self.mapToSource(start)
         items = self.sourceModel().match(start, role, value, hits, flags)
         return [self.mapFromSource(item) for item in items]
 

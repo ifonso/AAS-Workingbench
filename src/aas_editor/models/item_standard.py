@@ -19,6 +19,7 @@
 import io
 import logging
 from collections import namedtuple
+from functools import lru_cache
 
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QObject, QVariant
@@ -45,7 +46,19 @@ from aas_editor.utils.util_classes import ClassesInfo
 MediaContent = namedtuple("MediaContent", ("value", "content_type"))
 
 
+@lru_cache(maxsize=None)
+def _containerAttr(objType) -> str:
+    """Name of the attribute of the type that holds the elements shown below"""
+    return ClassesInfo.changedParentObject(objType)
+
+
 class StandardItem(QObject):
+    # Whether rows of the item can be added, removed and moved one by one when
+    # the objects they show change. Otherwise the rows are read again.
+    supportsIncrementalRows = False
+    # Whether the rows are read again when the object of the item changes.
+    repopulatesOnChange = False
+
     def __init__(self, obj, name=None, parent=None, new=True, typehint=None):
         super().__init__(parent)
         self.new = new
@@ -261,11 +274,13 @@ class StandardItem(QObject):
         super().setParent(a0)
         if a0 is None:
             return
-        if a0.data(settings.PACKAGE_ROLE):
-            try:
-                self.package = a0.data(settings.PACKAGE_ROLE)
-            except AttributeError:
-                return
+        try:
+            # The root item of a model has no package.
+            package = a0.data(settings.PACKAGE_ROLE)
+        except AttributeError:
+            return
+        if package:
+            self.package = package
 
     @property
     def parentObj(self):
@@ -273,6 +288,29 @@ class StandardItem(QObject):
             return self.parent().obj
         except AttributeError:
             return None
+
+    @property
+    def containerObj(self):
+        """The object that holds the elements shown as rows below, if any.
+
+        A Submodel shows the elements of its namespace set as rows, so the
+        namespace set is the container of the item. None for other items.
+        """
+        attr = _containerAttr(type(self.obj))
+        return getattr(self.obj, attr, None) if attr else None
+
+    def acceptsChild(self, obj) -> bool:
+        """Whether the object belongs below this item, when it is added."""
+        return True
+
+    def createChildFor(self, obj):
+        """Create the child item that shows an object added to this item.
+
+        Needed by items that support incremental rows.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} cannot show added objects one by one"
+        )
 
     def isLink(self, column: int, column_name: str) -> bool:
         data = self._getEditRoleData(column, column_name)
