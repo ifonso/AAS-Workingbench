@@ -56,6 +56,35 @@ def test_set_attribute_sets_and_restores_the_value(
     assert (after_push, after_undo, prop.category) == ("new", "old", "new")
 
 
+def test_set_attribute_restores_a_list_that_the_sdk_replaces_in_place(
+    observer: ModelChangeObserver,
+) -> None:
+    # The SDK keeps one list for the supplemental semantic ids and fills it
+    # again, so the value read before the change is the list after it.
+    prop = make_property("a")
+    prop.semantic_id = make_external_reference("urn:example:main")
+    first = make_external_reference("urn:example:first")
+    prop.supplemental_semantic_id.append(first)
+    stack = CommandStack()
+
+    stack.push(
+        SetAttribute(
+            observer,
+            prop,
+            "supplemental_semantic_id",
+            [first, make_external_reference("urn:example:second")],
+        )
+    )
+    after_push = len(prop.supplemental_semantic_id)
+    stack.undo()
+    after_undo = list(prop.supplemental_semantic_id)
+    stack.redo()
+
+    assert after_push == 2
+    assert after_undo == [first]
+    assert len(prop.supplemental_semantic_id) == 2
+
+
 def test_set_attribute_keeps_the_position_when_it_renames(
     observer: ModelChangeObserver,
 ) -> None:

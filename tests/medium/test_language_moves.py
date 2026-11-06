@@ -153,6 +153,14 @@ def test_clicking_two_rows_keeps_both_selected_for_the_move(moving) -> None:
         Qt.KeyboardModifier.ControlModifier,
         attrs.visualRect(cells[1]).center(),
     )
+    # The application keeps the modifiers of the last mouse event, and Ctrl
+    # would extend the selection of every later test.
+    QTest.mouseRelease(
+        attrs.viewport(),
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+        attrs.visualRect(cells[1]).center(),
+    )
 
     selected = {i.row() for i in attrs.selectionModel().selectedRows()}
     assert selected == {1, 2}

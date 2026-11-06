@@ -19,6 +19,7 @@ Example:
 from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 from collections.abc import Sequence
 import io
 from typing import Any
@@ -136,6 +137,10 @@ class SetAttribute(Command):
     def apply(self) -> None:
         """Sets the new value."""
         previous = getattr(self._owner, self._name)
+        if isinstance(previous, MutableSequence):
+            # The SDK fills such a list again instead of replacing it, so the
+            # value that was read would be the new one after the change.
+            previous = list(previous)
         self._assign(self._value)
         self._previous = previous
         origin, self._origin = self._origin, None
