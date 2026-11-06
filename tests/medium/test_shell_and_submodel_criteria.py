@@ -549,3 +549,42 @@ def test_a_reference_to_no_submodel_can_be_removed_and_is_not_written(
     path = tmp_path / "out.aasx"
     dangling.package.write(path)
     assert len(Package(path).objStore.get_item("urn:shell:d").submodel) == 0
+
+
+# -- F-EDT-03 AC12 -----------------------------------------------------------
+
+
+def test_renaming_a_submodel_updates_the_shell_and_the_semantic_references(
+    views,
+    answers,  # noqa: F811
+) -> None:
+    from aas_editor.ui.reference_actions import register_reference_actions
+
+    register_reference_actions()
+    submodel = make_submodel("urn:sm:old", "Main", [make_property("P")])
+    user = make_property("User")
+    user.semantic_id = model.ExternalReference(
+        (model.Key(model.KeyTypes.GLOBAL_REFERENCE, "urn:sm:old"),)
+    )
+    other = make_submodel("urn:sm:other", "Other", [user])
+    shell = make_shell("urn:shell:a", "Shell", submodels=[submodel, other])
+    shown = views()
+    package = shown.open_package(shell, submodel, other)
+    before = snapshot(package.objStore)
+    shown.select(shown.index("submodels", "Main"))
+    shown.view.updateActions(shown.view.currentIndex())
+
+    def type_new_id(dialog: Any) -> None:
+        dialog.edit.setText("urn:sm:new")
+        dialog.accept()
+
+    answers.dialog_action = type_new_id
+    shown.view.registeredActions.find("references.rename_id").trigger()
+
+    assert submodel.id == "urn:sm:new"
+    shell_keys = sorted(ref.key[0].value for ref in shell.submodel)
+    assert shell_keys == ["urn:sm:new", "urn:sm:other"]
+    assert [key.value for key in user.semantic_id.key] == ["urn:sm:new"]
+    shown.view.onUndo()
+    assert snapshot(package.objStore) == before
+    assert not package.commandStack.can_undo

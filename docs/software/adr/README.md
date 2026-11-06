@@ -27,6 +27,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0020](0020-selection-locations-and-clipboard.md) | A selection moves as a block, and the panel, locations, and clipboard fallback that go with it | Accepted |
 | [0021](0021-order-of-the-file-and-concept-description-gaps.md) | The package keeps the order of the file, and the concept description gaps close in the view | Accepted |
 | [0022](0022-attribute-vocabulary.md) | Tabs name attributes with a vocabulary of the metamodel, and show what the editor edits unchanged | Accepted |
+| [0023](0023-actions-on-the-whole-selection.md) | Delete, cut and copy act on the whole selection, or refuse | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.

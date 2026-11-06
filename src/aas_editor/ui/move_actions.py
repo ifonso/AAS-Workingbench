@@ -44,6 +44,7 @@ from aas_editor.ui.actions import ActionSpec
 from aas_editor.ui.actions import ViewKind
 from aas_editor.ui.actions import default_registry
 from aas_editor.ui.actions import register_action
+from aas_editor.ui.selection_rows import in_one_package
 
 
 def selected_rows(context: ActionContext) -> list[QModelIndex]:
@@ -87,10 +88,14 @@ def _selection(context: ActionContext) -> list[tuple[object, object]] | None:
 
     The members may be in different containers, and each moves within its
     own. None when a selected row has no ordered container, such as a
-    submodel.
+    submodel, or when the rows are in different packages.
     """
     placements: list[tuple[object, object]] = []
-    for index in selected_rows(context):
+    rows = selected_rows(context)
+    if not in_one_package(rows):
+        # One history and one set of files serve one package.
+        return None
+    for index in rows:
         container = container_of_row(index)
         if container is None:
             return None

@@ -32,8 +32,10 @@ def _ids(container: object) -> list[str | None]:
 def crossing(views, monkeypatch: pytest.MonkeyPatch):
     """A package of three submodels and ways to act on a selection."""
     from aas_editor.ui import reference_dialogs
+    from aas_editor.ui.move_actions import register_move_actions
     from aas_editor.ui.paste_actions import register_paste_actions
 
+    register_move_actions()
     register_paste_actions()
     problems: list[str] = []
     # The user agrees to the question that a destructive delete asks.
@@ -276,3 +278,25 @@ def test_the_buttons_of_the_selection_panel_act_on_every_parent(
     assert _ids(crossing.sub1.submodel_element) == ["A2"]
     assert _ids(crossing.sub2.submodel_element) == ["B1"]
     assert crossing.problems == []
+
+
+def test_rows_of_two_packages_are_not_moved(crossing) -> None:
+    other = make_submodel(
+        "urn:o", "Other", [make_property("O1"), make_property("O2")]
+    )
+    crossing.shown.open_package(other)
+    crossing.select((*SUB1, "A2"))
+    crossing.view.selectionModel().select(
+        crossing.shown.index("submodels", "Other", "O2", package=1),
+        QItemSelectionModel.SelectionFlag.Select,
+    )
+    crossing.view.updateActions(crossing.view.currentIndex())
+    action = crossing.view.registeredActions.find("structure.move_up")
+
+    enabled = action.isEnabled()
+    action.trigger()
+
+    assert not enabled
+    assert _ids(crossing.sub1.submodel_element) == ["A1", "A2"]
+    assert _ids(other.submodel_element) == ["O1", "O2"]
+    assert not crossing.stack.can_undo
