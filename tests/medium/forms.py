@@ -152,19 +152,23 @@ def answering(
     dialog_class: type,
     script: Callable[[Any], None],
     errors: list[str] | None = None,
+    cancel_when_asked_again: bool = False,
 ) -> Iterator[list[Any]]:
     """Makes a dialog class answer OK after the script has filled it.
 
     The dialogs of the editor are modal, and `exec` would block the test. The
     stand-in runs the script on the dialog, accepts it, and returns as `exec`
     would. If the editor refuses the answer and asks again, the test fails with
-    the errors that were shown.
+    the errors that were shown, or cancels the dialog if the test expects the
+    refusal.
 
     Args:
         monkeypatch: Replaces `exec` for the length of the test.
         dialog_class: The class whose `exec` is replaced.
         script: Fills the dialog.
         errors: The messages the editor showed in error boxes, if recorded.
+        cancel_when_asked_again: Whether to cancel the dialog when the editor
+            refuses the answer, so that the test can look at the refusal.
 
     Yields:
         The dialogs that were opened.
@@ -174,6 +178,9 @@ def answering(
     def fake_exec(dialog: Any) -> int:
         opened.append(dialog)
         if len(opened) > 1:
+            if cancel_when_asked_again:
+                dialog.reject()
+                return QDialog.DialogCode.Rejected
             raise AssertionError(
                 "The editor refused the answer and asked again: "
                 f"{errors if errors is not None else 'no error recorded'}"

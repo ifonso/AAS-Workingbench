@@ -1,6 +1,9 @@
 """Fixtures for tests of the Qt item models."""
 
+from collections.abc import Callable
 from collections.abc import Iterator
+from pathlib import Path
+from typing import Any
 
 from basyx.aas import model
 from PyQt6.QtCore import QAbstractItemModel
@@ -11,6 +14,10 @@ from PyQt6.QtTest import QAbstractItemModelTester
 from PyQt6.QtWidgets import QWidget
 import pytest
 from pytestqt.qtbot import QtBot
+from tests.factories import make_submodel
+from tests.medium.forms import answering
+from tests.medium.forms import Form
+from tests.serialization import snapshot
 
 
 class ModelSupport:
@@ -216,3 +223,127 @@ def views(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
             return attrs
 
     return Views
+
+
+ELEMENT_ID = "Element"
+SUBMODEL_PATH = ("submodels", "Submodel")
+ELEMENT_PATH = (*SUBMODEL_PATH, ELEMENT_ID)
+
+
+@pytest.fixture
+def lab_class(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """The class of labs: a package with a submodel, and ways to edit it."""
+    from aas_editor.dialogs import EditObjDialog
+    from aas_editor.package import Package
+    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_editor.ui.value_editor import ValueEditDialog
+
+    class Lab:
+        refusal = ""
+        value_dialog = ValueEditDialog
+
+        def __init__(self, *elements: model.SubmodelElement) -> None:
+            self.shown = views()
+            self.submodel = make_submodel(elements=elements)
+            self.package = self.shown.open_package(self.submodel)
+            self.stack = self.package.commandStack
+
+        def add(
+            self,
+            fill: Callable[[Form], None],
+            *path: str,
+            refused: bool = False,
+        ) -> None:
+            """Adds an element through the add dialog of the item at the path.
+
+            Args:
+                fill: Fills the dialog.
+                path: The names that lead to the item to add to.
+                refused: Whether the editor is expected to refuse the answer.
+                    The dialog is then cancelled when it is asked again, and
+                    the message is in `shown.shown_errors`.
+            """
+            parent = self.shown.index(*(path or SUBMODEL_PATH))
+            self.shown.select(parent)
+            with answering(
+                monkeypatch,
+                EditObjDialog,
+                lambda dialog: fill(Form(dialog)),
+                self.shown.shown_errors,
+                cancel_when_asked_again=refused,
+            ):
+                self.shown.view.onAddAct(parent)
+
+        def element(self) -> Any:
+            return self.submodel.get_referable(ELEMENT_ID)
+
+        def attrs(self, *names: str):
+            """Opens the attributes of an element of the submodel, as a tab does.
+
+            Args:
+                names: The names below the submodel. The element that the
+                    dialogs make if empty.
+            """
+            return self.shown.attrs_view(
+                *SUBMODEL_PATH, *(names or (ELEMENT_ID,))
+            )
+
+        def row(self, attrs, name: str, *children: str) -> QModelIndex:
+            """Finds the value cell of an attribute, or of a row below it."""
+            proxy = attrs.model()
+            index = QModelIndex()
+            for wanted in (name, *children):
+                for number in range(proxy.rowCount(index)):
+                    candidate = proxy.index(number, 0, index)
+                    if candidate.data(NAME_ROLE) == wanted:
+                        index = candidate
+                        break
+                else:
+                    raise LookupError(wanted)
+            return index.siblingAtColumn(1)
+
+        def set(self, attrs, name: str, value: object, *children: str) -> bool:
+            from aas_editor.settings.app_settings import DATA_CHANGE_FAILED_ROLE
+
+            index = self.row(attrs, name, *children)
+            edited = attrs.model().setData(
+                index, value, Qt.ItemDataRole.EditRole
+            )
+            if not edited:
+                self.refusal = attrs.model().data(
+                    index, DATA_CHANGE_FAILED_ROLE
+                )
+            return edited
+
+        def edit_in_dialog(
+            self,
+            attrs,
+            name: str,
+            fill: Callable[[Any], None],
+            dialog_class: type = EditObjDialog,
+            refused: bool = False,
+        ) -> None:
+            """Edits an attribute in the dialog that its row opens."""
+            index = self.row(attrs, name)
+            attrs.setCurrentIndex(index)
+            with answering(
+                monkeypatch,
+                dialog_class,
+                fill,
+                self.shown.shown_errors,
+                cancel_when_asked_again=refused,
+            ):
+                attrs.onEditCreate(None, index)
+
+        def save_and_reload(self) -> str:
+            path = tmp_path / "saved.aasx"
+            self.package.write(path)
+            return snapshot(Package(path).objStore)
+
+    return Lab
+
+
+@pytest.fixture
+def lab(lab_class):
+    """A package with an empty submodel, and ways to add and edit elements."""
+    return lab_class()
