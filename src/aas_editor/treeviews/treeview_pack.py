@@ -256,6 +256,9 @@ class PackTreeView(TreeView):
         self.setExpandsOnDoubleClick(False)
         self.setSelectionBehavior(self.SelectionBehavior.SelectItems)
         self.setHeader(PackHeaderView(Qt.Orientation.Horizontal, self))
+        # Save means the package of the focused view, so its entry follows
+        # the focus and not only the selection.
+        QApplication.instance().focusChanged.connect(self.onFocusChanged)
 
     # Scan the folder SUBMODEL_TEMPLATES_FOLDER and create a set filesObjStores of SetObjectStore elements and its names
     def scanFolderForExistFiles(self):
@@ -384,7 +387,7 @@ class PackTreeView(TreeView):
             "Save",
             self,
             shortcut=SC_SAVE,
-            statusTip="Save the package of the selected row",
+            statusTip="Save the package that has the focus",
             triggered=lambda: self.savePack(),
             enabled=False,
         )
@@ -713,10 +716,19 @@ class PackTreeView(TreeView):
             for act in self.openInActs:
                 act.setEnabled(True)
 
-    def updateSaveActs(self, index: QModelIndex):
+    def onFocusChanged(self, old: QWidget, now: QWidget):
+        """Keep the Save entry on the package that the focus is in"""
+        try:
+            self.updateSaveTarget()
+        except RuntimeError:
+            # The view was deleted, and the application outlived it.
+            pass
+
+    def updateSaveTarget(self):
+        """Enable the Save entry, and name the package that it saves"""
         self.saveAct.setEnabled(self.isSaveOk())
-        pack = self.activePackage()
-        # The key saves the package of the selected row, so the entry says
+        pack = self.focusedPackage()
+        # The key saves the package of the focused view, so the entry says
         # which package that is.
         name = f"Save {pack.name}" if pack is not None else "Save"
         keys = self.saveAct.shortcut().toString(
@@ -724,6 +736,9 @@ class PackTreeView(TreeView):
         )
         self.saveAct.setText(name)
         self.saveAct.setToolTip(f"{name} ({keys})")
+
+    def updateSaveActs(self, index: QModelIndex):
+        self.updateSaveTarget()
         self.saveAsAct.setEnabled(self.isSaveOk())
         for act in self.saveInActs:
             act.setEnabled(self.isSaveOk())
@@ -761,7 +776,7 @@ class PackTreeView(TreeView):
         )
 
     def isSaveOk(self) -> bool:
-        return self.activePackage() is not None
+        return self.focusedPackage() is not None
 
     def isCloseOk(self) -> bool:
         pack = self.currentIndex().data(PACKAGE_ROLE)
@@ -981,6 +996,24 @@ class PackTreeView(TreeView):
                 (package,) = packages
         return package
 
+    def focusedPackage(self):
+        """Return the package that Save acts on.
+
+        With the focus in a tab, it is the package that the tab shows, whether
+        or not the selection of this tree follows the tabs. Anywhere else it
+        is the package of the selected row, or the only open package.
+        """
+        from aas_editor.widgets.tab import TabWithTreeView
+
+        widget = QApplication.focusWidget()
+        while widget is not None and widget is not self:
+            if isinstance(widget, TabWithTreeView):
+                if widget.package is not None:
+                    return widget.package
+                break
+            widget = widget.parentWidget()
+        return self.activePackage()
+
     def updateWindowModified(self) -> None:
         """Derive the shared window modified flag from the per-package changed flags.
 
@@ -1019,7 +1052,7 @@ class PackTreeView(TreeView):
             self.updateSaveActs(self.currentIndex())
 
     def savePack(self, pack: Package = None, file: str = None) -> bool:
-        pack = self.activePackage() if pack is None else pack
+        pack = self.focusedPackage() if pack is None else pack
         originalFile = pack.file  # write(file) may change pack.file on Save-As
         try:
             target = Path(file).absolute() if file else pack.file
@@ -1094,7 +1127,7 @@ class PackTreeView(TreeView):
     def savePackInTypeWithDialog(
         self, filetype=None, pack: Package = None
     ) -> bool:
-        pack = self.activePackage() if pack is None else pack
+        pack = self.focusedPackage() if pack is None else pack
         file = (
             pack.file.as_posix()
             if filetype is None
@@ -1105,7 +1138,7 @@ class PackTreeView(TreeView):
     def savePackAsWithDialog(
         self, file=None, pack: Package = None, filter=FILTER_AAS_FILES
     ) -> bool:
-        pack = self.activePackage() if pack is None else pack
+        pack = self.focusedPackage() if pack is None else pack
         saved = False
         file = pack.file.as_posix() if file is None else file
         while not saved:
@@ -1165,7 +1198,7 @@ class PackTreeView(TreeView):
                     if res == QMessageBox.StandardButton.Save:
                         # A save that was refused, cancelled, or failed must
                         # not close the package and lose its changes.
-                        if not self.savePack():
+                        if not self.savePack(pack):
                             return
                     elif res == QMessageBox.StandardButton.Cancel:
                         return
