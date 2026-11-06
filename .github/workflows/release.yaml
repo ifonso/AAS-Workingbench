@@ -1,13 +1,13 @@
-name: Create release on push to master
+name: Create release on push to main
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
     types:
       - closed
 
@@ -24,19 +24,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install -e .
+      - uses: astral-sh/setup-uv@v6
 
       - name: Get version from pyproject.toml
         id: get_version
-        run: |
-          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['project']['version'])")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        run: echo "version=$(uv version --short)" >> $GITHUB_OUTPUT
 
       - name: Get previous tag
         id: get_prev_tag
@@ -83,7 +75,7 @@ jobs:
           - os: ubuntu-latest
             TARGET: ubuntu
             CMD_BUILD: >
-              pyinstaller aas_manager.spec &&
+              uv run --locked --group build pyinstaller aas_manager.spec &&
               cd dist/ &&
               zip -r AAS_Manager_Linux.zip AAS_Manager
             OUT_FILE_NAME: AAS_Manager_Linux.zip
@@ -91,7 +83,7 @@ jobs:
           - os: windows-latest
             TARGET: windows
             CMD_BUILD: |
-              pyinstaller aas_manager.spec
+              uv run --locked --group build pyinstaller aas_manager.spec
               cd dist
               7z a AAS_Manager_Win.zip AAS_Manager
             OUT_FILE_NAME: AAS_Manager_Win.zip
@@ -99,21 +91,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.12"
+          enable-cache: true
 
       - name: Install system dependencies (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0
-
-      - name: Install CPU-only torch (Ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
-        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Install dependencies
-        run: pip install -e .
 
       - name: Build with pyinstaller for ${{ matrix.TARGET }}
         run: ${{ matrix.CMD_BUILD }}

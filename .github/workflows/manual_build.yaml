@@ -13,17 +13,13 @@ jobs:
     name: Build package for Windows
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v3
+    - uses: actions/checkout@v4
+    - uses: astral-sh/setup-uv@v6
       with:
-        python-version: 3.12
-    - name: Install dependencies
-      run: |
-        pip install -e .
+        enable-cache: true
     - name: Build with pyinstaller for Windows
       run: |
-        pyinstaller aas_manager.spec
+        uv run --locked --group build pyinstaller aas_manager.spec
         cd dist
         7z a AAS_Manager_Win.zip AAS_Manager
     - name: Save Build in artifacts
