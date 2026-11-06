@@ -13,28 +13,35 @@ from pathlib import Path
 from unittest import TestCase
 
 import pytest
-pytest.importorskip('PyQt6.QtWebEngineCore', reason='PyQt6.QtWebEngineCore not available')
+
+pytest.importorskip(
+    "PyQt6.QtWebEngineWidgets", reason="PyQt6.QtWebEngineWidgets not available"
+)
 
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 
-from aas_editor.editorApp import EditorApp
-from aas_editor.settings.app_settings import NAME_ROLE
-from aas_editor.treeviews.treeview_pack import PackTreeView
-from aas_editor.widgets import TabWithTreeView
+NAME_ROLE = None
 
-AASX_FILE = Path(__file__).parent / "aas_files" / "TestPackage.aasx"
+AASX_FILE = Path(__file__).parents[1] / "data" / "TestPackage.aasx"
 
 
 class TestUi(TestCase):
     def setUp(self) -> None:
         self.app = QApplication.instance() or QApplication(sys.argv)
+
+        # Imported here because aas_editor.dialogs reads the primary screen at
+        # import time, which fails until a QApplication exists.
+        global NAME_ROLE
+        from aas_editor.editorApp import EditorApp
+        from aas_editor.settings.app_settings import NAME_ROLE
+
         self.window = EditorApp(fileToOpen=str(AASX_FILE))
         self.window.show()
 
-        self.packTreeView: PackTreeView = self.window.mainTreeView
+        self.packTreeView = self.window.mainTreeView
         self.packTreeView.expandAll()
-        self.tab1: TabWithTreeView = self.window.mainTabWidget.widget(0)
+        self.tab1 = self.window.mainTabWidget.widget(0)
         self.attrsTreeView = self.tab1.attrsTreeView
 
         self.itemsGenerator = self.packTreeView.model().iterItems()
@@ -71,8 +78,10 @@ class TestUi(TestCase):
                 if self.window.mainTabWidget.currentIndex() == 1:
                     # Tab of link item is opened
                     self.assertTrue(self.packTreeView.currentIndex().isValid())
-                    self.assertNotEqual(self.currIterPackIndex.data(NAME_ROLE),
-                                        self.packTreeView.currentIndex().data(NAME_ROLE))
+                    self.assertNotEqual(
+                        self.currIterPackIndex.data(NAME_ROLE),
+                        self.packTreeView.currentIndex().data(NAME_ROLE),
+                    )
                     self.window.mainTabWidget.removeTab(1)
                     return
                 elif self.attrsTreeView.openInNewTabAct.isEnabled():

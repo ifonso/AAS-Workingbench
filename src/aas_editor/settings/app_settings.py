@@ -24,19 +24,34 @@ _PACKAGE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _register_search_path(path: Path) -> Path:
-    QDir.addSearchPath('themes', str(path))
+    QDir.addSearchPath("themes", str(path))
     return path
 
 
 SUBMODEL_TEMPLATES_FOLDER = _PACKAGE_DIR / "submodel_templates"
 
-PYPROJECT_TOML = toml.load(_PACKAGE_DIR.parent / "pyproject.toml")
+# Frozen builds ship pyproject.toml next to the package; source checkouts keep it
+# at the repository root, above src/.
+_PYPROJECT_FILE = next(
+    path
+    for path in (
+        _PACKAGE_DIR.parent / "pyproject.toml",
+        _PACKAGE_DIR.parent.parent / "pyproject.toml",
+    )
+    if path.is_file()
+)
+PYPROJECT_TOML = toml.load(_PYPROJECT_FILE)
 
 VERSION = PYPROJECT_TOML["project"]["version"]
 APPLICATION_NAME = "AAS Manager"
 APPLICATION_INFO = PYPROJECT_TOML["project"]["description"]
 COPYRIGHT_YEAR = datetime.datetime.now().year
-CONTRIBUTORS = ", ".join([f"{author['name']}: {author['email']}" for author in PYPROJECT_TOML["project"]["authors"]])
+CONTRIBUTORS = ", ".join(
+    [
+        f"{author['name']}: {author['email']}"
+        for author in PYPROJECT_TOML["project"]["authors"]
+    ]
+)
 DEVELOPER_WEB = "www.iat.rwth-aachen.de"
 CONTACT = PYPROJECT_TOML["project"]["authors"][0]["email"]
 REPORT_ERROR_LINK = PYPROJECT_TOML["project"]["urls"]["Issues"]
@@ -45,7 +60,9 @@ IAT = "IAT"
 LICENSE = PYPROJECT_TOML["project"]["license"]["text"]
 AAS_METAMODEL_VERSION = "3.0"
 
-WINDOW_TITLE = f"{APPLICATION_NAME} {VERSION} (Metamodel V{AAS_METAMODEL_VERSION})"
+WINDOW_TITLE = (
+    f"{APPLICATION_NAME} {VERSION} (Metamodel V{AAS_METAMODEL_VERSION})"
+)
 
 TOOLBARS_HEIGHT = 30
 ATTR_COLUMN_WIDTH = 200
@@ -93,8 +110,18 @@ OBJECT_VALUE_COLUMN_NAME = "object value"
 TYPE_COLUMN_NAME = "type"
 TYPEHINT_COLUMN_NAME = "typehint"
 
-DEFAULT_COLUMNS_IN_DETAILED_INFO = (OBJECT_COLUMN_NAME, OBJECT_VALUE_COLUMN_NAME, TYPE_COLUMN_NAME, TYPEHINT_COLUMN_NAME)
-DEFAULT_COLUMNS_IN_PACKS_TABLE = (OBJECT_COLUMN_NAME, OBJECT_VALUE_COLUMN_NAME, TYPE_COLUMN_NAME, TYPEHINT_COLUMN_NAME)
+DEFAULT_COLUMNS_IN_DETAILED_INFO = (
+    OBJECT_COLUMN_NAME,
+    OBJECT_VALUE_COLUMN_NAME,
+    TYPE_COLUMN_NAME,
+    TYPEHINT_COLUMN_NAME,
+)
+DEFAULT_COLUMNS_IN_PACKS_TABLE = (
+    OBJECT_COLUMN_NAME,
+    OBJECT_VALUE_COLUMN_NAME,
+    TYPE_COLUMN_NAME,
+    TYPEHINT_COLUMN_NAME,
+)
 DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW = (OBJECT_COLUMN_NAME, TYPE_COLUMN_NAME)
 ATTRIBUTE_COLUMN = 0
 VALUE_COLUMN = 1
@@ -112,7 +139,7 @@ ICONS_FOLDER = _register_search_path(_PACKAGE_DIR / "icons")
 CUSTOM_COLUMN_LISTS_FILE = _PACKAGE_DIR / "custom_column_lists.json"
 
 # Themes
-APP_LOGO = QIcon(str(ICONS_FOLDER / 'logo.svg'))
+APP_LOGO = QIcon(str(ICONS_FOLDER / "logo.svg"))
 DEFAULT_THEME = "grey"
 
 SETTINGS = QSettings(str(SETTINGS_FILE), QSettings.Format.IniFormat)
@@ -125,7 +152,7 @@ class Setting:
     type: typing.Type = NOT_GIVEN
     display_name: typing.Optional[str] = None
     description: str = ""
-    options: dict[str: object] = NOT_GIVEN
+    options: dict[str:object] = NOT_GIVEN
 
     def setValue(self, value):
         return SETTINGS.setValue(self.name, value)
@@ -140,20 +167,24 @@ class Setting:
 
 
 class AppSettings:
-    THEME = Setting('theme', DEFAULT_THEME, str)
-    SIZE = Setting('size', DEFAULT_MAINWINDOW_SIZE)
-    ORIENTATION = Setting('orientation', QtCore.Qt.Orientation.Vertical, int)
-    LEFT_ZONE_SIZE = Setting('leftZoneSize', QSize(300, 624))
-    RIGHT_ZONE_SIZE = Setting('rightZoneSize', QSize(300, 624))
-    AAS_FILES_TO_OPEN_ON_START = Setting('openedAasFiles', set())
-    FONTSIZE_FILES_VIEW = Setting('fontSizeFilesView', DEFAULT_FONT.pointSize(), int)
-    FONTSIZE_DETAILED_VIEW = Setting('fontSizeDetailedView', DEFAULT_FONT.pointSize(), int)
-    PACKTREEVIEW_HEADER_STATE = Setting('packTreeViewHeaderState', None)
+    THEME = Setting("theme", DEFAULT_THEME, str)
+    SIZE = Setting("size", DEFAULT_MAINWINDOW_SIZE)
+    ORIENTATION = Setting("orientation", QtCore.Qt.Orientation.Vertical, int)
+    LEFT_ZONE_SIZE = Setting("leftZoneSize", QSize(300, 624))
+    RIGHT_ZONE_SIZE = Setting("rightZoneSize", QSize(300, 624))
+    AAS_FILES_TO_OPEN_ON_START = Setting("openedAasFiles", set())
+    FONTSIZE_FILES_VIEW = Setting(
+        "fontSizeFilesView", DEFAULT_FONT.pointSize(), int
+    )
+    FONTSIZE_DETAILED_VIEW = Setting(
+        "fontSizeDetailedView", DEFAULT_FONT.pointSize(), int
+    )
+    PACKTREEVIEW_HEADER_STATE = Setting("packTreeViewHeaderState", None)
     PACKTREEVIEW_HEADER_CUSTOM_COLUMN_LISTS_FILE = CUSTOM_COLUMN_LISTS_FILE
-    TABTREEVIEW_HEADER_STATE = Setting('tabTreeViewHeaderState', None)
+    TABTREEVIEW_HEADER_STATE = Setting("tabTreeViewHeaderState", None)
 
     DEFAULT_NEW_FILETYPE = Setting(
-        name='defaultNewFileType',
+        name="defaultNewFileType",
         display_name="Standard initialisation file type",
         description="Choose the file type that is used per default when creating a new file.",
         options={
@@ -162,31 +193,31 @@ class AppSettings:
             "aasx": "aasx",
         },
         default="json",
-        type=str
+        type=str,
     )
     WRITE_JSON_IN_AASX = Setting(
-        name='writeJsonInAasx',
+        name="writeJsonInAasx",
         display_name="Write JSON in AASX",
         description="If enabled, JSON parts are created in the AASX file instead of XML parts.",
         options={"JSON": True, "XML": False},
         default=False,
-        type=bool
+        type=bool,
     )
     ALL_SUBMODEL_REFS_TO_AAS = Setting(
-        name='allSubmodelRefsToAas',
+        name="allSubmodelRefsToAas",
         display_name="Automatically add refs of existing submodels to AAS when saving file",
         description="If enabled, when saving an AASX file, all existing submodels are automatically added as references to the first AAS object.",
         options={"Yes": True, "No": False},
         default=True,
-        type=bool
+        type=bool,
     )
     WRITE_PRETTY_JSON = Setting(
-        name='writePrettyJson',
+        name="writePrettyJson",
         display_name="Write Pretty JSON",
         description="If enabled, JSON files are saved in pretty format with indentation.",
         options={"Yes": True, "No": False},
         default=True,
-        type=bool
+        type=bool,
     )
     SORT_KEYS_IN_JSON = Setting(
         name="sortKeysInJson",
@@ -194,8 +225,13 @@ class AppSettings:
         description="If enabled, JSON files are saved with their keys ordered alphabetically.",
         options={"Yes": True, "No": False},
         default=True,
-        type=bool
+        type=bool,
     )
 
-    SETTINGS_TO_CHOOSE_BY_USER = [DEFAULT_NEW_FILETYPE, WRITE_JSON_IN_AASX, ALL_SUBMODEL_REFS_TO_AAS, WRITE_PRETTY_JSON,
-                                  SORT_KEYS_IN_JSON]
+    SETTINGS_TO_CHOOSE_BY_USER = [
+        DEFAULT_NEW_FILETYPE,
+        WRITE_JSON_IN_AASX,
+        ALL_SUBMODEL_REFS_TO_AAS,
+        WRITE_PRETTY_JSON,
+        SORT_KEYS_IN_JSON,
+    ]

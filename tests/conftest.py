@@ -1,30 +1,56 @@
-import sys
+"""Shared fixtures and test-size classification for the whole test suite."""
+
+from collections.abc import Iterator
+import os
 from pathlib import Path
+import sys
 
 import pytest
-from PyQt6.QtWidgets import QApplication
 
-# Absolute path to test data — works regardless of where pytest is invoked from
-TEST_FILES_DIR = Path(__file__).parent / "aas_files"
+# Must be set before Qt loads so tests never need a real display.
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+from PyQt6.QtWidgets import QApplication  # noqa: E402
+
+TESTS_DIR = Path(__file__).parent
+TEST_DATA_DIR = TESTS_DIR / "data"
+SIZE_MARKERS = ("small", "medium", "large")
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Marks each test with its size, taken from its directory under tests/."""
+    for item in items:
+        relative_path = item.path.relative_to(TESTS_DIR)
+        size = relative_path.parts[0]
+        if size not in SIZE_MARKERS:
+            raise pytest.UsageError(
+                f"Test outside a size directory: '{relative_path}'"
+            )
+        item.add_marker(size)
 
 
 @pytest.fixture(scope="session")
-def qapp():
-    """Session-scoped QApplication.
+def qapp() -> Iterator[QApplication]:
+    """Provides the session-wide QApplication.
 
-    Must be requested by every test that imports aas_editor, because
-    aas_editor.settings.app_settings creates QFont/QSize/QIcon objects at
-    module load time, which require an active QApplication context.
+    Every test that imports aas_editor must request it, because
+    aas_editor.settings.app_settings creates QFont, QSize and QIcon objects at
+    import time, which require an active QApplication.
     """
     app = QApplication.instance() or QApplication(sys.argv)
     yield app
 
 
 @pytest.fixture(scope="session")
+def test_data_dir() -> Path:
+    return TEST_DATA_DIR
+
+
+@pytest.fixture(scope="session")
 def aasx_file() -> Path:
-    return TEST_FILES_DIR / "IDTA 02002-1-0_Template_ContactInformation.aasx"
+    return TEST_DATA_DIR / "IDTA 02002-1-0_Template_ContactInformation.aasx"
 
 
 @pytest.fixture(scope="session")
 def json_file() -> Path:
-    return TEST_FILES_DIR / "IDTA 02002-1-0_Template_ContactInformation.json"
+    return TEST_DATA_DIR / "IDTA 02002-1-0_Template_ContactInformation.json"

@@ -13,16 +13,22 @@ from aas_editor.utils.recovery import (
 )
 
 
-def _write_entry(recovery_dir: Path, name: str, original_path, data: str = "{}"):
+def _write_entry(
+    recovery_dir: Path, name: str, original_path, data: str = "{}"
+):
     """Write a recovery data file and its sidecar meta, as write_recovery would."""
     recovery_dir.mkdir(parents=True, exist_ok=True)
     rec = recovery_dir / f"{name}.json"
     rec.write_text(data)
     meta = recovery_dir / f"{name}.meta.json"
-    meta.write_text(json.dumps({
-        "original_path": Path(original_path).as_posix(),
-        "recovery_filename": rec.name,
-    }))
+    meta.write_text(
+        json.dumps(
+            {
+                "original_path": Path(original_path).as_posix(),
+                "recovery_filename": rec.name,
+            }
+        )
+    )
     return rec, meta
 
 
@@ -30,34 +36,48 @@ def _write_entry(recovery_dir: Path, name: str, original_path, data: str = "{}")
 # Package.write_recovery / delete_recovery
 # ---------------------------------------------------------------------------
 
+
 class TestWriteRecovery:
-    def test_writes_json_data_and_meta(self, qapp: object, json_file: Path, tmp_path: Path) -> None:
+    def test_writes_json_data_and_meta(
+        self, qapp: object, json_file: Path, tmp_path: Path
+    ) -> None:
         pkg = Package(json_file)
         rec = pkg.write_recovery(tmp_path)
         meta = tmp_path / f"{rec.stem}.meta.json"
         assert rec.suffix == ".json"
         assert rec.exists()
-        assert json.loads(meta.read_text())["original_path"] == json_file.absolute().as_posix()
+        assert (
+            json.loads(meta.read_text())["original_path"]
+            == json_file.absolute().as_posix()
+        )
 
-    def test_aasx_recovery_is_json_only(self, qapp: object, aasx_file: Path, tmp_path: Path) -> None:
+    def test_aasx_recovery_is_json_only(
+        self, qapp: object, aasx_file: Path, tmp_path: Path
+    ) -> None:
         pkg = Package(aasx_file)
         rec = pkg.write_recovery(tmp_path)
         assert rec.suffix == ".json"
         assert not list(tmp_path.glob("*.aasx"))
 
-    def test_recovery_roundtrips(self, qapp: object, aasx_file: Path, tmp_path: Path) -> None:
+    def test_recovery_roundtrips(
+        self, qapp: object, aasx_file: Path, tmp_path: Path
+    ) -> None:
         src = Package(aasx_file)
         rec = src.write_recovery(tmp_path)
         reloaded = Package(rec)
         assert reloaded.numOfShells == src.numOfShells
         assert reloaded.numOfSubmodels == src.numOfSubmodels
 
-    def test_original_path_unchanged_after_write(self, qapp: object, json_file: Path, tmp_path: Path) -> None:
+    def test_original_path_unchanged_after_write(
+        self, qapp: object, json_file: Path, tmp_path: Path
+    ) -> None:
         pkg = Package(json_file)
         pkg.write_recovery(tmp_path)
         assert pkg.file == json_file.absolute()
 
-    def test_failed_write_leaves_no_tmp_or_meta(self, qapp: object, json_file: Path, tmp_path: Path, monkeypatch) -> None:
+    def test_failed_write_leaves_no_tmp_or_meta(
+        self, qapp: object, json_file: Path, tmp_path: Path, monkeypatch
+    ) -> None:
         pkg = Package(json_file)
 
         def boom(fileIO, store, **kwargs):
@@ -70,14 +90,18 @@ class TestWriteRecovery:
         assert not list(tmp_path.glob("*.tmp*"))
         assert not list(tmp_path.glob("*.meta.json"))
 
-    def test_delete_recovery_removes_all(self, qapp: object, json_file: Path, tmp_path: Path) -> None:
+    def test_delete_recovery_removes_all(
+        self, qapp: object, json_file: Path, tmp_path: Path
+    ) -> None:
         pkg = Package(json_file)
         rec = pkg.write_recovery(tmp_path)
         pkg.delete_recovery(tmp_path)
         assert not rec.exists()
         assert not (tmp_path / f"{rec.stem}.meta.json").exists()
 
-    def test_delete_recovery_for_previous_file(self, qapp: object, json_file: Path, tmp_path: Path) -> None:
+    def test_delete_recovery_for_previous_file(
+        self, qapp: object, json_file: Path, tmp_path: Path
+    ) -> None:
         pkg = Package(json_file)
         rec = pkg.write_recovery(tmp_path)
         pkg.file = tmp_path / "saved_as.json"  # Save-As moved the current path
@@ -89,8 +113,11 @@ class TestWriteRecovery:
 # Package.restore_from_recovery
 # ---------------------------------------------------------------------------
 
+
 class TestRestoreFromRecovery:
-    def test_restores_objects_and_targets_original(self, qapp: object, json_file: Path, tmp_path: Path) -> None:
+    def test_restores_objects_and_targets_original(
+        self, qapp: object, json_file: Path, tmp_path: Path
+    ) -> None:
         src = Package(json_file)
         rec = src.write_recovery(tmp_path)
         restored = Package.restore_from_recovery(rec, json_file)
@@ -98,15 +125,25 @@ class TestRestoreFromRecovery:
         assert restored.numOfShells == src.numOfShells
         assert restored.numOfSubmodels == src.numOfSubmodels
 
-    def test_reloads_supplementary_files_from_aasx(self, qapp: object, tmp_path: Path) -> None:
-        original = Path(__file__).parent / "aas_files" / "IDTA 02023 _Template_CarbonFootprint.aasx"
+    def test_reloads_supplementary_files_from_aasx(
+        self, qapp: object, tmp_path: Path
+    ) -> None:
+        original = (
+            Path(__file__).parents[1]
+            / "data"
+            / "IDTA 02023 _Template_CarbonFootprint.aasx"
+        )
         src = Package(original)
-        assert len(list(src.fileStore)) > 0  # guard: fixture must carry supplementary files
+        assert (
+            len(list(src.fileStore)) > 0
+        )  # guard: fixture must carry supplementary files
         rec = src.write_recovery(tmp_path)
         restored = Package.restore_from_recovery(rec, original)
         assert len(list(restored.fileStore)) == len(list(src.fileStore))
 
-    def test_missing_original_warns_and_keeps_objects(self, qapp: object, json_file: Path, tmp_path: Path, caplog) -> None:
+    def test_missing_original_warns_and_keeps_objects(
+        self, qapp: object, json_file: Path, tmp_path: Path, caplog
+    ) -> None:
         src = Package(json_file)
         rec = src.write_recovery(tmp_path)
         missing = tmp_path / "gone.aasx"
@@ -120,6 +157,7 @@ class TestRestoreFromRecovery:
 # ---------------------------------------------------------------------------
 # find_recovery_files
 # ---------------------------------------------------------------------------
+
 
 class TestFindRecoveryFiles:
     def test_missing_dir_returns_empty(self, tmp_path: Path) -> None:
@@ -159,6 +197,7 @@ class TestFindRecoveryFiles:
 # delete_recovery_file / cleanup_recovery_dir
 # ---------------------------------------------------------------------------
 
+
 class TestCleanup:
     def test_delete_recovery_file_removes_pair(self, tmp_path: Path) -> None:
         rec, meta = _write_entry(tmp_path, "abc", tmp_path / "model.json")
@@ -167,8 +206,12 @@ class TestCleanup:
         assert not meta.exists()
 
     def test_cleanup_keeps_only_requested(self, tmp_path: Path) -> None:
-        keep_rec, keep_meta = _write_entry(tmp_path, "keep", tmp_path / "a.json")
-        drop_rec, drop_meta = _write_entry(tmp_path, "drop", tmp_path / "b.json")
+        keep_rec, keep_meta = _write_entry(
+            tmp_path, "keep", tmp_path / "a.json"
+        )
+        drop_rec, drop_meta = _write_entry(
+            tmp_path, "drop", tmp_path / "b.json"
+        )
         (tmp_path / "leftover.tmp.json").write_text("stale")
 
         cleanup_recovery_dir(tmp_path, keep=[keep_rec])

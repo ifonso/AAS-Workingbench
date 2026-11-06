@@ -8,12 +8,13 @@ version = "0.4.13"
 
 dependencies = [
     "PyQt6",
-    "basyx-python-sdk@git+https://github.com/rwth-iat/basyx-python-sdk@aas_manager/v301#subdirectory=sdk",
+    # Head of branch aas_manager/develop. Pinned by SHA because the previous
+    # branch (aas_manager/v301) was deleted upstream and broke installs.
+    "basyx-python-sdk @ git+https://github.com/rwth-iat/basyx-python-sdk@412a53ffb2ee3eb761b4fd4d046a86b6ff06a111#subdirectory=sdk",
     "aas-test-engines==1.0.3",
     "pytz>=2023.3",
     "PyQt6-WebEngine",
     "PyQt6-QScintilla",
-    "pyinstaller==6.15.0",
     "openpyxl>=3.1.2",
     "toml>=0.10.2",
 
@@ -31,11 +32,12 @@ dependencies = [
     "langchain-community==0.4.1",
     "pypdf==6.6.0",
     "sentence-transformers==5.2.0",
+    "torch",
     "faiss-cpu==1.13.2",
     "jsonschema",
 ]
 
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
   {name = "Igor Garmaev", email = "i.garmaev@iat.rwth-aachen.de"},
 ]
@@ -49,33 +51,181 @@ Developed at the Chair of Information and Automation Systems for Process and Mat
 """
 readme = "README.md"
 license = {text = "GNU General Public License v3.0"}
-keywords = ["AAX"]
+keywords = ["AAS", "AASX", "Asset Administration Shell", "Industrie 4.0"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-]
-
-[tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["aas_editor_test"]
-
-[tool.setuptools.packages.find]
-where = ["aas_editor"]
-include = ["."]
-
 
 [project.urls]
 Homepage = "https://github.com/rwth-iat/aas_manager"
 Repository = "https://github.com/rwth-iat/aas_manager.git"
 Issues = "https://github.com/rwth-iat/aas_manager/issues"
 
-[project.entry-points."spam"]
-aas_editor = "main:main"
-
 [project.gui-scripts]
-aas_editor = "main:main"
+aas_editor = "aas_editor.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.400",
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "pytest-qt>=4.4",
+    "ruff>=0.12",
+]
+build = [
+    "pyinstaller==6.15.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.uv.sources]
+# CPU-only torch keeps installs and CI small. The app only uses it for local
+# embeddings in the Handover Documentation tool.
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform != 'darwin'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["aas_editor*"]
+
+[tool.setuptools.package-data]
+aas_editor = ["**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config", "-ra"]
+qt_api = "pyqt6"
+markers = [
+    "small: no I/O, sleeps or network; runs in milliseconds (tests/small).",
+    "medium: single machine, may touch the filesystem (tests/medium).",
+    "large: drives the full application (tests/large).",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["aas_editor"]
+omit = ["*/themes/breeze_resources.py", "*/design.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+# Style follows the Google Python Style Guide; see
+# docs/contributing/style-guide.md.
+[tool.ruff]
+line-length = 80
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = [
+    # Generated code.
+    "src/aas_editor/design.py",
+    "src/aas_editor/themes/breeze_resources.py",
+    "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+    "B",    # likely bugs
+    "C4",   # comprehensions
+    "D",    # docstrings
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # import order
+    "N",    # naming
+    "PLE",  # pylint errors
+    "PLW",  # pylint warnings
+    "PTH",  # prefer pathlib
+    "RET",  # return statements
+    "SIM",  # simplifications
+    "UP",   # modern syntax
+    "W",    # pycodestyle warnings
+]
+ignore = [
+    "E501", # the formatter owns line length; long URLs are allowed
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+force-sort-within-sections = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# Legacy code keeps the bug-finding rules (F, W6, PLE) but is exempt from the
+# stylistic ones; see docs/software/adr/0003-python-style.md. New packages are
+# not listed here, so the full rule set applies to them. Shrink this list over
+# time and never add new code to it.
+[tool.ruff.lint.per-file-ignores]
+"src/aas_editor/*.py" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/additional/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/models/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/settings/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/themes/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/tools/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/treeviews/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/utils/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_editor/widgets/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+# Names used only in string annotations and never imported.
+"src/aas_editor/dialogs.py" = ["F821"]
+"src/aas_editor/models/table_packs.py" = ["F821"]
+"src/aas_editor/models/table_standard.py" = ["F821"]
+"src/aas_editor/tools/import_feature/import_file_widget.py" = ["F821"]
+"src/aas_editor/tools/import_feature/import_util.py" = ["F821"]
+"src/aas_editor/widgets/groupBoxes.py" = ["F821"]
+# Trailing whitespace inside an LLM prompt string, where it is content.
+"src/aas_editor/tools/handover_doc_llm/handover_documentation_tool.py" = ["W291"]
+# Imports at the end of the module to avoid a circular import.
+"src/aas_editor/package.py" = ["E402"]
+"tests/**" = ["D"]
+"tests/large/test_main_window.py" = ["D", "I", "N", "PLW", "PTH", "RET", "UP"]
+"tests/medium/*.py" = ["B", "D", "I", "N", "PTH", "UP"]
+"tests/small/test_util_type.py" = ["D", "F401", "I", "N", "PTH", "UP"]
+
+# Type checking: rules with existing findings are warnings, which report the
+# debt without failing CI. `strict` makes every rule an error in the layered
+# packages, so new code starts clean; see docs/software/architecture.md.
+[tool.pyright]
+include = ["src", "tests"]
+exclude = [
+    "**/__pycache__",
+    "src/aas_editor/design.py",
+    "src/aas_editor/themes/breeze_resources.py",
+    "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
+]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+strict = [
+    "src/aas_editor/application",
+    "src/aas_editor/domain",
+    "src/aas_editor/infrastructure",
+]
+reportArgumentType = "warning"
+reportAssignmentType = "warning"
+reportAttributeAccessIssue = "warning"
+reportCallIssue = "warning"
+reportGeneralTypeIssues = "warning"
+reportIncompatibleMethodOverride = "warning"
+reportIndexIssue = "warning"
+reportInvalidTypeArguments = "warning"
+reportInvalidTypeForm = "warning"
+reportOperatorIssue = "warning"
+reportOptionalMemberAccess = "warning"
+reportOptionalOperand = "warning"
+reportPossiblyUnboundVariable = "warning"
+reportPrivateImportUsage = "warning"
+reportRedeclaration = "warning"
+reportReturnType = "warning"
+reportUndefinedVariable = "warning"
