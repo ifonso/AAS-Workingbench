@@ -1,5 +1,7 @@
 """Entering values that follow a value type, through the item models."""
 
+from typing import Any
+
 from basyx.aas import model
 from basyx.aas.model import datatypes
 from PyQt6.QtCore import Qt
@@ -202,7 +204,7 @@ def test_the_text_of_a_value_is_refused_in_read_mode(entry) -> None:
 
 
 class TestRange:
-    def _range(self, minimum, maximum, value_type=datatypes.Int):
+    def _range(self, minimum, maximum, value_type: type[Any] = datatypes.Int):
         return model.Range("r", value_type=value_type, min=minimum, max=maximum)
 
     def test_typing_the_limits_parses_them_for_the_value_type(

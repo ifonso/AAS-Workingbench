@@ -201,7 +201,9 @@ class TestValueEdit:
         completer = value_edit.line.completer()
 
         assert completer is not None
-        assert completer.model().rowCount() == 2
+        model = completer.model()
+        assert model is not None
+        assert model.rowCount() == 2
 
 
 class TestBinaryEdit:
@@ -487,6 +489,7 @@ class TestValueEditDialog:
         )
         qtbot.addWidget(dialog)
 
+        assert dialog.clear_button is not None
         dialog.clear_button.click()
 
         assert dialog.getObj2add() is None

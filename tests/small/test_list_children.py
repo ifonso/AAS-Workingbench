@@ -36,7 +36,7 @@ def test_child_defaults_make_a_template_that_the_list_accepts() -> None:
     template = child_defaults(numbers).template
 
     assert template is not None
-    numbers.value.add(template)
+    numbers.value.add(template)  # pyright: ignore[reportArgumentType]
 
     assert len(numbers.value) == 1
 
