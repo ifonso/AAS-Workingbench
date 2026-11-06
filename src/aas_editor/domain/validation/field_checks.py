@@ -91,3 +91,30 @@ def global_asset_id_problem(value: str | None) -> str | None:
     if value is not None and not value.strip():
         return "The global asset id is empty. It should identify the asset"
     return None
+
+
+def field_problem(owner: str, param: str, text: str) -> str | None:
+    """Tells what the rules say about a text that is typed into a form field.
+
+    A create dialog calls this for each change of a field, so the hint under
+    the field is the finding that the rules would make for the finished object.
+
+    Args:
+        owner: The name of the class that the dialog makes, such as `Key`.
+        param: The name of the parameter that the field fills.
+        text: What the user has typed.
+
+    Returns:
+        A sentence, or None if the field has no hint for this text. An empty
+        idShort has none, because the dialog may fill it in later.
+    """
+    if param == "id_short" and text:
+        problem = id_short_problem(text)
+        if problem is not None:
+            return f"The idShort '{text}' {problem}"
+        return copy_name_problem(text)
+    if owner == "Key" and param == "value":
+        return key_value_problem(text)
+    if param == "global_asset_id":
+        return global_asset_id_problem(text)
+    return None

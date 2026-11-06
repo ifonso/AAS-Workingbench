@@ -21,6 +21,7 @@ from typing import Any
 from PyQt6.QtCore import QModelIndex, QPersistentModelIndex
 from PyQt6.QtGui import QFont
 
+from aas_editor.application.editing import edit_mode
 from aas_editor.models import DetailedInfoItem, StandardTable
 from aas_editor.settings.app_settings import (
     PACKAGE_ROLE,
@@ -51,6 +52,15 @@ class DetailedInfoTable(StandardTable):
         )
         # Other tabs may edit the objects that this one shows.
         self.watchPackage(self.package)
+        # Read mode hides the null attributes, so the rows change with the mode.
+        edit_mode().subscribe(self._onEditModeChanged)
+
+    def _onEditModeChanged(self, editing: bool):
+        try:
+            self._repopulate(QModelIndex())
+        except RuntimeError:
+            # The model was deleted with its tab.
+            pass
 
     def data(self, index: QModelIndex, role: int = ...) -> Any:
         if role == PACK_ITEM_ROLE:

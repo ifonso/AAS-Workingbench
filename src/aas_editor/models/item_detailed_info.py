@@ -16,6 +16,7 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
+from aas_editor.application.editing import edit_mode
 from aas_editor.models import StandardItem
 from aas_editor import settings
 from aas_editor.settings import DICT_TYPES
@@ -80,5 +81,11 @@ class DetailedInfoItem(StandardItem):
 
     @staticmethod
     def _populateUnknown(obj, **kwargs):
+        # Read mode shows what an object has, not what it could have (F-EDT-01
+        # AC1). A null attribute is a row to create it from, which Edit mode needs.
+        editing = edit_mode().is_editing
         for attr in getAttrs4detailInfo(obj):
-            DetailedInfoItem(getattr(obj, attr), name=attr, **kwargs)
+            value = getattr(obj, attr)
+            if value is None and not editing:
+                continue
+            DetailedInfoItem(value, name=attr, **kwargs)
