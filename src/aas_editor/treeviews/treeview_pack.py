@@ -43,7 +43,12 @@ from PyQt6.QtWidgets import (
 )
 from basyx.aas.adapter.json import read_aas_json_file, AASToJsonEncoder
 from basyx.aas.adapter.xml import read_aas_xml_file
-from basyx.aas.model import Submodel, Referable, Identifiable
+from basyx.aas.model import (
+    AssetAdministrationShell,
+    Submodel,
+    Referable,
+    Identifiable,
+)
 
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
@@ -761,6 +766,11 @@ class PackTreeView(TreeView):
             self.newPackWithDialog()
         elif objTypeHint is StoredFile:
             self.addFileWithDialog(parent)
+        elif objTypeHint is AssetAdministrationShell and objVal is None:
+            # The generated form cannot make valid AssetInformation (AASd-131).
+            from aas_editor.ui.create_actions import create_shell
+
+            create_shell(self, parent.data(PACKAGE_ROLE))
         else:
             super().addItemWithDialog(
                 parent=parent,

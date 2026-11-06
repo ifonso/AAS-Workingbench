@@ -69,7 +69,7 @@ def explain_jump(status: ReferenceStatus) -> str | None:
     return f"Target not found. {status.text}."
 
 
-def _find_in_model(shown: Any, obj: object) -> QModelIndex | None:
+def find_row(shown: Any, obj: object) -> QModelIndex | None:
     """Finds the row of an object, in the index space of the model given.
 
     The model may be a proxy over the model of the packages, and only the
@@ -98,7 +98,7 @@ def _open_in_tab(context: ActionContext, target: model.Referable) -> bool:
     shown = pack_item.model() if pack_item is not None else None
     if shown is None:
         return False
-    found = _find_in_model(shown, target)
+    found = find_row(shown, target)
     if found is None:
         return False
     # The tab keeps the current object in its history, so Back returns to it.
