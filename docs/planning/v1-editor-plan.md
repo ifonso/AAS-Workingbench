@@ -309,3 +309,6 @@ Nothing here was started in WP12, because each needs a design.
 4. **What is not verified.**
     The pictures of this audit came from an offscreen platform, so they show layout and text, and not the behavior of a real display: scaling on a high-resolution screen, the theme colors on real monitors, the preview of media (it was black offscreen), and keyboard focus.
     The large tests run only by hand, and not in CI.
+    The keys of the shortcuts are not pressed in a test, because the offscreen platform sends no shortcut to a window that is not active (F-EDT-01 AC13).
+5. **A File or a Blob can be saved without a content type.**
+   V3.1 requires `contentType`, the SDK refuses an empty text, and the editor makes the element with no content type and reports nothing. A rule that flags it, or a required field in the dialog, closes it. Found by WP18 (F-EDT-04 AC1).

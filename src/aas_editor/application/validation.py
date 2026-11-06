@@ -36,6 +36,7 @@ from aas_editor.application.save import SaveSource
 from aas_editor.application.save import check_save
 from aas_editor.domain.validation import ALL_RULES
 from aas_editor.domain.validation import HINT_RULES
+from aas_editor.domain.validation import RULE_FAILED
 from aas_editor.domain.validation import Finding
 from aas_editor.domain.validation import Rule
 from aas_editor.domain.validation import Severity
@@ -120,9 +121,16 @@ def hints_for(report: ValidationReport, target: object) -> tuple[Finding, ...]:
         target: The shell, submodel, description or element that is shown.
 
     Returns:
-        The findings whose anchor is the object, most severe first.
+        The findings whose anchor is the object, most severe first. A rule
+        that raised belongs to the package and not to an object, and it is
+        listed for every object, so that a defect of a hint is seen where
+        the hints are (F-EDT-01 AC14).
     """
-    return tuple(f for f in report.findings if f.anchor is target)
+    return tuple(
+        f
+        for f in report.findings
+        if f.anchor is target or f.rule_id == RULE_FAILED
+    )
 
 
 def save_check_for(report: ValidationReport) -> SaveCheck:

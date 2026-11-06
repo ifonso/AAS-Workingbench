@@ -40,6 +40,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import enum
 
+from PyQt6 import sip
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
@@ -298,6 +299,18 @@ class ViewActions:
                 self._submenus[-1][1].append(action)
             target.addAction(action)
 
+    def _forget_deleted_submenus(self) -> None:
+        """Drops the submenus whose menu its owner deleted.
+
+        The view outlives a menu that was built for it, and the clipboard
+        refreshes the view, so asking a deleted submenu would fail.
+        """
+        self._submenus = [
+            (submenu, actions)
+            for submenu, actions in self._submenus
+            if not sip.isdeleted(submenu)
+        ]
+
     def update(self) -> None:
         """Shows and enables each action by the rule of its spec.
 
@@ -307,6 +320,7 @@ class ViewActions:
         visible and is disabled. Actions of the toolbar are never hidden, so
         the buttons do not move.
         """
+        self._forget_deleted_submenus()
         context = self._context()
         for spec, action in self._entries:
             applies = spec.is_enabled(context)

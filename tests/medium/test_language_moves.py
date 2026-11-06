@@ -122,3 +122,47 @@ def test_nothing_moves_in_read_mode(moving) -> None:
 
     assert not moving.action("structure.move_down").isEnabled()
     assert moving.languages() == ["en", "de", "fr"]
+
+
+def test_clicking_two_rows_keeps_both_selected_for_the_move(moving) -> None:
+    # The user selects with the mouse, which makes the clicked row current and
+    # refreshes the actions. A refresh that selects the current row alone
+    # would leave the move with one row.
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtTest import QTest
+
+    attrs = moving.attrs
+    attrs.resize(600, 400)
+    attrs.expandAll()
+    cells = [
+        moving.lab_.row(attrs, "description", f"DictItem {n}").siblingAtColumn(
+            0
+        )
+        for n in (1, 2)
+    ]
+
+    QTest.mouseClick(
+        attrs.viewport(),
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+        attrs.visualRect(cells[0]).center(),
+    )
+    QTest.mouseClick(
+        attrs.viewport(),
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.ControlModifier,
+        attrs.visualRect(cells[1]).center(),
+    )
+    # The application keeps the modifiers of the last mouse event, and Ctrl
+    # would extend the selection of every later test.
+    QTest.mouseRelease(
+        attrs.viewport(),
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+        attrs.visualRect(cells[1]).center(),
+    )
+
+    selected = {i.row() for i in attrs.selectionModel().selectedRows()}
+    assert selected == {1, 2}
+    moving.action("structure.move_up").trigger()
+    assert moving.languages() == ["de", "fr", "en"]

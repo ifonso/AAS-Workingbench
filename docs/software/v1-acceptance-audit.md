@@ -24,21 +24,21 @@ A criterion with a test that covers part of it is `P`, with the missing part nam
 
 | Document | T | P | I | D | O | G | N | Total |
 |---|---|---|---|---|---|---|---|---|
-| F-EDT-01 Editor framework | 4 | 4 | 5 | 0 | 1 | 0 | 1 | 15 |
-| F-EDT-02 Environment, AAS, AssetInformation | 4 | 4 | 1 | 1 | 7 | 0 | 0 | 17 |
-| F-EDT-03 Submodel and SubmodelRef | 1 | 8 | 3 | 1 | 2 | 0 | 1 | 16 |
-| F-EDT-04 SubmodelElements | 9 | 4 | 1 | 6 | 2 | 0 | 0 | 22 |
-| F-EDT-05 ConceptDescription and IEC 61360 | 9 | 1 | 1 | 6 | 2 | 0 | 0 | 19 |
-| F-EDT-06 Common attribute modules | 8 | 4 | 0 | 3 | 1 | 0 | 0 | 16 |
-| F-EDT-07 Qualifiers and Extensions | 3 | 2 | 0 | 3 | 5 | 0 | 0 | 13 |
-| F-EDT-08 Copy, paste, reorder | 8 | 5 | 0 | 3 | 4 | 0 | 0 | 20 |
-| F-EDT-09 Multi-element editing | 8 | 4 | 0 | 8 | 0 | 0 | 1 | 21 |
-| F-EDT-10 Supplementary files | 10 | 3 | 0 | 2 | 1 | 0 | 2 | 18 |
-| F-EDT-11 References, semantics, lookups | 8 | 2 | 0 | 2 | 10 | 0 | 0 | 22 |
-| **All** | **72** | **41** | **11** | **35** | **35** | **0** | **5** | **199** |
-
-Of 199 criteria, 72 have a test that asserts them, and 41 more are tested in part.
-No criterion is left as a gap. WP13 to WP17 closed the 22 that WP12 found, or reclassified them with a reason given in the rows and the ADRs. What still costs a user is in [What remains after v1](../planning/v1-editor-plan.md#what-remains-after-v1).
+| F-EDT-01 Editor framework | 12 | 1 | 0 | 0 | 1 | 0 | 1 | 15 |
+| F-EDT-02 Environment, AAS, AssetInformation | 9 | 0 | 0 | 1 | 7 | 0 | 0 | 17 |
+| F-EDT-03 Submodel and SubmodelRef | 12 | 0 | 0 | 1 | 2 | 0 | 1 | 16 |
+| F-EDT-04 SubmodelElements | 14 | 0 | 0 | 6 | 2 | 0 | 0 | 22 |
+| F-EDT-05 ConceptDescription and IEC 61360 | 10 | 1 | 0 | 6 | 2 | 0 | 0 | 19 |
+| F-EDT-06 Common attribute modules | 11 | 1 | 0 | 3 | 1 | 0 | 0 | 16 |
+| F-EDT-07 Qualifiers and Extensions | 5 | 0 | 0 | 3 | 5 | 0 | 0 | 13 |
+| F-EDT-08 Copy, paste, reorder | 10 | 3 | 0 | 3 | 4 | 0 | 0 | 20 |
+| F-EDT-09 Multi-element editing | 10 | 2 | 0 | 8 | 0 | 0 | 1 | 21 |
+| F-EDT-10 Supplementary files | 12 | 0 | 0 | 3 | 1 | 0 | 2 | 18 |
+| F-EDT-11 References, semantics, lookups | 9 | 0 | 0 | 3 | 10 | 0 | 0 | 22 |
+| **All** | **114** | **8** | **0** | **37** | **35** | **0** | **5** | **199** |
+Of 199 criteria, 114 have a test that asserts them, and 8 more are tested in part.
+No criterion is left as a gap, and none is left implemented without a test. WP13 to WP17 closed the 22 gaps that WP12 found, or reclassified them with a reason given in the rows and the ADRs, and WP18 went through the 52 rows that were `P` or `I` (see [What WP18 found](#what-wp18-found)). What still costs a user is in [What remains after v1](../planning/v1-editor-plan.md#what-remains-after-v1).
+The 8 `P` rows are about the wording of a message or a log line (F-EDT-05 AC17, F-EDT-06 AC13, F-EDT-08 AC7, AC10 and AC11, F-EDT-09 AC7 and AC17), and the press of a key (F-EDT-01 AC13), which needs a display.
 Most O rows are ECLASS (F-EDT-04 AC21, F-EDT-11 AC8 to AC14, AC18 and AC22) and repository features, which the plan keeps out of v1.
 
 ## What this audit checked itself
@@ -58,40 +58,64 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | F-EDT-05 AC10: the view orders of concept descriptions. | Four of six: name, idShort, id, first use. "List index", "By SubmodelElements" and the structured order are not offered. A gap. **Closed in WP16**: the store of the package keeps the order of the file now, so the list index exists, and all six are offered ([ADR 0021](adr/0021-order-of-the-file-and-concept-description-gaps.md)). |
 | F-EDT-04 AC2: new MultiLanguageProperty has a row for each default language. | No setting of default languages. A gap. **Closed by WP14**: a setting, `T`. |
 
+## What WP18 found
+
+WP18 read the criterion of each `P` and `I` row in the specification, and wrote the missing assertion through the public API or a view.
+Of the 52 rows, 42 became `T`, 2 became `D` (F-EDT-10 AC2, F-EDT-11 AC4), 1 went from `I` to `P` (F-EDT-01 AC13), and 8 stayed `P`.
+Five rows were covered by tests that the first audit did not find (F-EDT-02 AC6, F-EDT-03 AC6, AC10 and AC11, F-EDT-07 AC4), and the rows cite them now.
+
+The defects, with the test that failed first:
+
+| Where | Defect | Fix |
+|---|---|---|
+| Part 1 | Delete, Cut and Copy on rows of two parents acted on the rows of the first parent only, and said nothing. | They act on every row, in the order of the tree, and refuse rows of two packages ([ADR 0023](adr/0023-actions-on-the-whole-selection.md), `test_cross_parent_selection.py`). |
+| Part 1 | Move on rows of two packages pushed its commands on the history of one of them. | The move actions are off for such a selection. |
+| Part 1 | A cell never suggested values: the delegate looked them up by the text of the cell, in a table keyed by class, and built the completer with a keyword that PyQt6 does not have. | Looked up by the owner and the attribute (`test_cell_completions.py`). |
+| Part 1 | A refresh of a tab selected the current row alone, so the Move actions on language entries saw one row after a click with Ctrl. | The current row changes without the selection (`test_language_moves.py`). |
+| Part 1 | A submenu that its owner deleted broke every later refresh of the view, so one test made 28 paste tests fail. | The view skips a deleted submenu (`test_action_registry.py`). |
+| Part 2 | F-EDT-01 AC8: after a delete the tree selected the parent, not the previous sibling. | The sibling above, or the parent for the first row. |
+| Part 2 | F-EDT-01 AC14: a hint rule that raised reached only the Validation dock, and not the tab where the hints are. | The bar lists the failure with every object. |
+| Part 2 | F-EDT-11 AC7: undo of an edit of the supplemental semantic ids left the new reference in, because the SDK refills that list in place. | `SetAttribute` keeps a copy of such a list. |
+| Part 2, not fixed | A File or Blob made without a content type is written without one, and no rule reports it, but V3.1 requires `contentType`. The SDK refuses `""`, so the editor cannot start with the value of the table. | Open: a rule, or a required field in the dialog. |
+
+One item was not a defect.
+A shell with no `idShort` (the Bill of Materials report) is read, shown by its type name, saved and read again (`test_objects_without_id_short.py`): the report counts `idShort` entries, and such a shell has none, so it is not lost.
+One fixture was wrong, and is fixed: `test_load_report_flow.py` let the window of its view be collected, so three of its tests failed when the file ran alone.
+
 ## F-EDT-01 Editor framework
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | P | `test_hints.py::test_read_mode_shows_no_row_for_a_null_attribute`, and the same in `tests/large/test_validation_flow.py`. No test that no editing control is on screen. |
-| 2 | I | `models/table_standard.py` `setData`. No test types into a field and checks when the model changes. |
+| 1 | T | `test_framework_criteria.py::test_in_read_mode_no_cell_of_a_tab_can_be_edited` (no cell of a tab has the editable flag, `edit()` refuses each of them, and the editing actions are off), `::test_in_read_mode_an_attribute_without_a_value_has_no_row`. For the package tree, `test_undo_views.py::TestReadModeInTheViews`. "No editing control appears" is shown as: nothing can open an editor. It was not looked at on a display. |
+| 2 | T | `test_framework_criteria.py::test_a_typed_text_reaches_the_model_when_it_is_committed`: while the editor holds the new text the model has the old one, and after the commit of the cell it has the new one in one undo step. The element and the submodel above it are marked in the tree. |
 | 3 | T | `test_change_markers.py::test_the_tree_marks_the_element_and_the_objects_above_it`, `::test_a_save_clears_the_marker_in_the_tree_and_in_every_tab`. |
-| 4 | P | `test_hints.py::test_bar_lists_the_hints_of_the_shown_object`. That editing and saving stay possible is not asserted. |
+| 4 | T | `test_framework_criteria.py::test_with_an_advisory_shown_editing_and_saving_are_still_possible`: the bar shows an `Error:` line for a wrong idShort, the value is edited, the save check has no blocker, and the file has the new value. `test_hints.py::test_bar_lists_the_hints_of_the_shown_object`. |
 | 5 | T | `test_hints.py::test_bar_is_off_when_hints_mode_is_off`. |
-| 6 | I | `widgets/groupBoxes.py` (the Create button of an optional attribute). No test of the default and the redraw. |
-| 7 | P | Empty list stays in the object and is not written (see above). |
-| 8 | I | `ui/delete_flow.py`. The question is tested for a delete of objects with usages, and focus moving to the previous sibling is not. |
+| 6 | T | `test_framework_criteria.py::test_creating_an_attribute_that_is_not_set_redraws_the_row`: the row says `(not set)`, the Create dialog fills it, and the row shows the value, saved. The default row (one entry in the first default language) is in `test_user_defaults.py::TestDefaultLanguages::test_creating_a_display_name_starts_with_one_row_in_the_first_language`. |
+| 7 | T | `test_framework_criteria.py::test_deleting_the_last_qualifier_leaves_no_attribute_in_the_file`: the SDK has no null for a list, so the model holds an empty one, the tab shows `(empty)`, and the file has no `qualifiers`. |
+| 8 | T | The previous sibling is current after a delete, and the parent when the first row went (`test_framework_criteria.py::test_after_a_delete_the_previous_sibling_is_current`, `::test_after_a_delete_of_the_first_element_its_parent_is_current`). Declined: `test_reference_integrity.py::TestDelete::test_cancelling_the_usages_dialog_deletes_nothing`, `::test_deleting_a_submodel_without_usages_asks_for_confirmation`. **Defect found, fixed**: the tree went to the parent ([ADR 0023](adr/0023-actions-on-the-whole-selection.md)). |
 | 9 | O | Plan: "Moving AAS, Submodels, concept descriptions, or SubmodelRefs"; D16. |
 | 10 | T | `test_location_actions.py::test_pop_selects_the_pushed_row_with_its_expand_state`, `::test_a_collapsed_row_comes_back_collapsed`, `::test_pop_goes_back_through_the_pushes_in_reverse`, and `tests/small/test_locations.py`. Ctrl+Shift+P and Ctrl+Shift+O, tested not to collide with `settings/shortcuts.py` and the registered actions. |
 | 11 | T | `test_location_actions.py::test_pop_on_an_empty_stack_changes_nothing_and_does_not_fail`, and `::test_a_pushed_row_that_was_deleted_is_skipped` for a stale location, which the original keeps. |
 | 12 | N | Scripting. |
-| 13 | I | Shortcuts in `settings/shortcuts.py` and the actions. Only the Delete key in Read mode has a test. |
-| 14 | P | `test_validation_hints.py::test_tolerant_validate_reports_a_warning_when_a_rule_raises`. The severity is Warning, not High, and there is no test in a panel. |
-| 15 | I | No test that a redraw keeps hints, sort order and the other flags. |
+| 13 | P | `test_framework_criteria.py::test_every_gesture_is_bound_to_one_action_of_the_view`: each gesture is the shortcut of one action of the view, none is shared, and the standard ones are there. Delete in Read mode has a test. The press of a key is not tested: the offscreen platform has no active window, so Qt sends no shortcut (`QTest.keySequence` triggered none of the actions). It needs a display. |
+| 14 | T | `test_framework_criteria.py::test_a_hint_rule_that_raises_is_shown_with_the_object`: the bar of a tab lists the failure with the rule, and `test_validation_hints.py::test_tolerant_validate_reports_a_warning_when_a_rule_raises` for the report. The severity is Warning: the scale has Error, Warning and Info, and the High of the original is Warning here, as in F-EDT-06 AC9. **Defect found, fixed**: only the Validation dock showed the failure. |
+| 15 | T | `test_framework_criteria.py::test_a_redraw_keeps_hints_mode_and_the_sort_order`: hints mode and the sort column and order are the same after an edit, an undo, a redo and an undo. The IRI display and the SMT check of the original do not exist in this editor, so there is no state of them. |
 
 ## F-EDT-02 Environment, AAS, AssetInformation
 
 | AC | Class | Evidence |
 |---|---|---|
 | 1 | D | [ADR 0019](adr/0019-defaults-and-notices-of-new-objects.md): a new AAS is an Instance, where the original makes NotApplicable (its own notice says Instance is usual). `test_create_flows.py::TestCreateShell::test_the_action_makes_a_shell_with_valid_asset_information`: kind Instance, the new row is selected, `urn:uuid:` id, valid AssetInformation, reload, undo. `test_asset_kind.py::test_a_new_shell_is_an_instance_unless_the_user_chooses_another`. |
-| 2 | P | `test_create_flows.py::test_template_kind_and_no_shell_make_a_free_submodel`. |
+| 2 | T | `test_shell_and_submodel_criteria.py::test_a_template_submodel_is_free_and_becomes_the_current_row`: kind Template, in no shell, and the current row. `test_create_flows.py::TestCreateSubmodel::test_template_kind_and_no_shell_make_a_free_submodel`. |
 | 3 | T | `test_shell_copy_actions.py::test_on_the_node_of_the_shells_it_asks_which_to_copy`, `::test_the_environment_and_a_submodel_have_no_copy_of_an_aas`. "Copy AAS with new Submodel ids..." is on an AAS and on the shells node, and not on the package. |
 | 4 | T | `test_shell_copy_actions.py::test_the_copy_has_new_ids_and_refers_to_new_submodels`, `tests/small/test_copy_shell.py` (new ids, references resolve to the copies, the original is unchanged, one undo step). A pasted shell keeps referring to the same Submodels (D13). |
 | 5 | O | Plan: "Copy from an auxiliary package". |
-| 6 | I | Deleting a shell leaves its Submodels. No test of the declined question. |
+| 6 | T | `test_reference_integrity.py::TestDelete::test_deleting_a_shell_leaves_its_submodels_for_f_edt_02_criterion_6` (confirmed: the shell goes and both Submodels stay), `test_shell_and_submodel_criteria.py::test_deleting_a_shell_is_one_step_and_undo_brings_it_back_with_its_submodels`, `::test_declining_the_question_keeps_the_shell`. The editor asks once and never deletes the Submodels with the shell, so there is no second question to decline. |
 | 7 | O | Plan: "Stubs and Fetch, and repository delete". |
-| 8 | P | `test_rename.py::test_rename_updates_the_references_of_the_shell`. The failure warning is not tested. |
-| 9 | P | `test_hints.py::test_inline_hint_says_that_the_global_asset_id_is_empty`, a hint in the create dialog. The advisory in a panel, and the duplicate, are rules with tests in `test_validation_hints.py`, not in a panel. |
-| 10 | P | `test_create_flows.py::test_every_asset_kind_of_v3_1_is_offered`. The serialized output is not compared. |
+| 8 | T | `test_shell_and_submodel_criteria.py::test_renaming_a_shell_updates_the_references_to_it` (the reference of another shell follows, and one undo gives everything back), `::test_a_rename_that_cannot_be_done_says_why_and_changes_nothing`: the dialog names the id that another object has, and the accept button is off. The failure message is that text. |
+| 9 | T | `test_shell_and_submodel_criteria.py::test_the_tab_of_a_shell_with_a_blank_global_asset_id_shows_the_advisory` and `::test_the_tab_of_two_shells_with_one_global_asset_id_shows_the_duplicate`: the bar of the tab of the shell lists them, and the bar of another shell does not. The dialog hint is in `test_hints.py::test_inline_hint_says_that_the_global_asset_id_is_empty`. A missing id is AASd-131, which the SDK enforces. |
+| 10 | T | `test_shell_and_submodel_criteria.py::test_each_asset_kind_is_written_as_its_literal_and_read_back`: each of the four kinds is made in the dialog, is written as `"assetKind": "<literal>"` by the SDK's JSON, and is the same kind after a save and a reload. `test_create_flows.py::test_every_asset_kind_of_v3_1_is_offered`. |
 | 11 | O | The plan's row "Metamodel V3.2": `Batch` is a literal of V3.2 and the SDK has no such kind (probe). A file with it is refused as a whole, and failsafe mode leaves the shell out (`test_asset_kind.py::test_a_file_with_batch_is_refused_as_a_whole`, `::test_in_failsafe_mode_the_shell_with_batch_is_left_out_and_the_package_partial`). The four kinds of V3.1 are read and written as they are (`::test_each_kind_of_v3_1_is_read_and_written_as_it_is`). |
 | 12 | O | Plan: "Print code sheet". |
 | 13 | T | `test_specific_asset_id_delete.py::test_the_last_specific_asset_id_goes_and_the_file_has_no_list`: the model has an empty list, which the SDK has no null for, and the file has none. `::test_the_last_asset_id_of_a_shell_without_a_global_one_is_kept` for AASd-131. One undo step: `::test_the_removal_is_one_undo_step`. |
@@ -105,17 +129,17 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | AC | Class | Evidence |
 |---|---|---|
 | 1 | T | `test_create_flows.py::TestCreateSubmodel::test_with_a_shell_the_submodel_and_its_reference_are_one_step`: kind Instance, the new row is selected (focus), one reference with the Submodel, one undo step. |
-| 2 | P | `test_create_flows.py::test_template_kind_and_no_shell_make_a_free_submodel`. The id pattern of templates is not asserted. |
-| 3 | P | `test_paste_into_shell_action.py::test_a_pasted_reference_is_added_and_the_submodel_stays_shared`. |
-| 4 | P | `test_paste_into_shell_action.py::test_a_copied_submodel_is_added_with_a_new_id_and_a_reference`. |
-| 5 | I | `application/operations/companions.py`, no test of the shallow copy. |
-| 6 | I | `ui/delete_flow.py`, no test of the second question declined. |
-| 7 | P | `test_delete.py::test_deleting_a_submodel_removes_the_reference_of_the_shell`. |
-| 8 | P | `test_delete.py::test_delete_removes_the_target_and_the_references`. |
-| 9 | P | `test_paste_into_shell_action.py::test_a_reference_to_nothing_is_pasted_and_reported_as_dangling`. Editing and removing it are not tested. |
-| 10 | I | `application/operations/concepts.py`. The record with the preferred name from the idShort is tested in `test_concept_actions.py`, but not through the Submodel with a cancel. |
-| 11 | P | `test_create_flows.py::test_all_qualifiers_go_in_one_step_and_the_question_names_them`. |
-| 12 | P | `test_rename.py::test_rename_updates_semantic_ids_of_a_concept_description`. |
+| 2 | T | `test_shell_and_submodel_criteria.py::test_a_template_submodel_is_made_with_the_id_of_the_template_pattern`: the Template kind takes the template of its kind from the settings (`urn:tmpl:` and four digits, and the Instance pattern for an Instance), and the id is in the saved file. `test_user_defaults.py::test_a_submodel_takes_the_template_of_its_kind` for the dialog. |
+| 3 | T | `test_shell_and_submodel_criteria.py::test_linking_an_existing_submodel_adds_a_reference_and_no_copy`: the number of objects is the same, and the reference resolves to the Submodel that was chosen. `test_paste_into_shell_action.py::test_a_pasted_reference_is_added_and_the_submodel_stays_shared` for a pasted reference. |
+| 4 | T | `test_shell_and_submodel_criteria.py::test_a_copy_of_a_submodel_within_a_package_is_deep`: a new id, a reference, and no object shared with the original, down to the element in a collection. `test_paste_into_shell_action.py::test_a_copied_submodel_is_added_with_a_new_id_and_a_reference` (saved, reloaded, one undo step). |
+| 5 | T | `test_shell_and_submodel_criteria.py::test_a_submodel_copied_to_another_package_brings_its_concept_descriptions`: the Submodel, its reference, and the description that an element names. The editor has no "Copy single": a copy is deep, as the original's really is (its `shallowCopy` limits only the descriptions, F-EDT-08 section 10). |
+| 6 | T | `test_reference_integrity.py::TestDelete::test_deleting_a_reference_of_a_shell_keeps_the_submodel_for_f_edt_03_criterion_6`: the reference goes from the tab of the shell, both Submodels stay, and nothing is asked. |
+| 7 | T | `test_shell_and_submodel_criteria.py::test_deleting_a_submodel_also_removes_the_references_of_every_shell`: the Submodel is asked about once (its usages), the references of both shells go with it, and one undo gives all of it back. `test_delete.py::test_deleting_a_submodel_removes_the_reference_of_the_shell`. |
+| 8 | T | `test_shell_and_submodel_criteria.py::test_deleting_a_free_submodel_removes_it_from_the_package`, with one undo step. |
+| 9 | T | `test_shell_and_submodel_criteria.py::test_a_reference_to_no_submodel_can_be_edited` (through its dialog, one undo step) and `::test_a_reference_to_no_submodel_can_be_removed_and_is_not_written`. `test_paste_into_shell_action.py::test_a_reference_to_nothing_is_pasted_and_reported_as_dangling`. |
+| 10 | T | `test_concept_actions.py::TestCreateFromAll`, on the Submodel row: Cancel changes nothing (`::test_cancel_changes_nothing`), and Yes is one undo step that makes the descriptions with an IEC 61360 record whose preferred name is the idShort in `en` (`::test_with_records_the_names_come_from_the_idshort`). |
+| 11 | T | `test_create_flows.py::TestRemoveAttributes::test_all_qualifiers_go_in_one_step_and_the_question_names_them`: the Submodel and every descendant have no qualifier, in the model and in the reloaded file, and extensions stay (`::test_extensions_stay_when_only_qualifiers_are_chosen`). |
+| 12 | T | `test_shell_and_submodel_criteria.py::test_renaming_a_submodel_updates_the_shell_and_the_semantic_references`: the reference of the shell and a semantic id that holds the old id follow, in one undo step. `test_rename.py::test_rename_updates_semantic_ids_of_a_concept_description`. |
 | 13 | O | The plan's row "Stubs and Fetch": a dynamic environment exists only after a fetch, and the editor edits local files. There is no such environment to make the id read-only (searched: no code for it), and Rename is offered for every shell, submodel and concept description. |
 | 14 | O | Plan: "Stubs and Fetch". |
 | 15 | D | The tab of a submodel shows the description that its semantic id names, read-only and collapsed, and the notice of the original when it names none ([ADR 0021](adr/0021-order-of-the-file-and-concept-description-gaps.md)): `test_embedded_concept.py::TestPanel::test_a_submodel_shows_its_description_too`, `::test_a_semantic_id_that_names_nothing_shows_the_notice`. The original's display is an editor. |
@@ -125,14 +149,14 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | P | `test_element_types.py::test_element_is_made_edited_undone_saved_and_read_again` for all 14 types. The defaults of the table are not asserted, because each case fills every field. |
+| 1 | T | `test_element_criteria.py`, one test for each group of types, with only what the form needs filled in: Property and Range are `xs:string`, a File and a Blob have no content type and no value, a list is order-relevant, an event is an input that is off, an entity is self-managed, the others are empty, and the new element is the current row. The table asks for a content type of `""`, which V3.1 and the SDK refuse (a content type has at least one character), so it is missing. A ReferenceElement has no value, because the SDK cannot hold a reference without a key. `test_element_types.py::test_element_is_made_edited_undone_saved_and_read_again` for the filled cases. |
 | 2 | T | `test_user_defaults.py::TestDefaultLanguages::test_a_new_multi_language_property_has_an_empty_row_for_each_language` (`en,de` gives two rows, and the texts become the value). A row that stays empty is left out and no text gives no value, because the SDK refuses an empty text (`::test_a_row_without_text_is_left_out`, `::test_no_text_at_all_means_no_value`). `test_default_languages.py` for the setting. |
-| 3 | P | `test_conversion.py::test_a_property_becomes_a_range_with_its_value_as_minimum_and_maximum`. What a Property keeps is tested for another target. |
+| 3 | T | `test_element_criteria.py::test_a_property_that_becomes_a_range_keeps_its_type_and_common_attributes`: min and max are the value, the value type stays, and the idShort, category, description, display name, semantic id, qualifier and extension are the same, in the saved file too. `test_conversion.py::test_a_property_becomes_a_range_with_its_value_as_minimum_and_maximum`. |
 | 4 | T | `test_element_conversion.py::test_a_file_becomes_a_blob_with_the_content_of_the_stored_file`, `::..._with_its_path_when_the_content_is_declined`. |
 | 5 | D | [ADR 0012](adr/0012-replacing-an-element-shows-what-is-lost.md): items that do not fit are named, and the idShorts of list items are not written. `test_conversion.py::test_a_collection_becomes_a_list_that_keeps_the_items_that_fit`. |
 | 6 | T | `test_conversion.py::test_an_operation_keeps_every_variable_when_it_becomes_a_collection`. |
 | 7 | T | `tests/large/test_typed_values_flow.py`. Large, so not in CI. |
-| 8 | P | `test_value_editor.py::TestValueEdit::test_refuses_to_give_a_value_when_the_text_is_wrong`. |
+| 8 | T | `test_element_edit_criteria.py::test_a_range_refuses_a_text_that_is_no_number_and_keeps_its_limits`: the cell refuses `abc` for an `xs:int` range with a message and no trace, and the limits and the history are unchanged. `test_value_editor.py::TestValueEdit::test_refuses_to_give_a_value_when_the_text_is_wrong`. |
 | 9 | T | `test_blob_actions.py::test_base64_text_becomes_the_bytes_in_one_undoable_step` (`SGVsbG8=` gives the bytes of `Hello` in the domain test), `::test_text_that_is_no_base64_is_refused_with_a_reason` (unchanged, with the character that is wrong; the original logs). No question first: undo replaces it (ADR 0019). |
 | 10 | D | The Blob editor shows hex when the content is no text (`test_value_editor.py::TestBinaryEdit`). No question before editing. |
 | 11 | D | The add dialog of a list offers only its type, so there is nothing to warn about (changelog). |
@@ -143,16 +167,16 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 16 | T | `test_element_types.py` for BasicEventElement, and `::test_form_and_attributes_have_every_attribute_of_the_class`. |
 | 17 | T | `test_entity_form.py::test_a_new_entity_is_self_managed_and_asks_for_the_global_asset_id`: the type is preset, the form says "Please choose the global identifier for the SelfManagedEntity" until the field has text. `test_validation_hints.py::test_a_self_managed_entity_without_a_global_asset_id_gets_a_notice` for the same notice in the bar of a tab. |
 | 18 | T | `test_element_types.py::test_a_variable_goes_into_the_list_it_was_added_under_only`, for the input, output and in/out lists: the variable is in that list only, one undo step, saved and reloaded. The Operation case of `test_element_types.py` adds to the input and the output list. The three lists share one namespace, so a name used in one is refused in another (AASd-022). |
-| 19 | I | Generic paste (`test_paste_actions.py`). No test with an Operation as parent. |
+| 19 | T | `test_element_edit_criteria.py::test_a_cut_element_pasted_into_the_input_variables_leaves_its_source`: cut from a collection, Paste into the input variables of an Operation: the source is empty, the variable is in the input list only, and two undo steps give the start back. |
 | 20 | D | An element has an idShort. Items of a list do not, and the case is not covered (ADR 0014). |
 | 21 | O | Plan: ECLASS. |
-| 22 | P | The SDK has a bool that is true by default, and reads true for a file without it. The tests assert the default for new lists only. |
+| 22 | T | `test_element_edit_criteria.py::test_a_list_without_order_relevant_in_the_file_shows_the_default`: a JSON file without `orderRelevant` shows `True` in the tab. For a new list, `test_element_types.py` (the form shows it ticked). |
 
 ## F-EDT-05 ConceptDescription and IEC 61360
 
 | AC | Class | Evidence |
 |---|---|---|
-| 1 | I | "Add concept description" on the node, with a generated id. Tested through Create from semantic id, not the node. |
+| 1 | T | `test_attribute_criteria.py::test_add_on_the_node_makes_a_description_with_a_generated_id`: Add on the node makes a description with a `urn:uuid:` id, it is the current row, the id is in the saved file, and one undo gives the package back. |
 | 2 | D | The SDK refuses an empty preferred name. The dialog starts with a row filled with the idShort (ADR 0014). |
 | 3 | D | A record is made with its content in one step, so the defect of the original cannot occur (ADR 0014). `test_concept_actions.py::test_adding_a_record_with_the_template_key`. |
 | 4 | T | `test_concept_records.py::TestDataType::test_a_chosen_data_type_is_stored_as_the_literal`, `::test_choosing_none_removes_the_data_type` (undo, redo, save and read again). |
@@ -168,7 +192,7 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 14 | D | The tab of an element shows its description, read-only and collapsed, with no move panel because a tab has none (`test_embedded_concept.py::TestPanel`, `::TestInATab`). It is not hidden for "By SubmodelElements", because the descriptions are not nested in this tree and it would show them nowhere (ADR 0021). |
 | 15 | D | Sync fills the short name, because the preferred name cannot be empty (changelog). |
 | 16 | D | The SDK cannot hold a blank record: `test_blank_member_probes.py` (made, edited, and read from a file, also in failsafe mode). The preset adds the one record, which is the end state of the criterion: `test_preset_actions.py::test_a_data_specification_preset_gives_one_record_and_no_blank_one` (ADR 0021). |
-| 17 | P | `test_preset_files.py::test_a_missing_shipped_file_is_reported`. Wording differs. |
+| 17 | P | `test_preset_files.py::test_a_missing_shipped_file_is_reported`. Wording differs. WP18 left it: only the wording differs. |
 | 18 | T | Both things the criterion asks for: `test_samm_panel.py::test_a_samm_description_lists_id_before_id_short`, `::test_a_samm_description_gets_no_such_hint`, and the recognition in `test_samm.py`. Editing SAMM elements is F-SMT-05, not F-EDT, and is not done (the extension is edited as an extension). |
 | 19 | O | Plan: moving concept descriptions. |
 
@@ -185,10 +209,10 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 7 | T | `test_reference_picker_fields.py::TestFreeEntry::test_a_typed_external_reference_is_kept`. |
 | 8 | T | `test_reference_picker_fields.py::TestFreeEntry::test_the_target_type_follows_the_last_key_type`. |
 | 9 | T | `test_validation_hints.py::test_key_whitespace_is_a_warning_on_the_element_with_the_semantic_id`. |
-| 10 | P | Removing all qualifiers is tested. Deleting the only qualifier row is not, and the list stays empty (see F-EDT-01 AC7). |
-| 11 | P | `test_hints.py::test_inline_hint_is_off_when_hints_mode_is_off`. "Fields unchanged" is not asserted. |
-| 12 | P | `test_hints.py::test_read_mode_shows_no_row_for_a_null_attribute`. No test that no action button is on screen. |
-| 13 | P | `test_data_spec_operations.py::TestFixKeys`. The action has another name and no log line. |
+| 10 | T | Same test as F-EDT-01 AC7: the last qualifier goes, the list is empty (the SDK has no null), and the file has no `qualifiers`. |
+| 11 | T | `test_attribute_criteria.py::test_with_hints_off_no_hint_is_shown_and_the_fields_are_unchanged`: with hints off the bar is empty and hidden, every cell of the tab reads as before, and nothing changed in the package. `test_hints.py::test_inline_hint_is_off_when_hints_mode_is_off`. |
+| 12 | T | `test_attribute_criteria.py::test_in_read_mode_a_tab_offers_no_action_that_changes_something` (every editing action and every registered action that changes a package is off), and no row for a null attribute (`test_framework_criteria.py::test_in_read_mode_an_attribute_without_a_value_has_no_row`). |
+| 13 | P | `test_data_spec_operations.py::TestFixKeys`. The action has another name and no log line. WP18 left it: a name and a log line. |
 | 14 | D | Same as F-EDT-05 AC16: no blank record can exist, and the preset adds the one record (`test_blank_member_probes.py`, `test_preset_actions.py::test_a_data_specification_preset_gives_one_record_and_no_blank_one`, ADR 0021). |
 | 15 | T | `test_language_moves.py::test_move_down_changes_the_order_and_the_rows_follow` (rows are read again), `::test_the_move_is_one_undo_step_and_is_saved`, and `test_language_order.py` for the plan and the order in the file. |
 | 16 | D | `test_category_row.py`: the category stays editable, with the deprecation hint (`test_validation_hints.py::test_category_is_an_info_hint_when_an_element_has_one`). The spec asks for read-only, but the rules AASc-3a-004 to 007 tie the category of a concept description to its data type, so a user must be able to change it, and the V3.1 metamodel still has it (ADR 0019). |
@@ -200,9 +224,9 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 1 | D | The SDK cannot hold a blank qualifier (the type needs a character: `test_blank_member_probes.py`), so there is none to replace. The end state is asserted: one qualifier with type, value, kind and semantic id (`test_preset_actions.py::test_a_qualifier_preset_gives_one_qualifier_with_its_semantic_id`, `::test_a_qualifier_preset_is_added_to_every_selected_element`; ADR 0021). |
 | 2 | D | A missing preset file is listed in the dialog and the dialog still opens (ADR 0017). |
 | 3 | T | `test_preset_actions.py::test_a_qualifier_on_the_clipboard_is_added`. |
-| 4 | P | `test_preset_actions.py::test_bad_clipboard_content_is_refused_with_a_message`. Only "add from clipboard" exists, not "paste". |
+| 4 | T | Both ways in refuse bad text: `test_preset_actions.py::test_bad_clipboard_content_is_refused_with_a_message` (add from the clipboard) and `test_paste_qualifier_action.py::test_text_that_is_no_qualifier_changes_nothing_and_says_why` (paste into a qualifier). The element and the history are unchanged, and the user is told why. The message is a dialog, where the original logs. |
 | 5 | T | `test_paste_qualifier_action.py::test_the_content_is_pasted_and_the_kind_stays` and `test_paste_qualifier.py::test_the_content_is_taken_over_and_the_kind_stays`: parity, the kind of the target stays (ADR 0019). A type another qualifier has is refused (AASd-021), and a text that is no qualifier changes nothing and says why (AC4 for this action). |
-| 6 | P | Move of elements is tested. No test moves a qualifier or an extension, although the changelog says they move. |
+| 6 | T | `test_attribute_criteria.py::test_the_last_qualifier_cannot_move_down_and_the_list_stays` (the action is off, the file is unchanged, no history), `::test_a_qualifier_moves_up_in_one_undo_step_and_the_file_follows`. |
 | 7 | O | Plan: "Upgrade qualifiers". |
 | 8 | O | Plan: "Migrate to Extensions". |
 | 9 | O | Plan: "SMT attribute records". |
@@ -220,12 +244,12 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 3 | O | Plan: "Pending Cut"; D12. |
 | 4 | T | `test_paste_actions.py::test_a_second_paste_gives_a_further_duplicate`. |
 | 5 | D | [ADR 0020](adr/0020-selection-locations-and-clipboard.md): the buffer is a mirror of the system clipboard, and a newer copy wins. `test_paste_actions.py::test_json_that_is_newer_on_the_clipboard_replaces_the_buffer`. |
-| 6 | P | `test_paste_actions.py::test_json_from_another_program_pastes_after_the_buffer_is_cleared`. No idShort collision. |
-| 7 | P | `test_paste_actions.py::test_bad_clipboard_text_is_refused_with_a_message`. The text differs from the spec. |
+| 6 | T | `test_paste_criteria.py::test_json_with_the_name_of_a_sibling_is_added_with_a_numbered_name`: with the buffer cleared, JSON of `A` is added next to an existing `A` as `A_1`, the original keeps its value, and one undo takes the new one away. `test_paste_actions.py::test_json_from_another_program_pastes_after_the_buffer_is_cleared`. |
+| 7 | P | `test_paste_actions.py::test_bad_clipboard_text_is_refused_with_a_message`. The text differs from the spec. WP18 left it: only the wording differs. |
 | 8 | T | `test_paste_actions.py::TestPasteFromText` (an empty clipboard and buffer, a bad text, the places, a pending cut), `test_paste_into_shell_action.py::test_submodel_json_typed_into_the_box_is_added_to_the_shell`. A desktop never denies the clipboard, so the action does not read it. |
-| 9 | P | `test_paste_actions.py::test_several_copied_elements_paste_below_in_their_order`, in tree order. The order of selection is not tested. |
-| 10 | P | `test_paste.py::TestElements::test_a_submodel_cannot_be_pasted_among_elements`. The text is not asserted. |
-| 11 | P | `test_paste_into_shell_action.py::test_pasting_the_same_reference_again_is_skipped_and_said`. A dialog, where the original logs. |
+| 9 | T | `test_paste_criteria.py::test_copied_elements_paste_in_the_order_of_the_tree_not_of_the_clicks`: A, B and C selected as C, A, B paste as A, B, C. `test_paste_actions.py::test_several_copied_elements_paste_below_in_their_order`. The order of the clicks is not kept (ADR 0020, ADR 0023). |
+| 10 | P | `test_paste.py::TestElements::test_a_submodel_cannot_be_pasted_among_elements`. The text is not asserted. WP18 left it: the criterion gives the text, and the editor says it in its own words on purpose. |
+| 11 | P | `test_paste_into_shell_action.py::test_pasting_the_same_reference_again_is_skipped_and_said`. A dialog, where the original logs. WP18 left it: a dialog where the original logs. |
 | 12 | T | `test_paste_into_shell.py::TestSubmodels::test_a_submodel_unknown_to_the_package_is_added_with_its_reference`. |
 | 13 | D | D16: no move for concept descriptions, so there is no dialog. |
 | 14 | T | `test_move.py::TestCanMove::test_up_is_not_possible_on_the_first_member`. |
@@ -245,8 +269,8 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 3 | T | `test_move.py::TestNewOrder::test_selected_rows_become_adjacent_as_in_package_explorer` (rows 2 and 4 of 6 end at 1 and 2), `test_move_actions.py::test_a_move_up_makes_rows_two_and_four_adjacent_at_one_and_two`. "In order of selection" is the order of the container, which Qt can give (ADR 0020). |
 | 4 | T | `test_move.py::TestNewOrder::test_selected_rows_become_adjacent_as_in_package_explorer` (`UP` with the first selected row on top), `test_move_actions.py::test_a_move_up_does_nothing_when_the_first_selected_row_is_on_top`: nothing changes, and the action is off. |
 | 5 | T | Same test, `TO_END`. |
-| 6 | P | `test_reference_integrity.py::test_deleting_several_referenced_objects_shows_one_dialog_and_one_step`. No "No" on several rows. |
-| 7 | P | `test_paste_actions.py::test_copying_several_elements_puts_their_json_on_the_clipboard`, added by this audit. The log line is not written. |
+| 6 | T | `test_bulk_criteria.py::test_declining_the_delete_of_several_referenced_objects_changes_nothing` and `::test_declining_the_question_for_several_submodels_changes_nothing` (No: the package is the same, no history), `::test_confirming_the_delete_of_several_rows_removes_all_of_them`, and `test_reference_integrity.py::TestDelete::test_deleting_several_referenced_objects_shows_one_dialog_and_one_step`. Across parents: `test_cross_parent_selection.py::test_delete_removes_the_rows_of_every_parent_in_one_undo_step`. |
+| 7 | P | `test_paste_actions.py::test_copying_several_elements_puts_their_json_on_the_clipboard`, added by this audit. The log line is not written. WP18 left it: the log line. |
 | 8 | D | A new pattern language ([ADR 0017](adr/0017-presets-and-the-pattern-language.md)). `ABC_*` is `ABC_{old}`. |
 | 9 | D | Same. |
 | 10 | D | Same. |
@@ -256,20 +280,20 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 14 | D | Same. |
 | 15 | T | `test_bulk_edit.py::TestTexts::test_an_element_without_the_language_is_skipped_and_the_rest_change`. |
 | 16 | T | `test_bulk_actions.py::test_extensions_with_a_name_are_removed_in_one_step`. |
-| 17 | P | `test_bulk_dialogs.py::test_without_extensions_the_removal_has_nothing_to_choose`. No log text. |
+| 17 | P | `test_bulk_dialogs.py::test_without_extensions_the_removal_has_nothing_to_choose`. No log text. WP18 left it: the log text. |
 | 18 | T | `test_package_files_ui.py::test_several_files_are_removed_as_one_step_with_one_question`, `::test_the_panel_removes_several_selected_files_at_once`, and `test_stored_file_delete.py::test_several_stored_files_are_deleted_in_one_step_with_one_question` for the tree. Removed at once, and not marked pending. |
 | 19 | T | `test_move_actions.py::test_variables_of_mixed_directions_get_neither_move_nor_delete`, `tests/small/test_selection.py::TestVariableDirections`. Cut and Copy stay. |
 | 20 | N | Touch. |
-| 21 | P | `test_undo_views.py::test_window_is_modified_after_an_edit_and_clean_after_undo` for an edit. No bulk action asserts it. The changed marker follows the history for every command. |
+| 21 | T | `test_bulk_criteria.py::test_a_bulk_action_flags_the_package_until_it_is_undone`: move, delete, cut, change attribute and remove extensions each make `package.changed` true, and undo makes it false again. `test_undo_views.py::test_window_is_modified_after_an_edit_and_clean_after_undo`. |
 
 ## F-EDT-10 Supplementary files
 
 | AC | Class | Evidence |
 |---|---|---|
 | 1 | D | A dock panel, not a node. In Read mode its buttons are off (`tests/large/test_package_files_flow.py`, D18). |
-| 2 | P | `test_package_files_ui.py::test_adding_a_file_sanitizes_the_name_and_guesses_the_media_type`. The folder is `/aasx/files` (D15), and there is no "pending" state. |
-| 3 | P | `test_package_files_ui.py::test_removing_a_file_nothing_refers_to_asks_nothing`. |
-| 4 | P | `test_supplementary_files_roundtrip.py::test_removing_a_file_and_its_paths`: gone after save and reload. |
+| 2 | D | The folder is `/aasx/files` (D15), and a file is in the package at once, undone with Undo, so there is no `(add pending)` leaf and no `⭠ source`: the stored files are a dock panel (D18). The name `a b.pdf` becomes `a_b.pdf` and the media type is guessed: `test_package_files_ui.py::test_adding_a_file_sanitizes_the_name_and_guesses_the_media_type`. The changelog says so. |
+| 3 | T | `test_file_criteria.py::test_a_file_that_was_added_and_removed_before_a_save_is_not_written`: the file is not in the store, and neither the part nor a relationship is in the saved package. |
+| 4 | T | `test_file_criteria.py::test_a_removed_file_is_gone_from_the_saved_package_with_its_relationship`: before the delete the part and its relationship are in the zip, after it neither is, the other files stay, and the File element no longer has the path. `test_supplementary_files_roundtrip.py::test_removing_a_file_and_its_paths`. A stored file that no File element refers to is not written by the SDK at all. |
 | 5 | T | `test_package_files_ui.py::test_the_package_thumbnail_is_changed_saved_and_read_back` (root of the package, saved, read back, undo), `::test_a_changed_package_thumbnail_survives_a_crash`, `tests/small/test_package_thumbnail.py`. No leaf with `[Thumbnail]`: the panel names the thumbnail (D18). |
 | 6 | T | `test_package_files_ui.py::test_choosing_a_file_for_a_file_element_keeps_its_media_type`. |
 | 7 | T | `test_package_files_ui.py::test_adding_a_file_for_a_file_element_sets_value_and_media_type`. |
@@ -292,10 +316,10 @@ Ten claims looked doubtful, and were checked in the code or by running it.
 | 1 | T | `test_reference_picker_packages.py::TestDialog::test_both_packages_are_listed_with_the_package_of_each`, `::test_the_picker_of_a_form_offers_the_description_of_the_other_package` (through the form of a semantic id), `test_reference_picker_sources.py`. The semantic id of a submodel or element starts on the filter "Concept descriptions", as the original does. |
 | 2 | T | `test_reference_picker_fields.py::TestPickingATarget::test_a_concept_description_gives_an_external_reference_to_its_id`. |
 | 3 | T | `test_reference_picker_fields.py::test_the_model_kind_keeps_the_concept_description_key_type`. |
-| 4 | P | `test_reference_picker_fields.py::test_an_sdk_refusal_is_shown_as_a_reason_and_blocks_ok`. There is no "Select" for a non-matching row, because the picker lists only matching ones. |
+| 4 | D | The picker lists only the targets that fit the field (`test_reference_picker.py::TestCandidates`, `::test_filters_for_submodel_reference_offer_submodels_only`), so there is no row to select that does not fit, and a wrong typed reference blocks OK with the reason (`test_reference_picker_fields.py::TestRefusals::test_an_sdk_refusal_is_shown_as_a_reason_and_blocks_ok`). A row that gives no reference, such as a detached element, disables OK (`ReferencePickerDialog._update_preview`). |
 | 5 | D | A reference cannot point at a stored file, because V3.1 has no key type for one (`test_file_choice_dialog.py::test_no_key_type_of_v31_names_a_stored_file`), so the file filter is the chooser of the File element: it lists the stored files only and gives the name that becomes the value (`test_file_choice_dialog.py`, `test_package_files_ui.py::test_choosing_a_file_for_a_file_element_keeps_its_media_type`; ADR 0021). |
 | 6 | O | Plan: "Add from pool of known concepts". |
-| 7 | P | `test_reference_picker_fields.py::test_every_reference_field_gets_the_picker` includes the supplemental semantic id. Appending is not asserted. |
+| 7 | T | `test_picker_criteria.py::test_picking_for_a_supplemental_semantic_id_appends_a_reference`: the picked description is a new GlobalReference key in a new reference after the one that was there, the semantic id is unchanged, and one undo gives the start back. **Defect found, fixed**: undo of this edit left the new reference in (`tests/small/test_edits.py::test_set_attribute_restores_a_list_that_the_sdk_replaces_in_place`). |
 | 8 | O | Plan: ECLASS. |
 | 9 | O | Same. |
 | 10 | O | Same. |

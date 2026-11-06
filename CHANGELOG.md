@@ -174,6 +174,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The preview of a stored image or document opens in a splitter, with a third of the tab and at least 360 pixels for the attributes. A tab too narrow for both starts with the preview dragged shut, and the user opens it by dragging the handle. A share that the user dragged is kept for the next file. Before, the preview took half of the tab.
 - The columns of the tabs are saved with the version of their layout. A state that an earlier release saved is not restored, so the new default shows once, and what the user changes later is kept. Before, the saved state hid every new default.
 - A new AAS has the asset kind Instance. Package Explorer makes NotApplicable there, Type in another place, and says in its own notice that Instance is the usual choice (F-EDT-02 AC1, [ADR 0019](docs/software/adr/0019-defaults-and-notices-of-new-objects.md)).
+- A stored file is in the package as soon as it is added, and gone as soon as it is removed, with Undo for both. The original marks a file `(add pending)` or `(delete pending)` until the save, and this editor has no such state: the panel of the files shows what the package holds (F-EDT-10 AC2).
 
 ### Fixed
 
@@ -232,6 +233,13 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - An AASX in which a later part has an object with the id of an object in an earlier part opened without a word, in strict mode too, and lost the later object, because the SDK skips it without a message. The editor now finds it, lists it, and refuses to overwrite the source, unless the two objects are equal.
 - Pasting over an existing element, Submodel, or AAS (Replace) did not bring the files of the pasted object into the package. It does now, in the same undo step.
 - The Package files panel lost its selection every time it refreshed.
+- Delete, Cut and Copy acted on the rows of the first parent only when the selection had rows under two parents, and said nothing. They act on every selected row, in the order of the tree, and a delete is one undo step. Rows of two packages are refused with a message, and the Move actions are off for them, because the history and the files belong to one package ([ADR 0023](docs/software/adr/0023-actions-on-the-whole-selection.md)).
+- A cell in a tab never suggested values, such as the media types of a File or Blob and the categories of a Property: the delegate looked them up by the text of the cell.
+- A refresh of a tab selected the current row alone, so a selection of several language entries was one row by the time Move acted on it.
+- Undo of an edit of the supplemental semantic ids restored the new list, because the SDK refills that list in place.
+- After a delete the tree selected the parent. It selects the sibling above the deleted row, and the parent when the row was the first (F-EDT-01 AC8).
+- A hint rule that raised showed its failure only in the Validation dock. The bar above a tab lists it too (F-EDT-01 AC14).
+- A submenu of the context menu that its owner deleted broke every later refresh of the view.
 
 ### Removed
 
@@ -286,6 +294,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - A concept description cannot have a data specification of another kind, because the SDK has only the IEC 61360 content. An element's idShort is never empty in a submodel (AASd-117), so the original's "take the idShort from the description" has no case. The SDK cannot hold a blank qualifier, extension or data specification record, so no preset has one to replace.
 - SAMM descriptions are recognized (identification first, no hint for a missing data specification, the structured order), and not modeled: the elements are edited as the extension that holds them. Concept descriptions from ECLASS are not done.
 - The embedded display of a concept description in the tab of an element is read-only. Edit the description in its own tab, which the button of the display opens.
+- A File or a Blob that is made without a content type has none, and is saved without one. V3.1 requires it, the SDK refuses an empty text for it, and no rule reports the missing value.
+- The keys of the shortcuts are not pressed in a test, because the offscreen platform has no active window and Qt then sends no shortcut. Each gesture is checked to belong to one action of the view.
 
 ## 0.4.13 - 2026-08-28
 
