@@ -51,6 +51,16 @@ def stub_modal_dialogs(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
 
+@pytest.fixture(autouse=True)
+def edit_mode_on() -> Iterator[None]:
+    """Starts every test in Edit mode, which is global state of the editor."""
+    from aas_editor.application.editing import edit_mode
+
+    edit_mode().set_editing(True)
+    yield
+    edit_mode().set_editing(True)
+
+
 @pytest.fixture(scope="session")
 def qapp() -> Iterator[QApplication]:
     """Provides the session-wide QApplication.

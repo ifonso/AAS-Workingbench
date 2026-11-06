@@ -11,7 +11,7 @@ import copy
 import traceback
 from typing import Any
 
-from PyQt6.QtCore import QModelIndex, Qt, QPersistentModelIndex
+from PyQt6.QtCore import QModelIndex, Qt
 from basyx.aas.model import Referable
 
 from aas_editor.tools.import_feature.import_settings import MAPPING_ATTR
@@ -19,7 +19,7 @@ from aas_editor.tools.import_feature.item_import_treeview import (
     ImportTreeViewItem,
 )
 from aas_editor.tools.import_feature.import_util_classes import PreObjectImport
-from aas_editor.models import PacksTable, SetDataItem
+from aas_editor.models import PacksTable
 from aas_editor.settings import (
     ATTRIBUTE_COLUMN,
     OBJECT_ROLE,
@@ -80,25 +80,6 @@ class ImportTable(PacksTable):
                         attrName = index.data(COLUMN_NAME_ROLE)
                         mapping = getattr(parentObj, MAPPING_ATTR, {})
                         mapping[attrName] = preObject.getMapping()
-
-                if role == Qt.ItemDataRole.EditRole:
-                    self.undo.pop()
-                    self.undo.append(
-                        SetDataItem(
-                            index=QPersistentModelIndex(index),
-                            value=preObject,
-                            role=role,
-                        )
-                    )
-                elif role == CLEAR_ROW_ROLE:
-                    self.undo.pop()
-                    self.undo.append(
-                        SetDataItem(
-                            index=QPersistentModelIndex(index),
-                            value=preObject,
-                            role=ADD_ITEM_ROLE,
-                        )
-                    )
 
             return result
         except Exception as e:

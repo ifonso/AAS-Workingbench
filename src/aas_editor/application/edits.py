@@ -80,6 +80,7 @@ class SetAttribute(Command):
         name: str,
         value: object,
         description: str | None = None,
+        origin: object | None = None,
     ) -> None:
         """Creates the command without changing anything.
 
@@ -89,6 +90,9 @@ class SetAttribute(Command):
             name: The name of the attribute.
             value: The new value.
             description: Text for Undo and Redo. Defaults to the attribute.
+            origin: The subscriber that updates itself when it pushes the
+                command. Only the first report names it; later ones, from
+                undo and redo, are for everyone.
         """
         self.description = description or f"Edit {name} of {describe(owner)}"
         self._observer = observer
@@ -96,6 +100,17 @@ class SetAttribute(Command):
         self._name = name
         self._value = value
         self._previous: object = None
+        self._origin = origin
+
+    @property
+    def owner(self) -> object:
+        """The object that has the attribute."""
+        return self._owner
+
+    @property
+    def name(self) -> str:
+        """The name of the attribute."""
+        return self._name
 
     @property
     def is_noop(self) -> bool:
@@ -110,7 +125,8 @@ class SetAttribute(Command):
         previous = getattr(self._owner, self._name)
         self._assign(self._value)
         self._previous = previous
-        self._observer.notify(Change.changed(self._owner))
+        origin, self._origin = self._origin, None
+        self._observer.notify(Change.changed(self._owner, origin))
 
     def revert(self) -> None:
         """Sets the previous value again."""
@@ -219,6 +235,7 @@ class ReplaceMember(Command):
         old: object,
         new: object,
         description: str | None = None,
+        origin: object | None = None,
     ) -> None:
         """Creates the command without changing anything.
 
@@ -228,17 +245,26 @@ class ReplaceMember(Command):
             old: The member to replace. For a mapping, a pair.
             new: The object that takes its place. For a mapping, a pair.
             description: Text for Undo and Redo.
+            origin: The subscriber that updates itself when it pushes the
+                command. Only the first report names it.
         """
         self.description = description or f"Edit {describe(old)}"
         self._observer = observer
         self._container = container
         self._old = old
         self._new = new
+        self._origin = origin
+
+    @property
+    def new(self) -> object:
+        """The object that takes the place of the old one."""
+        return self._new
 
     def apply(self) -> None:
         """Puts the new object in the place of the old one."""
         containers.replace_member(self._container, self._old, self._new)
-        self._observer.notify(Change.changed(self._container))
+        origin, self._origin = self._origin, None
+        self._observer.notify(Change.changed(self._container, origin))
 
     def revert(self) -> None:
         """Puts the old object back."""

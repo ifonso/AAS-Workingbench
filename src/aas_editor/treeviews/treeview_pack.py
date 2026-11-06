@@ -97,7 +97,10 @@ from aas_editor.utils.util import (
     getAttrTypeHint,
 )
 from aas_editor.utils.util_classes import ClassesInfo
+from aas_editor.application.commands import ReadOnlyError
+from aas_editor.application.editing import edit_mode
 from aas_editor.treeviews.base import HeaderView, TreeView
+from aas_editor.ui.actions import ViewKind
 from aas_editor.ui.save_warnings import (
     confirm_save,
     show_missing_files,
@@ -220,6 +223,7 @@ class PackHeaderView(HeaderView):
 class PackTreeView(TreeView):
     EMPTY_VIEW_MSG = "Drop AAS files here"
     EMPTY_VIEW_ICON = OPEN_DRAG_ICON
+    viewKind = ViewKind.PACKAGES
 
     def __init__(self, parent=None, **kwargs):
         self.copyBufferObjStores = dict()
@@ -401,6 +405,7 @@ class PackTreeView(TreeView):
             triggered=lambda: self.linkAllSubmodelsToFirstAas(),
             enabled=False,
         )
+        self.addEditingAction(self.linkSubmodelsAct)
 
         self.closeAct = QAction(
             "Close AAS file",
@@ -626,7 +631,7 @@ class PackTreeView(TreeView):
         """Make the 'Add existing submodel' menu visible if the 'submodel' element is clicked."""
         attrName = index.data(NAME_ROLE)
         self.addExistSubmodelsMenu.menuAction().setEnabled(
-            attrName == "submodels"
+            self.canEdit() and attrName == "submodels"
         )
 
     def updateOpenInActs(self, index: QModelIndex):
@@ -642,7 +647,7 @@ class PackTreeView(TreeView):
         for act in self.saveInActs:
             act.setEnabled(self.isSaveOk())
         self.saveAllAct.setEnabled(self.isSaveAllOk())
-        self.linkSubmodelsAct.setEnabled(self.isSaveOk())
+        self.linkSubmodelsAct.setEnabled(self.canEdit() and self.isSaveOk())
 
     def updateCloseActs(self, index: QModelIndex):
         self.closeAct.setEnabled(self.isCloseOk())
@@ -870,7 +875,12 @@ class PackTreeView(TreeView):
         return None
 
     def add_pack_to_tree(self, pack: Package):
-        self.model().setData(QModelIndex(), pack, ADD_ITEM_ROLE)
+        with self.acting("add"):
+            self.model().setData(QModelIndex(), pack, ADD_ITEM_ROLE)
+
+    def onHistoryChanged(self):
+        super().onHistoryChanged()
+        self.updateWindowModified()
 
     def updateWindowModified(self) -> None:
         """Derive the shared window modified flag from the per-package changed flags.
@@ -901,7 +911,8 @@ class PackTreeView(TreeView):
             # Only a written package changes its file, so a failed Save As
             # leaves the target as it was.
             pack.recordSaved(target)
-            pack.changed = False
+            # The saved state is the one that undo and redo compare with.
+            pack.commandStack.mark_saved()
             pack.delete_recovery(RECOVERY_DIR, for_file=originalFile)
             self.updateRecentFiles(pack.file.absolute().as_posix())
             self.updateWindowModified()
@@ -931,15 +942,14 @@ class PackTreeView(TreeView):
         :return: the number of references that were added
         """
         pack = self.currentIndex().data(PACKAGE_ROLE)
-        added = pack.all_submodels_to_aas()
-        if added:
-            pack.changed = True
-            (packItem,) = self.model().match(
-                QModelIndex(), OBJECT_ROLE, pack, hits=1
-            )
-            self.model().setData(packItem, NOT_GIVEN, UPDATE_ROLE)
-            self.updateWindowModified()
-        return added
+        try:
+            # One undo step. The rows follow the change that it reports.
+            return pack.all_submodels_to_aas()
+        except ReadOnlyError as e:
+            widgets.messsageBoxes.ErrorMessageBox.withDetailedText(
+                self, str(e)
+            ).exec()
+            return 0
 
     def savePackInTypeWithDialog(
         self, filetype=None, pack: Package = None
@@ -1068,7 +1078,8 @@ class PackTreeView(TreeView):
             self.closeFile(packItem)
 
     def closeFile(self, packItem: QModelIndex):
-        self.model().setData(packItem, NOT_GIVEN, CLEAR_ROW_ROLE)
+        with self.acting("delete"):
+            self.model().setData(packItem, NOT_GIVEN, CLEAR_ROW_ROLE)
         self.updateWindowModified()
 
     @staticmethod

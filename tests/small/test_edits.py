@@ -14,13 +14,13 @@ from aas_editor.application.changes import ChangeKind
 from aas_editor.application.changes import ModelChangeObserver
 from aas_editor.application.commands import CommandStack
 from aas_editor.application.commands import ReadOnlyError
+from aas_editor.application.editing import EditMode
 from aas_editor.application.edits import AddMember
 from aas_editor.application.edits import AddSupplementaryFile
 from aas_editor.application.edits import RemoveMember
 from aas_editor.application.edits import ReplaceMember
 from aas_editor.application.edits import SetAttribute
 from aas_editor.application.edits import link_submodels
-from aas_editor.application.editing import EditMode
 
 
 @pytest.fixture

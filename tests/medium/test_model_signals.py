@@ -213,14 +213,11 @@ class TestRowsAtPositions:
     def test_undo_removes_the_element_that_was_added_at_a_position(
         self, model_support, collection_tree
     ) -> None:
-        from aas_editor.settings.app_settings import UNDO_ROLE
-        from aas_editor.settings.app_settings import NOT_GIVEN
-
         collection_tree.source.addItem(
             make_property("n"), collection_tree.index, row=1
         )
 
-        collection_tree.source.setData(QModelIndex(), NOT_GIVEN, UNDO_ROLE)
+        model_support.package_of(collection_tree.source).commandStack.undo()
 
         assert collection_tree.rows() == ["a", "b"]
         assert collection_tree.elements() == ["a", "b"]

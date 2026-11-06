@@ -15,6 +15,7 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
+import contextlib
 import logging
 from typing import Optional, List, Any
 
@@ -26,6 +27,7 @@ from PyQt6.QtCore import (
     QAbstractItemModel,
     QModelIndex,
     QTimer,
+    QPersistentModelIndex,
 )
 from PyQt6.QtGui import (
     QMouseEvent,
@@ -53,7 +55,10 @@ import aas_editor.settings as settings
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 
+from aas_editor.application.commands import CommandStack, ReadOnlyError
+from aas_editor.application.editing import edit_mode
 from aas_editor.models.search_proxy_model import SearchProxyModel
+from aas_editor.ui.actions import ActionContext, ViewActions, ViewKind
 from aas_editor.settings.app_settings import *
 from aas_editor.additional.classes import DictItem
 from aas_editor.delegates import EditDelegate
@@ -91,8 +96,6 @@ from aas_editor.settings import (
     SC_ZOOM_OUT,
     OBJECT_ROLE,
     NAME_ROLE,
-    UNDO_ROLE,
-    REDO_ROLE,
     DEFAULT_FONT,
     MAX_FONT_SIZE,
     MIN_FONT_SIZE,
@@ -377,18 +380,6 @@ class BasicTreeView(QTreeView):
         window = self.window()
         window.setWindowModified(a0)
 
-    def markPackChanged(self, index: QModelIndex = None) -> None:
-        """Mark the package behind the given index as modified.
-
-        The window modified flag is shared by all packages and gets reset on any save/close,
-        so crash recovery relies on this per-package flag instead.
-        """
-        if index is None or not index.isValid():
-            index = self.currentIndex()
-        pack = index.data(PACKAGE_ROLE)
-        if pack is not None:
-            pack.changed = True
-
 
 class TreeView(BasicTreeView):
     openInCurrTabClicked = pyqtSignal(QModelIndex)
@@ -398,10 +389,18 @@ class TreeView(BasicTreeView):
 
     treeClipboard = TreeClipboard()
 
+    # Which actions of the registry this view shows (see ui/actions.py).
+    viewKind = ViewKind.DETAILS
+
     def __init__(self, parent=None, editEnabled: bool = True, **kwargs):
         super(TreeView, self).__init__(parent, **kwargs)
         self.editEnabled = editEnabled
         self.editingActions = []
+        # What the view does itself, and so what it should select afterwards:
+        # "add" or "delete". Other views that show the same objects do not
+        # move their selection when the rows of the objects change.
+        self._intent = None
+        self._stash = None
         self.setAlternatingRowColors(True)
         self.setAnimated(True)
         self.initActions()
@@ -420,6 +419,62 @@ class TreeView(BasicTreeView):
         )
         self.setPalette(p)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        edit_mode().subscribe(self.onEditModeChanged)
+
+    def canEdit(self) -> bool:
+        """Whether this view may change packages now (Edit mode, D18)"""
+        return self.editEnabled and edit_mode().is_editing
+
+    def onEditModeChanged(self, editing: bool):
+        if self.model() is None:
+            return
+        self.updateActions(self.currentIndex())
+        # The flags of the items decide whether they can be edited inline.
+        self.viewport().update()
+
+    def activePackage(self):
+        """Return the package that undo and redo act on in this view"""
+        package = QTreeView.currentIndex(self).data(PACKAGE_ROLE)
+        if package is None:
+            package = getattr(self.sourceModel(), "package", None)
+        return package
+
+    def activeStack(self) -> Optional[CommandStack]:
+        package = self.activePackage()
+        return None if package is None else package.commandStack
+
+    def actionContext(self) -> ActionContext:
+        """Return what a registered action works on"""
+        stack = self.activeStack()
+        return ActionContext(
+            view=self,
+            index=self.currentIndex(),
+            selection=tuple(self.selectedIndexes()),
+            package=self.activePackage(),
+            stack=stack,
+        )
+
+    @contextlib.contextmanager
+    def acting(self, intent: Optional[str]):
+        """Mark the changes of rows as the result of an action of this view.
+
+        :param intent: "add" selects the new row, "delete" selects the parent
+        """
+        previous = self._intent
+        self._intent = intent
+        try:
+            yield
+        finally:
+            self._intent = previous
+
+    def historyGroup(self, index: QModelIndex, description: str):
+        """Return a context in which all changes are one undo step"""
+        package = index.data(PACKAGE_ROLE) if index.isValid() else None
+        if package is None:
+            package = self.activePackage()
+        if package is None:
+            return contextlib.nullcontext()
+        return package.commandStack.group(description)
 
     def addEditingAction(self, action: QAction):
         self.addAction(action)
@@ -662,6 +717,12 @@ class TreeView(BasicTreeView):
         )
         self.addAction(self.zoomOutAct)
 
+        # The actions that features registered in ui/actions.py
+        self.registeredActions = ViewActions(
+            self, self.viewKind, self.actionContext, self.canEdit
+        )
+        self.editingActions.extend(self.registeredActions.mutating_actions)
+
     def initMenu(self) -> None:
         self.attrsMenu = QMenu(self)
         self.attrsMenu.addAction(self.cutAct)
@@ -676,6 +737,7 @@ class TreeView(BasicTreeView):
         self.attrsMenu.addSeparator()
         self.attrsMenu.addAction(self.undoAct)
         self.attrsMenu.addAction(self.redoAct)
+        self.registeredActions.add_to_menu(self.attrsMenu)
         self.attrsMenu.addSeparator()
         self.attrsMenu.addAction(self.zoomInAct)
         self.attrsMenu.addAction(self.zoomOutAct)
@@ -699,7 +761,9 @@ class TreeView(BasicTreeView):
             openInMenu.addAction(act)
 
     def openMenu(self, point):
-        self.pasteAct.setEnabled(self.isPasteOk(self.currentIndex()))
+        self.pasteAct.setEnabled(
+            self.canEdit() and self.isPasteOk(self.currentIndex())
+        )
         self.attrsMenu.exec(self.viewport().mapToGlobal(point))
 
     def buildHandlers(self):
@@ -713,37 +777,122 @@ class TreeView(BasicTreeView):
         self.selectionModel().currentChanged.connect(self.onCurrentChanged)
         self.setCurrentIndex(self.rootIndex())
         self.model().dataChanged.connect(self.onDataChanged)
+        self.model().rowsAboutToBeRemoved.connect(self.onRowsAboutToBeRemoved)
         self.model().rowsInserted.connect(self.onRowsInserted)
         self.model().rowsRemoved.connect(self.onRowsRemoved)
+        history = getattr(self.sourceModel(), "historyChanged", None)
+        if history is not None:
+            history.connect(self.onHistoryChanged)
         self.header().updateMenu()
 
     def onCurrentChanged(self, current: QModelIndex, previous: QModelIndex):
         self.updateActions(current)
 
+    def onHistoryChanged(self):
+        """The undo history or the saved state of a package changed"""
+        self.updateUndoRedoActs()
+
     def onDataChanged(
         self, topLeft: QModelIndex, bottomRight: QModelIndex, roles
     ):
         self.itemDataChangeFailed(topLeft, bottomRight, roles)
-        # completion list will be hidden now; we will show it again after a delay
-        QTimer.singleShot(100, self.updateUndoRedoActs)
-        # self.setCurrentIndex(bottomRight)
+
+    # The rows below an item are read again when its object changed, which
+    # removes and adds all of them. The view remembers what was expanded and
+    # which row was current, and puts that back, so that a tab that follows a
+    # change of another tab keeps its state.
+
+    def onRowsAboutToBeRemoved(
+        self, parent: QModelIndex, first: int, last: int
+    ):
+        model = self.model()
+        if first != 0 or last != model.rowCount(parent) - 1:
+            return
+        self._stash = (
+            QPersistentModelIndex(parent),
+            self._expandedPaths(parent),
+            self._currentPath(parent),
+        )
+        # The rows are added again right away, or not at all.
+        QTimer.singleShot(0, self._dropStash)
+
+    def _dropStash(self):
+        self._stash = None
+
+    def _expandedPaths(self, parent: QModelIndex) -> list:
+        paths = []
+
+        def walk(index: QModelIndex, path: tuple):
+            for row in range(self.model().rowCount(index)):
+                child = self.model().index(row, 0, index)
+                if self.isExpanded(child):
+                    childPath = path + (child.data(NAME_ROLE),)
+                    paths.append(childPath)
+                    walk(child, childPath)
+
+        walk(parent, ())
+        return paths
+
+    def _currentPath(self, parent: QModelIndex):
+        """Return the names from the parent down to the current index"""
+        current = QTreeView.currentIndex(self)
+        names = []
+        index = current
+        while index.isValid() and index != parent:
+            names.append(index.siblingAtColumn(0).data(NAME_ROLE))
+            index = index.parent()
+        if not current.isValid() or index != parent or not names:
+            return None
+        return tuple(reversed(names)), current.column()
+
+    def _indexAtPath(self, parent: QModelIndex, path: tuple) -> QModelIndex:
+        index = parent
+        for name in path:
+            for row in range(self.model().rowCount(index)):
+                child = self.model().index(row, 0, index)
+                if child.data(NAME_ROLE) == name:
+                    index = child
+                    break
+            else:
+                return QModelIndex()
+        return index
+
+    def _restoreViewState(self, parent: QModelIndex) -> bool:
+        stash, self._stash = self._stash, None
+        if stash is None or QModelIndex(stash[0]) != parent:
+            return False
+        _, expanded, current = stash
+        for path in expanded:
+            index = self._indexAtPath(parent, path)
+            if index.isValid():
+                self.setExpanded(index, True)
+        if current is not None:
+            path, column = current
+            index = self._indexAtPath(parent, path)
+            if index.isValid():
+                self.setCurrentIndex(index.siblingAtColumn(column))
+        return True
 
     def onRowsInserted(self, parent: QModelIndex, first: int, last: int):
-        index = self.model().index(last, 0, parent)
-        self.setCurrentIndex(index)
-        QTimer.singleShot(100, self.updateUndoRedoActs)
+        self._restoreViewState(parent)
+        if self._intent == "add":
+            self.setCurrentIndex(self.model().index(last, 0, parent))
+        elif self._intent == "delete":
+            self.setCurrentIndex(parent)
 
     def onRowsRemoved(self, parent: QModelIndex, first: int, last: int):
-        self.setCurrentIndex(parent)
-        QTimer.singleShot(100, self.updateUndoRedoActs)
+        if self._intent == "delete" and self._stash is None:
+            self.setCurrentIndex(parent)
 
     def updateActions(self, index: QModelIndex):
-        if self.editEnabled:
+        if self.canEdit():
             self.updateCopyCutPasteDelActs(index)
             self.updateEditActs(index)
             self.updateAddActs(index)
         else:
             self.disableAllEditingActs()
+        self.updateUndoRedoActs()
+        self.registeredActions.update()
 
     def disableAllEditingActs(self):
         for act in self.editingActions:
@@ -779,13 +928,19 @@ class TreeView(BasicTreeView):
         self.addAct.setText(addActText)
 
     def updateUndoRedoActs(self):
-        """update undo/redo actions"""
-        # check if there is undo act
-        undoEnabled = bool(self.model().data(QModelIndex(), UNDO_ROLE))
+        """update undo/redo actions by the history of the active package"""
+        stack = self.activeStack()
+        editing = stack is not None and self.canEdit()
+        undoEnabled = editing and stack.can_undo
+        redoEnabled = editing and stack.can_redo
         self.undoAct.setEnabled(undoEnabled)
-        # check if there is redo act
-        redoEnabled = bool(self.model().data(QModelIndex(), REDO_ROLE))
+        self.undoAct.setText(
+            f"Undo {stack.undo_description}" if undoEnabled else "Undo"
+        )
         self.redoAct.setEnabled(redoEnabled)
+        self.redoAct.setText(
+            f"Redo {stack.redo_description}" if redoEnabled else "Redo"
+        )
 
     def zoomIn(self):
         self.zoom(delta=+2)
@@ -814,10 +969,27 @@ class TreeView(BasicTreeView):
             print("zoom pressed with no model")
 
     def onUndo(self):
-        self._setItemData(QModelIndex(), NOT_GIVEN, UNDO_ROLE)
+        self._stepHistory(lambda stack: stack.undo())
 
     def onRedo(self):
-        self._setItemData(QModelIndex(), NOT_GIVEN, REDO_ROLE)
+        self._stepHistory(lambda stack: stack.redo())
+
+    def _stepHistory(self, step):
+        """Take back or apply a step of the active package, or tell why not"""
+        stack = self.activeStack()
+        if stack is None:
+            return
+        try:
+            step(stack)
+        except ReadOnlyError as e:
+            widgets.messsageBoxes.ErrorMessageBox.withDetailedText(
+                self, str(e)
+            ).exec()
+        except Exception as e:
+            logging.exception("Undo or redo failed")
+            widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                self, f"Undo or redo failed: {e}"
+            ).exec()
 
     def onUpdate(self):
         index = self.currentIndex()
@@ -832,18 +1004,21 @@ class TreeView(BasicTreeView):
 
     def onOneItemDelClear(self, index: QModelIndex):
         attribute = index.data(NAME_ROLE)
-        try:
-            parentObjType = type(index.data(PARENT_OBJ_ROLE))
-            defaultVal = getDefaultVal(parentObjType, attribute)
-            self._setItemData(index, defaultVal, CLEAR_ROW_ROLE)
-        except (AttributeError, IndexError):
-            self._setItemData(index, NOT_GIVEN, CLEAR_ROW_ROLE)
+        with self.acting("delete"):
+            try:
+                parentObjType = type(index.data(PARENT_OBJ_ROLE))
+                defaultVal = getDefaultVal(parentObjType, attribute)
+                self._setItemData(index, defaultVal, CLEAR_ROW_ROLE)
+            except (AttributeError, IndexError):
+                self._setItemData(index, NOT_GIVEN, CLEAR_ROW_ROLE)
 
     def onMultipleDelClear(self, indexes: List[QModelIndex]):
-        for index in sorted(
-            indexes, key=lambda x: x.row(), reverse=True
-        ):  # reverse to avoid shifting rows
-            self.onOneItemDelClear(index)
+        # All deletions are one undo step.
+        with self.historyGroup(indexes[0], f"Delete {len(indexes)} items"):
+            for index in sorted(
+                indexes, key=lambda x: x.row(), reverse=True
+            ):  # reverse to avoid shifting rows
+                self.onOneItemDelClear(index)
 
     def onCopy(self):
         indexes = self.selectedIndexes()
@@ -859,7 +1034,7 @@ class TreeView(BasicTreeView):
         self.treeClipboard.append(data2copy, objRepr=text2copy)
         clipboard = QApplication.clipboard()
         clipboard.setText(text2copy, QClipboard.Mode.Clipboard)
-        self.pasteAct.setEnabled(self.isPasteOk(index))
+        self.pasteAct.setEnabled(self.canEdit() and self.isPasteOk(index))
 
     def onMultipleItemsCopy(self, indexes: List[QModelIndex]):
         # Get top level indexes
@@ -962,19 +1137,21 @@ class TreeView(BasicTreeView):
             except TypeError:
                 iterItemTypehint = getIterItemTypeHint(type(targetObj))
             paste_was_done = False
-            for obj2paste in objs2paste:
-                if checkType(obj2paste, iterItemTypehint):
-                    self._onPasteAdd(
-                        index, obj2paste, withDialog=pasteWithDialog
-                    )
-                    paste_was_done = True
+            with self.historyGroup(index, "Paste"):
+                for obj2paste in objs2paste:
+                    if checkType(obj2paste, iterItemTypehint):
+                        self._onPasteAdd(
+                            index, obj2paste, withDialog=pasteWithDialog
+                        )
+                        paste_was_done = True
             if paste_was_done:
                 return
         if isIterable(targetParentObj):
-            for obj2paste in objs2paste:
-                self._onPasteAdd(
-                    index.parent(), obj2paste, withDialog=pasteWithDialog
-                )
+            with self.historyGroup(index, "Paste"):
+                for obj2paste in objs2paste:
+                    self._onPasteAdd(
+                        index.parent(), obj2paste, withDialog=pasteWithDialog
+                    )
         else:
             self._onPasteReplace(
                 index, objs2paste[0], withDialog=pasteWithDialog
@@ -1101,35 +1278,37 @@ class TreeView(BasicTreeView):
                 index, value, Qt.ItemDataRole.EditRole
             )
         elif role == ADD_ITEM_ROLE:
-            if isinstance(value, dict):
-                for key, value in value.items():
-                    result = self.model().setData(
-                        index, DictItem(key, value), ADD_ITEM_ROLE
-                    )
-            elif isSimpleIterable(value):
-                for i in value:
-                    result = self.model().setData(index, i, ADD_ITEM_ROLE)
-            else:
-                result = self.model().setData(index, value, ADD_ITEM_ROLE)
+            with self.acting("add"):
+                result = self._addItemData(index, value)
         elif role == CLEAR_ROW_ROLE:
             result = self.model().setData(index, value, CLEAR_ROW_ROLE)
-        elif role == UNDO_ROLE:
-            result = self.model().setData(index, value, UNDO_ROLE)
-        elif role == REDO_ROLE:
-            result = self.model().setData(index, value, REDO_ROLE)
         else:
             raise ValueError(
                 "Role can be only of Item Edit type: "
-                "EditRole, AddItemRole, CLEAR_ROLE, UNDO_ROLE, REDO_ROLE"
+                "EditRole, AddItemRole, CLEAR_ROLE"
             )
-        self.setWindowModified(True)
-        self.markPackChanged(index)
         return result
 
-    def commitData(self, editor: QWidget) -> None:
-        super(TreeView, self).commitData(editor)
-        self.setWindowModified(True)
-        self.markPackChanged()
+    def _addItemData(self, index: QModelIndex, value: Any) -> bool:
+        """Add a value, or each of the values in a dict or a collection"""
+        if isinstance(value, dict):
+            entries = [DictItem(key, val) for key, val in value.items()]
+        elif isSimpleIterable(value):
+            entries = list(value)
+        else:
+            return self.model().setData(index, value, ADD_ITEM_ROLE)
+        result = False
+        # All entries are one undo step.
+        with self.historyGroup(index, f"Add {len(entries)} items"):
+            for entry in entries:
+                result = self.model().setData(index, entry, ADD_ITEM_ROLE)
+        return result
+
+    def edit(self, index, *args):
+        """Start editing, unless Read mode is on or the view may not edit"""
+        if not self.canEdit():
+            return False
+        return super().edit(index, *args)
 
     def itemDataChangeFailed(self, topLeft, bottomRight, roles):
         """Check dataChanged signal if data change failed and show Error dialog if failed"""
