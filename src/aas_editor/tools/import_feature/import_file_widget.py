@@ -360,7 +360,7 @@ class SettingsDialog(QDialog):
     def __init__(
         self,
         parent=None,
-        title="AAS Manager Import Tool",
+        title="AAS Workingbench Import Tool",
         *,
         importSettings: ImportSettings,
     ):
@@ -448,7 +448,7 @@ class SettingsDialog(QDialog):
 
 
 class ImportSettingsDialog(SettingsDialog):
-    def __init__(self, parent=None, title="AAS Manager Excel Import Tool"):
+    def __init__(self, parent=None, title="AAS Workingbench Excel Import Tool"):
         super(SettingsDialog, self).__init__(parent)
         self.setWindowTitle(title)
         self.buttonBox = QDialogButtonBox(

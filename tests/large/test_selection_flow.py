@@ -112,7 +112,7 @@ def test_two_rows_open_the_panel_and_a_button_moves_them(editor) -> None:
 
     assert hidden_at_first
     assert opened
-    assert header == "Multiple selected elements"
+    assert header == "Several elements selected"
     assert moved != before
     assert undone == (before, True)
     assert not editor.stack.can_undo

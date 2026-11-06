@@ -87,7 +87,7 @@ def buffer_objects(
     clipboard = view.treeClipboard
     if clipboard.isEmpty():
         raise ClipboardError(
-            "No sufficient information in the paste buffer or on the clipboard"
+            "Nothing to paste: the paste buffer and the clipboard are empty"
         )
     held = clipboard.objects[-1]
     entries = cast("list[Any]", held if isinstance(held, list) else [held])

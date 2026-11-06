@@ -115,17 +115,15 @@ def test_the_three_orders_that_cannot_sort_say_so_and_change_nothing(
     with pytest.raises(SortRefused) as refused:
         plan_sort(store, order)
 
-    assert (
-        str(refused.value) == CANNOT_SORT == "Cannot apply selected sort order!"
-    )
+    assert str(refused.value) == CANNOT_SORT
     assert _ids(store) == before
 
 
 def test_a_package_without_descriptions_has_nothing_to_sort() -> None:
-    with pytest.raises(SortRefused, match="No concept descriptions found"):
+    with pytest.raises(SortRefused, match="no concept descriptions to sort"):
         plan_sort(make_store(make_shell()), ConceptOrder.ID)
 
-    assert NOTHING_TO_SORT.startswith("No concept descriptions found")
+    assert NOTHING_TO_SORT == "The package has no concept descriptions to sort"
 
 
 def test_a_sorted_store_is_a_plan_that_changes_nothing() -> None:

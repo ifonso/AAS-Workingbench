@@ -38,7 +38,7 @@ from aas_editor.domain.reference_picker import candidates_in
 from aas_editor.domain.reference_picker import reference_to
 from aas_editor.domain.references import describe_reference
 
-TITLE = "Choose the target of the reference"
+TITLE = "Pick what the reference points to"
 MODEL_TEXT = "Model reference through the path of the target"
 EXTERNAL_TEXT = "External reference to the id of the target"
 KIND_TIP = (
@@ -274,7 +274,7 @@ class ReferencePickerDialog(QDialog):
     def _update_preview(self) -> None:
         ok_button = self.ok_button
         if self._chosen is None:
-            self.preview.setText("Select the target of the reference.")
+            self.preview.setText("Pick a target from the list.")
             ok_button.setEnabled(False)
             return
         try:

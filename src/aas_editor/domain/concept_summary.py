@@ -33,7 +33,7 @@ from aas_editor.domain.data_specifications import iec_content_of
 from aas_editor.domain.references import describe_reference
 from aas_editor.domain.samm import samm_element_of
 
-NOT_FOUND = "ConceptDescription cannot be looked up within the AAS environment!"
+NOT_FOUND = "The package has no concept description that this semantic id names"
 """The title of the group that Package Explorer shows for a missing description."""
 
 # How many pairs of a value list are written out before the rest is counted.

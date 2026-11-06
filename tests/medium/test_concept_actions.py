@@ -225,9 +225,9 @@ class TestCreateFromSemanticId:
         enabled = lab.act("concepts.create")
 
         assert enabled
-        assert lab.messages[-1].startswith(
-            "Cannot create a concept description because no valid semantic "
-            "id is present in"
+        assert lab.messages[-1].endswith(
+            "has no valid semantic id, so there is no concept description to "
+            "create."
         )
         assert "Plain" in lab.messages[-1]
         assert _concept_ids(lab.store) == []

@@ -55,8 +55,8 @@ def copy_name_problem(id_short: str) -> str | None:
     """
     if COPY_NAME_MARK in id_short:
         return (
-            "The idShort contains 3 dashes. It was probably named "
-            "automatically to keep it unique after a copy and paste"
+            "This idShort holds '---', the mark of a name that a copy and "
+            "paste made. Give it a name of its own if it is not a copy"
         )
     return None
 
@@ -72,8 +72,8 @@ def key_value_problem(value: str) -> str | None:
     """
     if _WHITESPACE.search(value):
         return (
-            "There seems to be whitespace in this reference. This could "
-            "lead to matching problems"
+            "This key value holds a space or another whitespace character, "
+            "so a lookup of the reference may miss its target"
         )
     return None
 
@@ -94,7 +94,8 @@ def global_asset_id_problem(value: str | None) -> str | None:
 
 
 ENTITY_GLOBAL_ID_NOTICE = (
-    "Please choose the global identifier for the SelfManagedEntity"
+    "Enter the global asset id of the asset that this self-managed entity "
+    "stands for"
 )
 
 _NAMED = {

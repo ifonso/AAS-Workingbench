@@ -41,6 +41,13 @@ No criterion is left as a gap, and none is left implemented without a test. WP13
 The 8 `P` rows are about the wording of a message or a log line (F-EDT-05 AC17, F-EDT-06 AC13, F-EDT-08 AC7, AC10 and AC11, F-EDT-09 AC7 and AC17), and the press of a key (F-EDT-01 AC13), which needs a display.
 Most O rows are ECLASS (F-EDT-04 AC21, F-EDT-11 AC8 to AC14, AC18 and AC22) and repository features, which the plan keeps out of v1.
 
+## Wording that differs on purpose
+
+Some criteria quote a text of the original, such as a notice or an error.
+This project says what the user needs in its own words, so a quoted text is not copied, and the criteria are met by the behavior and not by the sentence.
+The rows that quote one are F-EDT-03 AC15 (the display of the description that a semantic id names, and its missing description), F-EDT-04 AC17 (the notice for the global asset id of a self-managed entity), F-EDT-05 AC12 (the refusal of a sort order), F-EDT-06 AC1, AC9 and AC16 (the hints for display names, descriptions, whitespace in a key, and a deprecated category), F-EDT-08 AC7 (the text that is refused), F-EDT-09 AC1 (the header of the selection panel) and F-EDT-11 AC16 (create from a semantic id).
+A test of one of them asserts the sentence of this project.
+
 ## What this audit checked itself
 
 Ten claims looked doubtful, and were checked in the code or by running it.
@@ -165,7 +172,7 @@ One fixture was wrong, and is fixed: `test_load_report_flow.py` let the window o
 | 14 | D | The most common semantic id of the items, not the first child (ADR 0012). |
 | 15 | O | Plan: "Emit event". |
 | 16 | T | `test_element_types.py` for BasicEventElement, and `::test_form_and_attributes_have_every_attribute_of_the_class`. |
-| 17 | T | `test_entity_form.py::test_a_new_entity_is_self_managed_and_asks_for_the_global_asset_id`: the type is preset, the form says "Please choose the global identifier for the SelfManagedEntity" until the field has text. `test_validation_hints.py::test_a_self_managed_entity_without_a_global_asset_id_gets_a_notice` for the same notice in the bar of a tab. |
+| 17 | T | `test_entity_form.py::test_a_new_entity_is_self_managed_and_asks_for_the_global_asset_id`: the type is preset, the form says "Enter the global asset id of the asset that this self-managed entity stands for" until the field has text. `test_validation_hints.py::test_a_self_managed_entity_without_a_global_asset_id_gets_a_notice` for the same notice in the bar of a tab. |
 | 18 | T | `test_element_types.py::test_a_variable_goes_into_the_list_it_was_added_under_only`, for the input, output and in/out lists: the variable is in that list only, one undo step, saved and reloaded. The Operation case of `test_element_types.py` adds to the input and the output list. The three lists share one namespace, so a name used in one is refused in another (AASd-022). |
 | 19 | T | `test_element_edit_criteria.py::test_a_cut_element_pasted_into_the_input_variables_leaves_its_source`: cut from a collection, Paste into the input variables of an Operation: the source is empty, the variable is in the input list only, and two undo steps give the start back. |
 | 20 | D | An element has an idShort. Items of a list do not, and the case is not covered (ADR 0014). |
@@ -328,7 +335,7 @@ One fixture was wrong, and is fixed: `test_load_report_flow.py` let the window o
 | 13 | O | Same. |
 | 14 | O | Same. |
 | 15 | T | `test_concept_create_empty.py` (a `urn:uuid:` id and nothing else, selected, one undo step, saved; the semantic id of an element is the same object afterwards). |
-| 16 | T | `test_concept_actions.py::TestCreateFromSemanticId::test_an_element_without_semantic_id_says_why_nothing_is_created`. The text is `Cannot create a concept description because no valid semantic id is present in ...`. |
+| 16 | T | `test_concept_actions.py::TestCreateFromSemanticId::test_an_element_without_semantic_id_says_why_nothing_is_created`. The text is `... has no valid semantic id, so there is no concept description to create.`. |
 | 17 | T | `test_concepts.py::TestNewConcept::test_the_id_is_the_first_key_and_the_names_come_from_the_element`. |
 | 18 | O | Part of ECLASS import. |
 | 19 | D | Jump works in the tabs, where references are shown, not in the tree (changelog). `test_reference_jump.py`. |

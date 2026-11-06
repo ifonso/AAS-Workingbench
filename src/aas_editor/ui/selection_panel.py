@@ -1,7 +1,7 @@
 """The panel that shows what is selected in the package tree.
 
 Package Explorer replaces its editor with a panel when several nodes are
-selected: the header `Multiple selected elements`, and the buttons that apply
+selected: the header `Several elements selected`, and the buttons that apply
 to all of them. This editor shows the same in a dock below the tree, because
 the tabs on the right keep showing the current object.
 
@@ -126,7 +126,7 @@ class SelectionPanel(QWidget):
     """Names the selection and holds the buttons for it.
 
     Attributes:
-        header_label: The title, `Multiple selected elements` for several rows.
+        header_label: The title, `Several elements selected` for several rows.
         detail_label: The kinds, the parent, and what is not offered.
         buttons: The buttons by their text.
     """

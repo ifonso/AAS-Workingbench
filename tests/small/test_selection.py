@@ -70,7 +70,7 @@ class TestSummary:
 
         summary = summarize([(first, None), (second, None)])
 
-        assert summary.header == MULTIPLE_HEADER == "Multiple selected elements"
+        assert summary.header == MULTIPLE_HEADER == "Several elements selected"
         assert summary.kinds_text == "2 Property"
         assert summary.parents == 1
         assert summary.parent_line.startswith(

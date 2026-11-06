@@ -30,16 +30,31 @@ jobs:
         id: get_version
         run: echo "version=$(uv version --short)" >> $GITHUB_OUTPUT
 
+      - name: Get metamodel version
+        id: get_metamodel
+        run: |
+          VERSION=$(sed -n 's/^AAS_METAMODEL_VERSION = "\(.*\)"\r*$/\1/p' src/aas_editor/settings/app_settings.py)
+          test -n "${VERSION}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
       - name: Get previous tag
         id: get_prev_tag
-        run: echo "prev-tag=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_OUTPUT
+        # A repository without tags has no previous tag. The output is then
+        # empty, and the notes list every commit.
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          echo "prev-tag=${PREV_TAG}" >> $GITHUB_OUTPUT
 
       - name: Generate release notes
         id: generate_release_notes
         run: |
           PREV_TAG=${{ steps.get_prev_tag.outputs.prev-tag }}
           CURRENT_TAG=v${{ steps.get_version.outputs.version }}
-          RELEASE_NOTES=$(git log $PREV_TAG..HEAD --pretty=format:"%h - %s (%an)")
+          if [ -n "${PREV_TAG}" ]; then
+            RELEASE_NOTES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"%h - %s (%an)")
+          else
+            RELEASE_NOTES=$(git log HEAD --pretty=format:"%h - %s (%an)")
+          fi
           echo "${RELEASE_NOTES}" > release_notes.txt
           {
             echo "notes<<EOF"
@@ -54,7 +69,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Release V${{ steps.get_version.outputs.version }} (Support of AAS Metamodel V3.0)
+          release_name: Release V${{ steps.get_version.outputs.version }} (Support of AAS Metamodel V${{ steps.get_metamodel.outputs.version }})
           body: ${{ steps.generate_release_notes.outputs.notes }}
           draft: false
           prerelease: false
@@ -87,7 +102,7 @@ jobs:
               cd dist
               7z a AAS_Manager_Win.zip AAS_Manager
             OUT_FILE_NAME: AAS_Manager_Win.zip
-            ASSET_MIME: application/vnd.microsoft.portable-executable
+            ASSET_MIME: application/zip
     steps:
       - uses: actions/checkout@v4
 
