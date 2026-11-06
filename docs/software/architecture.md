@@ -218,7 +218,7 @@ infrastructure ──────┘
 | Capability | Capability | Only the shared attributes, both ways. |
 | BasicEventElement | BasicEventElement | Only the shared attributes. It converts to every type, but no type converts to it. |
 
-Every pair carries the shared attributes: idShort, display name, category, description, semantic id, supplemental semantic ids, qualifiers, extensions, and embedded data specifications. Any pair across groups carries nothing else, and lists everything specific as lost. An item of a list, and nothing in a list, converts, because the list fixes its type (AASd-108), and the annotations of a relationship convert to data elements only.
+Every pair carries the shared attributes: idShort, display name, category, description, semantic id, supplemental semantic ids, qualifiers, extensions, and embedded data specifications. Any pair across groups carries nothing else, and lists everything specific as lost. An item of a list does not convert, because the list fixes its type (AASd-108), and the annotations of a relationship convert to data elements only.
 
 ### Registering an action
 
