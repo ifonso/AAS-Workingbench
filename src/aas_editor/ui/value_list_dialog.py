@@ -15,15 +15,16 @@ from PyQt6.QtWidgets import QPlainTextEdit
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
-from aas_editor.ui.colors import problem_style
+from aas_editor.ui.colors import style_as_problem
 from aas_editor.application.operations.data_specs import ImportPlan
 from aas_editor.application.operations.data_specs import plan_value_list_import
 from aas_editor.domain.references import describe_reference
 from aas_editor.domain.value_list_text import ValueListParse
 from aas_editor.domain.value_list_text import parse_value_pairs
-from aas_editor.ui.concept_dialogs import accept_button
 from aas_editor.ui.concept_dialogs import answered_yes
-from aas_editor.ui.concept_dialogs import make_buttons
+from aas_editor.ui.dialog_layout import accept_button
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import make_button_box
 from aas_editor.ui.reference_dialogs import ReferenceTable
 
 STATUS_ADD = "will be added"
@@ -75,10 +76,10 @@ class ValueListImportDialog(QDialog):
         self.table = ReferenceTable(["Entry", "Value", "Value id", "Result"])
         self.error_label = QLabel()
         self.error_label.setWordWrap(True)
-        self.error_label.setStyleSheet(problem_style())
+        style_as_problem(self.error_label)
         self.summary_label = QLabel()
         self.summary_label.setWordWrap(True)
-        self.buttons = make_buttons(self, "Import")
+        self.buttons = make_button_box(self, "Import", safe_default=True)
         layout = QVBoxLayout(self)
         layout.addWidget(intro)
         layout.addWidget(self.text_edit)
@@ -86,6 +87,7 @@ class ValueListImportDialog(QDialog):
         layout.addWidget(self.table, 1)
         layout.addWidget(self.summary_label)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.text_edit.textChanged.connect(self._update)
         self._update()

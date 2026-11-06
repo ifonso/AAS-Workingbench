@@ -141,3 +141,27 @@ def test_nothing_is_chosen_when_the_filter_matches_nothing(
 
     assert dialog.chosen is None
     assert not dialog.addButton.isEnabled()
+
+
+def test_a_refused_row_follows_a_switch_of_theme(widgets, qapp) -> None:
+    from aas_editor.domain.design_tokens import DARK
+    from aas_editor.domain.design_tokens import LIGHT
+    from aas_editor.ui.theme import FLUENT_DARK
+    from aas_editor.ui.theme import FLUENT_LIGHT
+    from aas_editor.ui.theme import theme_manager
+
+    props = [make_property("A"), make_property("B")]
+    dialog = None
+    try:
+        theme_manager().apply(FLUENT_LIGHT)
+        dialog = widgets.change([make_submodel(elements=props)], props)
+        dialog.set_attribute(BulkAttribute.ID_SHORT)
+        dialog.set_pattern("Same")
+        before = dialog.table.item(0, 3).foreground().color().name()
+
+        theme_manager().apply(FLUENT_DARK)
+        after = dialog.table.item(0, 3).foreground().color().name()
+    finally:
+        theme_manager().reset_to_native()
+
+    assert (before, after) == (LIGHT.status_error, DARK.status_error)

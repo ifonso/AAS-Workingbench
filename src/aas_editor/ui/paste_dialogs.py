@@ -19,6 +19,7 @@ from aas_editor.application.operations.companions import ConceptChoice
 from aas_editor.application.operations.companions import ConceptConflict
 from aas_editor.application.operations.companions import ConceptPlan
 from aas_editor.domain.references import describe_object
+from aas_editor.ui.dialog_layout import finish_dialog
 
 TITLE = "Copy & Paste"
 
@@ -157,6 +158,7 @@ class PasteTextDialog(QDialog):
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
     def chosen_place(self) -> str | None:
         """Returns the key of the chosen place, or None if there is none."""

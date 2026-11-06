@@ -33,6 +33,7 @@ from aas_editor.ui.actions import ViewKind
 from aas_editor.ui.actions import default_registry
 from aas_editor.ui.actions import register_action
 from aas_editor.ui.create_actions import show_problem
+from aas_editor.ui.dialog_layout import finish_dialog
 
 REMOVE_ID = "bulk.remove_attributes"
 TITLE = "Remove attributes"
@@ -87,6 +88,7 @@ class RemoveAttributesDialog(QDialog):
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
+        finish_dialog(self, destructive=True)
         self._update()
 
     def chosen(self) -> set[RemovableAttribute]:

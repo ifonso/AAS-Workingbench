@@ -19,6 +19,7 @@ from typing import Any
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QShowEvent
 from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QCompleter
 from PyQt6.QtWidgets import QDialog
@@ -36,7 +37,10 @@ from basyx.aas import model
 from basyx.aas.model import datatypes
 
 from aas_editor.ui.colors import problem_border_style
-from aas_editor.ui.colors import problem_style
+from aas_editor.ui.colors import style_as_problem
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import focus_first_field
+from aas_editor.ui.theme import theme_manager
 from aas_editor.domain import blob_content
 from aas_editor.domain import typed_values
 from aas_editor.domain import value_types
@@ -186,6 +190,8 @@ class ValueLineEdit(QLineEdit):
         # The text a view put in, so that it can tell whether the user changed it.
         self.initial_text = ""
         self.textChanged.connect(self._refresh)
+        # The red frame has the colour of the theme, so it is made again.
+        theme_manager().changed.connect(self._refresh)
         self._refresh()
 
     def value_type(self) -> XsdType:
@@ -277,7 +283,7 @@ class ValueEdit(QWidget):
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
         self.problem_label.setVisible(False)
-        self.problem_label.setStyleSheet(problem_style())
+        style_as_problem(self.problem_label)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.line)
@@ -407,7 +413,7 @@ class BinaryEdit(QWidget):
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
         self.problem_label.setVisible(False)
-        self.problem_label.setStyleSheet(problem_style())
+        style_as_problem(self.problem_label)
         self.load_button = QPushButton("Load from file...", self)
         self.save_button = QPushButton("Save to file...", self)
         self.clear_button = QPushButton("Clear", self)
@@ -739,7 +745,13 @@ class ValueEditDialog(QDialog):
                     )
                 )
         layout.addWidget(self.buttons)
+        finish_dialog(self)
         self._validate()
+
+    def showEvent(self, event: QShowEvent | None) -> None:  # noqa: N802
+        """Starts in the field of the value, not on a button."""
+        super().showEvent(event)
+        focus_first_field(self)
 
     def getObj2add(self) -> Any:  # noqa: N802 - the name the views call
         """Returns the value the user entered, or None to clear it.

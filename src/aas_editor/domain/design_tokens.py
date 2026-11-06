@@ -303,6 +303,12 @@ exempt, and are never the only edge of a control."""
 SPACING: Final = (0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32)
 """The ramp of spacing in pixels. Fluent's, on a base of 4."""
 
+DIALOG_PADDING: Final = 12
+"""The space between the edge of a dialog and its content, in pixels."""
+
+DIALOG_GAP: Final = 8
+"""The space between the parts of a dialog, in pixels."""
+
 RADIUS_BADGE: Final = 2
 RADIUS_CONTROL: Final = 4
 RADIUS_OVERLAY: Final = 8

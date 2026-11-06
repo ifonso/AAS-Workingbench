@@ -35,6 +35,8 @@ from aas_editor.tools.import_feature.import_util import (
 )
 from aas_editor.package import Package
 from aas_editor import settings
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import focus_first_field
 from aas_editor.utils.util_classes import ClassesInfo
 from aas_editor.utils.util_type import isIterable
 
@@ -390,6 +392,11 @@ class SettingsDialog(QDialog):
 
         self.formLayout.addWidget(self.buttonBox)
         self.setLayout(self.formLayout)
+        finish_dialog(self)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        focus_first_field(self)
 
     def importSourceFileGB(self, file=None):
         self.importExcelFileLine = QLineEdit(placeholderText="Excel file")
@@ -485,6 +492,7 @@ class ImportSettingsDialog(SettingsDialog):
 
         self.formLayout.addWidget(self.buttonBox)
         self.setLayout(self.formLayout)
+        finish_dialog(self)
 
     def aasFileGB(self):
         self.aasFileLine = QLineEdit(
@@ -593,6 +601,11 @@ class RunImportDialog(QDialog):
 
         layout.addWidget(self.buttonBox)
         self.setLayout(layout)
+        finish_dialog(self)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        focus_first_field(self)
 
     def chooseExportFolder(self):
         folder = QFileDialog.getExistingDirectory(self, "Choose Export Folder")

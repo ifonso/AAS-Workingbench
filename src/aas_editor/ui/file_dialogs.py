@@ -30,6 +30,7 @@ from PyQt6.QtWidgets import QWidget
 
 from aas_editor.application.supplementary_files import StoredFileInfo
 from aas_editor.domain.file_references import FileReference
+from aas_editor.ui.dialog_layout import finish_dialog
 
 TITLE = "Package files"
 # How many references the question about a removal lists.
@@ -216,6 +217,7 @@ class FileChoiceDialog(QDialog):
         layout.addWidget(self.files_list)
         layout.addWidget(self.empty_label)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
     def _accept_item(self, item: QListWidgetItem) -> None:
         del item
@@ -289,6 +291,7 @@ class TextFileDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(self.editor)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
     @property
     def text(self) -> str:
@@ -356,6 +359,7 @@ class DanglingDialog(QDialog):
         layout.addWidget(self.summary_label)
         layout.addWidget(self.table)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
         self._references: list[FileReference] = []
 
     def show_references(self, references: Sequence[FileReference]) -> None:

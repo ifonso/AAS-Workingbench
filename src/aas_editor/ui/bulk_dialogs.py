@@ -48,6 +48,8 @@ from aas_editor.domain.rename_pattern import FILTER_NAMES
 from aas_editor.domain.rename_pattern import FIELD_NAMES
 from aas_editor.domain.rename_pattern import examples
 from aas_editor.ui.colors import problem_color
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.theme import theme_manager
 
 _HELP = (
     "Text is copied as it is. A field in braces is replaced, and filters "
@@ -158,10 +160,13 @@ class ChangeAttributeDialog(QDialog):
         layout.addWidget(self.table, 1)
         layout.addWidget(self.summary)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.attributeBox.currentIndexChanged.connect(self._attribute_changed)
         self.languageBox.currentTextChanged.connect(self.refresh)
         self.patternBox.currentTextChanged.connect(self.refresh)
+        # The refused rows have the colour of the theme, so they are made again.
+        theme_manager().changed.connect(self.refresh)
         self._attribute_changed()
 
     @property
@@ -308,6 +313,7 @@ class RemoveExtensionsDialog(QDialog):
         layout.addWidget(self.bySemanticId)
         layout.addWidget(self.list)
         layout.addWidget(self.buttons)
+        finish_dialog(self, destructive=True)
         self.byName.toggled.connect(self.refresh)
         self.list.currentRowChanged.connect(self._row_changed)
         self.refresh()
