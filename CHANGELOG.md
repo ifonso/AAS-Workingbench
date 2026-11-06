@@ -257,9 +257,11 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - `Guidelines.md`, replaced by `docs/contributing/style-guide.md`.
 - The setting "Automatically add refs of existing submodels to AAS when saving file". Saving no longer links Submodels to the first AAS, and it was on by default.
 - The undo list of 10 steps in each tab. The history of a package replaces it.
+- The `screenshots/` folder, which showed the old interface and was used only by the README.
 
 ### Documentation
 
+- A new README with the purpose, build steps, related projects and contact, a `NOTICE` file with third-party attributions, and a `CONTRIBUTING.md` that points to the contributing guides.
 - A [V1 acceptance audit](docs/software/v1-acceptance-audit.md) that classifies each of the 199 acceptance criteria of F-EDT-01 to F-EDT-11 as tested, tested in part, implemented without a test, different on purpose, out of scope, a gap, or not applicable, with the test that shows it. The plan has the result of its exit criteria and a ranked list of what remains after v1.
 - A test that every relative link in the documentation leads to a file and a heading, and a test that each of the 14 element types moves, with undo, save and reload.
 
