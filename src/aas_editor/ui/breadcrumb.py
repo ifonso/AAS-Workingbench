@@ -118,6 +118,15 @@ class Breadcrumb(QWidget):
         """Whether the text field is shown instead of the segments."""
         return self._stack.currentWidget() is self.editor
 
+    def focus_widgets(self) -> list[QWidget]:
+        """Lists what Tab stops at in the breadcrumb, from the left.
+
+        The segments are made again for every path, so Qt puts them at the end
+        of the focus chain of the window, after everything that was made
+        earlier. The tab sets their order from this list.
+        """
+        return [self._folded, *self._buttons, self.editor]
+
     def set_path(self, names: list[str], type_text: str = "") -> None:
         """Shows a path.
 

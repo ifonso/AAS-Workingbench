@@ -6,19 +6,15 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def forget_saved_docks(qapp: object) -> Iterator[None]:
-    """Removes the saved arrangement of the docks before and after a test.
+def settings_of_the_test(empty_settings: None) -> None:
+    """Gives each test settings of its own, empty at the start.
 
-    A window that closes saves where its docks are, in the settings file that
-    the program uses, and the next window restores it. A test that showed a
-    panel would then start the next test with that panel open.
+    A window that closes saves where its docks are, and the next window
+    restores it, so a test that showed a panel would start the next test with
+    that panel open. The settings file and the recent files were the user's
+    own, and a test wrote its temporary paths into them: the start panel of
+    the person who ran the tests then listed files that no longer exist.
     """
-    from aas_editor.settings.app_settings import SETTINGS
-    from aas_editor.settings.app_settings import AppSettings
-
-    SETTINGS.remove(AppSettings.DOCK_STATE.name)
-    yield
-    SETTINGS.remove(AppSettings.DOCK_STATE.name)
 
 
 @pytest.fixture(autouse=True)

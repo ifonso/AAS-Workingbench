@@ -243,6 +243,7 @@ class ListSettingsDialog(QDialog):
         self.value_type_box = ValueTypeBox(current.value_type)
         self.semantic_box = QComboBox()
         self.semantic_edit = QLineEdit()
+        self.semantic_edit.setAccessibleName("Global semantic id of the items")
         self.semantic_edit.setPlaceholderText(
             "Global id such as an IRDI or URL"
         )

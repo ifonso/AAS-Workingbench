@@ -227,6 +227,7 @@ class ValidationDock(QDockWidget):
             self.severity_boxes[severity] = box
             severity_row.addWidget(box)
         self.rule_box = QComboBox(self)
+        self.rule_box.setAccessibleName("Show findings of one rule")
         self.rule_box.currentIndexChanged.connect(self._apply_filters)
         self.refresh_button = QPushButton("Refresh", self)
         self.refresh_button.clicked.connect(self.refresh)
@@ -237,6 +238,7 @@ class ValidationDock(QDockWidget):
         self.filter = FindingsFilter(self)
         self.filter.setSourceModel(self._model)
         self.findings_table = QTableView(self)
+        self.findings_table.setAccessibleName("Findings")
         self.findings_table.setModel(self.filter)
         self.findings_table.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows

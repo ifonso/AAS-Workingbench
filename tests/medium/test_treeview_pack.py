@@ -22,8 +22,6 @@ def view_support(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     from aas_editor.treeviews.treeview_pack import PackTreeView
     from aas_editor.widgets.messsageBoxes import ErrorMessageBox
 
-    # Reading the submodel templates from disk is slow and irrelevant here.
-    monkeypatch.setattr(PackTreeView, "scanFolderForExistFiles", lambda s: None)
     errors: list[str] = []
     windows: list[QWidget] = []
 

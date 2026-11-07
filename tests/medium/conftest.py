@@ -21,6 +21,11 @@ from tests.medium.forms import Form
 from tests.serialization import snapshot
 
 
+@pytest.fixture(autouse=True)
+def settings_of_the_test(empty_settings: None) -> None:
+    """Keeps a test from writing the settings and recent files of the user."""
+
+
 class ModelSupport:
     """Builds the legacy item models over BaSyx objects.
 
@@ -168,7 +173,6 @@ def views(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     from aas_editor.treeviews.treeview_pack import PackTreeView
     from aas_editor.widgets.messsageBoxes import ErrorMessageBox
 
-    monkeypatch.setattr(PackTreeView, "scanFolderForExistFiles", lambda s: None)
     errors: list[str] = []
 
     def fake_exec(box: ErrorMessageBox) -> int:

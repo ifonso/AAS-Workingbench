@@ -149,6 +149,9 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The package tree has chevrons for the branches, and the headers read Package and Type. The tooltip of a row is its whole name, and under it the path from the package.
 - A tab is as wide as its title, between 120 and 240 pixels, and the cross to close it is quiet until the pointer is on it. The last tab of the main window has no cross.
 - View has Command bar and Tab bar entries, Columns as a submenu, and Collapse all and Expand all.
+- **F6** and **Shift+F6** move the focus between the panes of the window: the tree of packages (the start panel while no package is open), the tab, and the bottom panel when it is open. **Ctrl+1** goes to the tree and **Ctrl+2** to the tab, and **Ctrl+L** shows the path of the tab as text to edit it, with Escape to go back. All five are in the Navigate menu. Tab goes through the tabs, the path, copy, search, and the attributes in that order.
+- The focus ring is two pixels wide on buttons, tabs, check boxes, and radio buttons, and it keeps their size. On a button that is filled with the accent, the ring takes the color of its text (the new token `focus_on_accent`) and is no longer black or white on the blue.
+- Names for a screen reader on the trees, the findings and files tables, the filter of rules, the close buttons of tabs, the strips of tabs, the title buttons of the bottom panels (which also have tooltips), and fields of the create AAS, link submodels, change list settings, remove extensions, change attribute, and IEC 61360 dialogs. A test reads these names for the main surfaces and nine dialogs. NVDA, VoiceOver, and Orca were not tried.
 
 ### Changed
 
@@ -232,6 +235,11 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- A window took 8 to 14 seconds to open, because it read the 252 bundled submodel templates at its start. The menu "Add existing submodel" lists the files at once and reads a file when its submenu is first shown. The window opens in under a second (7.4 s before and 0.66 s after, offscreen). The templates that cannot be read show "Cannot be read" in their submenu, and a template with no submodel shows "No submodel".
+- A recent file opened several times when the list of recent files was refreshed more than once, and a refresh left the old connection, so the action could open the file that it showed before.
+- The tests wrote their temporary paths into the recent files of the person who ran them, which then showed in the start panel. The tests use settings of their own now. The recent files that earlier runs left are still in the registry of the user and are not removed.
+- The orientation of the two zones that View, Orientation saved was never restored, because the saved number was compared with the Qt enumeration. A first run, and a value that is no orientation, keep the side-by-side layout. Zones that are one above the other come back with their heights.
+- In the dark theme, the trees and their headers had a box around them and a line between the sections, which read as a grid. The trees of the window have no outline, the header has none, and the last section draws no divider at the edge. Dialogs keep the outline of their lists.
 - After an edit to a property of a submodel, the rows Asset Administration Shells and Concept Descriptions showed as changed with Submodels, because the three share one object store. A row of a group now shows a change when one of its own objects changed, was added, or was removed.
 - Closing a package asked the tab widget of every main window that was ever made, and raised "wrapped C/C++ object of type TabWidget has been deleted" for one that was gone. It only happened where a second window was made in one process, as in the tests.
 - The default font of the trees had the weight 40, which Qt 5 read as Normal and Qt 6 reads as below Thin. With a font that has a Thin style, such as Inter, every row would be a hairline. It is Normal.

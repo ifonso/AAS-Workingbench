@@ -35,10 +35,17 @@ from aas_editor.application.font_sizes import migrated_font_size
 from aas_editor.application.header_state import restorable_state
 from aas_editor.domain.design_tokens import parse_density
 from aas_editor.domain.window_layout import DEFAULT_SIZE
+from aas_editor.domain.window_layout import saved_orientation
 from aas_editor.domain.window_layout import window_size
 from aas_editor.domain.window_layout import zone_widths
 from aas_editor.ui.command_bar import FocusedViewActions
 from aas_editor.ui.package_files import PackageFilesDock
+from aas_editor.ui.pane_navigation import PANEL
+from aas_editor.ui.pane_navigation import Pane
+from aas_editor.ui.pane_navigation import PaneNavigator
+from aas_editor.ui.pane_navigation import TAB
+from aas_editor.ui.pane_navigation import TREE
+from aas_editor.ui.pane_navigation import first_focusable
 from aas_editor.ui.selection_panel import SelectionDock
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
@@ -85,6 +92,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # The validation dock and hints mode, before the menus that list them
         self.validationController = install_validation(self)
         self.initDocks()
+        # F6 and Ctrl+1, Ctrl+2, which the Navigate menu lists
+        self.paneNavigator = self.initPaneNavigation()
         # Ctrl+K, which lists the actions of the menus that follow
         self.commandPalette = install_palette(self)
         self.initActions()
@@ -371,6 +380,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuNavigate = QMenu("&Navigate", self.menubar)
         self.menuNavigate.addAction(self.commandPalette.action)
         self.menuNavigate.addSeparator()
+        for paneAct in (*self.paneNavigator.actions, self.editPathAct):
+            self.menuNavigate.addAction(paneAct)
+        self.menuNavigate.addSeparator()
         self.menuNavigate.addAction(self.mainTreeView.autoScrollToSrcAct)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollFromSrcAct)
         self.menuNavigate.addSeparator()
@@ -492,10 +504,83 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # Hidden until asked for, and tabifying shows the dock of the first tab.
         for dock in (validationDock, self.filesDock, self.selectionDock):
             dock.hide()
+            # Qt names the buttons of the title and gives them no tooltip.
+            for button_name, tip in (
+                ("qt_dockwidget_floatbutton", "Float this panel"),
+                ("qt_dockwidget_closebutton", "Close this panel"),
+            ):
+                button = dock.findChild(QAbstractButton, button_name)
+                if button is not None:
+                    button.setToolTip(tip)
         # A panel opens at a height that leaves the trees most of the window.
         self.resizeDocks(
             [validationDock], [DOCK_HEIGHT], QtCore.Qt.Orientation.Vertical
         )
+        self.nameDockTabBars()
+
+    def nameDockTabBars(self) -> None:
+        """Names the strip of tabs that Qt makes for the panels of the bottom."""
+        for bar in self.findChildren(
+            QTabBar, options=QtCore.Qt.FindChildOption.FindDirectChildrenOnly
+        ):
+            if not bar.accessibleName():
+                bar.setAccessibleName("Panels")
+
+    def initPaneNavigation(self) -> PaneNavigator:
+        """Makes the keys that move the focus between the panes.
+
+        The panes are the tree of packages, which is the start panel while no
+        package is open, the tab, and the bottom panel that is on show.
+        """
+        docks = (
+            self.validationController.dock,
+            self.filesDock,
+            self.selectionDock,
+        )
+
+        def treeTarget() -> QWidget | None:
+            if self.emptyState.isVisible():
+                return first_focusable(self.emptyState)
+            return self.mainTreeView if self.mainTreeView.isVisible() else None
+
+        def tabTarget() -> QWidget | None:
+            tab = self.mainTabWidget.currentWidget()
+            view = getattr(tab, "attrsTreeView", None)
+            return view if view is not None and view.isVisible() else None
+
+        def panelTarget() -> QWidget | None:
+            for dock in docks:
+                if dock.isVisible():
+                    return first_focusable(dock)
+            return None
+
+        navigator = PaneNavigator(
+            self,
+            [
+                Pane(TREE, lambda: [self.mainLayoutWidget], treeTarget),
+                Pane(TAB, lambda: [self.subLayoutWidget], tabTarget),
+                Pane(PANEL, lambda: list(docks), panelTarget),
+            ],
+        )
+        # The path of the tab is read as segments. This key edits it as text,
+        # for a person who does not use the mouse.
+        self.editPathAct = QAction(
+            "Edit the path",
+            self,
+            statusTip="Edit the path of the tab as text",
+            shortcut=QKeySequence("Ctrl+L"),
+            triggered=self.editCurrentPath,
+        )
+        self.addAction(self.editPathAct)
+        return navigator
+
+    def editCurrentPath(self) -> None:
+        """Shows the path of the current tab as text, to edit."""
+        breadcrumb = getattr(
+            self.mainTabWidget.currentWidget(), "breadcrumb", None
+        )
+        if breadcrumb is not None and breadcrumb.isVisible():
+            breadcrumb.start_editing()
 
     def updateEmptyState(self, *_):
         """Shows the start instead of the tree and the tabs while no package is open."""
@@ -835,14 +920,24 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             AppSettings.ZONES_LAYOUT.value(),
             ZONES_LAYOUT_VERSION,
         )
+        stacked = self.splitter.orientation() == QtCore.Qt.Orientation.Vertical
         if saved:
             left, right = saved
-            widths = [left.width(), right.width()]
+            # The sizes of a splitter run along it: heights, if the zones are
+            # one above the other.
+            sizes = (
+                [left.height(), right.height()]
+                if stacked
+                else [left.width(), right.width()]
+            )
+        elif stacked:
+            # No saved heights: the splitter keeps the halves it starts with.
+            return
         else:
             # A first run, or sizes of an earlier release: the new default.
             # The command bar is over the whole window, so it asks for no room.
-            widths = list(zone_widths(self.width()))
-        self.splitter.setSizes(widths)
+            sizes = list(zone_widths(self.width()))
+        self.splitter.setSizes(sizes)
 
     def applyLastSessionDocks(self):
         """Puts the panels where the last session left them.
@@ -854,10 +949,22 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         state = AppSettings.DOCK_STATE.value()
         if state:
             self.restoreState(state, DOCKS_LAYOUT_VERSION)
+            # Restoring may have made the strip again.
+            self.nameDockTabBars()
 
     def applyLastSessionOrientation(self):
-        orientation = AppSettings.ORIENTATION.value()
-        self.setOrientation(orientation)
+        """Puts the two zones side by side or one above the other, as saved.
+
+        A first run, and a value that is no orientation, leave the layout that
+        the window starts with.
+        """
+        if not AppSettings.ORIENTATION.isSaved():
+            return
+        saved = saved_orientation(AppSettings.ORIENTATION.value())
+        if saved == "horizontal":
+            self.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        elif saved == "vertical":
+            self.setOrientation(QtCore.Qt.Orientation.Vertical)
 
     def applyLastSessionMainWindowSize(self):
         saved = AppSettings.SIZE.value() if AppSettings.SIZE.isSaved() else None

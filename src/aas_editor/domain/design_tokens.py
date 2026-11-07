@@ -44,6 +44,8 @@ class ColorTokens:
         stroke_default: The outline of a control.
         stroke_subtle: A divider.
         focus: The focus ring.
+        focus_on_accent: The focus ring inside a button that is filled with
+            `accent`, where `focus` would be heavy and would hide the edge.
         accent: The primary button, the active tab, and the selection bar.
         accent_hover: The primary button under the pointer or pressed.
         accent_on: Text on `accent` and on `accent_hover`.
@@ -74,6 +76,7 @@ class ColorTokens:
     stroke_default: str
     stroke_subtle: str
     focus: str
+    focus_on_accent: str
     accent: str
     accent_hover: str
     accent_on: str
@@ -136,6 +139,7 @@ LIGHT: Final = ColorTokens(
     stroke_default="#d1d1d1",
     stroke_subtle="#e0e0e0",
     focus="#000000",
+    focus_on_accent="#ffffff",
     accent="#0f62b8",
     accent_hover="#0c5299",
     accent_on="#ffffff",
@@ -168,6 +172,7 @@ DARK: Final = ColorTokens(
     stroke_default="#666666",
     stroke_subtle="#525252",
     focus="#ffffff",
+    focus_on_accent="#141414",
     accent="#6cb0f5",
     accent_hover="#8cc2f7",
     accent_on="#141414",
@@ -294,6 +299,7 @@ CONTRAST_PAIRS: Final = (
     *_icon("accent_hover", "bg_content"),
     *_icon("stroke_strong", "bg_content", "bg_chrome"),
     *_icon("focus", "bg_content", "bg_chrome", "bg_selected"),
+    *_icon("focus_on_accent", "accent", "accent_hover"),
 )
 """Every color that carries text, an icon, or the edge of an input, on every
 surface that it is drawn on. `fg_disabled` and the decorative strokes are

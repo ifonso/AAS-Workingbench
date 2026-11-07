@@ -126,6 +126,8 @@ class CreateShellDialog(_ValidatedDialog):
             self.kind_box.findData(DEFAULT_ASSET_KIND)
         )
         self.global_id_edit = QLineEdit(new_id(IdKind.ASSET), self)
+        # Its row holds a layout, so its label has no buddy.
+        self.global_id_edit.setAccessibleName("Global asset id")
         self.generate_button = QPushButton("Generate", self)
         self.generate_button.clicked.connect(
             lambda: self.global_id_edit.setText(new_id(IdKind.ASSET))
@@ -323,6 +325,7 @@ class LinkSubmodelsDialog(_ValidatedDialog):
         super().__init__("Link existing Submodels", parent)
         self.setWindowTitle(f"Link Submodels to {describe_object(shell)}")
         self.list = QListWidget(self)
+        self.list.setAccessibleName("Submodels to link")
         for submodel in sorted(
             submodels, key=lambda item: (item.id_short or item.id).lower()
         ):

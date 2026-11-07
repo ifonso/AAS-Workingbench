@@ -81,6 +81,7 @@ class PackageFilesPanel(QWidget):
 
         self.summary_label = QLabel()
         self.table = QTableWidget(0, COLUMNS)
+        self.table.setAccessibleName("Files of the package")
         self.table.setHorizontalHeaderLabels(
             ["Name", "Media type", "Size", "Used by"]
         )

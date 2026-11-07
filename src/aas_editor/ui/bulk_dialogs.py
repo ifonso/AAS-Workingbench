@@ -126,6 +126,7 @@ class ChangeAttributeDialog(QDialog):
         self.summary = QLabel(self)
         self.summary.setWordWrap(True)
         self.table = QTableWidget(0, 4, self)
+        self.table.setAccessibleName("Elements that the pattern changes")
         self.table.setHorizontalHeaderLabels(
             ["Element", "Current", "New", "Result"]
         )
@@ -295,6 +296,7 @@ class RemoveExtensionsDialog(QDialog):
         self.bySemanticId = QRadioButton("By &semantic id", self)
         self.byName.setChecked(True)
         self.list = QListWidget(self)
+        self.list.setAccessibleName("Extensions to remove")
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel,

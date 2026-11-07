@@ -221,6 +221,15 @@ APP_LOGO = QIcon(str(ICONS_FOLDER / "logo.svg"))
 DEFAULT_THEME = "fluent-light"
 
 SETTINGS = QSettings(str(SETTINGS_FILE), QSettings.Format.IniFormat)
+# Where the recent files and the recent commands of a user are kept. It is the
+# store of earlier releases, so that a user keeps them (the registry, on
+# Windows). A test replaces this attribute with a file of its own.
+RECENT_SETTINGS = QSettings(IAT, SETTINGS_APPLICATION_NAME)
+
+
+def recent_settings() -> QSettings:
+    """Returns the store of the recent files and the recent commands."""
+    return RECENT_SETTINGS
 
 
 @dataclass(order=True)
@@ -251,7 +260,9 @@ class Setting:
 class AppSettings:
     THEME = Setting("theme", DEFAULT_THEME, str)
     SIZE = Setting("size", DEFAULT_MAINWINDOW_SIZE)
-    ORIENTATION = Setting("orientation", QtCore.Qt.Orientation.Vertical, int)
+    # Read without a type: the store gives back the Qt enumeration, and a cast
+    # to int fails for a value that is no number. `saved_orientation` reads it.
+    ORIENTATION = Setting("orientation", QtCore.Qt.Orientation.Horizontal)
     LEFT_ZONE_SIZE = Setting("leftZoneSize", QSize(300, 624))
     RIGHT_ZONE_SIZE = Setting("rightZoneSize", QSize(300, 624))
     AAS_FILES_TO_OPEN_ON_START = Setting("openedAasFiles", set())
