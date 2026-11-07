@@ -31,6 +31,7 @@ from aas_editor.application.editing import edit_mode
 from aas_editor.application.listeners import Subscription
 from aas_editor.application.supplementary_files import StoredFileInfo
 from aas_editor.domain import part_names
+from aas_editor.ui.actions import READ_MODE_REASON
 from aas_editor.ui.file_controller import FileController
 from aas_editor.ui.file_controller import FilePackage
 
@@ -309,6 +310,9 @@ class PackageFilesPanel(QWidget):
         self.save_button.setEnabled(name is not None)
         self.dangling_button.setEnabled(has_package)
         self.thumbnail_button.setEnabled(has_package and editing)
+        # A button that Read mode turned off says why.
+        for button in self._mutating:
+            button.setToolTip("" if editing else READ_MODE_REASON)
 
     # -- the buttons -------------------------------------------------------------
 

@@ -58,15 +58,17 @@ def explain_jump(status: ReferenceStatus) -> str | None:
     """Returns what to tell the user about a jump, or None if it went well."""
     if status.state is ReferenceState.RESOLVED:
         return None
+    # The text of a status that dangles starts with a word of the specification.
+    text = status.text.removeprefix("Dangling: ")
     if status.state is ReferenceState.PARTIAL and status.reached is not None:
         return (
-            f"Target not found. {status.text}.\n\n"
+            f"Target not found. {text}.\n\n"
             f"{describe_object(status.reached)} is the closest object, "
             "and it was opened."
         )
     if status.state is ReferenceState.OUTSIDE:
         return f"{status.text}. There is no object in this package to jump to."
-    return f"Target not found. {status.text}."
+    return f"Target not found. {text}."
 
 
 def find_row(shown: Any, obj: object) -> QModelIndex | None:

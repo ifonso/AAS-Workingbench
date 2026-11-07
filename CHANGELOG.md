@@ -236,6 +236,17 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- In Read mode a key that edits (Delete, F2, Ctrl+X, Ctrl+V, Ctrl+N, Ctrl+E, Ctrl+Z, Ctrl+Y) did nothing and said nothing, although Read mode is meant to refuse an edit with a reason. The status bar says "Read mode is on. Switch to Edit mode in the View menu". The entries of the Edit menu and of the command bar, the buttons of the Package files panel and the buttons of the Selection panel that Read mode turned off say it in their tooltips too.
+- In Read mode Copy was on or off by what the view had when it last was in Edit mode: it stayed on with no row selected, and it never came on in a tab that was opened in Read mode. It follows the current row now, as copying changes nothing.
+- Ctrl+S in Read mode wrote the file again although nothing had changed. The writer keeps only the files that an element names and renames the part of the model, so a template lost its unreferenced images and its part name. Read mode leaves the file of a package that has no changes, and says so. Changes made before the switch to Read mode are still saved.
+- Ctrl+C and Ctrl+X on a package row showed "Error occurred copying X.aasx: cannot pickle 'WeakMethod' object" with a traceback, and Cut then asked to close the package. A package is a file and cannot go to the clipboard, so Copy and Cut are off for it. They are off for the folders of a package (`Shells`, `Submodels`, `Concept Descriptions`, `Files`) as well, where Cut and Delete said "could not be deleted or set to default: Unknown parent object type", and Cut had copied the folder first.
+- Add was on for a shell, and said "Parent type is not extendable: <class 'basyx.aas.model.aas.AssetAdministrationShell'>". It is off, where nothing can be added.
+- Paste with nothing copied did nothing and said nothing. The status bar says "Nothing to paste here". Pasting a copied shell or the files folder onto itself ended in "An Exception was raised ... Found value is not type or typehint: None"; the status bar says that the copied rows do not fit.
+- Next and Previous of the search stopped at the last or the first match with no sign. They wrap round now, and the count shows "1 of 8" again.
+- A regular expression that does not parse, such as `[`, was reported as "No results". The count says "Not a valid expression".
+- The highlight of the search matches stayed in the color of the theme that was on when the search ran, so a switch to the dark theme left the light highlight on the dark tree. It follows the theme now.
+- Typing in the field of the path of a tab, and leaving it with Escape or with an address that does not exist, left the typed text in the field, and Ctrl+L showed it again instead of the real path. The real path is put back.
+- The message of "Jump to target" for a reference to nothing began with "Dangling:", a word of the specification. It says "Target not found. No object has the id ...".
 - An AASX with the old `http://www.admin-shell.io/aasx/relationships/` types opened empty or not at all, because the SDK accepts the old type for the origin only and then finds no AAS part. Many files in the wild have them. They open now, with all of their content, and a save writes the current types.
 - The close cross of a tab could be drawn on top of its title, as in "showcase.aa×sx", in the light and the dark theme. Qt deletes the cross of a tab that cannot be closed with `deleteLater()`, so the old cross stayed where it was made, on the left of a title that grew later, until the event loop came round, which a picture taken without the loop shows. The tab bar hides such a cross at once.
 - A width that you dragged for the name or type column of the first tab was lost at every start, because the columns were restored before the package was open, and opening it fitted them again. They are restored after, and the session writes whether you sized them (`tabTreeViewColumnsSized`), so a header that nobody sized is still fitted to the room, and a state that an earlier release saved counts as sized.
@@ -339,6 +350,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Known limits
 
+- An AASX that declares a supplementary file with an `aas-suppl` relationship that no File element and no thumbnail names opens without that file, and a save does not write it. The SDK reads the files that elements name, and the writer keeps only those (ADR 0013). The Technical Data template declares six files and has one that an element names, so a plain save of it leaves five images out. The package files panel does not list them, and the load report does not say so.
 - The type, `order_relevant`, semantic id, and value type of a SubmodelElementList cannot be changed after the list is made, because the SDK has no setters. Make a new list.
 - A string with line breaks is shown in a value line but cannot be typed there.
 - A File under the annotation of an annotated relationship still blocks a save to AASX, because the SDK writer skips such files. Save as JSON or XML, or move the File out of the annotation.

@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import QTabWidget
 from PyQt6.QtWidgets import QTreeView
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.application.editing import edit_mode
 from aas_editor.settings.icons import ADD_ICON
 from aas_editor.settings.icons import BACK_ICON
 from aas_editor.settings.icons import COLLAPSE_ALL_ICON
@@ -40,6 +41,7 @@ from aas_editor.settings.icons import FORWARD_ICON
 from aas_editor.settings.icons import PASTE_ICON
 from aas_editor.settings.icons import REDO_ICON
 from aas_editor.settings.icons import UNDO_ICON
+from aas_editor.ui.actions import READ_MODE_REASON
 from aas_editor.ui.paste_actions import ABOVE_ID
 from aas_editor.ui.paste_actions import BELOW_ID
 from aas_editor.ui.paste_actions import INTO_ID
@@ -198,6 +200,24 @@ COMMANDS: tuple[CommandSpec, ...] = (
 )
 
 
+# The entries that change a package. Read mode turns them off, and the tooltip
+# of an entry that is off says so.
+EDITING_KEYS = frozenset(
+    {
+        "undo",
+        "redo",
+        "cut",
+        "paste",
+        "paste_above",
+        "paste_below",
+        "paste_into",
+        "add",
+        "edit",
+        "delete",
+    }
+)
+
+
 class MirroredAction(QAction):
     """An action that runs another action, and looks like it.
 
@@ -221,7 +241,13 @@ class MirroredAction(QAction):
         # The key is shown, and never run from here: the view runs it.
         self.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
         self.triggered.connect(self._run)
+        edit_mode().subscribe(self._on_mode)
         self.follow(None)
+
+    def _on_mode(self, editing: bool) -> None:
+        del editing
+        if not sip.isdeleted(self):
+            self._sync()
 
     @property
     def source(self) -> QAction | None:
@@ -254,7 +280,15 @@ class MirroredAction(QAction):
             if keys
             else ""
         )
-        self.setToolTip(f"{self.spec.tip}{hint}")
+        reason = (
+            f". {READ_MODE_REASON}"
+            if not enabled
+            and not edit_mode().is_editing
+            and self.spec.key in EDITING_KEYS
+            else ""
+        )
+        self.setToolTip(f"{self.spec.tip}{hint}{reason}")
+        self.setStatusTip(f"{self.spec.tip}{reason}")
 
     def _run(self) -> None:
         if self._source is not None and self._source.isEnabled():
