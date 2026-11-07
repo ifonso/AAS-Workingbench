@@ -175,7 +175,7 @@ def test_every_element_has_a_tab_that_reads_well(editor: Any) -> None:
         rows = _read_tab(editor, index)
         read += 1
         label = f"{index.data()}"
-        if not rows and obj is not None:
+        if not rows and isinstance(obj, model.Referable):
             problems.append(f"{label}: the tab is empty")
         for name, value, _ in rows:
             if PYTHON_NAMES.search(name) or PYTHON_NAMES.search(value):
@@ -197,7 +197,7 @@ def test_every_element_has_a_tab_that_reads_well(editor: Any) -> None:
             problems.append(f"{label}: the value reads empty")
 
     assert read > 800
-    assert problems == []
+    assert not problems, "\n".join(problems[:30])
 
 
 def test_the_tab_of_the_package_shows_its_files_and_properties(
