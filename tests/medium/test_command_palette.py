@@ -541,7 +541,7 @@ def test_an_element_that_the_tree_hides_is_reported_and_nothing_breaks(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("theme", ["fluent-light", "fluent-dark"])
+@pytest.mark.parametrize("theme", ["light", "dark"])
 def test_the_palette_is_painted_in_the_colors_of_the_theme(
     window, native_look: None, theme: str
 ) -> None:
@@ -584,7 +584,7 @@ def test_a_switch_of_theme_changes_what_the_next_opening_paints(
         window.palette.close()
         return color
 
-    assert background("fluent-light") != background("fluent-dark")
+    assert background("light") != background("dark")
 
 
 def test_the_parts_of_the_palette_have_accessible_names(window) -> None:

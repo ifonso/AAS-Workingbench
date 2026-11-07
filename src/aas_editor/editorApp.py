@@ -21,7 +21,8 @@ import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 import aas_editor.widgets.groupBoxes
 from aas_editor.ui.colors import problem_style
-from aas_editor.ui.theme import FLUENT_THEMES, theme_manager
+from aas_editor.application.theme_choice import theme_from_saved
+from aas_editor.ui.theme import THEME_LABELS, theme_manager
 from aas_editor.settings.app_settings import *
 from aas_editor.utils.recovery import (
     find_recovery_files,
@@ -138,13 +139,8 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.openLastSessionFiles()
 
     def loadThemes(self):
-        # The old themes are style sheets, and the new ones are made from
-        # tokens, so they come first. Each id maps to the text of its entry.
-        self.themes = {}
-        for file in THEMES_FOLDER.iterdir():
-            if file.suffix == ".qss":
-                self.themes[file.stem] = str(file)
-        self.themeLabels = {**FLUENT_THEMES, **{n: n for n in self.themes}}
+        # Each id of a theme maps to the text of its entry in the menu.
+        self.themeLabels = dict(THEME_LABELS)
         self.currTheme = DEFAULT_THEME
 
     # noinspection PyArgumentList
@@ -211,7 +207,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                 self,
                 checkable=True,
                 checked=theme == self.currTheme,
-                statusTip=f"Choose {label} theme",
+                statusTip=f"Choose the theme: {label}",
                 triggered=lambda: self.toggleThemeSlot(),
             )
             themeAct.setData(theme)
@@ -693,13 +689,13 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.toggleTheme(action.data())
 
     def toggleTheme(self, theme: str) -> None:
-        """Puts a theme on, and the default for a name that is unknown."""
-        if theme not in self.themeLabels:
-            theme = DEFAULT_THEME
-        if theme in FLUENT_THEMES:
-            theme_manager().apply(theme)
-        else:
-            theme_manager().apply_legacy(theme, Path(self.themes[theme]))
+        """Puts a theme on.
+
+        A name that an old release saved gives the theme that replaced it, and
+        a name that is unknown gives the default.
+        """
+        theme = theme_from_saved(theme)
+        theme_manager().apply(theme)
         self.currTheme = theme
         for themeAct in self.themeActs:
             themeAct.setChecked(themeAct.data() == theme)

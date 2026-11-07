@@ -23,11 +23,11 @@ from aas_editor.domain.design_tokens import DARK
 from aas_editor.domain.design_tokens import FOCUS_STROKE
 from aas_editor.domain.design_tokens import LIGHT
 from aas_editor.domain.design_tokens import ColorTokens
-from aas_editor.ui.theme import FLUENT_DARK
-from aas_editor.ui.theme import FLUENT_LIGHT
+from aas_editor.ui.theme import THEME_DARK
+from aas_editor.ui.theme import THEME_LIGHT
 from aas_editor.ui.theme import theme_manager
 
-THEMES = [(FLUENT_LIGHT, LIGHT), (FLUENT_DARK, DARK)]
+THEMES = [(THEME_LIGHT, LIGHT), (THEME_DARK, DARK)]
 _HOLDERS: list[QWidget] = []
 
 

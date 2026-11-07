@@ -20,10 +20,11 @@ from aas_editor.ui.colors import problem_border_style
 from aas_editor.ui.colors import problem_color
 from aas_editor.ui.colors import problem_style
 from aas_editor.ui.theme import current_tokens
-from aas_editor.ui.theme import FLUENT_DARK
-from aas_editor.ui.theme import FLUENT_LIGHT
-from aas_editor.ui.theme import FLUENT_SYSTEM
-from aas_editor.ui.theme import FLUENT_THEMES
+from aas_editor.ui.theme import THEME_DARK
+from aas_editor.ui.theme import THEME_LIGHT
+from aas_editor.ui.theme import THEME_LABELS
+from aas_editor.ui.theme import THEME_NATIVE
+from aas_editor.ui.theme import THEME_SYSTEM
 from aas_editor.ui.theme import theme_manager
 from aas_editor.ui.theme import ThemeManager
 from aas_editor.ui.theme.assets import images
@@ -31,8 +32,6 @@ from aas_editor.ui.theme.assets import write_images
 from aas_editor.ui.theme.palette import build_palette
 from aas_editor.ui.theme.stylesheet import build_stylesheet
 from aas_editor.ui.theme.stylesheet import TEMPLATE_PATH
-
-THEMES_FOLDER = Path(__file__).parents[2] / "src" / "aas_editor" / "themes"
 
 
 @pytest.fixture(autouse=True)
@@ -143,7 +142,7 @@ def windows_look(qapp: QApplication) -> Iterator[ThemeManager]:
 def test_applying_a_new_theme_sets_fusion_the_palette_and_the_sheet(
     qapp: QApplication, windows_look: ThemeManager
 ):
-    windows_look.apply(FLUENT_LIGHT)
+    windows_look.apply(THEME_LIGHT)
 
     assert windows_look.base_style == "fusion"
     assert qapp.palette().color(QPalette.ColorRole.Window) == QColor("#fafafa")
@@ -152,35 +151,35 @@ def test_applying_a_new_theme_sets_fusion_the_palette_and_the_sheet(
 
 
 def test_applying_dark_changes_the_palette_and_the_tokens(qapp: QApplication):
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
 
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
 
     assert qapp.palette().color(QPalette.ColorRole.Window) == QColor("#1f1f1f")
     assert "#6cb0f5" in qapp.styleSheet()
     assert current_tokens() is DARK
-    assert theme_manager().choice == FLUENT_DARK
+    assert theme_manager().choice == THEME_DARK
 
 
 def test_applying_a_theme_tells_who_follows(qtbot: QtBot):
     with qtbot.waitSignal(theme_manager().changed, timeout=1000):
-        theme_manager().apply(FLUENT_DARK)
+        theme_manager().apply(THEME_DARK)
 
 
 def test_density_is_kept_until_another_is_given():
-    theme_manager().apply(FLUENT_LIGHT, Density.DENSE)
+    theme_manager().apply(THEME_LIGHT, Density.DENSE)
 
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
 
     assert theme_manager().density is Density.DENSE
     assert theme_manager().row_height == 20
 
 
 def test_the_offscreen_system_has_no_dark_scheme():
-    theme_manager().apply(FLUENT_SYSTEM)
+    theme_manager().apply(THEME_SYSTEM)
 
     assert current_tokens() is LIGHT
-    assert theme_manager().choice == FLUENT_SYSTEM
+    assert theme_manager().choice == THEME_SYSTEM
 
 
 def test_an_unknown_theme_is_refused():
@@ -188,40 +187,57 @@ def test_an_unknown_theme_is_refused():
         theme_manager().apply("blue")
 
 
-def test_the_new_themes_are_light_dark_and_the_system():
-    assert list(FLUENT_THEMES) == [
-        "fluent-light",
-        "fluent-dark",
-        "fluent-system",
-    ]
+def test_the_themes_are_the_system_light_dark_and_native():
+    assert list(THEME_LABELS) == ["system", "light", "dark", "native"]
 
 
-def test_an_old_dark_theme_puts_the_native_look_back(
+def test_native_gives_the_platform_look_and_no_sheet(
     qapp: QApplication, windows_look: ThemeManager
 ):
-    windows_look.apply(FLUENT_LIGHT)
+    windows_look.apply(THEME_LIGHT)
 
-    windows_look.apply_legacy("grey", THEMES_FOLDER / "grey.qss")
+    windows_look.apply(THEME_NATIVE)
 
     assert windows_look.base_style == "windows"
-    assert qapp.styleSheet() == (THEMES_FOLDER / "grey.qss").read_text(
-        encoding="utf-8"
-    )
+    assert qapp.styleSheet() == ""
+    assert windows_look.choice == THEME_NATIVE
+
+
+def test_native_counts_as_light_on_a_system_that_is_not_dark():
+    theme_manager().apply(THEME_DARK)
+
+    theme_manager().apply(THEME_NATIVE)
+
+    assert current_tokens() is LIGHT
+
+
+def test_a_choice_after_native_puts_fusion_and_the_sheet_back(
+    qapp: QApplication, windows_look: ThemeManager
+):
+    windows_look.apply(THEME_NATIVE)
+
+    windows_look.apply(THEME_DARK)
+
+    assert windows_look.base_style == "fusion"
+    assert "#6cb0f5" in qapp.styleSheet()
     assert windows_look.tokens is DARK
 
 
-def test_an_old_light_theme_counts_as_light():
-    theme_manager().apply(FLUENT_DARK)
+def test_density_under_native_changes_the_row_height_and_no_sheet(
+    qapp: QApplication,
+):
+    theme_manager().apply(THEME_NATIVE, Density.COMFORTABLE)
 
-    theme_manager().apply_legacy("light", THEMES_FOLDER / "light.qss")
+    theme_manager().set_density(Density.DENSE)
 
-    assert current_tokens() is LIGHT
+    assert theme_manager().row_height == 20
+    assert qapp.styleSheet() == ""
 
 
 def test_resetting_gives_the_platform_look_and_no_sheet(
     qapp: QApplication, windows_look: ThemeManager
 ):
-    windows_look.apply(FLUENT_DARK)
+    windows_look.apply(THEME_DARK)
 
     windows_look.reset_to_native()
 
@@ -231,7 +247,7 @@ def test_resetting_gives_the_platform_look_and_no_sheet(
 
 
 def test_problem_text_is_red_enough_on_the_light_theme():
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
 
     assert problem_color() == "#b3261e"
     assert problem_style() == "color: #b3261e;"
@@ -239,24 +255,17 @@ def test_problem_text_is_red_enough_on_the_light_theme():
 
 
 def test_problem_text_is_light_red_on_the_dark_theme():
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
 
     assert problem_color() == "#ff8a85"
     assert problem_border_style() == "border: 1px solid #ff8a85;"
 
 
 def test_advisory_text_follows_the_theme():
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
     light = advisory_color()
 
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
 
     assert (light, advisory_color()) == ("#8a5a00", "#f2c661")
     assert advisory_style() == "color: #f2c661;"
-
-
-def test_text_on_an_old_dark_theme_gets_the_dark_colors():
-    theme_manager().apply_legacy("grey", THEMES_FOLDER / "grey.qss")
-
-    assert problem_color() == "#ff8a85"
-    assert advisory_color() == "#f2c661"

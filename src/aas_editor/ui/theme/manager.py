@@ -1,17 +1,14 @@
 """The theme of the application: which one is on, and how to switch it.
 
-The new themes are Fusion with a palette and a style sheet made from the
-design tokens (ADR 0025). Old themes are style sheets of the vendored Breeze
-set. They stay until the phase that removes them, so the manager can also put
-one of them on, and then restores the native style and palette that the
-application started with.
+Light, Dark, and Follow system are Fusion with a palette and a style sheet
+made from the design tokens (ADR 0025). Native gives back the style and the
+palette that the application started with, and no style sheet.
 
 Code that needs a color reads `current_tokens()` when it draws or styles, and
 connects to `ThemeManager.changed` when it has to follow a switch.
 """
 
 from functools import cache
-from pathlib import Path
 from typing import Final
 
 from PyQt6.QtCore import QObject
@@ -21,6 +18,11 @@ from PyQt6.QtGui import QPalette
 from PyQt6.QtGui import QStyleHints
 from PyQt6.QtWidgets import QApplication
 
+from aas_editor.application.theme_choice import THEME_DARK
+from aas_editor.application.theme_choice import THEME_LABELS
+from aas_editor.application.theme_choice import THEME_LIGHT
+from aas_editor.application.theme_choice import THEME_NATIVE
+from aas_editor.application.theme_choice import THEME_SYSTEM
 from aas_editor.domain.design_tokens import ColorTokens
 from aas_editor.domain.design_tokens import DARK
 from aas_editor.domain.design_tokens import DEFAULT_DENSITY
@@ -30,20 +32,8 @@ from aas_editor.domain.design_tokens import ROW_HEIGHTS
 from aas_editor.ui.theme.palette import build_palette
 from aas_editor.ui.theme.stylesheet import build_stylesheet
 
-FLUENT_LIGHT: Final = "fluent-light"
-FLUENT_DARK: Final = "fluent-dark"
-FLUENT_SYSTEM: Final = "fluent-system"
-
-FLUENT_THEMES: Final = {
-    FLUENT_LIGHT: "Fluent light",
-    FLUENT_DARK: "Fluent dark",
-    FLUENT_SYSTEM: "Fluent, follow the system",
-}
-"""The ids of the new themes, as saved in the settings, and their labels."""
-
-# The old themes that are light. Every other old theme is dark.
-_LIGHT_LEGACY: Final = frozenset({"light", "default"})
 _STYLE: Final = "Fusion"
+_SHEET_THEMES: Final = frozenset({THEME_SYSTEM, THEME_LIGHT, THEME_DARK})
 
 
 class ThemeManager(QObject):
@@ -57,7 +47,7 @@ class ThemeManager(QObject):
     changed = pyqtSignal()
 
     def __init__(self, app: QApplication) -> None:
-        """Remembers the native look, which an old theme restores.
+        """Remembers the native look, which the Native theme restores.
 
         Args:
             app: The application whose style is managed.
@@ -92,7 +82,7 @@ class ThemeManager(QObject):
 
     @property
     def tokens(self) -> ColorTokens:
-        """The colors in use. Old themes count as light or dark."""
+        """The colors in use. Native counts as light or dark, as the system is."""
         return self._tokens
 
     @property
@@ -118,7 +108,7 @@ class ThemeManager(QObject):
         if density == self._density:
             return
         self._density = density
-        if self._choice in FLUENT_THEMES:
+        if self._choice in _SHEET_THEMES:
             self._apply_fluent()
         else:
             self.changed.emit()
@@ -127,44 +117,39 @@ class ThemeManager(QObject):
         """Puts a new theme on the application.
 
         Args:
-            choice: `FLUENT_LIGHT`, `FLUENT_DARK`, or `FLUENT_SYSTEM`.
+            choice: `THEME_SYSTEM`, `THEME_LIGHT`, `THEME_DARK`, or
+                `THEME_NATIVE`.
             density: How tightly rows sit. The density of the last call stays
                 when this is None.
 
         Raises:
-            ValueError: If the choice is not a new theme.
+            ValueError: If the choice is not a theme.
         """
-        if choice not in FLUENT_THEMES:
+        if choice not in THEME_LABELS:
             raise ValueError(f"Unknown theme: '{choice}'")
         if density is not None:
             self._density = density
         self._choice = choice
-        self._apply_fluent()
-
-    def apply_legacy(self, name: str, stylesheet: Path) -> None:
-        """Puts an old theme on the application.
-
-        Args:
-            name: The name of the theme, such as `grey`.
-            stylesheet: The style sheet of the theme.
-        """
-        self._choice = name
-        self._tokens = LIGHT if name in _LIGHT_LEGACY else DARK
-        self._put_native(stylesheet.read_text(encoding="utf-8"))
+        if choice == THEME_NATIVE:
+            self._put_native()
+        else:
+            self._apply_fluent()
 
     def reset_to_native(self) -> None:
-        """Gives back the style and palette of the platform, and no sheet."""
+        """Gives back the style and palette of the platform, and no choice."""
+        self._put_native()
         self._choice = ""
-        self._tokens = LIGHT
-        self._put_native("")
 
-    def _put_native(self, stylesheet: str) -> None:
+    def _put_native(self) -> None:
         self._applying = True
         try:
             self._set_scheme(Qt.ColorScheme.Unknown)
             self._set_base_style(self._native_style)
             self._app.setPalette(self._native_palette)
-            self._app.setStyleSheet(stylesheet)
+            self._app.setStyleSheet("")
+            # Native draws what the system draws, so code that colors by
+            # token follows the system's scheme.
+            self._tokens = self._system_tokens()
         finally:
             self._applying = False
         self.changed.emit()
@@ -188,14 +173,17 @@ class ThemeManager(QObject):
 
     def _resolve_tokens(self) -> ColorTokens:
         """Picks the tokens, and tells Qt which scheme native parts draw in."""
-        if self._choice == FLUENT_DARK:
+        if self._choice == THEME_DARK:
             self._set_scheme(Qt.ColorScheme.Dark)
             return DARK
-        if self._choice == FLUENT_LIGHT:
+        if self._choice == THEME_LIGHT:
             self._set_scheme(Qt.ColorScheme.Light)
             return LIGHT
         # Unknown hands the decision back to the system, which is then read.
         self._set_scheme(Qt.ColorScheme.Unknown)
+        return self._system_tokens()
+
+    def _system_tokens(self) -> ColorTokens:
         if self._hints.colorScheme() == Qt.ColorScheme.Dark:
             return DARK
         return LIGHT
@@ -205,7 +193,7 @@ class ThemeManager(QObject):
         self._hints.setColorScheme(scheme)
 
     def _on_scheme_changed(self, _scheme: Qt.ColorScheme) -> None:
-        if self._choice == FLUENT_SYSTEM and not self._applying:
+        if self._choice == THEME_SYSTEM and not self._applying:
             self._apply_fluent()
 
 

@@ -25,8 +25,8 @@ from aas_editor.domain.design_tokens import FONT_FAMILY
 from aas_editor.domain.design_tokens import LIGHT
 from aas_editor.domain.design_tokens import TYPE_RAMP
 from aas_editor.settings import icons
-from aas_editor.ui.theme import FLUENT_DARK
-from aas_editor.ui.theme import FLUENT_LIGHT
+from aas_editor.ui.theme import THEME_DARK
+from aas_editor.ui.theme import THEME_LIGHT
 from aas_editor.ui.theme import theme_manager
 from aas_editor.ui.theme.fonts import apply_application_font
 from aas_editor.ui.theme.fonts import application_font
@@ -117,7 +117,7 @@ def test_the_licenses_of_the_font_and_the_icons_are_bundled() -> None:
 
 
 @pytest.mark.parametrize(
-    ("choice", "tokens"), [(FLUENT_LIGHT, LIGHT), (FLUENT_DARK, DARK)]
+    ("choice", "tokens"), [(THEME_LIGHT, LIGHT), (THEME_DARK, DARK)]
 )
 def test_an_icon_is_drawn_in_the_color_of_the_theme_in_use(
     choice: str, tokens
@@ -130,7 +130,7 @@ def test_an_icon_is_drawn_in_the_color_of_the_theme_in_use(
 
 
 def test_a_disabled_icon_is_drawn_in_the_disabled_color() -> None:
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
 
     image = drawn(icons.ADD_ICON, QIcon.Mode.Disabled)
 
@@ -138,7 +138,7 @@ def test_a_disabled_icon_is_drawn_in_the_disabled_color() -> None:
 
 
 def test_an_icon_under_the_pointer_is_drawn_in_the_primary_color() -> None:
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
 
     image = drawn(icons.ADD_ICON, QIcon.Mode.Active)
 
@@ -146,7 +146,7 @@ def test_an_icon_under_the_pointer_is_drawn_in_the_primary_color() -> None:
 
 
 def test_the_role_of_an_icon_sets_its_color() -> None:
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
     error = tabler_icon("circle-x", IconRole.ERROR)
 
     assert {c.name() for c in opaque_pixels(drawn(error))} == {
@@ -161,10 +161,10 @@ def test_the_same_icon_follows_a_switch_of_theme_on_a_button(
     button.setIcon(icons.SAVE_ICON)
     button.setIconSize(QSize(16, 16))
     qtbot.addWidget(button)
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
     light = button.grab().toImage()
 
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
     dark = button.grab().toImage()
 
     assert light != dark
@@ -220,7 +220,7 @@ def test_a_new_kind_of_icon_is_one_svg_file_and_a_role(tmp_path: Path) -> None:
         '<rect width="16" height="16" fill="currentColor"/></svg>',
         encoding="utf-8",
     )
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
 
     icon = svg_icon(file, IconRole.ACCENT)
 

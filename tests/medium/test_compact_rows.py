@@ -29,8 +29,8 @@ from aas_editor.domain.design_tokens import Density
 from aas_editor.domain.design_tokens import INDENT
 from aas_editor.domain.design_tokens import LIGHT
 from aas_editor.domain.design_tokens import ROW_HEIGHTS
-from aas_editor.ui.theme import FLUENT_DARK
-from aas_editor.ui.theme import FLUENT_LIGHT
+from aas_editor.ui.theme import THEME_DARK
+from aas_editor.ui.theme import THEME_LIGHT
 from aas_editor.ui.theme import theme_manager
 
 SUBMODEL = ("submodels", "Submodel")
@@ -39,7 +39,7 @@ FONT = Qt.ItemDataRole.FontRole
 # The cell of a name is wider than its dot and the margin around it.
 DOT_ROOM = 16
 
-THEMES = [(FLUENT_LIGHT, LIGHT), (FLUENT_DARK, DARK)]
+THEMES = [(THEME_LIGHT, LIGHT), (THEME_DARK, DARK)]
 THEME_IDS = ["light", "dark"]
 
 
@@ -47,7 +47,7 @@ THEME_IDS = ["light", "dark"]
 def light_theme(qapp: QApplication) -> Iterator[None]:
     """Puts the light theme on, and the look of the platform back after."""
     QStandardPaths.setTestModeEnabled(True)
-    theme_manager().apply(FLUENT_LIGHT, DEFAULT_DENSITY)
+    theme_manager().apply(THEME_LIGHT, DEFAULT_DENSITY)
     yield
     theme_manager().reset_to_native()
     theme_manager().set_density(DEFAULT_DENSITY)

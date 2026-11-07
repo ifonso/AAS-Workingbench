@@ -130,10 +130,10 @@ def test_the_reference_picker_shows_its_kind_and_the_types_in_full(
 @pytest.fixture
 def light_theme(qapp) -> Iterator[None]:
     """Puts the light theme on, and gives the platform look back."""
-    from aas_editor.ui.theme import FLUENT_LIGHT
+    from aas_editor.ui.theme import THEME_LIGHT
     from aas_editor.ui.theme import theme_manager
 
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
     yield
     theme_manager().reset_to_native()
 
@@ -329,12 +329,12 @@ def test_a_problem_label_follows_a_switch_of_theme(
 ) -> None:
     from aas_editor.domain.design_tokens import DARK
     from aas_editor.ui.create_dialogs import CreateSubmodelDialog
-    from aas_editor.ui.theme import FLUENT_DARK
+    from aas_editor.ui.theme import THEME_DARK
     from aas_editor.ui.theme import theme_manager
 
     dialog = CreateSubmodelDialog([], [])
     qtbot.addWidget(dialog)
 
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
 
     assert DARK.status_error in dialog.problem_label.styleSheet()

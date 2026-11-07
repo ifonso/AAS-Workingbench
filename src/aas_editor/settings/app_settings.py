@@ -13,10 +13,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import toml
-from PyQt6.QtCore import QSize, QSettings, QDir
+from PyQt6.QtCore import QSize, QSettings
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6 import QtCore
 
+from aas_editor.application.theme_choice import DEFAULT_THEME
 from aas_editor.domain.design_tokens import FONT_FAMILY
 from aas_editor.domain.design_tokens import DEFAULT_DENSITY
 from aas_editor.domain.design_tokens import Density
@@ -24,11 +25,6 @@ from aas_editor.settings.util_constants import NOT_GIVEN
 
 # Anchor: aas_editor/ package directory (this file lives in aas_editor/settings/)
 _PACKAGE_DIR = Path(__file__).resolve().parent.parent
-
-
-def _register_search_path(path: Path) -> Path:
-    QDir.addSearchPath("themes", str(path))
-    return path
 
 
 SUBMODEL_TEMPLATES_FOLDER = _PACKAGE_DIR / "submodel_templates"
@@ -211,14 +207,11 @@ RECOVERY_DIR = Path(__file__).resolve().parent / "recovery"
 # Interval between periodic recovery writes, so a native crash loses at most this
 # window of edits.
 RECOVERY_INTERVAL_MS = 300_000
-THEMES_FOLDER = _register_search_path(_PACKAGE_DIR / "themes")
-ICONS_FOLDER = _register_search_path(_PACKAGE_DIR / "icons")
+ICONS_FOLDER = _PACKAGE_DIR / "icons"
 CUSTOM_COLUMN_LISTS_FILE = _PACKAGE_DIR / "custom_column_lists.json"
 
 # Themes
 APP_LOGO = QIcon(str(ICONS_FOLDER / "logo.svg"))
-# The id of a theme of `aas_editor.ui.theme`. It is used when no theme was saved.
-DEFAULT_THEME = "fluent-light"
 
 SETTINGS = QSettings(str(SETTINGS_FILE), QSettings.Format.IniFormat)
 # Where the recent files and the recent commands of a user are kept. It is the

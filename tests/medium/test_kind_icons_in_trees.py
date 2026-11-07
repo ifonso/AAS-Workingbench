@@ -30,8 +30,8 @@ from tests.factories import make_submodel
 from aas_editor.domain.design_tokens import DARK
 from aas_editor.domain.design_tokens import LIGHT
 from aas_editor.models.item_standard import StandardItem
-from aas_editor.ui.theme import FLUENT_DARK
-from aas_editor.ui.theme import FLUENT_LIGHT
+from aas_editor.ui.theme import THEME_DARK
+from aas_editor.ui.theme import THEME_LIGHT
 from aas_editor.ui.theme import theme_manager
 from aas_editor.ui.theme.kind_icons import KIND_NAMES
 from aas_editor.ui.theme.kind_icons import KIND_ROLE
@@ -161,7 +161,7 @@ def test_the_package_tree_shows_the_kind_icons(views: object) -> None:
 
 
 @pytest.mark.parametrize(
-    "theme, tokens", [(FLUENT_LIGHT, LIGHT), (FLUENT_DARK, DARK)]
+    "theme, tokens", [(THEME_LIGHT, LIGHT), (THEME_DARK, DARK)]
 )
 def test_every_kind_icon_draws_in_the_color_of_the_theme(
     qapp: QApplication, theme: str, tokens: object
@@ -191,15 +191,15 @@ def test_a_kind_icon_changes_with_the_theme(qapp: QApplication) -> None:
     icon = kind_icon(make_property())
     assert icon is not None
 
-    theme_manager().apply(FLUENT_LIGHT)
+    theme_manager().apply(THEME_LIGHT)
     light = _draw(icon)
-    theme_manager().apply(FLUENT_DARK)
+    theme_manager().apply(THEME_DARK)
     dark = _draw(icon)
 
     assert light != dark
 
 
-@pytest.mark.parametrize("theme", [FLUENT_LIGHT, FLUENT_DARK])
+@pytest.mark.parametrize("theme", [THEME_LIGHT, THEME_DARK])
 def test_every_kind_has_ink_at_16_pixels_and_no_two_look_alike(
     qapp: QApplication, theme: str
 ) -> None:

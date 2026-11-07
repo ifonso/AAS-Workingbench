@@ -12,9 +12,6 @@ class TestAppSettingsPaths:
     def test_settings_file_exists(self, app_settings):
         assert app_settings.SETTINGS_FILE.is_file()
 
-    def test_themes_folder_exists(self, app_settings):
-        assert app_settings.THEMES_FOLDER.is_dir()
-
     def test_icons_folder_exists(self, app_settings):
         assert app_settings.ICONS_FOLDER.is_dir()
 
