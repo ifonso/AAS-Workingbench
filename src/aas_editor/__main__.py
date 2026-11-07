@@ -33,6 +33,16 @@ def main():
     # nothing here: they draw when they are shown, in the colors of the theme.
     apply_application_font(app)
 
+    # The data folder of the user, where the recovery files go, is named by
+    # these. They are the names of the recent files of the user, so that what
+    # the program keeps for a user is under one name. After the font, because
+    # the settings read a font when they are imported.
+    from aas_editor.settings.app_settings import IAT
+    from aas_editor.settings.app_settings import SETTINGS_APPLICATION_NAME
+
+    app.setOrganizationName(IAT)
+    app.setApplicationName(SETTINGS_APPLICATION_NAME)
+
     # Features add their actions before the first view exists.
     from aas_editor.ui.blob_actions import register_blob_actions
 

@@ -135,6 +135,61 @@ def test_a_file_removed_in_the_session_stays_removed_after_a_crash(
     assert sorted(restored.fileStore) == []
 
 
+def test_a_restore_without_the_original_says_which_files_are_missing(
+    qapp: object, tmp_path: Path
+) -> None:
+    # The JSON recovery holds the objects only, so the files of an unchanged
+    # package are in the original and nowhere else.
+    package, source = _open_package(tmp_path)
+    package.changed = True
+    recovery = package.write_recovery(tmp_path / "recovery")
+    source.unlink()
+
+    from aas_editor.package import Package
+
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert recovery.suffix == ".json"
+    assert [file.path for file in restored.missingFiles] == [DOCUMENT]
+    assert list(restored.fileStore) == []
+
+
+def test_a_restore_with_the_original_has_no_missing_files(
+    qapp: object, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+
+    package, source = _open_package(tmp_path)
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert restored.missingFiles == ()
+
+
+def test_a_restore_of_an_aasx_recovery_without_the_original_keeps_its_files(
+    qapp: object, tmp_path: Path
+) -> None:
+    from aas_editor.package import Package
+
+    package, source = _open_package(tmp_path)
+    files.create_text_file(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        DRAFT,
+        "x",
+    )
+    recovery = package.write_recovery(tmp_path / "recovery")
+    source.unlink()
+
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert recovery.suffix == ".aasx"
+    assert restored.missingFiles == ()
+    assert sorted(restored.fileStore) == [DOCUMENT, DRAFT]
+
+
 def test_an_unchanged_package_keeps_the_cheap_json_recovery(
     qapp: object, tmp_path: Path
 ) -> None:

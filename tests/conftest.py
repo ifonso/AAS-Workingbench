@@ -4,6 +4,7 @@ from collections.abc import Iterator
 import contextlib
 import os
 from pathlib import Path
+import shutil
 import sys
 
 import pytest
@@ -116,6 +117,11 @@ def own_settings(
     shows up in the start panel of the person who ran the tests. Both stores
     are replaced for the whole session, because a window of a module-scoped
     fixture writes when it closes, after the test that made it.
+
+    The crash recovery files are in the data folder of the user, and an old
+    folder inside the source tree is taken over from at the start of a window.
+    Both folders are replaced too, so that no test reads, writes, or moves a
+    recovery file of the person who ran the tests.
     """
     from PyQt6.QtCore import QSettings
 
@@ -123,6 +129,9 @@ def own_settings(
 
     folder = tmp_path_factory.mktemp("settings")
     patches = pytest.MonkeyPatch()
+    recovery = folder / "recovery"
+    patches.setattr(app_settings, "recovery_dir", lambda: recovery)
+    patches.setattr(app_settings, "OLD_RECOVERY_DIR", folder / "old-recovery")
     patches.setattr(
         app_settings,
         "SETTINGS",
@@ -142,8 +151,15 @@ def empty_settings(own_settings: None) -> Iterator[None]:
     """Starts a test with nothing saved, and leaves nothing for the next."""
     from aas_editor.settings import app_settings
 
-    app_settings.SETTINGS.clear()
-    app_settings.RECENT_SETTINGS.clear()
+    def clear() -> None:
+        app_settings.SETTINGS.clear()
+        app_settings.RECENT_SETTINGS.clear()
+        for folder in (
+            app_settings.recovery_dir(),
+            app_settings.OLD_RECOVERY_DIR,
+        ):
+            shutil.rmtree(folder, ignore_errors=True)
+
+    clear()
     yield
-    app_settings.SETTINGS.clear()
-    app_settings.RECENT_SETTINGS.clear()
+    clear()

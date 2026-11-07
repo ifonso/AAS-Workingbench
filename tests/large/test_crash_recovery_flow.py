@@ -52,10 +52,11 @@ def session(
 ):
     """A folder for the recovery files, and a way to start and crash a window."""
     recovery = tmp_path / "recovery"
-    monkeypatch.setattr("aas_editor.editorApp.RECOVERY_DIR", recovery)
-    monkeypatch.setattr(
-        "aas_editor.treeviews.treeview_pack.RECOVERY_DIR", recovery
-    )
+    from aas_editor.settings import app_settings
+
+    monkeypatch.setattr(app_settings, "recovery_dir", lambda: recovery)
+    old = tmp_path / "old-recovery"
+    monkeypatch.setattr(app_settings, "OLD_RECOVERY_DIR", old)
     windows: list[SimpleNamespace] = []
 
     def start(path: Path | None = None) -> SimpleNamespace:
@@ -66,6 +67,7 @@ def session(
     shown = SimpleNamespace(
         start=start,
         recovery=recovery,
+        old_recovery=old,
         tmp_path=tmp_path,
         screen=screen,
     )
@@ -217,3 +219,39 @@ def test_a_recovery_of_a_file_that_is_gone_still_restores_the_change(
     assert _value(package, THREAD_SYSTEM) == "other"
     assert package.changed
     assert package.file == requester.absolute()
+
+
+def test_a_recovery_whose_file_is_gone_says_which_stored_files_are_missing(
+    session,
+) -> None:
+    pump = write_pump_package(session.tmp_path / "pump.aasx")
+    _crash_with_change(session, pump, PUMP_NAME, "motor")
+    pump.unlink()
+
+    second = _restart(session)
+
+    (package,) = second.model.openedPacks()
+    assert _value(package, PUMP_NAME) == "motor"
+    missing = session.screen.shown[-1]
+    assert missing.title == "Files missing in package"
+    assert DOCUMENT in missing.text
+
+
+def test_an_unsaved_session_of_the_old_folder_is_offered_and_moves_to_the_new(
+    session, requester
+) -> None:
+    _crash_with_change(session, requester, THREAD_SYSTEM, "other")
+    # What the release before this one left: the files are in its folder.
+    shutil.copytree(session.recovery, session.old_recovery)
+    shutil.rmtree(session.recovery)
+
+    second = _restart(session)
+
+    assert session.screen.shown[0].title == "Restore unsaved changes"
+    (package,) = second.model.openedPacks()
+    assert _value(package, THREAD_SYSTEM) == "other"
+    assert sorted(p.suffix for p in session.recovery.glob("*.json")) == [
+        ".json",
+        ".json",
+    ]
+    assert list(session.old_recovery.glob("*")) == []

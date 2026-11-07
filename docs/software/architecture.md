@@ -48,7 +48,7 @@ This page describes the code as it is today, and the structure that new code sho
 4. Edits go through the model, which turns each one into a command and pushes it on the undo history of the package.
    A command changes the BaSyx objects and reports the change to the package's change observer, so that the models of all tabs show the same objects again (see [Change observer and commands](#change-observer-and-commands)).
    The package counts as changed while its history differs from the saved state.
-5. Crash recovery writes changed packages to `settings/recovery/`, and the next start offers to restore them.
+5. Crash recovery writes changed packages to the `recovery` folder of the data folder of the user (`app_settings.recovery_dir()`, from `QStandardPaths.AppDataLocation`, under the organization and application name that `__main__` sets), and the next start offers to restore them. A recovery that an earlier release left in `settings/recovery/` is moved there first (`take_over_recovery_files`).
 
 ### Known structural problems
 
@@ -200,7 +200,7 @@ A file that the package declares and that cannot be loaded is in the report too,
 
 Saving does not add Submodel references to the first AAS (D8). `Package.all_submodels_to_aas` is an explicit action in the context menu.
 
-Crash recovery writes the objects as JSON. When files were added, removed, renamed, or changed since the package was opened, it writes a complete AASX instead, so that restoring keeps them. Only a package that cannot be written as AASX gets a `.files.json` beside its JSON recovery (see [Supplementary files](#supplementary-files)).
+Crash recovery writes the objects as JSON. When files were added, removed, renamed, or changed since the package was opened, it writes a complete AASX instead, so that restoring keeps them. Only a package that cannot be written as AASX gets a `.files.json` beside its JSON recovery (see [Supplementary files](#supplementary-files)). A JSON recovery holds no files, so when its original AASX is gone, `restore_from_recovery` sets `missingFiles` to the File elements and thumbnails that have no stored file, and the window shows the dialog "Files missing in package" after the restore, as it does for a package that opens with files missing.
 
 ## Target structure
 

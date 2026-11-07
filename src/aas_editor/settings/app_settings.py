@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import toml
-from PyQt6.QtCore import QSize, QSettings
+from PyQt6.QtCore import QSize, QSettings, QStandardPaths
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6 import QtCore
 
@@ -203,7 +203,30 @@ TYPE_HINT_COLUMN = 3
 
 # Files
 SETTINGS_FILE = Path(__file__).resolve().parent / "settings.ini"
-RECOVERY_DIR = Path(__file__).resolve().parent / "recovery"
+# Where earlier releases kept the recovery files: inside the source tree, where
+# an installed or frozen program may not be able to write. A file that is still
+# there is taken over by `utils.recovery.take_over_recovery_files`.
+OLD_RECOVERY_DIR = Path(__file__).resolve().parent / "recovery"
+
+
+def recovery_dir() -> Path:
+    """Returns the folder of the crash recovery files.
+
+    It is in the data folder of the user (`QStandardPaths.AppDataLocation`),
+    which the program can write when it is installed or frozen. The folder is
+    named by the organization and the application name of `QApplication`,
+    which `__main__` sets. Callers ask for the folder each time, and do not
+    keep it, so that a test can point it somewhere else.
+
+    Returns:
+        The folder, which may not exist yet.
+    """
+    data = QStandardPaths.writableLocation(
+        QStandardPaths.StandardLocation.AppDataLocation
+    )
+    return Path(data) / "recovery"
+
+
 # Interval between periodic recovery writes, so a native crash loses at most this
 # window of edits.
 RECOVERY_INTERVAL_MS = 300_000

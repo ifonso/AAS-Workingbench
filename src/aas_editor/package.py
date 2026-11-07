@@ -37,8 +37,11 @@ from aas_editor.application.editing import edit_mode
 from aas_editor.application.edits import link_submodels
 from aas_editor.application.save import SaveOptions
 from aas_editor.application.validation import SaveGate
+from aas_editor.domain.file_references import file_references
+from aas_editor.domain.file_references import missing_files
 from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.ordered_store import OrderedIdentifiableStore
+from aas_editor.domain.parts import MissingFile
 from aas_editor.infrastructure.package_io import (
     PackageParts,
     read_package,
@@ -416,7 +419,21 @@ class Package:
                     pack.file,
                 )
             pack._restore_extra_files(recovery)
+            if not pack.file.exists():
+                # A JSON recovery holds the objects only, so the File elements
+                # now point at files that exist nowhere. Say so, as opening
+                # such a package does, because a save is refused for them.
+                pack.missingFiles = pack._dangling_files()
         return pack
+
+    def _dangling_files(self) -> tuple:
+        """The File elements and thumbnails whose path has no stored file."""
+        return tuple(
+            MissingFile(self.file.name, reference.path)
+            for reference in missing_files(
+                file_references(self.objStore), list(self.fileStore)
+            )
+        )
 
     def _restore_extra_files(self, recovery: Path) -> None:
         """Adds the files that were kept next to the recovery file."""
