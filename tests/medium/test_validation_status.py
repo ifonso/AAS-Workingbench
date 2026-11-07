@@ -67,6 +67,10 @@ def window(qtbot: QtBot, views):
         def current_object() -> object:
             return shown.view.currentIndex().data(OBJECT_ROLE)
 
+        @staticmethod
+        def select_element(element: model.SubmodelElement) -> None:
+            shown.select(shown.index("submodels", "Submodel", element.id_short))
+
     return Window
 
 
@@ -116,46 +120,59 @@ def test_hints_are_counted_apart_from_the_findings(window) -> None:
     element = make_property("Pump")
     element.category = "PARAMETER"
     window.open(element)
+    window.select_element(element)
 
     counts = window.status.counts
 
     assert (counts.errors, counts.warnings) == (0, 0)
-    assert counts.hints >= 1
-    assert window.status.hints_label.text() == f"{counts.hints} hints"
+    assert window.status.hints_button.text() == "3 hints here"
     assert "hint" not in window.status.findings_button.text()
+
+
+def test_the_status_bar_has_no_count_for_the_whole_package(window) -> None:
+    window.open(make_property("Pump"))
+
+    # The submodel and the property each lack a display name and a description,
+    # but the package row is current, so there is nothing to say "here".
+    assert window.status.hints_button.isHidden()
+    assert "hints" not in window.status.findings_button.text()
+    assert window.dock.hints_view.shown_count == 4
 
 
 def test_the_counts_say_which_kind_a_hint_is(window) -> None:
     window.open(make_property("Pump"))
 
     findings_tip = window.status.findings_button.toolTip()
-    hints_tip = window.status.hints_label.toolTip()
+    hints_tip = window.status.hints_button.toolTip()
 
     assert "Validation panel" in findings_tip
-    assert "not rules" in hints_tip and "does not list them" in hints_tip
+    assert "not rules" in hints_tip and "whole package" in hints_tip
 
 
 def test_hints_are_left_out_while_hints_mode_is_off(window) -> None:
     element = make_property("Pump")
     element.category = "PARAMETER"
     window.open(element)
+    window.select_element(element)
+    assert not window.status.hints_button.isHidden()
 
     hints_mode().set_on(False)
 
-    assert window.status.hints_label.isHidden()
-    assert window.status.counts.hints == 0
+    assert window.status.hints_button.isHidden()
+    assert window.status.hints_here == 0
 
 
 def test_hints_come_back_with_hints_mode(window) -> None:
     element = make_property("Pump")
     element.category = "PARAMETER"
     window.open(element)
+    window.select_element(element)
     hints_mode().set_on(False)
 
     hints_mode().set_on(True)
 
-    assert not window.status.hints_label.isHidden()
-    assert window.status.counts.hints >= 1
+    assert not window.status.hints_button.isHidden()
+    assert window.status.hints_here == 3
 
 
 def test_hints_mode_does_not_fail_in_a_window_that_was_deleted(
@@ -222,11 +239,14 @@ def test_a_click_on_the_counts_shows_the_panel(window, qtbot: QtBot) -> None:
     assert window.dock.isVisible()
 
 
-def test_the_panel_says_that_hints_are_not_listed_in_it(window) -> None:
+def test_the_list_of_findings_says_where_the_hints_are(window) -> None:
     window.open(make_property("Pump"))
 
-    assert "not rules" in window.dock.note_label.text()
-    assert "not listed here" in window.dock.note_label.text()
+    note = window.dock.note_label.text()
+
+    assert "not rules" in note
+    assert "not in this list" in note
+    assert "Hints view" in note
 
 
 # ---------------------------------------------------------------------------
@@ -613,8 +633,15 @@ def test_a_hint_rule_warning_is_not_counted_with_the_panel_warnings(
         (model.Key(model.KeyTypes.GLOBAL_REFERENCE, "urn:a b"),)
     )
     window.open(element)
+    window.select_element(element)
+    whitespace = [
+        f
+        for f in window.dock.hint_report.findings
+        if f.rule_id == "EDT-HINT-KEY-WHITESPACE"
+    ]
 
     counts = window.status.counts
 
     assert counts.findings == len(window.dock.report.findings) == 0
-    assert counts.hints >= 1
+    assert len(whitespace) == 1
+    assert window.status.hints_here >= 1

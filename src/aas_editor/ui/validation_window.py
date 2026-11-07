@@ -3,7 +3,8 @@
 The main window is generated code and legacy code, so this module adds what
 validation needs from the outside: a dock at the bottom, the counts for the
 status bar, F8 and Shift+F8 to go through the findings, and the connections
-between the package tree and these. The window calls `install_validation` once,
+between the package tree and these. The status bar says how many hints the
+current object has, and a click on that opens the Hints view of the dock. The window calls `install_validation` once,
 before it builds the menus that list the dock, the hints action, and the
 actions for the findings.
 """
@@ -16,14 +17,18 @@ from PyQt6.QtCore import QObject
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtGui import QKeySequence
+from PyQt6.QtWidgets import QApplication
 from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtWidgets import QWidget
 
 from aas_editor.application.hints import hints_mode
 from aas_editor.application.validation import finding_key
 from aas_editor.application.validation import step_finding
 from aas_editor.application.validation import stepping_findings
 from aas_editor.domain.validation import Finding
+from aas_editor.settings.app_settings import OBJECT_ROLE
 from aas_editor.settings.app_settings import OPENED_PACKS_ROLE
+from aas_editor.ui.hint_kinds_setting import load_hint_kinds
 from aas_editor.ui.hints_bar import finding_links
 from aas_editor.ui.tree_navigation import select_object
 from aas_editor.ui.validation_dock import ValidationDock
@@ -39,8 +44,9 @@ class ValidationController(QObject):
 
     Attributes:
         dock: The validation dock.
-        status: The counts of errors, warnings and hints for the status bar.
-            The window puts it into its status bar.
+        status: The counts of errors and warnings, and the hints of the
+            current object, for the status bar. The window puts it into its
+            status bar.
         hints_action: The checkable View menu entry for hints mode.
         next_finding_action: Goes to the next finding, F8.
         previous_finding_action: Goes to the previous finding, Shift+F8.
@@ -58,6 +64,8 @@ class ValidationController(QObject):
         self._window = window
         self._tree = cast("Any", window).mainTreeView
         self._pack_model = cast("Any", window).packTreeModel
+        # The kinds of hints that the user turned off in an earlier session.
+        load_hint_kinds()
         self.dock = ValidationDock(window)
         window.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.dock)
         # Hidden at first. The dock does not run the rules while it is hidden,
@@ -68,6 +76,7 @@ class ValidationController(QObject):
         self.dock.finding_activated.connect(self.go_to)
         self.status = ValidationStatus(window)
         self.status.opened.connect(self.show_dock)
+        self.status.hints_opened.connect(self.show_hints)
         finding_links().opened.connect(self._open_from_bar)
         self._last_key: tuple[str, str, str] | None = None
 
@@ -105,6 +114,18 @@ class ValidationController(QObject):
         self._pack_model.rowsInserted.connect(self._follow_package)
         self._pack_model.rowsRemoved.connect(self._follow_package)
         self._follow_package()
+        # The object of the status bar is the one that the tree or the focused
+        # tab shows, as the bar above a tab shows the hints of its object.
+        self._focus_in_tab = False
+        selection.currentChanged.connect(self._follow_object)
+        tabs = getattr(window, "mainTabWidget", None)
+        if tabs is not None:
+            tabs.currItemChanged.connect(self._follow_object)
+            tabs.currentChanged.connect(self._follow_object)
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.focusChanged.connect(self._on_focus)
+        self._follow_object()
 
     def go_to(self, finding: Finding) -> None:
         """Selects the element of a finding in the package tree.
@@ -119,9 +140,24 @@ class ValidationController(QObject):
             select_object(self._tree, finding.anchor, package)
 
     def show_dock(self) -> None:
-        """Shows the Validation panel, as a click on the counts asks."""
-        self.dock.show()
-        self.dock.raise_()
+        """Shows the Validation panel on its list of errors and warnings, as a
+        click on their counts asks."""
+        self.dock.show_findings()
+
+    def show_hints(self) -> None:
+        """Shows the Hints view of the panel, as a click on the hints asks."""
+        self.dock.show_hints()
+
+    def current_object(self) -> object | None:
+        """Returns the object that the status bar says the hints of.
+
+        It is the object of the tab when the focus is in a tab of the window,
+        and the object of the current row of the package tree otherwise.
+        """
+        tabs = getattr(self._window, "mainTabWidget", None)
+        if self._focus_in_tab and tabs is not None:
+            return getattr(tabs.currentWidget(), "packItemObj", None)
+        return self._tree.currentIndex().data(OBJECT_ROLE)
 
     def step(self, forward: bool) -> Finding | None:
         """Goes to the next or the previous error or warning of the package.
@@ -182,6 +218,26 @@ class ValidationController(QObject):
             current = None
         self.dock.set_package(current)
         self.status.set_package(current)
+
+    def _follow_object(self, *_: object) -> None:
+        """Shows the hints of the current object in the status bar."""
+        self.status.set_target(self.current_object())
+
+    def _on_focus(self, _old: QWidget | None, new: QWidget | None) -> None:
+        """Follows the tree or the tab, whichever took the focus last."""
+        tabs = getattr(self._window, "mainTabWidget", None)
+        widget = new
+        while widget is not None:
+            if widget is self._tree:
+                self._focus_in_tab = False
+                break
+            if widget is tabs:
+                self._focus_in_tab = True
+                break
+            widget = widget.parentWidget()
+        else:
+            return
+        self._follow_object()
 
     def _on_hints_mode(self, on: bool) -> None:
         try:

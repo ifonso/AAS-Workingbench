@@ -243,7 +243,6 @@ def test_the_saved_file_has_the_current_relationship_types_and_opens_again(
 def test_validation_finds_no_error_and_its_hints_are_true(
     editor, qtbot
 ) -> None:
-    from aas_editor.application.validation import FindingCounts
     from aas_editor.ui.validation_service import service_for
 
     controller = editor.window.validationController
@@ -261,7 +260,14 @@ def test_validation_finds_no_error_and_its_hints_are_true(
     # The panel lists the rules of the specification, and there is no finding.
     assert controller.dock.counts_label.text() == "No findings"
     assert controller.dock.visible_findings() == []
-    assert counts == FindingCounts(errors=0, warnings=0, hints=202)
+    assert (counts.errors, counts.warnings) == (0, 0)
+    # The status bar has no count for the package. The Hints view has it.
+    assert controller.status.hints_button.isHidden()
+    controller.dock.show_hints()
+    assert controller.dock.hints_view.shown_count == 202
+    assert {
+        g.rule_id: g.count for g in controller.dock.hints_view.groups
+    } == dict(kinds)
     # Counted again from the SDK objects: 67 without a display name, 34 with a
     # display name in one language (the concept descriptions), 2 without a
     # description (the shell and the item of the list), 99 with a description

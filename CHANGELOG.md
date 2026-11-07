@@ -9,6 +9,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Added
 
+- A Hints view in the Validation panel, chosen with a tab bar beside "Errors and warnings". It groups the hints of the whole package by kind, with a readable name and a count ("Missing description 60"), opens each kind to its elements, and goes to an element on a double click or Enter. It is the one place with the count of all hints. F8 still goes through the errors and warnings only.
+- A check box on each kind of hint in that view turns the kind off. A kind that is off is left out of the hints of the status bar and of the bar above a tab, stays in the view in a quiet color, and can be turned on again, one by one or all at once. The choice is kept in the user's settings (`disabledHintKinds`), and not in the AASX file.
 - Tests that use the program as a person does, in `tests/large`: the owner's `Requester_screwing.aasx` (now in `tests/data`, 7.5 KB, with `example.com` ids) opened, looked through row by row, edited, saved, and compared with the original through the SDK; Save As to JSON, XML, and AASX with JSON inside, with the warnings; every kind of file that cannot be opened; templates that open strictly, with missing files, and in failsafe mode; drops on the start and on the tree; failed saves; two packages with copy, close, Save All and recent files; and crash recovery. They share `tests/usage_window.py`. The samples of the Package Explorer are used when `AAS_CORPUS_ROOT` points to the folder that holds `package-explorer/src`, and are skipped with that reason otherwise.
 - A Makefile as the single entry point for development tasks.
 - Linting and formatting with ruff, and type checking with pyright, both enforced in CI.
@@ -157,6 +159,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Changed
 
+- **The status bar no longer shows the number of hints of the whole package.** Almost every element has a few hints, so the number (183 for Technical Data) never reached zero and read as a count of defects. It shows the hints of the object that is current, such as "3 hints here", follows the row of the tree and the focused tab, and shows nothing when the object has none or hints mode is off. It is a button like the errors and warnings, and a click opens the Hints view of the Validation panel. The note of the list of findings now says that the Hints view lists the hints. [ADR 0031](docs/software/adr/0031-hints-say-where-you-are-and-the-panel-lists-them.md).
 - **The default theme is Light**, in the off-white and grey of Microsoft's light surfaces, and a theme that was saved by an earlier release is read as one of the four: `grey` and `dark` are Dark, `light` and `default` are Light, and a name that is not known is Light. Users of `grey` now see Dark, in other colors. Follow system is a choice and not the default.
 - The package tree has no toolbar of its own, and a tab has none: the command bar of the window acts on the one with the focus. The window has one row of buttons where it had two or three. A tab in a window of its own keeps back and forward buttons, because it has no bar.
 - Save All is in the File menu only, and Save is on the command bar. The keys are the same: `Ctrl+S` saves the package and `Ctrl+Shift+S` saves all.

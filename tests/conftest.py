@@ -72,6 +72,20 @@ def hints_mode_on() -> Iterator[None]:
     hints_mode().set_on(True)
 
 
+@pytest.fixture(autouse=True)
+def hint_kinds_on() -> Iterator[None]:
+    """Starts every test with every kind of hint on, which is global state.
+
+    It is set without saving, so a test that saves kinds to its own settings
+    can load them again as a new session does.
+    """
+    from aas_editor.application.hints import hint_kinds
+
+    hint_kinds().load(())
+    yield
+    hint_kinds().load(())
+
+
 @pytest.fixture(scope="session")
 def qapp() -> Iterator[QApplication]:
     """Provides the session-wide QApplication.
