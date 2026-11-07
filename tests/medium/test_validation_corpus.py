@@ -29,6 +29,9 @@ EXPECTED_BY_RULE: dict[str, tuple[int, int]] = {
     "EDT-DANGLING-REFERENCE": (569, 56),
     "AASd-002": (120, 6),
     "EDT-MISSING-FILE": (60, 13),
+    # Files that a package declares and no element names. They are loaded since
+    # ADR 0030, and an AASX save keeps them.
+    "EDT-UNREFERENCED-FILE": (61, 17),
     "EDT-VALUE-TYPE": (1, 1),
 }
 

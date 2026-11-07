@@ -31,6 +31,7 @@ from aas_editor.domain.validation.rules.identity import RULES as IDENTITY_RULES
 DOCUMENT = "/aasx/files/document.pdf"
 OPTIONS = SaveOptions()
 TARGET = Path("out.aasx")
+JSON_TARGET = Path("out.json")
 
 
 @dataclass
@@ -139,10 +140,10 @@ def test_gate_lists_lost_content_before_the_errors_of_the_rules() -> None:
     source = _with_one_letter_id_short()
     source.files.add_file(DOCUMENT, io.BytesIO(b"pdf"), "application/pdf")
 
-    check = SaveGate().check(source, TARGET, OPTIONS)
+    check = SaveGate().check(source, JSON_TARGET, OPTIONS)
 
     assert check.warnings[0].message.startswith(
-        "These files are in the package"
+        "JSON files cannot hold supplementary files"
     )
     assert check.warnings[1].message.startswith("AASd-002")
 
@@ -254,7 +255,7 @@ def test_gate_asks_again_about_lost_content_on_every_save() -> None:
     for _ in range(2):
         save(
             source,
-            TARGET,
+            JSON_TARGET,
             OPTIONS,
             RecordingWriter(),
             lambda c: gate.confirm(c, ask),

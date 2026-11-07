@@ -38,9 +38,10 @@ from aas_editor.application.edits import link_submodels
 from aas_editor.application.save import SaveOptions
 from aas_editor.application.validation import SaveGate
 from aas_editor.domain.file_references import file_references
-from aas_editor.domain.file_references import unreferenced_files
+from aas_editor.domain.file_references import missing_files
 from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.ordered_store import OrderedIdentifiableStore
+from aas_editor.domain.parts import MissingFile
 from aas_editor.infrastructure.package_io import (
     PackageParts,
     read_package,
@@ -291,19 +292,15 @@ class Package:
     ) -> None:
         """Writes the stored files that the recovery itself does not carry.
 
-        The SDK writes into an AASX only the files that a File element or a
-        thumbnail refers to, so a file that nothing refers to yet would be
-        lost. When no AASX could be written, the files that are new or changed
-        since open are kept here instead. They go to a file of their own, next
-        to the recovery, and are read again by `restore_from_recovery`.
+        An AASX recovery carries every stored file (ADR 0030), so it needs no
+        extras. When no AASX could be written, the files that are new or
+        changed since open are kept here instead. They go to a file of their
+        own, next to the recovery, and are read again by
+        `restore_from_recovery`, which also reads the extras that an earlier
+        version wrote beside an AASX.
         """
         extras_path = recovery_dir / f"{stem}{EXTRA_FILES_SUFFIX}"
-        if wrote_aasx:
-            names = unreferenced_files(
-                file_references(self.objStore), list(self.fileStore)
-            )
-        else:
-            names = self.session_file_names()
+        names = [] if wrote_aasx else self.session_file_names()
         if not names or not self.files_changed():
             extras_path.unlink(missing_ok=True)
             return
@@ -422,7 +419,21 @@ class Package:
                     pack.file,
                 )
             pack._restore_extra_files(recovery)
+            if not pack.file.exists():
+                # A JSON recovery holds the objects only, so the File elements
+                # now point at files that exist nowhere. Say so, as opening
+                # such a package does, because a save is refused for them.
+                pack.missingFiles = pack._dangling_files()
         return pack
+
+    def _dangling_files(self) -> tuple:
+        """The File elements and thumbnails whose path has no stored file."""
+        return tuple(
+            MissingFile(self.file.name, reference.path)
+            for reference in missing_files(
+                file_references(self.objStore), list(self.fileStore)
+            )
+        )
 
     def _restore_extra_files(self, recovery: Path) -> None:
         """Adds the files that were kept next to the recovery file."""

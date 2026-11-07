@@ -1,6 +1,6 @@
 # ADR 0013: Stored files change with their references, and never overwrite
 
-**Status:** Accepted
+**Status:** Accepted. Replaced in part by [ADR 0030](0030-declared-files-are-kept.md): an AASX save and an AASX recovery keep the files that nothing refers to.
 
 ## Context
 

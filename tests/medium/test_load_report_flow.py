@@ -204,6 +204,43 @@ def test_a_strict_open_that_loses_an_object_in_a_second_part_says_so(
     )
 
 
+def test_opening_a_package_that_is_open_says_so_before_it_reads_the_file(
+    tree_view,
+    shown_reports: list[tuple[str, list[str]]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from aas_editor.package import Package
+    from aas_editor.settings.app_settings import recent_settings
+
+    opened = tree_view.openPack(LOSES_A_SUBMODEL.as_posix())
+    assert opened is not None
+    shown_reports.clear()
+    recent_before = recent_settings().value("recentFiles")
+    reads: list[object] = []
+    said: list[str] = []
+    original = Package.__init__
+
+    def counting(self: Package, *args: object, **kwargs: object) -> None:
+        reads.append(args)
+        original(self, *args, **kwargs)  # pyright: ignore[reportArgumentType]
+
+    monkeypatch.setattr(Package, "__init__", counting)
+    monkeypatch.setattr(
+        QMessageBox,
+        "critical",
+        staticmethod(lambda parent, title, text, *a, **k: said.append(text)),
+    )
+
+    again = tree_view.openPack(LOSES_A_SUBMODEL.as_posix())
+
+    assert again is None
+    assert reads == []
+    assert shown_reports == []
+    assert recent_settings().value("recentFiles") == recent_before
+    assert len(said) == 1
+    assert "already opened" in said[0]
+
+
 # -- later, from the menu -----------------------------------------------------
 
 

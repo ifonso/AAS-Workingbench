@@ -279,7 +279,10 @@ EDITOR_RULE_REASONS: dict[str, str] = {
     "EDT-DANGLING-REFERENCE": "A model reference whose target is not there.",
     "EDT-MISSING-FILE": "The SDK cannot write a File with no stored file.",
     "EDT-FILE-IN-ANNOTATION": "The SDK skips annotations when it writes files.",
-    "EDT-UNREFERENCED-FILE": "A save drops a stored file that nothing uses.",
+    "EDT-UNREFERENCED-FILE": (
+        "A stored file that nothing uses is kept by an AASX save, and shows "
+        "here so that a leftover is seen."
+    ),
     "EDT-VALUE-TYPE": "A value must fit its value type (see AASd-020).",
     "EDT-RANGE-ORDER": "The minimum of a Range is above its maximum.",
     "EDT-LANGUAGE-TAG": "BCP 47 tags: well-formed, and one entry for each.",

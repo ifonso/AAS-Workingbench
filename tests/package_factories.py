@@ -6,6 +6,7 @@ Everything is written through BaSyx, never by hand.
 """
 
 from collections.abc import Mapping
+from collections.abc import Sequence
 import io
 from pathlib import Path
 
@@ -25,6 +26,11 @@ DOCUMENT_BYTES = b"%PDF-1.4 document"
 MISSING_PART = "/aasx/files/datasheet_en.pdf"
 ANNOTATION_PART = "/aasx/files/annotation.txt"
 ANNOTATION_BYTES = b"annotation text"
+
+SUPPL_RELATIONSHIP = "http://admin-shell.io/aasx/relationships/aas-suppl"
+OLD_SUPPL_RELATIONSHIP = (
+    "http://www.admin-shell.io/aasx/relationships/aas-suppl"
+)
 
 
 def write_aasx_tolerating_missing_files(
@@ -157,4 +163,79 @@ def write_package_with_same_id_in_two_parts(
         writer.write_all_aas_objects(
             SECOND_PART, make_store(second), DictSupplementaryFileContainer()
         )
+    return path
+
+
+def write_aasx_declaring_files(
+    path: Path,
+    objects: model.SetIdentifiableStore,
+    declared_files: Mapping[str, tuple[bytes, str]],
+    referenced_files: Mapping[str, tuple[bytes, str]] | None = None,
+    declared: Sequence[str] | None = None,
+    relationship_type: str = SUPPL_RELATIONSHIP,
+    second_part: tuple[model.SetIdentifiableStore, Sequence[str]] | None = None,
+) -> Path:
+    """Writes an AASX that declares files that no File element refers to.
+
+    The BaSyx writer declares (with an `aas-suppl` relationship) only the files
+    that a File element or a thumbnail refers to. Packages of other tools
+    declare more, as the Technical Data template does. This writes the parts
+    with the public `writer` of `AASXWriter` and declares them through
+    `additional_relationships` of `write_all_aas_objects`.
+
+    Args:
+        path: Where to write the package.
+        objects: The objects of the first AAS part, `/aasx/data.xml`.
+        declared_files: The parts to write for the declarations: the part
+            name and the content and content type.
+        referenced_files: Files that File elements of `objects` refer to. The
+            SDK writes and declares them.
+        declared: The part names to declare, in order, which may repeat a name
+            or name a part that is not in the package. By default each of
+            `declared_files` once.
+        relationship_type: The relationship type of the declarations. Use
+            `OLD_SUPPL_RELATIONSHIP` for the `www.` form of old files.
+        second_part: The objects and the declarations of a second AAS part,
+            `/aasx/second.xml`, for a package whose parts declare the same
+            file.
+
+    Returns:
+        The path that was written.
+    """
+    references = DictSupplementaryFileContainer()
+    for name, (content, content_type) in (referenced_files or {}).items():
+        references.add_file(name, io.BytesIO(content), content_type)
+
+    def declarations(names: Sequence[str]) -> list[pyecma376_2.OPCRelationship]:
+        return [
+            pyecma376_2.OPCRelationship(
+                f"d{number}",
+                relationship_type,
+                name,
+                pyecma376_2.OPCTargetMode.INTERNAL,
+            )
+            for number, name in enumerate(names)
+        ]
+
+    names = list(declared_files) if declared is None else list(declared)
+    with AASXWriter(path.as_posix(), failsafe=False) as writer:
+        for name, (content, content_type) in declared_files.items():
+            if name in references:
+                continue
+            with writer.writer.open_part(name, content_type) as part:
+                part.write(content)
+        writer.write_all_aas_objects(
+            "/aasx/data.xml",
+            objects,
+            references,
+            additional_relationships=declarations(names),
+        )
+        if second_part is not None:
+            more_objects, more_names = second_part
+            writer.write_all_aas_objects(
+                "/aasx/second.xml",
+                more_objects,
+                DictSupplementaryFileContainer(),
+                additional_relationships=declarations(more_names),
+            )
     return path

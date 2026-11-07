@@ -237,13 +237,12 @@ def test_check_save_allows_package_overwrite_when_it_is_not_partial(
 # ---------------------------------------------------------------------------
 
 
-def test_check_save_warns_when_aasx_drops_unreferenced_files() -> None:
+def test_check_save_does_not_warn_when_aasx_keeps_unreferenced_files() -> None:
     source = _source_with_files(DOCUMENT, stored=(DOCUMENT, OTHER))
 
     check = check_save(source, Path("out.aasx"), OPTIONS)
 
-    assert check.blockers == ()
-    assert [issue.details for issue in check.warnings] == [(OTHER,)]
+    assert check == SaveCheck()
 
 
 def test_check_save_does_not_warn_when_every_file_is_referenced() -> None:
@@ -341,10 +340,10 @@ def test_save_writes_when_user_confirms_warnings() -> None:
     writer = RecordingWriter()
     source = _source_with_files(stored=(OTHER,))
 
-    outcome = save(source, Path("out.aasx"), OPTIONS, writer, lambda _: True)
+    outcome = save(source, Path("out.json"), OPTIONS, writer, lambda _: True)
 
     assert outcome.status is SaveStatus.SAVED
-    assert writer.targets == [Path("out.aasx")]
+    assert writer.targets == [Path("out.json")]
     assert len(outcome.check.warnings) == 1
 
 
@@ -352,7 +351,7 @@ def test_save_cancels_without_writing_when_user_declines_warnings() -> None:
     writer = RecordingWriter()
     source = _source_with_files(stored=(OTHER,))
 
-    outcome = save(source, Path("out.aasx"), OPTIONS, writer, lambda _: False)
+    outcome = save(source, Path("out.json"), OPTIONS, writer, lambda _: False)
 
     assert outcome.status is SaveStatus.CANCELLED
     assert writer.targets == []

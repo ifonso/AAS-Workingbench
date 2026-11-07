@@ -48,7 +48,7 @@ This page describes the code as it is today, and the structure that new code sho
 4. Edits go through the model, which turns each one into a command and pushes it on the undo history of the package.
    A command changes the BaSyx objects and reports the change to the package's change observer, so that the models of all tabs show the same objects again (see [Change observer and commands](#change-observer-and-commands)).
    The package counts as changed while its history differs from the saved state.
-5. Crash recovery writes changed packages to `settings/recovery/`, and the next start offers to restore them.
+5. Crash recovery writes changed packages to the `recovery` folder of the data folder of the user (`app_settings.recovery_dir()`, from `QStandardPaths.AppDataLocation`, under the organization and application name that `__main__` sets), and the next start offers to restore them. A recovery that an earlier release left in `settings/recovery/` is moved there first (`take_over_recovery_files`).
 
 ### Known structural problems
 
@@ -182,8 +182,10 @@ These modules exist today. Each layer is created by the first work package that 
 - **The tree follows the container.** A command reports `Change.changed` for the container, and the item of the file store reads its rows again (`PackTreeViewItem.repopulatesOnChange`).
 - **Deleting a stored file in the tree** goes through `PackTreeView.prepareDelete` (the usages question of the delete flow), then the model removes the file with `RemoveFile`.
 - **Copying to another package.** `TreeClipboard.source` records the package at copy time, and the clipboard hands it to `copy_source`. The paste actions (above, below, into) ask `gather_companions` for the file references of the copies and add the commands of `transfer_commands` to the paste group. The older Paste goes through `StandardTable.addItem`, which wraps the add with `with_copied_files`. Both add the files and update the pasted paths in the same undo step, and the window shows what was copied or numbered in the status bar.
-- **Save.** `check_save` returns the dangling Files as a blocker with the code `DANGLING_FILES`, and the stored files that nothing refers to as a warning with `UNREFERENCED_FILES`. The dialogs offer "Repair file references..." and "Show package files...".
-- **Crash recovery.** When any stored file differs from the opened state, the recovery is an AASX. The files that nothing refers to cannot be in it, so they are written to `<stem>.files.json` next to it, and `restore_from_recovery` reads them again.
+- **Declared files are kept.** [ADR 0030](adr/0030-declared-files-are-kept.md) records the decision. The SDK reads only the files that a File element or the thumbnail names, so `_TolerantReader.read_declared_files` also reads every `aas-suppl` relationship of every AAS part (the old `www.` type too) and stores each part with its content type. A part that is stored already, declared twice, or declared by two parts is loaded once. A declared part that is missing in the zip, cannot be read, or has a name that a save could not write is an issue of the load report, and raises nothing. These files show in the Package files panel and can be removed, renamed, or linked.
+- **Every stored file is written.** `_write_aasx` opens the part of each stored file that no File element and no shell thumbnail names, with the public `writer` of `AASXWriter`, and passes an `aas-suppl` relationship for it as `additional_relationships` of `write_all_aas_objects`. A save and an open give the same files. A file whose element was removed stays until it is removed in the panel.
+- **Save.** `check_save` returns the dangling Files as a blocker with the code `DANGLING_FILES`. It does not warn about files that nothing refers to when the target is an AASX. For JSON and XML it warns that the files are not written, with the code `FILES_NOT_WRITTEN`. The dialogs offer "Repair file references..." and "Show package files...".
+- **Crash recovery.** When any stored file differs from the opened state, the recovery is an AASX, and it carries every stored file. A package that the SDK cannot write as AASX gets a JSON recovery, and the files that are new or changed since open go to `<stem>.files.json` next to it. `restore_from_recovery` reads that file, also when an earlier version wrote it beside an AASX.
 
 ### How saving works
 
@@ -194,10 +196,11 @@ These modules exist today. Each layer is created by the first work package that 
 A package that was opened through the failsafe branch is partial (D6). It cannot overwrite the file it was read from.
 The SDK logs what failsafe mode skips, and `package_io.read_package` captures those records into `PackageParts.load_report` (`domain/load_report.py`, [ADR 0018](adr/0018-load-report.md)). The editor shows the list when the package opens, from the context menu later, and in the text of the refused save. The report does not bring the content back, so every failsafe package still counts, also when its report is empty.
 A package that opened strictly is partial too, when an object has the id of a different object in an earlier part, because the SDK skips it without a record. `_TolerantReader` finds those.
+A file that the package declares and that cannot be loaded is in the report too, but it does not make the package partial (see [Supplementary files](#supplementary-files)).
 
 Saving does not add Submodel references to the first AAS (D8). `Package.all_submodels_to_aas` is an explicit action in the context menu.
 
-Crash recovery writes the objects as JSON. When files were added, removed, renamed, or changed since the package was opened, it writes a complete AASX instead, so that restoring keeps them. Files that nothing refers to go to a `.files.json` beside it (see [Supplementary files](#supplementary-files)).
+Crash recovery writes the objects as JSON. When files were added, removed, renamed, or changed since the package was opened, it writes a complete AASX instead, so that restoring keeps them. Only a package that cannot be written as AASX gets a `.files.json` beside its JSON recovery (see [Supplementary files](#supplementary-files)). A JSON recovery holds no files, so when its original AASX is gone, `restore_from_recovery` sets `missingFiles` to the File elements and thumbnails that have no stored file, and the window shows the dialog "Files missing in package" after the restore, as it does for a package that opens with files missing.
 
 ## Target structure
 

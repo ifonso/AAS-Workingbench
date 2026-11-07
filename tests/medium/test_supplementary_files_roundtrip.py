@@ -202,7 +202,8 @@ def test_adding_and_linking_a_file_survives_save_undo_redo(lab: Lab) -> None:
         "application/pdf",
     )
     assert done.paths["Note"] == "/aasx/files/report_final.pdf"
-    assert NOTE not in done.files
+    # The old file stays until the user removes it (ADR 0030).
+    assert done.files[NOTE] == (NOTE_BYTES, "text/plain")
 
 
 def test_renaming_a_file_moves_every_reference_with_it(lab: Lab) -> None:
@@ -341,10 +342,10 @@ def test_choosing_a_file_for_a_thumbnail_with_a_picker(lab: Lab) -> None:
     )
 
     assert done.paths["thumbnail"] == DOCUMENT
-    assert THUMBNAIL not in done.files
+    assert done.files[THUMBNAIL] == (THUMBNAIL_BYTES, "image/png")
 
 
-def test_a_file_that_nothing_refers_to_is_warned_about_and_not_saved(
+def test_a_file_that_nothing_refers_to_is_saved_without_a_question(
     lab: Lab,
 ) -> None:
     files.create_text_file(
@@ -366,8 +367,11 @@ def test_a_file_that_nothing_refers_to_is_warned_about_and_not_saved(
     )
 
     assert outcome.status is SaveStatus.SAVED
-    assert questions == [("/aasx/files/draft.txt",)]
-    assert "/aasx/files/draft.txt" not in _state(target).files
+    assert questions == []
+    assert _state(target).files["/aasx/files/draft.txt"] == (
+        b"draft",
+        "text/plain",
+    )
 
 
 def test_linking_the_file_before_saving_keeps_it(lab: Lab) -> None:

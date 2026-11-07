@@ -78,7 +78,7 @@ class ValidationController(QObject):
             "Show advice about the object next to its attributes"
         )
         self.hints_action.toggled.connect(hints_mode().set_on)
-        hints_mode().subscribe(self._on_hints_mode)
+        self._hints_subscription = hints_mode().subscribe(self._on_hints_mode)
 
         self.next_finding_action = QAction("Next finding", window)
         self.next_finding_action.setShortcut(QKeySequence("F8"))
@@ -184,7 +184,12 @@ class ValidationController(QObject):
         self.status.set_package(current)
 
     def _on_hints_mode(self, on: bool) -> None:
-        self.hints_action.setChecked(on)
+        try:
+            self.hints_action.setChecked(on)
+        except RuntimeError:
+            # The window was deleted, and the subscription outlived it. Stop
+            # listening, as a failure would be logged at every change.
+            self._hints_subscription.cancel()
 
 
 def install_validation(window: QMainWindow) -> ValidationController:

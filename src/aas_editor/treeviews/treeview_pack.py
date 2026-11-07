@@ -69,6 +69,7 @@ from aas_editor.settings import (
     IAT,
     SUBMODELS,
 )
+from aas_editor.settings import app_settings
 from aas_editor.settings.app_settings import (
     recent_settings,
     NAME_ROLE,
@@ -87,7 +88,6 @@ from aas_editor.settings.app_settings import (
     COPY_ROLE,
     SUBMODEL_TEMPLATES_FOLDER,
     UPDATE_ROLE,
-    RECOVERY_DIR,
 )
 from aas_editor.settings.shortcuts import SC_OPEN, SC_SAVE, SC_SAVE_ALL
 from aas_editor.settings.icons import (
@@ -980,6 +980,16 @@ class PackTreeView(TreeView):
             FileController(package, self).add_from_disk()
 
     def openPack(self, file: str) -> Optional[Package]:
+        # Before the file is read: reading a package that is open takes as long
+        # as the first time, adds it to the recent files again, and shows its
+        # load report again, to say at the end that it is open.
+        if Path(file).absolute() in self.model().data(
+            QModelIndex(), OPENED_FILES_ROLE
+        ):
+            QMessageBox.critical(
+                self, "Error", f"Package {file} is already opened"
+            )
+            return None
         try:
             try:
                 pack = Package(file, failsafe=False)
@@ -1043,14 +1053,8 @@ class PackTreeView(TreeView):
                 self, f"Package {file} couldn't be opened: {e}"
             ).exec()
         else:
-            openedPacks = self.model().data(QModelIndex(), OPENED_FILES_ROLE)
-            if Path(file).absolute() in openedPacks:
-                QMessageBox.critical(
-                    self, "Error", f"Package {file} is already opened"
-                )
-            else:
-                self.add_pack_to_tree(pack)
-                return pack
+            self.add_pack_to_tree(pack)
+            return pack
         return None
 
     def add_pack_to_tree(self, pack: Package):
@@ -1176,7 +1180,9 @@ class PackTreeView(TreeView):
             pack.recordSaved(target)
             # The saved state is the one that undo and redo compare with.
             pack.commandStack.mark_saved()
-            pack.delete_recovery(RECOVERY_DIR, for_file=originalFile)
+            pack.delete_recovery(
+                app_settings.recovery_dir(), for_file=originalFile
+            )
             self.updateRecentFiles(pack.file.absolute().as_posix())
             self.updateWindowModified()
             return True
@@ -1300,7 +1306,7 @@ class PackTreeView(TreeView):
                     elif res == QMessageBox.StandardButton.Discard:
                         # Discarding: drop the recovery file so it is not offered for
                         # restore next launch. (A failed Save keeps it, as a safety net.)
-                        pack.delete_recovery(RECOVERY_DIR)
+                        pack.delete_recovery(app_settings.recovery_dir())
                 self.closeFile(packItem)
             except AttributeError as e:
                 QMessageBox.critical(
@@ -1340,7 +1346,7 @@ class PackTreeView(TreeView):
                 # so they are not offered for restore on next launch.
                 for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
                     if pack.changed:
-                        pack.delete_recovery(RECOVERY_DIR)
+                        pack.delete_recovery(app_settings.recovery_dir())
         self.closeAllFiles()
 
     def closeAllFiles(self):
@@ -1361,7 +1367,13 @@ class PackTreeView(TreeView):
         try:
             # resolve() (not absolute()) so symlinks and '..' segments normalise; an
             # unresolved path could slip a recovery file past this check into recents.
-            return Path(file).resolve().parent == RECOVERY_DIR.resolve()
+            folder = Path(file).resolve().parent
+            # The folder that earlier releases used holds recovery files until
+            # they are taken over.
+            return folder in (
+                app_settings.recovery_dir().resolve(),
+                app_settings.OLD_RECOVERY_DIR.resolve(),
+            )
         except (TypeError, ValueError, OSError):
             return False
 

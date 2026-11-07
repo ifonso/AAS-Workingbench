@@ -1,5 +1,6 @@
 """The context menu of an element is short, and Paste is at its top."""
 
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -16,7 +17,14 @@ CLIPBOARD_ENTRIES = ("Cut", "Copy", "Paste", "Delete/clear")
 
 
 @pytest.fixture
-def shown(views: Any) -> Any:
+def shown(views: Any) -> Iterator[Any]:
+    """A package whose Speed property is selected, with something to paste.
+
+    Paste above and Paste below apply only while the paste buffer holds
+    something, and the buffer belongs to the class of the tree views, so it
+    keeps what an earlier test copied. The test puts its own copy in, and takes
+    it out, so that it does not depend on the tests that ran before it.
+    """
     from aas_editor.ui.location_actions import register_location_actions
     from aas_editor.ui.move_actions import register_move_actions
     from aas_editor.ui.paste_actions import register_paste_actions
@@ -28,8 +36,14 @@ def shown(views: Any) -> Any:
     register_location_actions()
     package_views = views()
     package_views.open_package(make_submodel(elements=[make_property("Speed")]))
+    clipboard = package_views.view.treeClipboard
+    clipboard.clear()
+    clipboard.append(make_property("Copied"))
+    # The view enables its actions when the selection changes, so the buffer
+    # is filled first.
     package_views.select(package_views.index("submodels", "Submodel", "Speed"))
-    return package_views
+    yield package_views
+    clipboard.clear()
 
 
 def test_a_property_has_about_twenty_entries_at_the_top(shown: Any) -> None:

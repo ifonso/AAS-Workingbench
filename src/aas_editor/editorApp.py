@@ -23,11 +23,13 @@ import aas_editor.widgets.groupBoxes
 from aas_editor.ui.colors import problem_style
 from aas_editor.application.theme_choice import theme_from_saved
 from aas_editor.ui.theme import THEME_LABELS, theme_manager
+from aas_editor.settings import app_settings
 from aas_editor.settings.app_settings import *
 from aas_editor.utils.recovery import (
     find_recovery_files,
     delete_recovery_file,
     cleanup_recovery_dir,
+    take_over_recovery_files,
 )
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import transfer_reports
@@ -47,6 +49,7 @@ from aas_editor.ui.pane_navigation import PaneNavigator
 from aas_editor.ui.pane_navigation import TAB
 from aas_editor.ui.pane_navigation import TREE
 from aas_editor.ui.pane_navigation import first_focusable
+from aas_editor.ui.save_warnings import show_missing_files
 from aas_editor.ui.selection_panel import SelectionDock
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
@@ -732,7 +735,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                 self._recoveryTimer.stop()
                 for pkg in self.packTreeModel.openedPacks():
                     if pkg.changed:
-                        pkg.delete_recovery(RECOVERY_DIR)
+                        pkg.delete_recovery(app_settings.recovery_dir())
                 a0.accept()
             else:
                 return a0.ignore()
@@ -749,7 +752,11 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.applyLastSessionTreeStates()
 
     def openLastSessionFiles(self):
-        recovery_map = find_recovery_files(RECOVERY_DIR)
+        recovery_folder = app_settings.recovery_dir()
+        # An unsaved session of an earlier release is in the old folder, inside
+        # the source tree, and survives the update when it is moved here first.
+        take_over_recovery_files(app_settings.OLD_RECOVERY_DIR, recovery_folder)
+        recovery_map = find_recovery_files(recovery_folder)
         openedAasFiles = AppSettings.AAS_FILES_TO_OPEN_ON_START.value()
         # Recovery files restored this launch: kept through the sweep below until their
         # first save, so a native crash before that save still has the restored data.
@@ -793,6 +800,12 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                         # Restored content is unsaved until the user writes it back
                         pack.changed = True
                         self.setWindowModified(True)
+                        if pack.missingFiles:
+                            # The original is gone, and a JSON recovery has no
+                            # files, so say so before a save is refused.
+                            show_missing_files(
+                                pack.name, pack.missingFiles, self
+                            )
                 else:
                     delete_recovery_file(recovery_map[file_path])
                     self.openAASFile(file)
@@ -802,7 +815,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # Drop everything left in the recovery dir except the entries just restored:
         # declined files, orphans (recovery for files no longer opened on start),
         # stale .meta.json and leftover .tmp writes. Keeps the dir from growing forever.
-        cleanup_recovery_dir(RECOVERY_DIR, keptRecoveries)
+        cleanup_recovery_dir(recovery_folder, keptRecoveries)
 
     def _save_recovery_files(self):
         # Persist open-file list before crash exits — closeEvent won't run. Restore
@@ -820,7 +833,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             # whenever any package is saved or closed
             if pkg.changed or pkg.recoveryWritten:
                 try:
-                    pkg.update_recovery(RECOVERY_DIR)
+                    pkg.update_recovery(app_settings.recovery_dir())
                 except Exception:
                     # Never let a failed recovery write abort the crash handler or the
                     # timer, but log it: a silent failure means the user believes they

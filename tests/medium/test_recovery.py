@@ -10,6 +10,7 @@ from aas_editor.utils.recovery import (
     find_recovery_files,
     delete_recovery_file,
     cleanup_recovery_dir,
+    take_over_recovery_files,
 )
 
 
@@ -222,6 +223,149 @@ class TestCleanup:
 
     def test_cleanup_missing_dir_is_noop(self, tmp_path: Path) -> None:
         cleanup_recovery_dir(tmp_path / "nope")  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Where the recovery files are, and the take-over from the old folder
+# ---------------------------------------------------------------------------
+
+
+class TestRecoveryFolder:
+    def test_it_is_in_the_data_folder_of_the_user_and_not_in_the_source_tree(
+        self, qapp: object
+    ) -> None:
+        from PyQt6.QtCore import QStandardPaths
+
+        from aas_editor.settings import app_settings
+
+        # The package keeps the function that the fixture replaces in
+        # `app_settings`, because it was bound when the package was imported.
+        from aas_editor.settings import recovery_dir
+
+        folder = recovery_dir()
+
+        data = QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.AppDataLocation
+        )
+        assert folder == Path(data) / "recovery"
+        assert not folder.is_relative_to(app_settings.SETTINGS_FILE.parent)
+
+    def test_a_test_does_not_use_the_folder_of_the_user(
+        self, qapp: object
+    ) -> None:
+        from aas_editor.settings import app_settings
+        from aas_editor.settings import recovery_dir
+
+        assert app_settings.recovery_dir() != recovery_dir()
+        assert app_settings.OLD_RECOVERY_DIR.name == "old-recovery"
+
+
+def _entry_files(folder: Path) -> list[str]:
+    return sorted(path.name for path in folder.iterdir())
+
+
+class TestTakeOver:
+    def test_an_entry_of_the_old_folder_moves_to_the_new_one(
+        self, tmp_path: Path
+    ) -> None:
+        old, new = tmp_path / "old", tmp_path / "new"
+        _write_entry(old, "abc", tmp_path / "model.json", '{"a": 1}')
+        (old / "abc.files.json").write_text("{}")
+
+        taken = take_over_recovery_files(old, new)
+
+        assert taken == 1
+        assert _entry_files(new) == [
+            "abc.files.json",
+            "abc.json",
+            "abc.meta.json",
+        ]
+        assert (new / "abc.json").read_text() == '{"a": 1}'
+        assert _entry_files(old) == []
+        assert find_recovery_files(new) == {
+            (tmp_path / "model.json").resolve(): new / "abc.json"
+        }
+
+    def test_an_entry_of_the_new_folder_is_kept_and_the_old_one_goes(
+        self, tmp_path: Path
+    ) -> None:
+        old, new = tmp_path / "old", tmp_path / "new"
+        _write_entry(old, "abc", tmp_path / "model.json", "old")
+        _write_entry(new, "abc", tmp_path / "model.json", "new")
+
+        taken = take_over_recovery_files(old, new)
+
+        assert taken == 0
+        assert (new / "abc.json").read_text() == "new"
+        assert _entry_files(old) == []
+
+    def test_a_file_without_a_meta_file_is_not_an_entry(
+        self, tmp_path: Path
+    ) -> None:
+        old, new = tmp_path / "old", tmp_path / "new"
+        old.mkdir()
+        (old / "abc.json").write_text("half an entry")
+
+        assert take_over_recovery_files(old, new) == 0
+        assert (old / "abc.json").exists()
+        assert not new.exists()
+
+    def test_a_missing_old_folder_does_nothing(self, tmp_path: Path) -> None:
+        assert take_over_recovery_files(tmp_path / "gone", tmp_path / "n") == 0
+        assert not (tmp_path / "n").exists()
+
+    def test_the_same_folder_is_left_alone(self, tmp_path: Path) -> None:
+        _write_entry(tmp_path, "abc", tmp_path / "model.json")
+
+        assert take_over_recovery_files(tmp_path, tmp_path) == 0
+        assert (tmp_path / "abc.json").exists()
+
+    def test_an_entry_that_cannot_be_copied_stays_in_the_old_folder(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog
+    ) -> None:
+        old, new = tmp_path / "old", tmp_path / "new"
+        _write_entry(old, "abc", tmp_path / "model.json")
+
+        def refuse(source: object, target: object) -> None:
+            raise PermissionError("read-only")
+
+        monkeypatch.setattr("aas_editor.utils.recovery.shutil.copy2", refuse)
+        with caplog.at_level(logging.WARNING):
+            taken = take_over_recovery_files(old, new)
+
+        assert taken == 0
+        assert _entry_files(old) == ["abc.json", "abc.meta.json"]
+        assert not (new / "abc.meta.json").exists()
+        assert "could not be taken over" in caplog.text
+
+    def test_a_taken_over_aasx_entry_restores_with_its_files(
+        self, qapp: object, tmp_path: Path
+    ) -> None:
+        from aas_editor.application import supplementary_files as files
+        from aas_editor.application.changes import observer_for
+
+        original = (
+            Path(__file__).parents[1]
+            / "data"
+            / "IDTA 02023 _Template_CarbonFootprint.aasx"
+        )
+        package = Package(original)
+        files.create_text_file(
+            package.commandStack,
+            observer_for(package),
+            package.fileStore,
+            "/aasx/files/draft.txt",
+            "unsaved draft",
+        )
+        old, new = tmp_path / "old", tmp_path / "new"
+        package.write_recovery(old)
+
+        assert take_over_recovery_files(old, new) == 1
+        (recovery,) = find_recovery_files(new).values()
+        restored = Package.restore_from_recovery(recovery, original)
+
+        assert "/aasx/files/draft.txt" in restored.fileStore
+        assert len(list(restored.fileStore)) == len(list(package.fileStore))
 
 
 # ---------------------------------------------------------------------------
