@@ -48,6 +48,8 @@ from PyQt6.QtWidgets import (
     QDialog,
 )
 
+from basyx.aas.model import Property
+from basyx.aas.model import Range
 from basyx.aas.model import SubmodelElementList
 from basyx.aas.model import EmbeddedDataSpecification
 from basyx.aas.model import Extension
@@ -1493,7 +1495,11 @@ class TreeView(BasicTreeView):
         paramsToHide = dict(
             ClassesInfo.defaultParamsToHide(defaults.element_type)
         )
-        if defaults.value_type is not None:
+        if defaults.value_type is not None and issubclass(
+            defaults.element_type, (Property, Range)
+        ):
+            # Only these have a value type. A file may fix one for a list of
+            # other items, and the item would refuse the argument.
             paramsToHide["value_type"] = defaults.value_type
         if kwargs.get("paramsToHide"):
             paramsToHide.update(kwargs["paramsToHide"])

@@ -316,6 +316,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - After a delete the tree selected the parent. It selects the sibling above the deleted row, and the parent when the row was the first (F-EDT-01 AC8).
 - A hint rule that raised showed its failure only in the Validation dock. The bar above a tab lists it too (F-EDT-01 AC14).
 - A submenu of the context menu that its owner deleted broke every later refresh of the view.
+- A new SubmodelElementList of collections, Files, or any item type other than Property and Range could not take a child. The form gave every list the value type `xs:string`, and the add dialog then failed with "SubmodelElementCollection.__init__() got an unexpected keyword argument 'value_type'". The form now sets a value type only for a list of Property or Range, and a list read from a file with a value type and other items takes a child as well.
 
 ### Removed
 

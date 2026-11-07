@@ -140,6 +140,16 @@ class Form:
         combo.setCurrentIndex(combo.findData(target))
         assert combo.currentData() is target
 
+    def fill_reference_box(
+        self, box: Any, keys: Sequence[tuple[Enum, str]]
+    ) -> None:
+        """Makes the keys of a reference form that is not a parameter.
+
+        The entries of a list of references, such as the supplemental semantic
+        ids, have no parameter name to find them by.
+        """
+        self._fill_keys(box, keys)
+
     def _fill_keys(self, box: Any, keys: Sequence[tuple[Enum, str]]) -> None:
         keys_group = box.paramWidgets["key"]
         for key_type, value in keys:

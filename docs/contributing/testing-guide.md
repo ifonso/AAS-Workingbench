@@ -154,6 +154,11 @@ These checks matter most for parity work:
 - **Factories:** build objects with the helpers in `tests/factories.py` (`from tests.factories import make_property`), not by hand in each test.
   `tests/package_factories.py` builds packages that a normal writer does not make: a File without a stored file, and a File under an annotation.
   `tests/reference_factories.py` builds a small environment whose objects refer to each other in every way (`make_linked`), for tests of renames, deletes and references.
+- **Authoring from an empty window:** the `author` fixture of `tests/large/conftest.py` gives a main window with no package, wrapped in `tests.authoring.Author`.
+  It presses New on the start panel, selects rows by the names of the tree, triggers the registered actions and the Edit menu, double clicks the cells of a tab, and fills the modal dialogs with `author.answering(DialogClass, script)`, which then presses OK as a person does.
+  A dialog whose OK is off is cancelled, and its reason is in `answer.problem`.
+  `tests/authoring_builders.py` and `tests/authoring_elements.py` build a whole package from nothing (`build_everything`), and `tests/large/test_authoring_*.py` use it for the edits, the wrong input, and the validation.
+  Offscreen, a tab of a File or a Blob does not open its preview, because the renderer of Qt WebEngine crashes the process when it exits.
 - **Sample packages:** use the IDTA templates in `tests/data/`. Add a small new file there only if no existing file covers the case.
 - **Spec constraints:** name the constraint in the test, such as `test_rejects_id_short_violating_constraint_aasd_002`.
 - **Acceptance criteria:** each parity feature doc has an acceptance criteria section. Turn each criterion into at least one test.
