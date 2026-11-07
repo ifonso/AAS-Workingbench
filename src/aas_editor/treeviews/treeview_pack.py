@@ -698,8 +698,29 @@ class PackTreeView(TreeView):
         self.packageMenu.menuAction().setVisible(isPackage)
         self.addAsJsonAct.setVisible(self.canAddTo(index) and not isPackage)
 
+    def canCopy(self, index: QModelIndex) -> bool:
+        """A package is a file, and cannot go to the clipboard like an object.
+
+        Copying it failed with a message about pickling, and Cut then closed it.
+        """
+        return super().canCopy(index) and not isinstance(
+            index.data(OBJECT_ROLE), Package
+        )
+
+    @staticmethod
+    def isFolderRow(index: QModelIndex) -> bool:
+        """Tell whether the row is a folder of a package, such as `Submodels`."""
+        return isinstance(
+            index.parent().data(OBJECT_ROLE), Package
+        ) and index.data(NAME_ROLE) in ClassesInfo.packViewAttrs(Package)
+
     def updateCopyCutPasteDelActs(self, index: QModelIndex):
         super().updateCopyCutPasteDelActs(index)
+        # The package holds the folders, and cannot lose one: Cut and Delete
+        # said "could not be deleted" with a Python message, and Cut had copied.
+        if any(self.isFolderRow(i) for i in (index, *self.selectedIndexes())):
+            self.cutAct.setEnabled(False)
+            self.delClearAct.setEnabled(False)
         indexValid = index.isValid()
         obj = index.data(OBJECT_ROLE)
         isReferable = isinstance(obj, Referable)
@@ -767,6 +788,17 @@ class PackTreeView(TreeView):
             self.addAct.setEnabled(True)
             self.addAct.setText(addActText)
 
+        # A row that nothing can be added to, such as a shell, said "Parent type
+        # is not extendable" with the Python class when Add was used on it.
+        obj = index.data(OBJECT_ROLE)
+        if (
+            index.isValid()
+            and self.addAct.isEnabled()
+            and type(obj) is not Package
+            and not self._canAddBelow(index)
+        ):
+            self.addAct.setEnabled(False)
+
         # Update add as JSON action based on add action
         self.addAsJsonAct.setEnabled(self.addAct.isEnabled())
         self.addAsJsonAct.setText(f"{self.addAct.text()} as JSON")
@@ -822,6 +854,13 @@ class PackTreeView(TreeView):
             return ClassesInfo.addType(type(parentObj))
         else:
             raise TypeError("Parent type is not extendable:", type(parentObj))
+
+    def _canAddBelow(self, index: QModelIndex) -> bool:
+        """Tell whether Add knows what to make below the row."""
+        try:
+            return bool(self._get_add_type_for_parent(index))
+        except TypeError:
+            return False
 
     def onAddAct(self, parent: QModelIndex = None, **kwargs):
         parent = parent if parent else self.currentIndex()
@@ -1062,6 +1101,19 @@ class PackTreeView(TreeView):
 
     def savePack(self, pack: Package = None, file: str = None) -> bool:
         pack = self.focusedPackage() if pack is None else pack
+        if (
+            file is None
+            and not edit_mode().is_editing
+            and not pack.changed
+            and pack.file.exists()
+        ):
+            # Writing the file again would change it: the writer keeps only the
+            # files that an element names, and renames the part of the model.
+            # Read mode is for looking, so a package with no changes is left.
+            self.showStatus(
+                f"{pack.name} has no changes, so its file is left as it is."
+            )
+            return True
         originalFile = pack.file  # write(file) may change pack.file on Save-As
         try:
             target = Path(file).absolute() if file else pack.file

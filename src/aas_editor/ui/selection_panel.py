@@ -17,6 +17,7 @@ The facts shown come from `aas_editor.domain.selection`.
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from PyQt6 import sip
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
@@ -29,9 +30,11 @@ from PyQt6.QtWidgets import QTreeView
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.application.editing import edit_mode
 from aas_editor.domain.selection import SelectionSummary
 from aas_editor.domain.selection import summarize
 from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_editor.ui.actions import READ_MODE_REASON
 
 HINT_TEXT = (
     "Select several rows with Ctrl+click or Shift+click to move, copy, "
@@ -186,7 +189,13 @@ class SelectionPanel(QWidget):
         if selection is not None:
             selection.selectionChanged.connect(self.refresh)
             selection.currentChanged.connect(self.refresh)
+        edit_mode().subscribe(self._on_mode)
         self.refresh()
+
+    def _on_mode(self, editing: bool) -> None:
+        del editing
+        if not sip.isdeleted(self):
+            self._sync_buttons()
 
     @property
     def summary(self) -> SelectionSummary:
@@ -221,6 +230,9 @@ class SelectionPanel(QWidget):
             )
             button.setVisible(shown)
             button.setEnabled(action.isEnabled())
+            # Copy and the like change nothing, and are on in Read mode.
+            off_by_mode = not action.isEnabled() and not edit_mode().is_editing
+            button.setToolTip(READ_MODE_REASON if off_by_mode else "")
         for row, buttons in self._rows:
             row.setVisible(multiple and any(not b.isHidden() for b in buttons))
 

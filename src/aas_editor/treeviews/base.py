@@ -37,6 +37,7 @@ from PyQt6.QtGui import (
     QAction,
     QClipboard,
     QKeyEvent,
+    QKeySequence,
 )
 from PyQt6.QtWidgets import (
     QTreeView,
@@ -75,7 +76,12 @@ from aas_editor.domain.list_children import child_defaults
 from aas_editor.domain.selection import has_mixed_variable_directions
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.utils.util_type import getTypeName
-from aas_editor.ui.actions import ActionContext, ViewActions, ViewKind
+from aas_editor.ui.actions import (
+    READ_MODE_REASON,
+    ActionContext,
+    ViewActions,
+    ViewKind,
+)
 from aas_editor.ui.delete_flow import DeleteCancelled, prepare_delete
 from aas_editor.ui.paste_actions import pasteCopyFor
 from aas_editor.ui.selection_rows import (
@@ -1003,6 +1009,10 @@ class TreeView(BasicTreeView):
             self.updateAddActs(index)
         else:
             self.disableAllEditingActs()
+            # Copy changes nothing, so Read mode, which is for looking at a
+            # package, keeps it for any row, and not for what the view had
+            # when it was last in Edit mode.
+            self.copyAct.setEnabled(self.canCopySelection(index))
         self.updateUndoRedoActs()
         self.registeredActions.update()
 
@@ -1010,11 +1020,22 @@ class TreeView(BasicTreeView):
         for act in self.editingActions:
             act.setEnabled(False)
 
+    def canCopy(self, index: QModelIndex) -> bool:
+        """Tell whether the row can go to the clipboard, which Copy and Cut do"""
+        return index.isValid()
+
+    def canCopySelection(self, index: QModelIndex) -> bool:
+        """Tell whether the current row and every selected row can be copied"""
+        return self.canCopy(index) and all(
+            self.canCopy(selected) for selected in self.selectedIndexes()
+        )
+
     def updateCopyCutPasteDelActs(self, index: QModelIndex):
         indexValid = index.isValid()
+        copyable = self.canCopySelection(index)
         self.pasteAct.setEnabled(indexValid)
-        self.copyAct.setEnabled(indexValid)
-        self.cutAct.setEnabled(indexValid)
+        self.copyAct.setEnabled(copyable)
+        self.cutAct.setEnabled(copyable)
         # Variables of an Operation in different directions are cut or copied,
         # but not deleted (F-EDT-09 AC19), so the entry is not offered.
         deleteOffered = not self.selectionHasMixedDirections()
@@ -1348,6 +1369,12 @@ class TreeView(BasicTreeView):
     def onPaste(self):
         index = self.currentIndex()
         if not self.isPasteOk(index):
+            self.showStatus(
+                "Nothing to paste here. Copy or cut a row that fits below "
+                "this one first"
+                if self.treeClipboard.isEmpty()
+                else "The copied rows do not fit below this row"
+            )
             return
         targetParentObj = index.parent().data(OBJECT_ROLE)
         targetObj = index.data(OBJECT_ROLE)
@@ -1366,7 +1393,13 @@ class TreeView(BasicTreeView):
             try:
                 iterItemTypehint = getIterItemTypeHint(targetTypeHint)
             except TypeError:
-                iterItemTypehint = getIterItemTypeHint(type(targetObj))
+                try:
+                    iterItemTypehint = getIterItemTypeHint(type(targetObj))
+                except TypeError:
+                    # The row can be iterated, such as a shell, but holds no
+                    # list of items to add to. That is not an error to show.
+                    self.showStatus("The copied rows do not fit below this row")
+                    return
             paste_was_done = False
             with self.historyGroup(index, "Paste"):
                 for obj2paste in objs2paste:
@@ -1597,7 +1630,29 @@ class TreeView(BasicTreeView):
                 self, self.model().data(topLeft, DATA_CHANGE_FAILED_ROLE)
             ).exec()
 
+    def showStatus(self, text: str, milliseconds: int = 5000) -> None:
+        """Say something in the status bar of the window of the view."""
+        statusBar = getattr(self.window(), "statusBar", None)
+        if callable(statusBar) and statusBar() is not None:
+            statusBar().showMessage(text, milliseconds)
+
+    def explainReadMode(self, event: QKeyEvent) -> None:
+        """Say in the status bar why a key that edits did nothing.
+
+        The actions that edit are off in Read mode, so their keys reach the
+        view as plain key presses and, without this, nothing at all happens.
+        """
+        if edit_mode().is_editing or not self.editEnabled:
+            return
+        pressed = QKeySequence(event.keyCombination())
+        edits = event.key() == Qt.Key.Key_F2 or any(
+            pressed in act.shortcuts() for act in self.editingActions
+        )
+        if edits:
+            self.showStatus(READ_MODE_REASON)
+
     def keyPressEvent(self, event: QKeyEvent) -> None:
+        self.explainReadMode(event)
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             if self.state() == QAbstractItemView.State.EditingState:
                 # if we are editing, inform base

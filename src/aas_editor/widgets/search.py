@@ -22,6 +22,7 @@ from PyQt6.QtCore import (
     QItemSelectionModel,
     QModelIndex,
     QPersistentModelIndex,
+    QRegularExpression,
     Qt,
 )
 from PyQt6.QtGui import QBrush, QColor, QAction, QShortcut
@@ -36,7 +37,7 @@ from PyQt6.QtWidgets import (
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.settings.app_settings import NAME_ROLE
 from aas_editor.settings.shortcuts import SC_SEARCH
-from aas_editor.ui.theme import current_tokens
+from aas_editor.ui.theme import current_tokens, theme_manager
 from aas_editor.settings.icons import (
     NEXT_ICON,
     PREV_ICON,
@@ -131,6 +132,7 @@ class SearchBar(ToolBar):
         self.filterBtn.toggled.connect(self.search)
         self.regexBtn.toggled.connect(self.search)
         self.searchLine.textChanged.connect(self.search)
+        theme_manager().changed.connect(self._recolorMatches)
 
     def closeBar(self):
         self.searchLine.setText("")
@@ -170,10 +172,35 @@ class SearchBar(ToolBar):
         rows.sort(key=absRow)
         return rows
 
+    def _recolorMatches(self) -> None:
+        """Paint the matches in the color of the theme that is on now.
+
+        The brushes are made when the search runs, so a switch of theme would
+        leave the light highlight on a dark tree.
+        """
+        brush = QBrush(QColor(current_tokens().bg_find))
+        delegate = self.view.itemDelegate()
+        for item in self.foundItems:
+            delegate.setBgColor(QModelIndex(item), brush)
+        self.view.viewport().update()
+
+    def _isInvalidExpression(self) -> bool:
+        """Tell whether the text is a regular expression that does not parse."""
+        return (
+            self.regexBtn.isChecked()
+            and bool(self.searchLine.text())
+            and not QRegularExpression(self.searchLine.text()).isValid()
+        )
+
     def _updateResultLabel(self, *_) -> None:
         """Tell how many rows match and which one is current."""
         if not self.searchLine.text():
             self.resultLabel.setText("")
+            return
+        if self._isInvalidExpression():
+            # An expression that does not parse matches nothing, and "No
+            # results" would blame the package for the typing.
+            self.resultLabel.setText("Not a valid expression")
             return
         rows = self.matchedRows()
         if not rows:
@@ -208,20 +235,24 @@ class SearchBar(ToolBar):
         self._updateResultLabel()
 
     def next(self):
-        items = [QModelIndex(i) for i in self.foundItems]
-        items.sort(key=absRow)
+        """Go to the next match, and to the first one after the last."""
+        items = self.matchedRows()
         for item in items:
             if absRow(item) > absRow(self.view.currentIndex()):
                 self.view.setCurrentIndex(item)
                 return
+        if items:
+            self.view.setCurrentIndex(items[0])
 
     def previous(self):
-        items = [QModelIndex(i) for i in self.foundItems]
-        items.sort(key=absRow, reverse=True)
-        for item in items:
+        """Go to the previous match, and to the last one before the first."""
+        items = self.matchedRows()
+        for item in reversed(items):
             if absRow(item) < absRow(self.view.currentIndex()):
                 self.view.setCurrentIndex(item)
                 return
+        if items:
+            self.view.setCurrentIndex(items[-1])
 
     def toggleViewAction(self):
         return QAction(

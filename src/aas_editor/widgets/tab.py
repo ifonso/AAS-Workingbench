@@ -520,6 +520,7 @@ class TabWithTreeView(QWidget):
         self.pathLine: AddressLine = AddressLine(self)
         self.breadcrumb = Breadcrumb(self.pathLine, self)
         self.breadcrumb.segment_activated.connect(self.openSegment)
+        self.breadcrumb.editing_stopped.connect(self.showRealPath)
         self.copyPathBtn = QToolButton(self)
         self.copyPathBtn.setIcon(COPY_ICON)
         self.copyPathBtn.setAutoRaise(True)
@@ -604,6 +605,15 @@ class TabWithTreeView(QWidget):
             index = index.parent()
         segments.reverse()
         return segments
+
+    def showRealPath(self) -> None:
+        """Put the path of the object back in the field, after typing in it.
+
+        A path that was refused, or typing that Escape left, would otherwise
+        be what the next Ctrl+L shows, and the breadcrumb would say another
+        path than the field.
+        """
+        self.pathLine.setText(getTreeItemPath(self.packItem))
 
     def openSegment(self, position: int) -> None:
         """Open the object of a segment of the path that the user clicked."""

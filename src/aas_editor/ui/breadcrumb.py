@@ -52,9 +52,13 @@ class Breadcrumb(QWidget):
         editor: The field that edits the path as text.
         segment_activated: Emitted with the position of a segment that the
             user clicked, the first one being 0.
+        editing_stopped: Emitted when the field is left, by Enter, by Escape
+            or by moving away. What was typed in it is then of no use, so the
+            owner of the text puts the real path back.
     """
 
     segment_activated = pyqtSignal(int)
+    editing_stopped = pyqtSignal()
 
     def __init__(
         self, editor: QLineEdit, parent: QWidget | None = None
@@ -186,6 +190,7 @@ class Breadcrumb(QWidget):
         """Shows the segments again."""
         if self.is_editing:
             self._stack.setCurrentWidget(self._page)
+            self.editing_stopped.emit()
 
     def eventFilter(
         self, watched: QObject | None, event: QEvent | None
