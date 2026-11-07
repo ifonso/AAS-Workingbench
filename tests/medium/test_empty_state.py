@@ -1,5 +1,6 @@
 """The start of the window, before a package is open."""
 
+from pathlib import Path
 from collections.abc import Iterator
 
 from PyQt6.QtCore import QMimeData
@@ -111,14 +112,13 @@ def test_a_recent_file_that_is_gone_leaves_the_list(start: Start) -> None:
     assert start.recent_texts() == []
 
 
-def test_a_dropped_file_is_opened(start: Start) -> None:
+def test_a_dropped_file_is_opened(start: Start, tmp_path: Path) -> None:
+    # Paths of this system, as a drop gives them, so that the test holds on
+    # Windows and on Linux alike.
+    one = (tmp_path / "one.aasx").as_posix()
+    two = (tmp_path / "two.json").as_posix()
     mime = QMimeData()
-    mime.setUrls(
-        [
-            QUrl.fromLocalFile("C:/x/one.aasx"),
-            QUrl.fromLocalFile("C:/x/two.json"),
-        ]
-    )
+    mime.setUrls([QUrl.fromLocalFile(one), QUrl.fromLocalFile(two)])
     event = QDropEvent(
         QPointF(10, 10),
         Qt.DropAction.CopyAction,
@@ -129,10 +129,7 @@ def test_a_dropped_file_is_opened(start: Start) -> None:
 
     start.widget.dropEvent(event)
 
-    assert [path.replace("\\", "/") for path in start.opened] == [
-        "C:/x/one.aasx",
-        "C:/x/two.json",
-    ]
+    assert [path.replace("\\", "/") for path in start.opened] == [one, two]
 
 
 def test_the_start_accepts_drops(start: Start) -> None:
