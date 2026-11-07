@@ -44,6 +44,20 @@ Submodel templates (src/aas_editor/submodel_templates/)
     templates by the editor. Each template folder has its own README.md and
     specification document, which name its version and origin.
 
+Example package (example/)
+    The package example/robot_arm_pick_and_place.aasx and the script that
+    builds it, example/build_robot_arm.py, are fictional and the own work of
+    this project, under its license. The script reads eight of the templates
+    above when it runs. The package keeps their structure, their semantic ids,
+    their supplemental semantic ids and the texts that name their elements,
+    and it holds copies of the concept descriptions that those templates carry
+    for the semantic ids that it uses, which may name entries of ECLASS or of
+    the IEC Common Data Dictionary (see below). Those parts are the IDTA's,
+    under CC BY 4.0 as above, adapted: the example fills them with its own
+    values, and drops the template qualifiers, the categories and the stray
+    spaces in two semantic ids. The pictures and the PDF files are drawn by the
+    script, with no outside file.
+
 AAS metamodel schema (aas_test_engines/data/file/3.0.yml)
     A JSON schema of the metamodel of the Asset Administration Shell, in YAML.
     The repository does not record where the file came from. The metamodel
