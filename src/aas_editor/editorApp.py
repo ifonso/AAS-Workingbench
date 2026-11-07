@@ -21,7 +21,8 @@ import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 import aas_editor.widgets.groupBoxes
 from aas_editor.ui.colors import problem_style
-from aas_editor.ui.theme import FLUENT_THEMES, theme_manager
+from aas_editor.application.theme_choice import theme_from_saved
+from aas_editor.ui.theme import THEME_LABELS, theme_manager
 from aas_editor.settings.app_settings import *
 from aas_editor.utils.recovery import (
     find_recovery_files,
@@ -136,15 +137,11 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.openAASFile(fileToOpen)
         else:
             self.openLastSessionFiles()
+        self.applyLastSessionTabHeader()
 
     def loadThemes(self):
-        # The old themes are style sheets, and the new ones are made from
-        # tokens, so they come first. Each id maps to the text of its entry.
-        self.themes = {}
-        for file in THEMES_FOLDER.iterdir():
-            if file.suffix == ".qss":
-                self.themes[file.stem] = str(file)
-        self.themeLabels = {**FLUENT_THEMES, **{n: n for n in self.themes}}
+        # Each id of a theme maps to the text of its entry in the menu.
+        self.themeLabels = dict(THEME_LABELS)
         self.currTheme = DEFAULT_THEME
 
     # noinspection PyArgumentList
@@ -211,7 +208,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
                 self,
                 checkable=True,
                 checked=theme == self.currTheme,
-                statusTip=f"Choose {label} theme",
+                statusTip=f"Choose the theme: {label}",
                 triggered=lambda: self.toggleThemeSlot(),
             )
             themeAct.setData(theme)
@@ -693,13 +690,13 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.toggleTheme(action.data())
 
     def toggleTheme(self, theme: str) -> None:
-        """Puts a theme on, and the default for a name that is unknown."""
-        if theme not in self.themeLabels:
-            theme = DEFAULT_THEME
-        if theme in FLUENT_THEMES:
-            theme_manager().apply(theme)
-        else:
-            theme_manager().apply_legacy(theme, Path(self.themes[theme]))
+        """Puts a theme on.
+
+        A name that an old release saved gives the theme that replaced it, and
+        a name that is unknown gives the default.
+        """
+        theme = theme_from_saved(theme)
+        theme_manager().apply(theme)
         self.currTheme = theme
         for themeAct in self.themeActs:
             themeAct.setChecked(themeAct.data() == theme)
@@ -883,6 +880,14 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             customLists = json.load(json_file)
             packTreeViewHeader.setCustomLists(customLists)
         packTreeViewHeader.initMenu()
+
+    def applyLastSessionTabHeader(self):
+        """Puts the columns of the last session on the first tab.
+
+        This runs after the package of the first tab is open, because opening
+        an item in a tab sets its header up again, and what was restored
+        before would be gone.
+        """
         # A state that an earlier release saved would bring its columns back.
         tabTreeViewHeaderState = restorable_state(
             AppSettings.TABTREEVIEW_HEADER_STATE.value(),
@@ -890,8 +895,12 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             TAB_HEADER_LAYOUT_VERSION,
         )
         if tabTreeViewHeaderState:
-            self.mainTabWidget.currentWidget().attrsTreeView.header().restoreState(
-                tabTreeViewHeaderState
+            attrsTreeView = self.mainTabWidget.currentWidget().attrsTreeView
+            attrsTreeView.header().restoreState(tabTreeViewHeaderState)
+            # The view fits its columns to the room when it is shown, unless
+            # the user sized them, and a restored state does not tell it so.
+            attrsTreeView.userSizedColumns = bool(
+                AppSettings.TABTREEVIEW_COLUMNS_SIZED.value()
             )
 
     def applyLastSessionTreeFontSizes(self):
@@ -1017,6 +1026,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
         AppSettings.TABTREEVIEW_HEADER_LAYOUT.setValue(
             TAB_HEADER_LAYOUT_VERSION
+        )
+        AppSettings.TABTREEVIEW_COLUMNS_SIZED.setValue(
+            self.mainTabWidget.currentWidget().attrsTreeView.userSizedColumns
         )
         AppSettings.PACKTREEVIEW_HEADER_LAYOUT.setValue(
             PACK_TREE_HEADER_LAYOUT_VERSION

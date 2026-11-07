@@ -113,7 +113,7 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["aas_editor"]
-omit = ["*/themes/breeze_resources.py", "*/design.py"]
+omit = ["*/design.py"]
 
 [tool.coverage.report]
 show_missing = true
@@ -128,7 +128,6 @@ src = ["src", "tests"]
 extend-exclude = [
     # Generated code.
     "src/aas_editor/design.py",
-    "src/aas_editor/themes/breeze_resources.py",
     "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
 ]
 
@@ -172,7 +171,6 @@ convention = "google"
 "src/aas_editor/additional/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/models/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/settings/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/themes/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/tools/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/treeviews/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/utils/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
@@ -201,7 +199,6 @@ include = ["src", "tests"]
 exclude = [
     "**/__pycache__",
     "src/aas_editor/design.py",
-    "src/aas_editor/themes/breeze_resources.py",
     "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
 ]
 venvPath = "."

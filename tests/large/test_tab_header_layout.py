@@ -18,8 +18,16 @@ def _window(
     qtbot: Any,
     monkeypatch: pytest.MonkeyPatch,
     saved: dict[str, Any],
+    written: dict[str, Any] | None = None,
 ) -> Any:
-    """Opens the main window as a session that saved `saved` would."""
+    """Opens the main window as a session that saved `saved` would.
+
+    The window is shown, as it is for a user: the columns of a tab are fitted
+    to the room when the tab is first laid out. `written` collects what the
+    session writes to the settings when it closes.
+    """
+    from PyQt6.QtWidgets import QApplication
+
     from aas_editor.editorApp import EditorApp
     from aas_editor.settings.app_settings import Setting
 
@@ -34,9 +42,19 @@ def _window(
         ),
     )
     # The session of a test does not write the settings file of the program.
-    monkeypatch.setattr(Setting, "setValue", lambda setting, value: None)
+    monkeypatch.setattr(
+        Setting,
+        "setValue",
+        lambda setting, value: (
+            written.__setitem__(setting.name, value)
+            if written is not None
+            else None
+        ),
+    )
     window = EditorApp(fileToOpen=(TEST_DATA_DIR / PACKAGE).as_posix())
     qtbot.addWidget(window)
+    window.show()
+    QApplication.processEvents()
     return window
 
 
@@ -139,6 +157,56 @@ def test_what_the_user_changed_after_that_is_kept(
     assert header.sectionSize(ATTRIBUTE_COLUMN) == DRAGGED_WIDTH
     assert not header.isSectionHidden(TYPE_HINT_COLUMN)
     _close(window)
+
+
+def test_columns_that_nobody_sized_are_fitted_again(
+    qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_editor.settings.app_settings import TAB_HEADER_LAYOUT_VERSION
+
+    state = _state_with_a_dragged_attribute_column(qtbot, monkeypatch)
+
+    # The session that saved the state left the columns as they were fitted.
+    window = _window(
+        qtbot,
+        monkeypatch,
+        {
+            "tabTreeViewHeaderState": state,
+            "tabTreeViewHeaderLayout": TAB_HEADER_LAYOUT_VERSION,
+            "tabTreeViewColumnsSized": False,
+        },
+    )
+
+    assert _header(window).sectionSize(ATTRIBUTE_COLUMN) == _fitting_width(
+        window
+    )
+    _close(window)
+
+
+def test_closing_writes_that_the_user_dragged_a_column(
+    qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
+
+    written: dict[str, Any] = {}
+    window = _window(qtbot, monkeypatch, {}, written)
+    _header(window).resizeSection(ATTRIBUTE_COLUMN, DRAGGED_WIDTH)
+
+    _close(window)
+
+    assert written["tabTreeViewColumnsSized"] is True
+
+
+def test_closing_writes_that_nobody_dragged_a_column(
+    qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    written: dict[str, Any] = {}
+    window = _window(qtbot, monkeypatch, {}, written)
+
+    _close(window)
+
+    assert written["tabTreeViewColumnsSized"] is False
 
 
 def _pack_state_with_a_dragged_object_column(

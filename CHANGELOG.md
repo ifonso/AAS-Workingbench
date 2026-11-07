@@ -134,7 +134,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - "Paste qualifier from clipboard into this qualifier" in the context menu of a qualifier row (F-EDT-07 AC5). The type, value type, value, value id, and semantic ids are taken over in one undo step. The kind stays, as in the original. A type that another qualifier has is refused (AASd-021), and so is text that is no qualifier, with the reason.
 - Tests for the output variables and the in/out variables of an Operation: a variable goes into the list it was added under only (F-EDT-04 AC18), for each of the three lists.
 - Tests that deleting the last specific asset id of a shell leaves no list in the file, and that the last asset id of a shell without a global asset id stays (F-EDT-02 AC13).
-- Three new themes in View, Choose Theme: Fluent light, Fluent dark, and Fluent, follow the system. They are made from one table of colors, so every pair of text and surface has at least 4.5 to 1 and every icon and input edge at least 3 to 1, and a test measures them all. The old themes stay for now.
+- Themes in View, Choose Theme: Follow system, Light, Dark, and Native. Light and Dark are made from one table of colors, so every pair of text and surface has at least 4.5 to 1 and every icon and input edge at least 3 to 1, and a test measures them all. Native has the style and colors of the platform and no style sheet.
 - A setting "Row density" in Settings, with Comfortable (28 pixels a row), Compact (24, the default), and Dense (20). It applies at once. A zoomed font still makes a row taller when its line does not fit.
 - A command palette on **Ctrl+K** (Navigate menu): one field over the actions of the menus, the context menu and the package tree, with their keys. A command that cannot run now is listed after the others with the reason when it is known, such as "Read mode is on", and the commands used last come first and are remembered between sessions. A name that is typed also finds the shells, submodels, concept descriptions and elements of the open packages, and picking one selects it in the tree. It is painted from the design tokens, so it follows the theme ([UI and UX plan](docs/planning/ui-ux-plan.md), phase I, U4).
 - The status bar counts the errors, the warnings and the hints of the current package, such as "1 error, 2 warnings" and "6 hints", and keeps the counts right while the Validation panel is hidden. A click on the errors and warnings opens the panel. The hints are counted apart, because the panel does not list them (phase J, U3). The rules now run while the panel is hidden, which reopens a point of ADR 0015: [ADR 0029](docs/software/adr/0029-validation-runs-while-the-panel-is-hidden.md) has the measurement on the largest bundled package, 55 ms for a run.
@@ -155,6 +155,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Changed
 
+- **The default theme is Light**, in the off-white and grey of Microsoft's light surfaces, and a theme that was saved by an earlier release is read as one of the four: `grey` and `dark` are Dark, `light` and `default` are Light, and a name that is not known is Light. Users of `grey` now see Dark, in other colors. Follow system is a choice and not the default.
 - The package tree has no toolbar of its own, and a tab has none: the command bar of the window acts on the one with the focus. The window has one row of buttons where it had two or three. A tab in a window of its own keeps back and forward buttons, because it has no bar.
 - Save All is in the File menu only, and Save is on the command bar. The keys are the same: `Ctrl+S` saves the package and `Ctrl+Shift+S` saves all.
 - The gear button, the text buttons Paste above and Paste below, and the undo, redo, edit, and add of each tab are gone from the screen. Zoom is in View, autoscroll is in Navigate, "Hide/show tabs bar" is "Tab bar" in View, and the paste actions are in Edit with their keys. Nothing was removed from the context menus.
@@ -235,6 +236,8 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 
 ### Fixed
 
+- The close cross of a tab could be drawn on top of its title, as in "showcase.aa×sx", in the light and the dark theme. Qt deletes the cross of a tab that cannot be closed with `deleteLater()`, so the old cross stayed where it was made, on the left of a title that grew later, until the event loop came round, which a picture taken without the loop shows. The tab bar hides such a cross at once.
+- A width that you dragged for the name or type column of the first tab was lost at every start, because the columns were restored before the package was open, and opening it fitted them again. They are restored after, and the session writes whether you sized them (`tabTreeViewColumnsSized`), so a header that nobody sized is still fitted to the room, and a state that an earlier release saved counts as sized.
 - A window took 8 to 14 seconds to open, because it read the 252 bundled submodel templates at its start. The menu "Add existing submodel" lists the files at once and reads a file when its submenu is first shown. The window opens in under a second (7.4 s before and 0.66 s after, offscreen). The templates that cannot be read show "Cannot be read" in their submenu, and a template with no submodel shows "No submodel".
 - A recent file opened several times when the list of recent files was refreshed more than once, and a refresh left the old connection, so the action could open the file that it showed before.
 - The tests wrote their temporary paths into the recent files of the person who ran them, which then showed in the start panel. The tests use settings of their own now. The recent files that earlier runs left are still in the registry of the user and are not removed.
@@ -322,6 +325,7 @@ Phase 0 prepares the project for [feature parity with AASX Package Explorer](doc
 - The undo list of 10 steps in each tab. The history of a package replaces it.
 - The `screenshots/` folder, which showed the old interface and was used only by the README.
 - The alternating row colors of the trees, and the old blue and green of links, changed rows, and added rows in `settings/colors.py`.
+- The old themes `grey`, `dark`, `light`, and `default`: the style sheets of the vendored Breeze set (`src/aas_editor/themes/`, about 490 KB), their images, `breeze.qrc`, and the generated `breeze_resources.py`, with `ThemeManager.apply_legacy`, `toggleStylesheet`, the search prefix `themes:`, and `settings/colors.py`, whose last color, `LIGHT_BLUE`, nothing used. The Breeze entry of `NOTICE` goes with them, and so does the note of the style sheets whose origin was not recorded.
 
 ### Documentation
 

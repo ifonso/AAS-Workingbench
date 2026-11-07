@@ -1,4 +1,4 @@
-"""The main window starts in the new light theme, and switches themes."""
+"""The main window starts in the light theme, and switches themes."""
 
 from pathlib import Path
 
@@ -47,7 +47,7 @@ def open_window(qapp, qtbot, monkeypatch, tmp_path: Path):
     yield open_with
     for window in windows:
         window._recoveryTimer.stop()
-        window.toggleTheme("fluent-light")
+        window.toggleTheme("light")
         window.close()
 
 
@@ -55,22 +55,23 @@ def window_color(app) -> QColor:
     return app.palette().color(QPalette.ColorRole.Window)
 
 
-def test_first_run_uses_the_new_light_theme(qapp, open_window) -> None:
+def test_first_run_uses_the_light_theme(qapp, open_window) -> None:
     window = open_window(None)
 
-    assert window.currTheme == "fluent-light"
+    assert window.currTheme == "light"
     assert window_color(qapp) == QColor("#fafafa")
 
 
-def test_theme_menu_lists_the_new_themes_before_the_old_ones(
+def test_theme_menu_lists_follow_system_light_dark_and_native(
     open_window,
 ) -> None:
     window = open_window(None)
 
     ids = [action.data() for action in window.themeActs]
+    labels = [action.text() for action in window.themeActs]
 
-    assert ids[:3] == ["fluent-light", "fluent-dark", "fluent-system"]
-    assert set(ids[3:]) == {"dark", "default", "grey", "light"}
+    assert ids == ["system", "light", "dark", "native"]
+    assert labels == ["Follow system", "Light", "Dark", "Native"]
 
 
 def test_choosing_dark_changes_the_palette_and_the_recovery_warning(
@@ -78,26 +79,44 @@ def test_choosing_dark_changes_the_palette_and_the_recovery_warning(
 ) -> None:
     window = open_window(None)
 
-    window.toggleTheme("fluent-dark")
+    window.toggleTheme("dark")
 
     assert window_color(qapp) == QColor("#1f1f1f")
     assert "#ff8a85" in window._recoveryStatusLabel.styleSheet()
     checked = [a.data() for a in window.themeActs if a.isChecked()]
-    assert checked == ["fluent-dark"]
+    assert checked == ["dark"]
 
 
-def test_a_saved_old_theme_stays_on(qapp, open_window) -> None:
-    window = open_window("grey")
+@pytest.mark.parametrize(
+    ("saved", "shown"),
+    [
+        ("grey", "dark"),
+        ("dark", "dark"),
+        ("light", "light"),
+        ("default", "light"),
+    ],
+)
+def test_a_saved_old_theme_becomes_the_theme_that_replaced_it(
+    qapp, open_window, saved: str, shown: str
+) -> None:
+    window = open_window(saved)
 
-    assert window.currTheme == "grey"
-    assert "#3c3f41" in qapp.styleSheet()
-    assert "#fafafa" not in qapp.styleSheet()
+    assert window.currTheme == shown
+    assert "#3c3f41" not in qapp.styleSheet()
+    assert qapp.styleSheet().count("#0f62b8" if shown == "light" else "#6cb0f5")
 
 
-def test_an_unknown_saved_theme_gives_the_new_light_theme(
+def test_a_saved_native_theme_has_no_sheet(qapp, open_window) -> None:
+    window = open_window("native")
+
+    assert window.currTheme == "native"
+    assert qapp.styleSheet() == ""
+
+
+def test_an_unknown_saved_theme_gives_the_light_theme(
     qapp, open_window
 ) -> None:
     window = open_window("sepia")
 
-    assert window.currTheme == "fluent-light"
+    assert window.currTheme == "light"
     assert window_color(qapp) == QColor("#fafafa")

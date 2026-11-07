@@ -204,6 +204,36 @@ class TabBar(QTabBar):
         self.initMenu()
         self.customContextMenuRequested.connect(self.openMenu)
 
+    def setTabsClosable(self, closable: bool) -> None:
+        """Shows or removes the close crosses, with none left on screen.
+
+        Qt removes the crosses that are no more wanted with `deleteLater()`.
+        Such a cross stays where it was made until the event loop comes round,
+        and since the tab around it can change its title and width by then, it
+        can stand on the title of the tab, as in "showcase.aa×sx". It is
+        hidden here, so that nothing draws it while it waits to be deleted.
+
+        Args:
+            closable: True to give every tab a close cross.
+        """
+        leaving = [] if closable else self._closeButtons()
+        super().setTabsClosable(closable)
+        for button in leaving:
+            button.hide()
+
+    def _closeButtons(self) -> list[QWidget]:
+        """Gives the widgets that sit on the tabs as their close buttons."""
+        buttons: list[QWidget] = []
+        for index in range(self.count()):
+            for side in (
+                QTabBar.ButtonPosition.LeftSide,
+                QTabBar.ButtonPosition.RightSide,
+            ):
+                button = self.tabButton(index, side)
+                if button is not None:
+                    buttons.append(button)
+        return buttons
+
     def tabLayoutChange(self) -> None:
         """Names the close buttons, which Qt makes without a name."""
         super().tabLayoutChange()
