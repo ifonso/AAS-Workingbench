@@ -17,6 +17,7 @@ from collections.abc import MutableMapping
 
 from basyx.aas.model import (
     AASConstraintViolation,
+    AbstractObjectStore,
     Identifiable,
     LangStringSet,
     NamespaceSet,
@@ -28,12 +29,11 @@ from PyQt6.QtCore import (
     QModelIndex,
     Qt,
     QItemSelection,
-    QSize,
     QPersistentModelIndex,
     QTimer,
     pyqtSignal,
 )
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QColor, QFont
 
 from aas_editor.application.change_marks import with_ancestors
 from aas_editor.application.changes import Change, ChangeKind, observer_for
@@ -93,9 +93,13 @@ from aas_editor.settings.app_settings import (
     LINKED_ITEM_ROLE,
     COPY_ROLE,
     EDIT_TARGET_ROLE,
+    CHANGE_MARK_ROLE,
+    MARK_CHANGED,
+    MARK_NEW,
 )
 from aas_editor.settings import NOT_GIVEN
-from aas_editor.settings.colors import LINK_BLUE, CHANGED_BLUE, NEW_GREEN
+from aas_editor.domain.attribute_display import NOT_SET
+from aas_editor.ui.theme import current_tokens
 from aas_editor.utils.util import actualizeAASParents
 
 from aas_editor.utils.util_classes import ClassesInfo
@@ -517,13 +521,12 @@ class StandardTable(QAbstractItemModel):
             return self._getFgColor(index)
         if role == Qt.ItemDataRole.FontRole:
             return self._getFont(index)
-        if role == Qt.ItemDataRole.SizeHintRole:
-            fontSize = self.currFont.pointSize()
-            return QSize(-1, int((fontSize + 2) * 1.9))
         if role == Qt.ItemDataRole.TextAlignmentRole:
             return Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         if role == DATA_CHANGE_FAILED_ROLE:
             return self.lastErrorMsg
+        if role == CHANGE_MARK_ROLE:
+            return self._markKind(index)
         if role == COLUMN_NAME_ROLE:
             column = index.column()
             return self._columns[column]
@@ -560,12 +563,29 @@ class StandardTable(QAbstractItemModel):
             return item.data(role, column, column_name=self._columns[column])
 
     def _getFgColor(self, index: QModelIndex):
+        """Return the color of the text of a cell, or nothing for the default.
+
+        The colors are tokens of the theme in use, read at each paint, so a
+        switch of theme needs only a repaint. A link is the color of links, a
+        changed or new name has its mark color (and a dot, see `ui/compact_rows`),
+        and what is not the name or the value, such as the type and `(not set)`,
+        is muted.
+        """
         column = index.column()
-        # color fg in red if obj type and typehint don't fit
+        tokens = current_tokens()
         if index.data(IS_LINK_ROLE):
-            return LINK_BLUE
-        elif column == ATTRIBUTE_COLUMN:
-            return self._markColor(self.objByIndex(index))
+            return QColor(tokens.link)
+        if column == ATTRIBUTE_COLUMN:
+            kind = self._markKind(index)
+            if kind == MARK_NEW:
+                return QColor(tokens.mark_new)
+            if kind == MARK_CHANGED:
+                return QColor(tokens.mark_changed)
+        elif column in (TYPE_COLUMN, TYPE_HINT_COLUMN):
+            return QColor(tokens.fg_muted)
+        elif column == VALUE_COLUMN:
+            if index.data(Qt.ItemDataRole.DisplayRole) == NOT_SET:
+                return QColor(tokens.fg_muted)
         return QVariant()
 
     @staticmethod
@@ -573,36 +593,59 @@ class StandardTable(QAbstractItemModel):
         """Return the marks of the package that the item belongs to, or None"""
         return getattr(getattr(item, "package", None), "changeMarks", None)
 
-    def _markColor(self, item: StandardItem):
-        """Return the colour for an item that was added or changed since the save.
+    def _markKind(self, index: QModelIndex):
+        """Return `MARK_NEW` or `MARK_CHANGED` for a name that has a mark, or None.
 
-        The marks belong to the package and follow its command stack, so the
-        colour is gone after a save and after an undo to the saved state, in
-        every tab (F-EDT-01 AC3).
+        Only the name column carries a mark. The marks belong to the package and
+        follow its command stack, so the mark is gone after a save and after an
+        undo to the saved state, in every tab (F-EDT-01 AC3).
         """
+        if index.column() != ATTRIBUTE_COLUMN:
+            return None
+        item = self.objByIndex(index)
         marks = self._marksOf(item)
         if marks is None:
-            return QVariant()
+            return None
         if isinstance(item.obj, Package):
-            return QVariant() if marks.is_empty else CHANGED_BLUE
+            return None if marks.is_empty else MARK_CHANGED
         node = item
         while isinstance(node, StandardItem):
             if marks.is_new(node.obj):
-                return NEW_GREEN
+                return MARK_NEW
             node = node.parent()
-        if marks.is_changed(item.obj):
-            return CHANGED_BLUE
-        return QVariant()
+        if self._rowChanged(item, marks):
+            return MARK_CHANGED
+        return None
+
+    @staticmethod
+    def _rowChanged(item: StandardItem, marks) -> bool:
+        """Tell whether the row changed since the save, by what it shows.
+
+        The shells, submodels, and concept descriptions of a package share one
+        object store, and a mark on the store says that something in it
+        changed, not which of the three rows. Such a row changed when one of
+        its own objects did, or one was taken out of it.
+        """
+        package = getattr(item, "package", None)
+        store = getattr(package, "objStore", None)
+        if getattr(item, "isNode", False) and item.obj is store:
+            return any(
+                marks.is_changed(child.obj) or marks.is_new(child.obj)
+                for child in item.children()
+            ) or any(
+                item.acceptsChild(obj) for obj in marks.removed_from(store)
+            )
+        return marks.is_changed(item.obj)
 
     def _getFont(self, index: QModelIndex):
+        """Return the font of a cell: regular, and underlined only for a link.
+
+        One level of emphasis (plan V1). Names and values are regular, and the
+        type and the placeholders are told apart by their color.
+        """
         font = QFont(self.currFont)
         if index.data(IS_LINK_ROLE):
             font.setUnderline(True)
-        elif index.column() == ATTRIBUTE_COLUMN:
-            font.setBold(True)
-            font.setUnderline(True)
-        elif index.column() not in (TYPE_COLUMN, TYPE_HINT_COLUMN):
-            font.setItalic(True)
         return font
 
     def getLinkedItem(self, index: QModelIndex) -> QModelIndex:
@@ -1065,10 +1108,13 @@ class StandardTable(QAbstractItemModel):
             for item in list(self._allItems()):
                 if item is self._rootItem:
                     continue
+                # The rows of the package and of its object store (the shells,
+                # submodels, and concept descriptions) read the marks of what
+                # is below them, so any mark may change them.
                 if (
                     everything
                     or id(item.obj) in wanted
-                    or isinstance(item.obj, Package)
+                    or isinstance(item.obj, (Package, AbstractObjectStore))
                 ):
                     index = self._indexOf(item)
                     if index is not None:

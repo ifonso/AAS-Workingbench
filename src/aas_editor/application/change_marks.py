@@ -97,6 +97,9 @@ class ChangeMarks:
         self._stack = stack
         self._changed: dict[int, object] = {}
         self._new: dict[int, object] = {}
+        # What was taken out of a container, by the container, because an
+        # object that is gone carries no mark of its own.
+        self._removed: dict[int, tuple[object, list[object]]] = {}
         self._listeners: Listeners[[MarkUpdate]] = Listeners()
         self._subscriptions = (
             observer.subscribe(self._on_change),
@@ -110,6 +113,19 @@ class ChangeMarks:
     def is_new(self, obj: object) -> bool:
         """Whether the object was added since the save."""
         return id(obj) in self._new
+
+    def removed_from(self, container: object) -> tuple[object, ...]:
+        """The objects that were taken out of a container since the save.
+
+        Args:
+            container: What held them, such as the object store of a package.
+
+        Returns:
+            The removed objects, oldest first. A save, and an undo back to the
+            saved state, empty the list.
+        """
+        entry = self._removed.get(id(container))
+        return () if entry is None else tuple(entry[1])
 
     @property
     def is_empty(self) -> bool:
@@ -145,6 +161,7 @@ class ChangeMarks:
             return
         self._changed.clear()
         self._new.clear()
+        self._removed.clear()
         self._listeners.notify(MarkUpdate(cleared=True))
 
     def subscribe(self, listener: Callable[[MarkUpdate], None]) -> Subscription:
@@ -167,6 +184,11 @@ class ChangeMarks:
     def _on_change(self, change: Change) -> None:
         if change.kind is ChangeKind.ADDED:
             self.mark_new(change.target)
+        if change.kind is ChangeKind.REMOVED and change.parent is not None:
+            container = change.parent
+            self._removed.setdefault(id(container), (container, []))[1].append(
+                change.target
+            )
         owner = change.target if change.kind is ChangeKind.CHANGED else None
         if owner is None:
             owner = change.parent

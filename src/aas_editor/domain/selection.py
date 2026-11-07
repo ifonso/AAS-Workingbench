@@ -11,7 +11,7 @@ Example:
     Describing a selection of two properties::
 
         summary = summarize([(first, collection), (second, collection)])
-        summary.header  # "Multiple selected elements"
+        summary.header  # "Several elements selected"
         summary.kinds_text  # "2 Property"
 """
 
@@ -23,7 +23,7 @@ from basyx.aas import model
 
 from aas_editor.domain.references import describe_object
 
-MULTIPLE_HEADER = "Multiple selected elements"
+MULTIPLE_HEADER = "Several elements selected"
 """The header of the panel, as in Package Explorer."""
 
 _DIRECTIONS = (

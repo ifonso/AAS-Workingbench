@@ -115,5 +115,5 @@ def test_the_notice_for_a_missing_description_is_the_text_of_the_original() -> (
 ):
     assert (
         NOT_FOUND
-        == "ConceptDescription cannot be looked up within the AAS environment!"
+        == "The package has no concept description that this semantic id names"
     )

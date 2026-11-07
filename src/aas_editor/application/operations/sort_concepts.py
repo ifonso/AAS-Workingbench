@@ -33,7 +33,7 @@ from aas_editor.domain.concept_order import ranks_for
 from aas_editor.domain.concept_order import sort_key
 from aas_editor.domain.ordered_store import OrderedIdentifiableStore
 
-NOTHING_TO_SORT = "No concept descriptions found for sorting. Aborting!"
+NOTHING_TO_SORT = "The package has no concept descriptions to sort"
 """The log text of Package Explorer for an empty package."""
 
 

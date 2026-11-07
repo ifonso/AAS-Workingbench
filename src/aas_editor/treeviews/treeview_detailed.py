@@ -57,6 +57,7 @@ from aas_editor.ui.value_editor import (
     entryTextArgs,
     value_dialog_args,
 )
+from aas_editor.domain.attribute_vocabulary import metamodel_name
 from aas_editor.utils.util import getAttrTypeHint
 from aas_editor import dialogs
 from aas_editor.treeviews.base import TreeView
@@ -117,6 +118,7 @@ class AttrsTreeView(TreeView):
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents
         )
         self.setObjectName("attrsTreeView")
+        self.setAccessibleName("Attributes")
         self.setModelWithProxy(self.treeModel(packItem))
         # The value is what a user edits, so it takes the width that the name
         # and the type leave. A tab is not wide, and a scroll bar for the
@@ -150,7 +152,7 @@ class AttrsTreeView(TreeView):
     def fittingAttributeWidth(self) -> int:
         """Return the width that keeps the common attribute names whole."""
         return self._measured(
-            WIDEST_ATTRIBUTE_NAME, True, ATTR_COLUMN_PADDING, ATTR_COLUMN_WIDTH
+            WIDEST_ATTRIBUTE_NAME, False, ATTR_COLUMN_PADDING, ATTR_COLUMN_WIDTH
         )
 
     def fittingTypeWidth(self) -> int:
@@ -238,10 +240,11 @@ class AttrsTreeView(TreeView):
             attrTypeHint = getAttrTypeHint(
                 type(parent.data(PARENT_OBJ_ROLE)), attribute
             )  # FIXME
+            name = metamodel_name(type(parent.data(PARENT_OBJ_ROLE)), attribute)
             self.addItemWithDialog(
                 parent=parent,
                 objTypeHint=attrTypeHint,
-                title=f"Add {attribute} element",
+                title=f"Add {name} element",
             )
         except Exception as e:
             widgets.messsageBoxes.ErrorMessageBox.withTraceback(
@@ -271,7 +274,7 @@ class AttrsTreeView(TreeView):
                 # A value follows its value type, and bytes are not literals.
                 self.replItemWithDialog(
                     index=index,
-                    title=f"Edit {attribute}",
+                    title=f"Edit {metamodel_name(type(parentObj), attribute)}",
                     objVal=objVal,
                     editDialogType=ValueEditDialog,
                     **valueArgs,
@@ -289,7 +292,7 @@ class AttrsTreeView(TreeView):
             self.replItemWithDialog(
                 index=index,
                 objTypeHint=attrTypeHint,
-                title=f"Edit/Create {attribute}",
+                title=f"Edit/Create {metamodel_name(type(parentObj), attribute)}",
                 objVal=objVal,
                 **entryTextArgs(parentObj),
             )

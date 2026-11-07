@@ -13,6 +13,7 @@ from collections.abc import Sequence
 
 from basyx.aas import model
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QShowEvent
 from PyQt6.QtWidgets import QCheckBox
 from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QDialog
@@ -29,7 +30,9 @@ from PyQt6.QtWidgets import QTableWidgetItem
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import style_as_problem
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import focus_first_field
 from aas_editor.application.operations.create import CreateError
 from aas_editor.application.operations.create import new_shell
 from aas_editor.application.operations.create import new_submodel
@@ -42,7 +45,6 @@ from aas_editor.domain.id_templates import IdKind
 from aas_editor.domain.references import describe_object
 from aas_editor.ui.user_defaults import new_id
 
-_PROBLEM_STYLE = PROBLEM_STYLE
 NO_SHELL_TEXT = "(none: a Submodel that no AAS refers to)"
 _KIND_TEXT = {
     model.AssetKind.TYPE: "Type",
@@ -62,7 +64,7 @@ class _ValidatedDialog(QDialog):
         self.form = QFormLayout()
         self.problem_label = QLabel(self)
         self.problem_label.setWordWrap(True)
-        self.problem_label.setStyleSheet(_PROBLEM_STYLE)
+        style_as_problem(self.problem_label)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel,
@@ -74,6 +76,12 @@ class _ValidatedDialog(QDialog):
         self.outer.addLayout(self.form)
         self.outer.addWidget(self.problem_label)
         self.outer.addWidget(self.buttons)
+        finish_dialog(self)
+
+    def showEvent(self, event: QShowEvent | None) -> None:  # noqa: N802
+        """Starts in the first field, not on the OK button."""
+        super().showEvent(event)
+        focus_first_field(self)
 
     @property
     def ok_button(self) -> QPushButton:
@@ -118,6 +126,8 @@ class CreateShellDialog(_ValidatedDialog):
             self.kind_box.findData(DEFAULT_ASSET_KIND)
         )
         self.global_id_edit = QLineEdit(new_id(IdKind.ASSET), self)
+        # Its row holds a layout, so its label has no buddy.
+        self.global_id_edit.setAccessibleName("Global asset id")
         self.generate_button = QPushButton("Generate", self)
         self.generate_button.clicked.connect(
             lambda: self.global_id_edit.setText(new_id(IdKind.ASSET))
@@ -315,6 +325,7 @@ class LinkSubmodelsDialog(_ValidatedDialog):
         super().__init__("Link existing Submodels", parent)
         self.setWindowTitle(f"Link Submodels to {describe_object(shell)}")
         self.list = QListWidget(self)
+        self.list.setAccessibleName("Submodels to link")
         for submodel in sorted(
             submodels, key=lambda item: (item.id_short or item.id).lower()
         ):

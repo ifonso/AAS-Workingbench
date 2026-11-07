@@ -20,6 +20,7 @@ from tests.medium.concept_lab import build_lab_class
 from tests.serialization import snapshot
 
 from aas_editor.application.editing import edit_mode
+from aas_editor.domain.concept_order import CANNOT_SORT
 from aas_editor.domain.concept_order import ConceptOrder
 
 
@@ -194,7 +195,7 @@ class TestSort:
 
         lab.act("concepts.sort")
 
-        assert lab.messages == ["Cannot apply selected sort order!"]
+        assert lab.messages == [CANNOT_SORT]
         assert lab.stored() == before
         assert lab.previews == []
         assert not lab.stack.can_undo

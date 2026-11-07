@@ -69,8 +69,8 @@ def category_deprecated(context: ValidationContext) -> Iterator[Finding]:
             yield Finding(
                 CATEGORY_DEPRECATED,
                 Severity.INFO,
-                f"The category '{referable.category}' is deprecated. Do not "
-                "plan to use it in new developments",
+                "The specification has deprecated categories, so a new model "
+                f"should leave out '{referable.category}'",
                 referable,
                 referable,
                 "category",
@@ -189,8 +189,8 @@ def display_name_missing(context: ValidationContext) -> Iterator[Finding]:
             yield Finding(
                 DISPLAY_NAME_MISSING,
                 Severity.INFO,
-                "The use of a display name is recommended to express a "
-                "human readable name for the Referable in multiple languages",
+                "Add a display name, so that users can read the name of this "
+                "element in their own language",
                 referable,
                 referable,
                 "display_name",
@@ -204,7 +204,8 @@ def display_name_one_language(context: ValidationContext) -> Iterator[Finding]:
             yield Finding(
                 DISPLAY_NAME_ONE_LANGUAGE,
                 Severity.INFO,
-                "Consider having a display name in multiple languages",
+                "The display name has one language only. Add the other "
+                "languages that your users read",
                 referable,
                 referable,
                 "display_name",
@@ -218,8 +219,8 @@ def description_missing(context: ValidationContext) -> Iterator[Finding]:
             yield Finding(
                 DESCRIPTION_MISSING,
                 Severity.INFO,
-                "The use of a description is recommended, to let the "
-                "consumer of a Referable understand the nature of it",
+                "Add a description, so that whoever uses this element can "
+                "tell what it stands for",
                 referable,
                 referable,
                 "description",
@@ -233,7 +234,8 @@ def description_one_language(context: ValidationContext) -> Iterator[Finding]:
             yield Finding(
                 DESCRIPTION_ONE_LANGUAGE,
                 Severity.INFO,
-                "Consider having a description in multiple languages",
+                "The description has one language only. Add the other "
+                "languages that your users read",
                 referable,
                 referable,
                 "description",

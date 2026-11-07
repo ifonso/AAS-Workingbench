@@ -1,0 +1,51 @@
+# ADR 0028: One command bar acts on the focused view, the bottom panels share a strip of tabs, and the start is a panel in place of the tree
+
+**Status:** Accepted
+
+## Context
+
+The main window had problems of layout that the [UI and UX plan](../../planning/ui-ux-plan.md) ranks (U6 to U9, V6). The first screen was two empty panels. Two toolbars, one over the tree and one in each tab, repeated each other (gear, collapse, expand, undo, redo, edit, add), and the `+` acted on another row in each. Two buttons with only a text, Paste above and Paste below, stood in the bar. The address line of a tab was too narrow to read, with the type in an input field beside it. A tab was 200 pixels wide whatever its title, with a close button that the theme painted red. The three panels of the bottom (Validation, Package files, Selection) sat side by side in one strip, so that three open panels cut each other's headers and buttons, and where they were was not saved.
+
+The owner approved the plan on 2026-11-06 and decided that the native title bar stays (decision 4) and that the text paste buttons, the gear, and the undo, redo, and add of a tab go, with each action reachable elsewhere with its shortcut (decision 5).
+
+## Decision
+
+- **One command bar, whose buttons are mirrors.** `ui/command_bar.py` has `MirroredAction`, which follows an action of a view: it is enabled when that action is, shows its key, and triggers it. `FocusedViewActions` makes one mirror for each entry of the bar and of the Edit menu (undo, redo, cut, copy, paste, paste above, below, and into, add, edit in a dialog, delete, back, forward, collapse all, expand all), and makes each follow the action of the view that had the focus last: the tree of packages, or the attribute tree of a tab. When that view is hidden or gone, the tree of packages stands in. Back and forward follow the tab of that view. The actions of the views are not moved or renamed, so the context menus and `tests/menus.py` find what they found.
+- **A mirror shows a key and never runs it.** The view's action owns the key, with the context of its view. A second owner would make the key ambiguous and run neither. A mirror has the context `WidgetShortcut`, which in a menu or a bar is a context that is never in focus, and so it only displays the key.
+- **The bar is `self.toolBar`, a `ToolBar` added to the main window,** with 16 pixel icons (`ICON_SIZE`) and the object name `commandBar`. It holds Open, Save, Undo, Redo, Add, Edit in a dialog, Delete, Back, Forward, and the move up and down that features register for the bar. Save All is in the File menu only, and New is in the File menu and the start. The tree no longer has a bar of its own, and the tab has none. The row of a tab has a breadcrumb, a button to copy the path, and a button to search that tab, which `Ctrl+F` opens as well. A tab that is in a window of its own has no bar to follow, so it keeps its own back and forward buttons.
+- **The gear is gone, and nothing it held.** Zoom is in View, autoscroll is in Navigate, and "Hide/show tabs bar" is "Tab bar" in View. Collapse all and expand all are in View, and follow the focused view. Paste above and below are in Edit, with `Ctrl+Alt+V` and `Ctrl+Shift+V`. `toolbar=True` of the two paste specs is false now, and the registry still supports a feature that gives a button an icon.
+- **Menus.** Edit is new, with the actions of the context menu that are not specific to a kind of object. Validate is new, with the Validation panel, Hints, and the AAS Test tool, which stays in Tools as well (the same action in two menus). The order is File, Edit, View, Navigate, Validate, Tools, Help. Columns is a submenu of View, filled when it opens, because the header makes its actions again when a state is restored (the menu that sat in the menu bar held the old ones). The two entries named Appearance in View are one section, and the toolbar and search bar toggles are items of it. Not done: Package files and Concept descriptions as top-level or Tools menus (see below).
+- **The breadcrumb.** `ui/breadcrumb.py` shows the path of the object of a tab as segments, each a button that opens that object, and the type at the end. A click on the blank area, Escape, and the end of editing swap it with `AddressLine`, with its completer. A path that does not fit folds its first segments into a button with a menu. `AddressLine` and the `pathLine` attribute stay, so what typed addresses did still works.
+- **A tab is as wide as its title, between 120 and 240 pixels.** `TabBar.tabSizeHint` does it, in code, and the style sheet of 200 by 25 pixels on the tab widget is gone. The close cross is drawn by the sheet from images of the theme, muted until the pointer is on it, in place of the red button. The main tab widget cannot close its last tab, so that tab has no cross.
+- **Docks.** The three bottom panels are tabbed together at the bottom, in the order Validation, Package files, Selection, with their tabs on top, and they can still float. They start hidden, and open at 220 pixels. `QMainWindow.saveState(DOCKS_LAYOUT_VERSION)` is written with the other settings, as `dockState`, and `restoreState` at the start. A state of another version is refused by Qt, which leaves the default. The state also holds whether the command bar is shown. Raise `DOCKS_LAYOUT_VERSION` when a dock is added, removed, or renamed.
+- **The start.** `ui/empty_state.py` is shown in place of the tree while no package is open: what the editor is for, Open as the main action, New with a menu of the file types, the recent files, and a hint that files can be dropped on it, which they can. The right side is blank, with no fields, until a package opens. The tree and the tabs are hidden then, not removed, so every name they had stays. It uses no web view.
+- **The tree.** Chevrons replace the arrows of the style, from images that the theme writes (`chevron-right.svg`, `chevron-down.svg`). The headers read Package and Type, and the menu of columns reads the same, where the model names its columns `object` and `type`: `SearchProxyModel.headerData` gives the words for `Qt.DisplayRole` and the names for `COLUMN_NAME_ROLE`, and `HeaderView.text` still gives the name that code and the saved lists of columns find a column by. The tooltip of a row is its whole name, and under it the path from the package.
+- **The rows of the groups.** The shells, submodels, and concept descriptions of a package share one object store, so a mark on the store made all three rows show as changed after an edit to a property. A row of a group shows a change when one of its own objects changed or was added, or one was removed from it (`ChangeMarks.removed_from`), and the rows of the groups are repainted at every mark.
+- **`design.py` is written by hand.** Its header said it was generated from `mainwindow_base.ui`, and the plan asked whether regenerating gives it back. It does not: the `.ui` file has a `QLineEdit` and a `QTabWidget` where the window has the views of the editor, and no toolbar, so the file had been edited by hand for years. It says so now, and the guides list it as hand-written. The `.ui` file stays as a record of where the layout started, and is no source.
+
+## Consequences
+
+- A button of the bar acts on the view with the focus, so the same `+` means one thing at a time. A view that has no such action, such as paste into for a tab, disables the button.
+- Back and forward leave the tab for the bar, so in a window with a bar they follow the focus and not a row of buttons in each tab.
+- The text paste buttons, the gear, and the undo, redo, edit, and add of each tab are gone from the screen. Each action is reachable: Edit, View, Navigate, the context menus, and the keys.
+- A bar with only icons needs names and tooltips with the keys. The mirrors have tooltips with the key. A walker test that names every button is phase L.
+- A tab in a window of its own has no undo, redo, add, edit, or delete button. The keys and the context menu work.
+- The saved state of the docks depends on the object names of the docks (`validationDock`, `packageFilesDock`, `selectionDock`) and of the bar (`commandBar`). A new dock must have one, or Qt does not save it.
+- A test that closes a window writes the state of its docks into the settings file of the program, which the next window restores. `tests/large/conftest.py` removes it around each large test.
+- The names of the columns stay `object`, `type`, `object value`, and `typehint`, so the saved header states and lists of columns still apply, and a test that finds a column by its name still does.
+
+## Not done
+
+- The field "Find or command" of the plan's picture, which is the command palette of phase I, and the counts in the status bar of phase J. Phase I adds a widget to the bar.
+- Package files and Concept descriptions as menus of the menu bar. Their actions are registered for a view, with that view's context, and a menu of the bar would need a mirror for each, which is a change to the registry.
+- The strip of hints in a color with an icon, and its link to the finding (phase J).
+- A real window on Linux and macOS, as in the rest of the plan.
+
+## Alternatives considered
+
+- **Move the actions of the views to the window.** The actions need the view's context (the current index, the selection, the package of that row), so the window would need to know both trees. Mirrors keep the logic where it is.
+- **Give the mirrors the key and take it from the views.** It breaks the keys in a tab that is in a window of its own, which has no bar.
+- **Keep one toolbar in each tab and drop the one of the window.** The plan is one bar over the whole window, and a bar in each tab was the duplication.
+- **Tab width in the style sheet.** `min-width` and `max-width` of `QTabBar::tab` do not clamp the width that the style asks the bar for, and they would not reach the tab bars that Qt makes for docks.
+- **A web view for the start.** It needs a web engine to show a few lines, shows black on the platform plugin that tests use, and cannot use the native buttons.
+- **Regenerate `design.py` from a rewritten `.ui` file.** The layout has code in it (the models, the views, the toolbar), which Designer cannot express, and the file has been code for years.

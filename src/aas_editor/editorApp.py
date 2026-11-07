@@ -12,7 +12,7 @@ import logging
 import webbrowser
 from pathlib import Path
 
-from PyQt6 import QtCore
+from PyQt6 import QtCore, sip
 from PyQt6.QtCore import QModelIndex, QTimer, pyqtSignal
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -20,7 +20,9 @@ from PyQt6.QtWidgets import *
 import aas_editor.widgets as widgets
 import aas_editor.widgets.messsageBoxes
 import aas_editor.widgets.groupBoxes
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import problem_style
+from aas_editor.application.theme_choice import theme_from_saved
+from aas_editor.ui.theme import THEME_LABELS, theme_manager
 from aas_editor.settings.app_settings import *
 from aas_editor.utils.recovery import (
     find_recovery_files,
@@ -29,11 +31,22 @@ from aas_editor.utils.recovery import (
 )
 from aas_editor.application.editing import edit_mode
 from aas_editor.application.file_transfer import transfer_reports
+from aas_editor.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
+from aas_editor.application.font_sizes import migrated_font_size
 from aas_editor.application.header_state import restorable_state
+from aas_editor.domain.design_tokens import parse_density
 from aas_editor.domain.window_layout import DEFAULT_SIZE
+from aas_editor.domain.window_layout import saved_orientation
 from aas_editor.domain.window_layout import window_size
 from aas_editor.domain.window_layout import zone_widths
+from aas_editor.ui.command_bar import FocusedViewActions
 from aas_editor.ui.package_files import PackageFilesDock
+from aas_editor.ui.pane_navigation import PANEL
+from aas_editor.ui.pane_navigation import Pane
+from aas_editor.ui.pane_navigation import PaneNavigator
+from aas_editor.ui.pane_navigation import TAB
+from aas_editor.ui.pane_navigation import TREE
+from aas_editor.ui.pane_navigation import first_focusable
 from aas_editor.ui.selection_panel import SelectionDock
 from aas_editor.package import Package
 from aas_editor.utils.exceptionhook import set_crash_callback
@@ -47,8 +60,8 @@ from aas_editor.widgets import AddressLine
 from aas_editor.widgets.tab import TabWidget
 from aas_editor import design
 from aas_editor.models import DetailedInfoTable, PacksTable
-from aas_editor.utils.util import toggleStylesheet
 from aas_editor.treeviews.base import HeaderView
+from aas_editor.ui.command_palette import install_palette
 from aas_editor.ui.validation_window import install_validation
 
 
@@ -79,6 +92,11 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.initPackageFiles()
         # The validation dock and hints mode, before the menus that list them
         self.validationController = install_validation(self)
+        self.initDocks()
+        # F6 and Ctrl+1, Ctrl+2, which the Navigate menu lists
+        self.paneNavigator = self.initPaneNavigation()
+        # Ctrl+K, which lists the actions of the menus that follow
+        self.commandPalette = install_palette(self)
         self.initActions()
         self.initMenu()
         self.initToolbars()
@@ -99,22 +117,31 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # Permanent widget, not showMessage(): transient status tips (menu hover)
         # do not overwrite it, so the warning stays until writing recovers.
         self._recoveryStatusLabel = QLabel()
-        self._recoveryStatusLabel.setStyleSheet(PROBLEM_STYLE)
+        self._recoveryStatusLabel.setStyleSheet(problem_style())
         self._recoveryStatusLabel.hide()
         self.statusBar().addPermanentWidget(self._recoveryStatusLabel)
+        # The mode and the unsaved packages are always on show, so the window
+        # tells the state of the work without a menu.
         self._modeStatusLabel = QLabel()
-        self._modeStatusLabel.hide()
+        self._modeStatusLabel.setObjectName("modeStatusLabel")
         self.statusBar().addPermanentWidget(self._modeStatusLabel)
+        # The counts of errors, warnings and hints of the current package
+        self.statusBar().addPermanentWidget(self.validationController.status)
+        self._unsavedStatusLabel = QLabel()
+        self._unsavedStatusLabel.setObjectName("unsavedStatusLabel")
+        self.statusBar().addPermanentWidget(self._unsavedStatusLabel)
+        self.onEditModeChanged(edit_mode().is_editing)
+        self.mainTreeView.unsavedPackagesChanged.connect(self.onUnsavedChanged)
+        self.mainTreeView.updateWindowModified()
         if fileToOpen:
             self.openAASFile(fileToOpen)
         else:
             self.openLastSessionFiles()
+        self.applyLastSessionTabHeader()
 
     def loadThemes(self):
-        self.themes = {}
-        for file in THEMES_FOLDER.iterdir():
-            if file.suffix == ".qss":
-                self.themes[file.stem] = str(file)
+        # Each id of a theme maps to the text of its entry in the menu.
+        self.themeLabels = dict(THEME_LABELS)
         self.currTheme = DEFAULT_THEME
 
     # noinspection PyArgumentList
@@ -162,7 +189,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             "Settings",
             self,
             statusTip=f"Edit application settings",
-            triggered=lambda: SettingsDialog(self).exec(),
+            triggered=lambda: self.openSettings(),
         )
 
         self.reportBugAct = QAction(
@@ -174,15 +201,19 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
 
         # Theme actions
         self.themeActs = []
-        for theme in self.themes:
-            self.themeActs.append(
-                QAction(
-                    theme,
-                    self,
-                    statusTip=f"Choose {theme} theme",
-                    triggered=lambda: self.toggleThemeSlot(),
-                )
+        self.themeGroup = QActionGroup(self)
+        for theme, label in self.themeLabels.items():
+            themeAct = QAction(
+                label,
+                self,
+                checkable=True,
+                checked=theme == self.currTheme,
+                statusTip=f"Choose the theme: {label}",
+                triggered=lambda: self.toggleThemeSlot(),
             )
+            themeAct.setData(theme)
+            self.themeGroup.addAction(themeAct)
+            self.themeActs.append(themeAct)
 
         # Edit and Read mode (D18): one switch for all open packages
         self.editModeAct = QAction(
@@ -206,6 +237,22 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.modeActs.addAction(self.editModeAct)
         self.modeActs.addAction(self.readModeAct)
         edit_mode().subscribe(self.onEditModeChanged)
+
+        # The tab bar of the tab widget can be hidden, which the gear button of
+        # each tab used to offer.
+        self.tabBarAct = QAction(
+            "Tab bar",
+            self,
+            checkable=True,
+            checked=True,
+            statusTip="Show or hide the tab bar",
+            toggled=self.mainTabWidget.tabBar().setVisible,
+        )
+        # The actions of the command bar and of the Edit menu, which act on the
+        # tree or the tab that has the focus.
+        self.focusedActs = FocusedViewActions(
+            self, self.mainTreeView, self.mainTabWidget
+        )
 
         self.setHOrientationAct = QAction(
             "Horizontal",
@@ -266,6 +313,23 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuFile.addAction(self.mainTreeView.closeAllAct)
         self.menuFile.addAction(self.exitAct)
 
+        self.menuEdit = QMenu("&Edit", self.menubar)
+        for key in ("undo", "redo"):
+            self.menuEdit.addAction(self.focusedActs.actions[key])
+        self.menuEdit.addSeparator()
+        for key in (
+            "cut",
+            "copy",
+            "paste",
+            "paste_above",
+            "paste_below",
+            "paste_into",
+        ):
+            self.menuEdit.addAction(self.focusedActs.actions[key])
+        self.menuEdit.addSeparator()
+        for key in ("add", "edit", "delete"):
+            self.menuEdit.addAction(self.focusedActs.actions[key])
+
         self.menuView = QMenu("&View", self.menubar)
         self.menuView.addSection("Mode")
         self.menuView.addAction(self.editModeAct)
@@ -275,31 +339,56 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         for themeAct in self.themeActs:
             self.menuChooseTheme.addAction(themeAct)
         self.menuView.addAction(self.menuChooseTheme.menuAction())
-        self.menuAppearance = QMenu("Appearance", self.menuView)
-        self.menuAppearance.addAction(self.toolBar.toggleViewAction())
-        self.menuAppearance.addAction(self.searchBarPack.toggleViewAction())
-        self.menuView.addAction(self.menuAppearance.menuAction())
-        self.menuAppearance = QMenu("Orientation", self.menuView)
-        self.menuAppearance.addAction(self.setHOrientationAct)
-        self.menuAppearance.addAction(self.setVOrientationAct)
-        self.menuView.addAction(self.menuAppearance.menuAction())
+        self.menuView.addAction(self.toolBar.toggleViewAction())
+        self.menuView.addAction(self.searchBarPack.toggleViewAction())
+        self.menuView.addAction(self.tabBarAct)
+        self.menuOrientation = QMenu("Orientation", self.menuView)
+        self.menuOrientation.addAction(self.setHOrientationAct)
+        self.menuOrientation.addAction(self.setVOrientationAct)
+        self.menuView.addAction(self.menuOrientation.menuAction())
         self.menuView.addSection("Panels")
         self.menuView.addAction(self.filesDock.toggleViewAction())
         self.menuView.addAction(self.selectionDock.toggleViewAction())
         self.menuView.addAction(
             self.validationController.dock.toggleViewAction()
         )
-        self.menuView.addAction(self.validationController.hints_action)
         self.menuView.addSection("AAS file view")
         self.menuView.addAction(self.mainTreeView.zoomInAct)
         self.menuView.addAction(self.mainTreeView.zoomOutAct)
+        # The columns of the tree. The menu is made when it opens, because the
+        # header makes its actions again when a state is restored.
+        self.menuColumns = QMenu("Columns", self.menuView)
+        self.menuColumns.aboutToShow.connect(self.fillColumnsMenu)
+        self.menuView.addAction(self.menuColumns.menuAction())
         self.menuView.addSection("Detailed view")
         self.menuView.addAction(self.mainTabWidget.zoomInAct)
         self.menuView.addAction(self.mainTabWidget.zoomOutAct)
+        for key in ("collapse_all", "expand_all"):
+            self.menuView.addAction(self.focusedActs.actions[key])
+
+        self.menuValidate = QMenu("Va&lidate", self.menubar)
+        self.menuValidate.addAction(
+            self.validationController.dock.toggleViewAction()
+        )
+        self.menuValidate.addAction(self.validationController.hints_action)
+        self.menuValidate.addSeparator()
+        self.menuValidate.addAction(self.testEnginesToolDialogAct)
 
         self.menuNavigate = QMenu("&Navigate", self.menubar)
+        self.menuNavigate.addAction(self.commandPalette.action)
+        self.menuNavigate.addSeparator()
+        for paneAct in (*self.paneNavigator.actions, self.editPathAct):
+            self.menuNavigate.addAction(paneAct)
+        self.menuNavigate.addSeparator()
         self.menuNavigate.addAction(self.mainTreeView.autoScrollToSrcAct)
         self.menuNavigate.addAction(self.mainTreeView.autoScrollFromSrcAct)
+        self.menuNavigate.addSeparator()
+        self.menuNavigate.addAction(
+            self.validationController.next_finding_action
+        )
+        self.menuNavigate.addAction(
+            self.validationController.previous_finding_action
+        )
         self.menuNavigate.addSeparator()
         for actionId in ("navigate.push_location", "navigate.pop_location"):
             locationAct = self.mainTreeView.registeredActions.find(actionId)
@@ -316,38 +405,43 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.menuHelp.addAction(self.reportBugAct)
 
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
-        self.menubar.addMenu(self.mainTreeView.header().menu)
         self.menubar.addAction(self.menuNavigate.menuAction())
+        self.menubar.addAction(self.menuValidate.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
 
-    def initToolbars(self):
-        settingsBtn = QToolButton(icon=SETTINGS_ICON)
-        settingsBtn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        menuSettings = QMenu("Settings")
-        menuSettings.addAction(self.mainTreeView.zoomInAct)
-        menuSettings.addAction(self.mainTreeView.zoomOutAct)
-        menuSettings.addAction(self.mainTreeView.autoScrollToSrcAct)
-        menuSettings.addAction(self.mainTreeView.autoScrollFromSrcAct)
-        settingsBtn.setMenu(menuSettings)
+    def fillColumnsMenu(self):
+        """Lists the columns that the header of the tree has now."""
+        self.menuColumns.clear()
+        for action in self.mainTreeView.header().actions():
+            self.menuColumns.addAction(action)
 
-        self.toolBar.addWidget(settingsBtn)
-        self.toolBar.addSeparator()
-        self.toolBar.addAction(self.mainTreeView.saveAllAct)
-        self.toolBar.addAction(self.mainTreeView.saveAct)
+    def initToolbars(self):
+        """Fills the command bar, which acts on the view with the focus.
+
+        The gear button is gone: its zoom and autoscroll actions are in the
+        View and Navigate menus. Save All is in the File menu, and Save is
+        here. Undo, redo, add, edit, and delete are of the view that has the
+        focus (ui/command_bar.py), as are back and forward of its tab.
+        """
+        acts = self.focusedActs.actions
         self.toolBar.addAction(self.mainTreeView.openPackAct)
-        # self.toolBar.addAction(self.mainTreeView.openPackFromServerAct)
-        self.toolBar.addAction(self.mainTreeView.newPackActs[0])
+        self.toolBar.addAction(self.mainTreeView.saveAct)
         self.toolBar.addSeparator()
-        self.toolBar.addAction(self.mainTreeView.collapseAllAct)
-        self.toolBar.addAction(self.mainTreeView.expandAllAct)
+        self.toolBar.addAction(acts["undo"])
+        self.toolBar.addAction(acts["redo"])
         self.toolBar.addSeparator()
-        self.toolBar.addAction(self.mainTreeView.undoAct)
-        self.toolBar.addAction(self.mainTreeView.redoAct)
-        self.toolBar.addAction(self.mainTreeView.editCreateInDialogAct)
-        self.toolBar.addAction(self.mainTreeView.addAct)
-        # Actions that features registered for the toolbar (ui/actions.py)
+        self.toolBar.addAction(acts["add"])
+        self.toolBar.addAction(acts["edit"])
+        self.toolBar.addAction(acts["delete"])
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(acts["back"])
+        self.toolBar.addAction(acts["forward"])
+        # What features registered for the bar (ui/actions.py). Nothing does
+        # now: a button with only a text, such as Paste above, is in the Edit
+        # menu, and a feature that wants a button gives it an icon.
         for action in self.mainTreeView.registeredActions.toolbar_actions:
             self.toolBar.addAction(action)
 
@@ -389,6 +483,110 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
         self.selectionDock.hide()
 
+    def initDocks(self):
+        """Puts the three panels of the bottom into one strip of tabs.
+
+        They used to sit side by side, and three open panels cut each other's
+        buttons and headers. Now they share the place, with a tab each, and
+        any of them can still be dragged out to float. The user's arrangement
+        is saved and restored (see `applyLastSessionDocks`).
+        """
+        self.setTabPosition(
+            QtCore.Qt.DockWidgetArea.BottomDockWidgetArea,
+            QTabWidget.TabPosition.North,
+        )
+        validationDock = self.validationController.dock
+        self.tabifyDockWidget(validationDock, self.filesDock)
+        self.tabifyDockWidget(self.filesDock, self.selectionDock)
+        # Hidden until asked for, and tabifying shows the dock of the first tab.
+        for dock in (validationDock, self.filesDock, self.selectionDock):
+            dock.hide()
+            # Qt names the buttons of the title and gives them no tooltip.
+            for button_name, tip in (
+                ("qt_dockwidget_floatbutton", "Float this panel"),
+                ("qt_dockwidget_closebutton", "Close this panel"),
+            ):
+                button = dock.findChild(QAbstractButton, button_name)
+                if button is not None:
+                    button.setToolTip(tip)
+        # A panel opens at a height that leaves the trees most of the window.
+        self.resizeDocks(
+            [validationDock], [DOCK_HEIGHT], QtCore.Qt.Orientation.Vertical
+        )
+        self.nameDockTabBars()
+
+    def nameDockTabBars(self) -> None:
+        """Names the strip of tabs that Qt makes for the panels of the bottom."""
+        for bar in self.findChildren(
+            QTabBar, options=QtCore.Qt.FindChildOption.FindDirectChildrenOnly
+        ):
+            if not bar.accessibleName():
+                bar.setAccessibleName("Panels")
+
+    def initPaneNavigation(self) -> PaneNavigator:
+        """Makes the keys that move the focus between the panes.
+
+        The panes are the tree of packages, which is the start panel while no
+        package is open, the tab, and the bottom panel that is on show.
+        """
+        docks = (
+            self.validationController.dock,
+            self.filesDock,
+            self.selectionDock,
+        )
+
+        def treeTarget() -> QWidget | None:
+            if self.emptyState.isVisible():
+                return first_focusable(self.emptyState)
+            return self.mainTreeView if self.mainTreeView.isVisible() else None
+
+        def tabTarget() -> QWidget | None:
+            tab = self.mainTabWidget.currentWidget()
+            view = getattr(tab, "attrsTreeView", None)
+            return view if view is not None and view.isVisible() else None
+
+        def panelTarget() -> QWidget | None:
+            for dock in docks:
+                if dock.isVisible():
+                    return first_focusable(dock)
+            return None
+
+        navigator = PaneNavigator(
+            self,
+            [
+                Pane(TREE, lambda: [self.mainLayoutWidget], treeTarget),
+                Pane(TAB, lambda: [self.subLayoutWidget], tabTarget),
+                Pane(PANEL, lambda: list(docks), panelTarget),
+            ],
+        )
+        # The path of the tab is read as segments. This key edits it as text,
+        # for a person who does not use the mouse.
+        self.editPathAct = QAction(
+            "Edit the path",
+            self,
+            statusTip="Edit the path of the tab as text",
+            shortcut=QKeySequence("Ctrl+L"),
+            triggered=self.editCurrentPath,
+        )
+        self.addAction(self.editPathAct)
+        return navigator
+
+    def editCurrentPath(self) -> None:
+        """Shows the path of the current tab as text, to edit."""
+        breadcrumb = getattr(
+            self.mainTabWidget.currentWidget(), "breadcrumb", None
+        )
+        if breadcrumb is not None and breadcrumb.isVisible():
+            breadcrumb.start_editing()
+
+    def updateEmptyState(self, *_):
+        """Shows the start instead of the tree and the tabs while no package is open."""
+        empty = self.packTreeModel.rowCount() == 0
+        self.emptyState.setVisible(empty)
+        self.mainTreeView.setVisible(not empty)
+        self.emptyDetail.setVisible(empty)
+        self.splitterTabWidgets.setVisible(not empty)
+
     def onFilesCopied(self, plan):
         """Tell the user what a paste did with the files of the objects"""
         message = plan.summary()
@@ -404,6 +602,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.onSelectedPackItemChanged
         )
         self.mainTreeView.doubleClicked.connect(self.onDoubleClicked)
+        # The Find key searches the tree while the focus is on its side of the
+        # window. Each tab has its own bar for the same key.
+        self.searchBarPack.bindFind(self.mainLayoutWidget)
 
         self.mainTreeView.wheelClicked.connect(
             self.mainTabWidget.openItemInBgTab
@@ -422,13 +623,37 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
 
         self.packTreeModel.rowsRemoved.connect(self.onPackRowsRemoved)
+        for signal in (
+            self.packTreeModel.rowsInserted,
+            self.packTreeModel.rowsRemoved,
+            self.packTreeModel.modelReset,
+        ):
+            signal.connect(self.updateEmptyState)
+        self.updateEmptyState()
 
     def onEditModeChanged(self, editing: bool):
         """Show the mode in the menu and in the status bar"""
         self.editModeAct.setChecked(editing)
         self.readModeAct.setChecked(not editing)
-        self._modeStatusLabel.setText("" if editing else "Read mode")
-        self._modeStatusLabel.setVisible(not editing)
+        self._modeStatusLabel.setText("Edit mode" if editing else "Read mode")
+        self._modeStatusLabel.setToolTip(
+            "Packages can be changed"
+            if editing
+            else "Packages can only be looked at. Switch to Edit mode in the "
+            "View menu to change them"
+        )
+
+    def onUnsavedChanged(self, unsaved: int):
+        """Show how many open packages have changes that are not saved"""
+        if not self.packTreeModel.openedPacks():
+            text = ""
+        elif unsaved == 0:
+            text = "All changes saved"
+        elif unsaved == 1:
+            text = "1 package with unsaved changes"
+        else:
+            text = f"{unsaved} packages with unsaved changes"
+        self._unsavedStatusLabel.setText(text)
 
     def onCurrTabItemChanged(self, item: QModelIndex):
         if self.mainTreeView.autoScrollFromSrcAct.isChecked():
@@ -455,17 +680,31 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             return
         openedPackages = self.packTreeModel.openedPacks()
         for tabWidget in list(TabWidget.openedTabWidgets):
-            tabWidget.removeTabsOfClosedPackages(openedPackages)
+            # The tab widget of a window that is gone is no more.
+            if not sip.isdeleted(tabWidget):
+                tabWidget.removeTabsOfClosedPackages(openedPackages)
 
     def toggleThemeSlot(self):
         action = self.sender()
         if action:
-            self.toggleTheme(action.text())
+            self.toggleTheme(action.data())
 
     def toggleTheme(self, theme: str) -> None:
-        if theme in self.themes:
-            toggleStylesheet(self.themes[theme])
-            self.currTheme = theme
+        """Puts a theme on.
+
+        A name that an old release saved gives the theme that replaced it, and
+        a name that is unknown gives the default.
+        """
+        theme = theme_from_saved(theme)
+        theme_manager().apply(theme)
+        self.currTheme = theme
+        for themeAct in self.themeActs:
+            themeAct.setChecked(themeAct.data() == theme)
+        # The recovery warning stays open across a switch of theme. It does not
+        # exist yet when the theme of the last session is put on.
+        recoveryLabel = getattr(self, "_recoveryStatusLabel", None)
+        if recoveryLabel is not None:
+            recoveryLabel.setStyleSheet(problem_style())
 
     def closeEvent(self, a0: QCloseEvent) -> None:
         # Edits made in a detached tab window set the flag on that window, not on this one,
@@ -505,6 +744,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.applyLastSessionMainWindowSize()
         self.applyLastSessionOrientation()
         self.applyLastSessionLayouts()
+        self.applyLastSessionDocks()
         self.applyLastSessionTreeFontSizes()
         self.applyLastSessionTreeStates()
 
@@ -640,6 +880,14 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             customLists = json.load(json_file)
             packTreeViewHeader.setCustomLists(customLists)
         packTreeViewHeader.initMenu()
+
+    def applyLastSessionTabHeader(self):
+        """Puts the columns of the last session on the first tab.
+
+        This runs after the package of the first tab is open, because opening
+        an item in a tab sets its header up again, and what was restored
+        before would be gone.
+        """
         # A state that an earlier release saved would bring its columns back.
         tabTreeViewHeaderState = restorable_state(
             AppSettings.TABTREEVIEW_HEADER_STATE.value(),
@@ -647,13 +895,28 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             TAB_HEADER_LAYOUT_VERSION,
         )
         if tabTreeViewHeaderState:
-            self.mainTabWidget.currentWidget().attrsTreeView.header().restoreState(
-                tabTreeViewHeaderState
+            attrsTreeView = self.mainTabWidget.currentWidget().attrsTreeView
+            attrsTreeView.header().restoreState(tabTreeViewHeaderState)
+            # The view fits its columns to the room when it is shown, unless
+            # the user sized them, and a restored state does not tell it so.
+            attrsTreeView.userSizedColumns = bool(
+                AppSettings.TABTREEVIEW_COLUMNS_SIZED.value()
             )
 
     def applyLastSessionTreeFontSizes(self):
-        fontSizeFilesView = AppSettings.FONTSIZE_FILES_VIEW.value()
-        fontSizeDetailedView = AppSettings.FONTSIZE_DETAILED_VIEW.value()
+        # The old default of 12 pt was saved at every exit, so it takes the new
+        # default once, and any other size is the choice of the user.
+        savedVersion = AppSettings.FONTSIZE_LAYOUT.value()
+        fontSizeFilesView = migrated_font_size(
+            AppSettings.FONTSIZE_FILES_VIEW.value(),
+            savedVersion,
+            DEFAULT_FONT.pointSize(),
+        )
+        fontSizeDetailedView = migrated_font_size(
+            AppSettings.FONTSIZE_DETAILED_VIEW.value(),
+            savedVersion,
+            DEFAULT_FONT.pointSize(),
+        )
         PacksTable.currFont.setPointSize(fontSizeFilesView)
         DetailedInfoTable.currFont.setPointSize(fontSizeDetailedView)
 
@@ -666,22 +929,51 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             AppSettings.ZONES_LAYOUT.value(),
             ZONES_LAYOUT_VERSION,
         )
+        stacked = self.splitter.orientation() == QtCore.Qt.Orientation.Vertical
         if saved:
             left, right = saved
-            widths = [left.width(), right.width()]
+            # The sizes of a splitter run along it: heights, if the zones are
+            # one above the other.
+            sizes = (
+                [left.height(), right.height()]
+                if stacked
+                else [left.width(), right.width()]
+            )
+        elif stacked:
+            # No saved heights: the splitter keeps the halves it starts with.
+            return
         else:
             # A first run, or sizes of an earlier release: the new default.
-            widths = list(
-                zone_widths(
-                    self.width(),
-                    self.toolBar.sizeHint().width() + TOOLBAR_ROOM,
-                )
-            )
-        self.splitter.setSizes(widths)
+            # The command bar is over the whole window, so it asks for no room.
+            sizes = list(zone_widths(self.width()))
+        self.splitter.setSizes(sizes)
+
+    def applyLastSessionDocks(self):
+        """Puts the panels where the last session left them.
+
+        A state of another version, or none, leaves the panels tabbed and
+        hidden, as `initDocks` made them. The command bar is part of the state,
+        so a bar that was hidden stays hidden.
+        """
+        state = AppSettings.DOCK_STATE.value()
+        if state:
+            self.restoreState(state, DOCKS_LAYOUT_VERSION)
+            # Restoring may have made the strip again.
+            self.nameDockTabBars()
 
     def applyLastSessionOrientation(self):
-        orientation = AppSettings.ORIENTATION.value()
-        self.setOrientation(orientation)
+        """Puts the two zones side by side or one above the other, as saved.
+
+        A first run, and a value that is no orientation, leave the layout that
+        the window starts with.
+        """
+        if not AppSettings.ORIENTATION.isSaved():
+            return
+        saved = saved_orientation(AppSettings.ORIENTATION.value())
+        if saved == "horizontal":
+            self.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        elif saved == "vertical":
+            self.setOrientation(QtCore.Qt.Orientation.Vertical)
 
     def applyLastSessionMainWindowSize(self):
         saved = AppSettings.SIZE.value() if AppSettings.SIZE.isSaved() else None
@@ -697,8 +989,18 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self.resize(width, height)
 
     def applyLastSessionTheme(self):
+        self.applyDensity()
         theme = AppSettings.THEME.value()
         self.toggleTheme(theme)
+
+    def applyDensity(self) -> None:
+        """Puts the density of the settings on the trees."""
+        theme_manager().set_density(parse_density(AppSettings.DENSITY.value()))
+
+    def openSettings(self) -> None:
+        """Shows the settings, and applies the ones that act at once."""
+        if SettingsDialog(self).exec():
+            self.applyDensity()
 
     def writeSettings(self):
         AppSettings.THEME.setValue(self.currTheme)
@@ -725,10 +1027,16 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         AppSettings.TABTREEVIEW_HEADER_LAYOUT.setValue(
             TAB_HEADER_LAYOUT_VERSION
         )
+        AppSettings.TABTREEVIEW_COLUMNS_SIZED.setValue(
+            self.mainTabWidget.currentWidget().attrsTreeView.userSizedColumns
+        )
         AppSettings.PACKTREEVIEW_HEADER_LAYOUT.setValue(
             PACK_TREE_HEADER_LAYOUT_VERSION
         )
         AppSettings.ZONES_LAYOUT.setValue(ZONES_LAYOUT_VERSION)
+        # The version goes in the state, and a state of another one is refused.
+        AppSettings.DOCK_STATE.setValue(self.saveState(DOCKS_LAYOUT_VERSION))
+        AppSettings.FONTSIZE_LAYOUT.setValue(FONT_SIZE_LAYOUT_VERSION)
         # AppSettings.DEFAULT_NEW_FILETYPE_FILTER.setValue(self.packTreeView.defaultNewFileType)
 
     def openHandoverDocumentationTool(self):

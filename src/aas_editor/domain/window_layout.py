@@ -87,6 +87,47 @@ def zone_widths(window_width: int, toolbar_width: int = 0) -> tuple[int, int]:
     return left, window_width - left
 
 
+_ORIENTATIONS = {1: "horizontal", 2: "vertical"}
+"""The numbers that Qt gives its two orientations."""
+
+
+def saved_orientation(saved: object) -> str | None:
+    """Reads the orientation of the two zones that a session saved.
+
+    The store gives back whatever it was given, in a form that depends on how
+    it was written: the member of the Qt enumeration, its number as an int, the
+    number as text from a hand-edited file, or a name. All of them mean the
+    same, and anything else is not an orientation.
+
+    Args:
+        saved: The value of the setting.
+
+    Returns:
+        "horizontal", "vertical", or None if the value is no orientation, in
+        which case the window keeps its default layout.
+
+    Example:
+        >>> saved_orientation(2)
+        'vertical'
+        >>> saved_orientation("Orientation.Horizontal")
+        'horizontal'
+        >>> saved_orientation("diagonal") is None
+        True
+    """
+    # A member of a Qt enumeration holds its number in `value`.
+    value = getattr(saved, "value", saved)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        text = value.strip().lower().removeprefix("orientation.")
+        if not text.isdigit():
+            return text if text in _ORIENTATIONS.values() else None
+        value = int(text)
+    if isinstance(value, int):
+        return _ORIENTATIONS.get(value)
+    return None
+
+
 def _fit(available: int, default: int) -> int:
     wanted = max(round(available * SCREEN_SHARE), default)
     return min(wanted, available)

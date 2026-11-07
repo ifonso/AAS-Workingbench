@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
 from aas_editor.domain.load_report import LoadReport
+from aas_editor.ui.dialog_layout import finish_dialog
 
 
 class LoadReportDialog(QDialog):
@@ -80,6 +81,7 @@ class LoadReportDialog(QDialog):
         layout.addWidget(self.summary_label)
         layout.addWidget(self.issues_list)
         layout.addWidget(buttons)
+        finish_dialog(self)
 
     def copy_report(self) -> None:
         """Puts the report as text on the clipboard."""

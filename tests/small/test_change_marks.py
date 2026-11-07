@@ -11,6 +11,7 @@ from aas_editor.application.change_marks import is_markable
 from aas_editor.application.changes import ModelChangeObserver
 from aas_editor.application.commands import CommandStack
 from aas_editor.application.edits import AddMember
+from aas_editor.application.edits import RemoveMember
 from aas_editor.application.edits import SetAttribute
 
 
@@ -178,3 +179,32 @@ def test_values_that_python_shares_are_never_marked() -> None:
 def test_is_markable_is_true_for_aas_objects() -> None:
     assert is_markable(make_property("A"))
     assert not is_markable("A")
+
+
+def test_a_removed_element_is_listed_for_its_container() -> None:
+    package, submodel, child = _setup()
+    collection = child.parent
+    assert isinstance(collection, model.SubmodelElementCollection)
+
+    package.stack.push(RemoveMember(package.observer, collection.value, child))
+
+    assert package.marks.removed_from(collection.value) == (child,)
+    assert package.marks.is_changed(collection)
+    assert package.marks.removed_from(submodel.submodel_element) == ()
+
+
+def test_a_save_forgets_what_was_removed() -> None:
+    package, _, child = _setup()
+    collection = child.parent
+    assert isinstance(collection, model.SubmodelElementCollection)
+    package.stack.push(RemoveMember(package.observer, collection.value, child))
+
+    package.stack.mark_saved()
+
+    assert package.marks.removed_from(collection.value) == ()
+
+
+def test_nothing_was_removed_from_a_container_that_was_not_touched() -> None:
+    package, submodel, _ = _setup()
+
+    assert package.marks.removed_from(submodel.submodel_element) == ()

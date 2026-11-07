@@ -10,6 +10,7 @@ from basyx.aas import model
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtCore import QItemSelectionModel
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QStyleOptionViewItem
 from PyQt6.QtWidgets import QWidget
 import pytest
@@ -20,9 +21,10 @@ from tests.medium.conftest import ELEMENT_PATH
 from tests.serialization import snapshot
 
 from aas_editor.application.editing import edit_mode
-from aas_editor.settings.colors import CHANGED_BLUE
+from aas_editor.domain.design_tokens import LIGHT
 
 VALUE = "value"
+CHANGED = QColor(LIGHT.mark_changed)
 
 
 def _walk(proxy: Any, parent: QModelIndex = QModelIndex()):
@@ -99,7 +101,7 @@ def test_a_typed_text_reaches_the_model_when_it_is_committed(
     for path in (ELEMENT_PATH, ELEMENT_PATH[:-1]):
         index_in_tree = lab.shown.index(*path)
         assert tree.data(index_in_tree, Qt.ItemDataRole.ForegroundRole) == (
-            CHANGED_BLUE
+            CHANGED
         )
 
 

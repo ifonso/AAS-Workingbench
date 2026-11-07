@@ -7,8 +7,29 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
-from PyQt6.Qsci import QsciScintilla, QsciLexerJSON
+"""An editor for JSON, coloured with the design tokens of the theme in use.
+
+The colours are read when the editor is made and again after every switch of
+theme, so an editor that stays open follows the theme (ADR 0025). Each colour
+is a token that has the contrast of text on its surface, as checked in
+`tests/small/test_design_tokens.py`:
+
+* text and the paper behind it: `fg_primary` on `bg_content`,
+* the line numbers and the fold margin: `fg_muted` on `bg_chrome`,
+* names of properties: `link`, strings: `status_success`,
+  numbers: `status_warning`, `true`, `false` and `null`: `status_error`,
+* comments: `fg_muted`.
+"""
+
+from PyQt6.Qsci import QsciLexerJSON, QsciScintilla
 from PyQt6.QtGui import QColor
+
+from aas_editor.domain.design_tokens import ColorTokens
+from aas_editor.ui.theme import current_tokens, theme_manager
+
+# The number of styles of the JSON lexer that the paper and the text colour are
+# set on, so that no style keeps the colours that the lexer starts with.
+_STYLE_COUNT = 20
 
 
 class JSONEditor(QsciScintilla):
@@ -16,15 +37,13 @@ class JSONEditor(QsciScintilla):
         super().__init__(parent)
         # 1. Set the Lexer (Syntax Highlighting)
         # QScintilla has a built-in JSON lexer
-        self.lexer = QsciLexerJSON()
-        # self.lexer.setDefaultFont(QFont("Consolas", 10))
-        self.setLexer(self.lexer)
+        self.json_lexer = QsciLexerJSON()
+        self.setLexer(self.json_lexer)
 
         # 2. Line Numbers (Margin 0)
         # We tell it to display numbers in the first margin
         self.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
         self.setMarginWidth(0, "0000")  # Initial width for 4 digits
-        self.setMarginsForegroundColor(QColor("#888888"))
 
         # 3. Indentation & Tabs
         self.setTabWidth(2)
@@ -36,71 +55,62 @@ class JSONEditor(QsciScintilla):
 
         # 5. Folding (Optional - allows collapsing objects)
         self.setFolding(QsciScintilla.FoldStyle.PlainFoldStyle)
-        # self.setMarginWidth(1, 0)  # Hide marker margin if you don't want it
 
-        # 6. Caret (Cursor) Color
-        self.setCaretForegroundColor(QColor("white"))
+        # 6. Colours of the theme in use, and of the next ones
+        self.apply_theme()
+        theme_manager().changed.connect(self.apply_theme)
 
-        self.apply_dark_theme()
+    def apply_theme(self) -> None:
+        """Colours the editor with the tokens of the theme in use."""
+        tokens = current_tokens()
+        paper = QColor(tokens.bg_content)
+        text = QColor(tokens.fg_primary)
 
-    def apply_dark_theme(self):
         # 1. Set Main Editor Colors
-        self.setColor(QColor("#abb2bf"))  # Default Text Color (Light Grey)
-        self.setPaper(QColor("#282c34"))  # Background Color (Dark Grey)
-        self.setCaretForegroundColor(QColor("white"))  # Cursor Color
+        self.setColor(text)
+        self.setPaper(paper)
+        self.setCaretForegroundColor(text)
+        self.setSelectionBackgroundColor(QColor(tokens.bg_selected))
+        self.setSelectionForegroundColor(text)
+        self.setMatchedBraceBackgroundColor(QColor(tokens.bg_selected))
+        self.setMatchedBraceForegroundColor(text)
+        self.setUnmatchedBraceBackgroundColor(QColor(tokens.bg_error))
+        self.setUnmatchedBraceForegroundColor(QColor(tokens.status_error))
 
         # 2. Set Margin (Line Number) Colors
-        self.setMarginsBackgroundColor(QColor("#282c34"))
-        self.setMarginsForegroundColor(QColor("#5c6370"))  # Line Number Color
+        chrome = QColor(tokens.bg_chrome)
+        muted = QColor(tokens.fg_muted)
+        self.setMarginsBackgroundColor(chrome)
+        self.setMarginsForegroundColor(muted)
+        self.setFoldMarginColors(chrome, chrome)
 
         # 3. Configure Lexer Styles (JSON specific)
-        # Get the lexer (assuming self.lexer is already set)
-        lexer = self.lexer
+        self._color_lexer(tokens, paper, text)
 
-        # Set default background for all styles to match editor
-        lexer.setDefaultPaper(QColor("#282c34"))
-        lexer.setDefaultColor(QColor("#abb2bf"))
+    def _color_lexer(
+        self, tokens: ColorTokens, paper: QColor, text: QColor
+    ) -> None:
+        lexer = self.json_lexer
+        lexer.setDefaultPaper(paper)
+        lexer.setDefaultColor(text)
 
-        # Force dark background on every style slot (whitespace/Default/unclosed etc.)
-        for _sid in range(20):
-            lexer.setPaper(QColor("#282c34"), _sid)
-            lexer.setColor(QColor("#abb2bf"), _sid)
+        # Every style slot (whitespace, default, unclosed strings and so on)
+        # gets the paper and the text colour first.
+        for style in range(_STYLE_COUNT):
+            lexer.setPaper(paper, style)
+            lexer.setColor(text, style)
 
-        # Define a helper to keep code clean
-        def set_style(style_id, color_hex, bold=False):
-            color = QColor(color_hex)
-            lexer.setColor(color, style_id)
-            lexer.setPaper(
-                QColor("#282c34"), style_id
-            )  # Ensure background matches
-            if bold:
-                font = lexer.font(style_id)
-                font.setBold(True)
-                lexer.setFont(font, style_id)
+        def set_style(style: int, color: str, bold: bool = False) -> None:
+            lexer.setColor(QColor(color), style)
+            font = lexer.font(style)
+            font.setBold(bold)
+            lexer.setFont(font, style)
 
-        # --- JSON Syntax Colors (VS Code / One Dark inspired) ---
-
-        # Numbers (e.g. 123, 4.56) -> Orange/Dark Yellow
-        set_style(QsciLexerJSON.Number, "#d19a66")
-
-        # Strings (e.g. "value") -> Green
-        set_style(QsciLexerJSON.String, "#98c379")
-
-        # Property Names (e.g. "key": ) -> Red/Pink
-        # Note: QScintilla's JSON lexer sometimes groups keys as 'String' or 'Property'.
-        # usually, 'Property' is the key.
-        set_style(QsciLexerJSON.Property, "#e06c75")
-
-        # Keywords (true, false, null) -> Blue/Cyan
-        set_style(QsciLexerJSON.Keyword, "#56b6c2", bold=True)
-
-        # Operators ({ } [ ] : ,) -> Light Grey/White
-        set_style(QsciLexerJSON.Operator, "#abb2bf")
-
-        # Comments (if you allow comments in JSON5) -> Grey Italics
-        set_style(QsciLexerJSON.CommentBlock, "#7f848e")
-        set_style(QsciLexerJSON.CommentLine, "#7f848e")
-
-        # 6. Set Folding Colors (optional, for dark mode visibility)
-        # Background color for the folding margin
-        self.setFoldMarginColors(QColor("#282c34"), QColor("#abb2bf"))
+        set_style(QsciLexerJSON.Number, tokens.status_warning)
+        set_style(QsciLexerJSON.String, tokens.status_success)
+        # The key of a property ("key": ) is a style of its own.
+        set_style(QsciLexerJSON.Property, tokens.link)
+        set_style(QsciLexerJSON.Keyword, tokens.status_error, bold=True)
+        set_style(QsciLexerJSON.Operator, tokens.fg_secondary)
+        set_style(QsciLexerJSON.CommentBlock, tokens.fg_muted)
+        set_style(QsciLexerJSON.CommentLine, tokens.fg_muted)

@@ -42,12 +42,11 @@ authors = [
   {name = "Igor Garmaev", email = "i.garmaev@iat.rwth-aachen.de"},
 ]
 maintainers = [
-  {name = "Igor Garmaev", email = "i.garmaev@iat.rwth-aachen.de"},
+  {name = "ifonso", email = "contato@ifonso.com.br"},
 ]
 description = """
-AAS Manager is a free, open source, cross-platform viewer/editor based for Asset Administration Shell (AAS).
+AAS Workingbench is a free, open source, cross-platform viewer/editor for Asset Administration Shell (AAS).
 The editor is based on PyQt Framework and Eclipse BaSyx Python SDK (https://github.com/eclipse-basyx/basyx-python-sdk).
-Developed at the Chair of Information and Automation Systems for Process and Material Technology at RWTH Aachen.
 """
 readme = "README.md"
 license = {text = "GNU General Public License v3.0"}
@@ -58,9 +57,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rwth-iat/aas_manager"
-Repository = "https://github.com/rwth-iat/aas_manager.git"
-Issues = "https://github.com/rwth-iat/aas_manager/issues"
+Homepage = "https://github.com/ifonso/AAS-Workingbench"
+Repository = "https://github.com/ifonso/AAS-Workingbench.git"
+Issues = "https://github.com/ifonso/AAS-Workingbench/issues"
 
 [project.gui-scripts]
 aas_editor = "aas_editor.__main__:main"
@@ -114,7 +113,7 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["aas_editor"]
-omit = ["*/themes/breeze_resources.py", "*/design.py"]
+omit = ["*/design.py"]
 
 [tool.coverage.report]
 show_missing = true
@@ -129,7 +128,6 @@ src = ["src", "tests"]
 extend-exclude = [
     # Generated code.
     "src/aas_editor/design.py",
-    "src/aas_editor/themes/breeze_resources.py",
     "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
 ]
 
@@ -173,7 +171,6 @@ convention = "google"
 "src/aas_editor/additional/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/models/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/settings/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/themes/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/tools/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/treeviews/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 "src/aas_editor/utils/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
@@ -202,7 +199,6 @@ include = ["src", "tests"]
 exclude = [
     "**/__pycache__",
     "src/aas_editor/design.py",
-    "src/aas_editor/themes/breeze_resources.py",
     "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
 ]
 venvPath = "."

@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import QTableView
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.application.validation import finding_key
 from aas_editor.domain.validation import Finding
 from aas_editor.domain.validation import Severity
 from aas_editor.domain.validation import ValidationReport
@@ -44,6 +45,12 @@ from aas_editor.ui.validation_service import service_for
 COLUMNS = ("Severity", "Rule", "Location", "Message")
 SEVERITY_COLUMN, RULE_COLUMN, LOCATION_COLUMN, MESSAGE_COLUMN = range(4)
 ALL_RULES_LABEL = "All rules"
+# The space around the text of a header: its padding, and the sort arrow.
+HEADER_PADDING = 24
+HINTS_NOTE = (
+    "Hints are advice, not rules, so they are not listed here. They show above "
+    "the attributes of the object they are about, and the status bar counts them."
+)
 SEVERITY_LABELS = {
     Severity.ERROR: "Error",
     Severity.WARNING: "Warning",
@@ -73,6 +80,11 @@ class FindingsModel(QAbstractTableModel):
         self.beginResetModel()
         self._findings = findings
         self.endResetModel()
+
+    @property
+    def findings(self) -> tuple[Finding, ...]:
+        """The findings of the rows, in the order of the model."""
+        return self._findings
 
     def finding_at(self, row: int) -> Finding:
         """Returns the finding of a row of the model, not of a proxy."""
@@ -201,6 +213,11 @@ class ValidationDock(QDockWidget):
         self._report = ValidationReport()
 
         self.counts_label = QLabel(self)
+        # A package can have hints and no finding. Without this line the dock
+        # says "No findings" while the bar of a tab shows a hint.
+        self.note_label = QLabel(HINTS_NOTE, self)
+        self.note_label.setObjectName("validationNote")
+        self.note_label.setWordWrap(True)
         self.severity_boxes: dict[Severity, QCheckBox] = {}
         severity_row = QHBoxLayout()
         for severity in Severity:
@@ -210,6 +227,7 @@ class ValidationDock(QDockWidget):
             self.severity_boxes[severity] = box
             severity_row.addWidget(box)
         self.rule_box = QComboBox(self)
+        self.rule_box.setAccessibleName("Show findings of one rule")
         self.rule_box.currentIndexChanged.connect(self._apply_filters)
         self.refresh_button = QPushButton("Refresh", self)
         self.refresh_button.clicked.connect(self.refresh)
@@ -220,6 +238,7 @@ class ValidationDock(QDockWidget):
         self.filter = FindingsFilter(self)
         self.filter.setSourceModel(self._model)
         self.findings_table = QTableView(self)
+        self.findings_table.setAccessibleName("Findings")
         self.findings_table.setModel(self.filter)
         self.findings_table.setSelectionBehavior(
             QAbstractItemView.SelectionBehavior.SelectRows
@@ -233,12 +252,21 @@ class ValidationDock(QDockWidget):
         if vertical is not None:
             vertical.hide()
         if header is not None:
-            for column in (SEVERITY_COLUMN, RULE_COLUMN, LOCATION_COLUMN):
+            # The two columns of text share what the others leave, so that a
+            # narrow dock still shows the message, and no header is cut.
+            for column in (SEVERITY_COLUMN, RULE_COLUMN):
                 header.setSectionResizeMode(
                     column, QHeaderView.ResizeMode.ResizeToContents
                 )
-            header.setSectionResizeMode(
-                MESSAGE_COLUMN, QHeaderView.ResizeMode.Stretch
+            for column in (LOCATION_COLUMN, MESSAGE_COLUMN):
+                header.setSectionResizeMode(
+                    column, QHeaderView.ResizeMode.Stretch
+                )
+            # No column gets narrower than its own header, so none is cut.
+            metrics = header.fontMetrics()
+            header.setMinimumSectionSize(
+                max(metrics.horizontalAdvance(name) for name in COLUMNS)
+                + HEADER_PADDING
             )
         self.findings_table.doubleClicked.connect(self._open_row)
         self.findings_table.activated.connect(self._open_row)
@@ -247,6 +275,7 @@ class ValidationDock(QDockWidget):
         layout = QVBoxLayout(body)
         layout.setContentsMargins(2, 2, 2, 2)
         layout.addWidget(self.counts_label)
+        layout.addWidget(self.note_label)
         layout.addLayout(severity_row)
         layout.addWidget(self.findings_table)
         self.setWidget(body)
@@ -318,7 +347,55 @@ class ValidationDock(QDockWidget):
         """Opens the finding of a row of the table, as a double click does."""
         self._open_row(self.filter.index(row, 0))
 
+    def reveal(self, finding: Finding) -> bool:
+        """Selects a finding in the table, and shows the dock.
+
+        A filter that hides the finding is cleared first, because the user
+        asked for this finding and should see it.
+
+        Args:
+            finding: A finding of the report of the package. It is found by
+                identity, and by its rule, location and message when a new run
+                made another object of it.
+
+        Returns:
+            True if the finding is in the report.
+        """
+        row = self._row_of(finding)
+        if row is None:
+            return False
+        self.show()
+        self.raise_()
+        self._attach()
+        if self.filter.mapFromSource(self._model.index(row, 0)).row() < 0:
+            self._clear_filters()
+        shown = self.filter.mapFromSource(self._model.index(row, 0))
+        self.findings_table.selectRow(shown.row())
+        self.findings_table.scrollTo(shown)
+        return True
+
     # -- internals --------------------------------------------------------
+
+    def _row_of(self, finding: Finding) -> int | None:
+        findings = self._model.findings
+        for row, found in enumerate(findings):
+            if found is finding:
+                return row
+        key = finding_key(finding)
+        for row, found in enumerate(findings):
+            if finding_key(found) == key:
+                return row
+        return None
+
+    def _clear_filters(self) -> None:
+        for box in self.severity_boxes.values():
+            box.blockSignals(True)
+            box.setChecked(True)
+            box.blockSignals(False)
+        self.rule_box.blockSignals(True)
+        self.rule_box.setCurrentIndex(0)
+        self.rule_box.blockSignals(False)
+        self._apply_filters()
 
     def _attach(self) -> None:
         if self._service is not None and self._active:

@@ -219,7 +219,7 @@ def test_a_missing_display_name_and_description_are_notices() -> None:
         findings = [f for f in report.of_rule(rule_id) if f.anchor is element]
         assert [f.severity for f in findings] == [Severity.INFO]
     assert (
-        "human readable name"
+        "read the name of this element in their own language"
         in report.of_rule("EDT-HINT-DISPLAY-NAME-MISSING")[0].message
     )
 
@@ -262,7 +262,7 @@ def test_a_self_managed_entity_without_a_global_asset_id_gets_a_notice() -> (
     (finding,) = report.of_rule("EDT-HINT-ENTITY-GLOBAL-ID")
     assert finding.anchor is entity
     assert finding.severity is Severity.INFO
-    assert "global identifier for the SelfManagedEntity" in finding.message
+    assert "global asset id of the asset" in finding.message
 
 
 def test_an_entity_with_a_global_asset_id_or_co_managed_has_no_notice() -> None:

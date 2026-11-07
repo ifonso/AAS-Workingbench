@@ -20,6 +20,9 @@ from aas_editor.settings import (
     APPLICATION_LINK,
     VERSION,
     AAS_METAMODEL_VERSION,
+    BASED_ON_AUTHORS,
+    BASED_ON_LINK,
+    BASED_ON_NAME,
     CONTRIBUTORS,
     CONTACT,
     LICENSE,
@@ -36,7 +39,9 @@ class AboutMessageBox(QMessageBox):
         self.setText(
             f"{APPLICATION_NAME}<br>"
             f"{APPLICATION_INFO}<br><br>"
-            f"Website: <a href='{DEVELOPER_WEB}'>{DEVELOPER_WEB}</a><br>"
+            f"Based on <a href='{BASED_ON_LINK}'>{BASED_ON_NAME}</a> "
+            f"by {BASED_ON_AUTHORS}<br>"
+            f"Developer: <a href='{DEVELOPER_WEB}'>{DEVELOPER_WEB}</a><br>"
             f"Project Homepage: <a href='{APPLICATION_LINK}'>{APPLICATION_LINK}</a><br>"
             f"Version: {VERSION}<br>"
             f"AAS Metamodel Version: {AAS_METAMODEL_VERSION}<br>"

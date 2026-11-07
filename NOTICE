@@ -75,19 +75,102 @@ aas-test-engines (aas_test_engines/ and the installed package)
     stand-alone build: the schema above, and an HTML template that the
     installed package also has. The folder has no license file of its own.
 
-Breeze stylesheets (src/aas_editor/themes/dark.qss and light.qss)
-    MIT License. The headers of both files name Colin Duquesnoy and Alex Huszagh
-    as the authors, and hold the license text. The stylesheets are based on the
-    Breeze color scheme, and are not affiliated with KDE. The generated
-    breeze_resources.py holds the compiled resources of the theme folders. The
-    other files in src/aas_editor/themes/, such as grey.qss and default.qss,
-    state no license of their own.
+Tabler Icons (src/aas_editor/icons/tabler/)
+    Version 3.50.0 of https://github.com/tabler/tabler-icons, the outline
+    style. The 53 SVG files are unmodified copies, and are the icons of
+    actions in the toolbars, menus and trees. MIT License, "Copyright (c)
+    2020-2026 Paweł Kuna". The license text is in the file LICENSE of that
+    folder, and is the text of the same release. The editor draws the files
+    in a color of the theme, and does not change them.
 
-Icons (src/aas_editor/icons/)
-    The application icons and logos are part of the AAS Manager code base.
-    Several file names, such as content-copy.svg and arrow-expand-vertical.svg,
-    match the Material Design Icons set. The origin and license of the icons
-    are not recorded in the repository.
+Icons of the kinds of AAS elements (src/aas_editor/icons/kinds/)
+    The 24 SVG files that mark the kinds of elements in the trees (shell,
+    submodel, concept description, the elements, and the parts such as
+    qualifier and reference) are the own work of this project, drawn for it in
+    2026, and are under its license, the GNU General Public License, version
+    3. Each is a shape for the family of the kind, with one or two letters for
+    the kind. The shapes and the letters were drawn from scratch on a grid of
+    16 by 16 pixels with a stroke of 1.33. The letters are skeletons of lines
+    that were made for these files, and are written as paths, so no font is
+    needed and none is embedded. No file of another set of icons, and no
+    outline of a font, was copied, traced or used as a model. They carry no
+    third-party license and need no attribution.
+
+Inter (src/aas_editor/fonts/)
+    The font of the user interface. Inter is by The Inter Project Authors
+    (https://github.com/rsms/inter), and the font file states "Copyright 2016
+    The Inter Project Authors". SIL Open Font License, Version 1.1. The font
+    has no Reserved Font Name. The file Inter-Variable.ttf is the variable
+    font, version "4.001;git-66647c0bb" (release 4.1 of the project), copied
+    unmodified from the Google Fonts repository
+    (https://github.com/google/fonts, folder ofl/inter, commit e1d6480) under
+    the name Inter[opsz,wght].ttf, and renamed only to avoid brackets in a
+    file name. The license is in the file OFL.txt of that folder, which is
+    LICENSE.txt of release 4.1. The copy in the Google Fonts repository has
+    the year 2020 in its first line and the same text otherwise. The font
+    states that "Inter UI and Inter is a trademark of rsms". The license
+    grants no right to that name beyond what it says, and this project does
+    not use the name for anything but the font itself.
+    The OFL asks that each copy of the font carries its license. The folder
+    does, and so does the stand-alone build, which also ships this NOTICE.
+
+Fluent 2 color values (src/aas_editor/domain/design_tokens.py)
+    The neutral colors of the light and dark themes (backgrounds, foregrounds
+    and strokes) are values of the alias tokens of Fluent 2, read from
+    https://github.com/microsoft/fluentui (packages/tokens/src/alias/
+    lightColor.ts, darkColor.ts and global/colors.ts) on 2026-11-06. Only
+    those hex values are used, and no file of that repository is copied. The
+    repository states the MIT License, "Copyright (c) Microsoft
+    Corporation". The accent and status colors are this project's own. The
+    MIT License asks that its copyright notice and permission notice go with
+    "all copies or substantial portions of the Software". A few color values
+    are hardly a substantial portion, and the notice is given here anyway:
+
+        Copyright (c) Microsoft Corporation.
+
+        Permission is hereby granted, free of charge, to any person obtaining
+        a copy of this software and associated documentation files (the
+        "Software"), to deal in the Software without restriction, including
+        without limitation the rights to use, copy, modify, merge, publish,
+        distribute, sublicense, and/or sell copies of the Software, and to
+        permit persons to whom the Software is furnished to do so, subject to
+        the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+        EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+        NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+        BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+        ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+        CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+
+    The same repository's LICENSE adds that the fonts and icons that Fluent
+    UI React references are under separate terms
+    (https://aka.ms/fluentui-assets-license). This project uses none of
+    those fonts or icons, and the color values are not among them. The name
+    Fluent is used only to say what the colors follow, and the project is not
+    affiliated with or endorsed by Microsoft.
+
+Logos (src/aas_editor/icons/logo.*, full_logo.*, full_logo3.svg)
+    Part of the AAS Manager code base. Their origin and license are not
+    recorded in the repository. They are the only files of icons.
+
+Of unrecorded origin
+    Still of unrecorded origin: the logos above, and the schema file in
+    aas_test_engines/ (see above).
+    Of unrecorded origin, and removed from the repository: the old icons of
+    actions, whose names matched the Material Design Icons set, and the
+    style sheets grey.qss and default.qss of the old themes with their
+    images, which stated no license. Removed with them are the Breeze style
+    sheets dark.qss and light.qss (MIT License, by Colin Duquesnoy and Alex
+    Huszagh, based on the Breeze color scheme), their images, and the
+    generated breeze_resources.py. None of that is in the repository or in
+    the stand-alone build any more. The themes now are made from the colors
+    in src/aas_editor/domain/design_tokens.py (see above).
 
 
 Software that the editor installs

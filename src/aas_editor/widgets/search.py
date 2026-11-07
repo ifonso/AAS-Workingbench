@@ -16,16 +16,27 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
-from typing import List
-import logging
+from typing import List, Optional
 
-from PyQt6.QtCore import QModelIndex, QPersistentModelIndex
-from PyQt6.QtGui import QBrush, QAction
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QToolButton, QTreeView
+from PyQt6.QtCore import (
+    QItemSelectionModel,
+    QModelIndex,
+    QPersistentModelIndex,
+    Qt,
+)
+from PyQt6.QtGui import QBrush, QColor, QAction, QShortcut
+from PyQt6.QtWidgets import (
+    QLabel,
+    QWidget,
+    QHBoxLayout,
+    QToolButton,
+    QTreeView,
+)
 
 from aas_editor.models.search_proxy_model import SearchProxyModel
 from aas_editor.settings.app_settings import NAME_ROLE
-from aas_editor.settings.colors import HIGHLIGHT_YELLOW
+from aas_editor.settings.shortcuts import SC_SEARCH
+from aas_editor.ui.theme import current_tokens
 from aas_editor.settings.icons import (
     NEXT_ICON,
     PREV_ICON,
@@ -49,12 +60,18 @@ class SearchBar(ToolBar):
     ):
         super(SearchBar, self).__init__(parent)
         self.view = view
+        self._selectionModel: Optional[QItemSelectionModel] = None
+        self.foundItems: List[QPersistentModelIndex] = []
         self.setModel(view.model())
         self.filterColumns = filterColumns
 
         self.searchLine = LineEdit(self)
         self.searchLine.setClearButtonEnabled(True)
         self.searchLine.setPlaceholderText("Search")
+        # How many rows match, and which one is current: "2 of 5".
+        self.resultLabel = QLabel(self)
+        self.resultLabel.setObjectName("searchResultLabel")
+        self.resultLabel.setAccessibleName("Search results")
         self.filterBtn = QToolButton(
             self,
             icon=FILTER_ICON,
@@ -101,7 +118,6 @@ class SearchBar(ToolBar):
         self.closeBtn.setAutoRaise(True)
 
         self.foundItems: List[QPersistentModelIndex] = []
-
         self.buildHandlers()
         self.initLayout()
 
@@ -126,6 +142,52 @@ class SearchBar(ToolBar):
         else:
             self.model = SearchProxyModel()
         self.model.setRecursiveFilteringEnabled(True)
+        self._followSelection()
+
+    def _followSelection(self) -> None:
+        """Keep the count current while the user moves in the view."""
+        if self._selectionModel is not None:
+            self._selectionModel.currentChanged.disconnect(
+                self._updateResultLabel
+            )
+        self._selectionModel = self.view.selectionModel()
+        if self._selectionModel is not None:
+            self._selectionModel.currentChanged.connect(self._updateResultLabel)
+
+    def matchedRows(self) -> List[QModelIndex]:
+        """The rows that match, once each and in the order of the tree.
+
+        A search in several columns finds a row once per column.
+        """
+        rows: List[QModelIndex] = []
+        seen = set()
+        for item in self.foundItems:
+            index = QModelIndex(item).siblingAtColumn(0)
+            key = QPersistentModelIndex(index)
+            if index.isValid() and key not in seen:
+                seen.add(key)
+                rows.append(index)
+        rows.sort(key=absRow)
+        return rows
+
+    def _updateResultLabel(self, *_) -> None:
+        """Tell how many rows match and which one is current."""
+        if not self.searchLine.text():
+            self.resultLabel.setText("")
+            return
+        rows = self.matchedRows()
+        if not rows:
+            self.resultLabel.setText("No results")
+            return
+        current = self.view.currentIndex().siblingAtColumn(0)
+        if current in rows:
+            self.resultLabel.setText(
+                f"{rows.index(current) + 1} of {len(rows)}"
+            )
+        else:
+            self.resultLabel.setText(
+                f"{len(rows)} result" + ("" if len(rows) == 1 else "s")
+            )
 
     def search(self):
         self.view.itemDelegate().clearBgColors()
@@ -140,16 +202,14 @@ class SearchBar(ToolBar):
             self.view.setCurrentIndex(QModelIndex(self.foundItems[0]))
             for item in self.foundItems:
                 self.view.itemDelegate().setBgColor(
-                    QModelIndex(item), QBrush(HIGHLIGHT_YELLOW)
+                    QModelIndex(item), QBrush(QColor(current_tokens().bg_find))
                 )
         self.model.dataChanged.emit(QModelIndex(), QModelIndex())
+        self._updateResultLabel()
 
     def next(self):
         items = [QModelIndex(i) for i in self.foundItems]
         items.sort(key=absRow)
-        for item in items:
-            logging.info(item.data(NAME_ROLE))
-        logging.info(self.view.currentIndex().data(NAME_ROLE))
         for item in items:
             if absRow(item) > absRow(self.view.currentIndex()):
                 self.view.setCurrentIndex(item)
@@ -158,8 +218,6 @@ class SearchBar(ToolBar):
     def previous(self):
         items = [QModelIndex(i) for i in self.foundItems]
         items.sort(key=absRow, reverse=True)
-        for item in items:
-            logging.info(item.data(NAME_ROLE))
         for item in items:
             if absRow(item) < absRow(self.view.currentIndex()):
                 self.view.setCurrentIndex(item)
@@ -185,11 +243,29 @@ class SearchBar(ToolBar):
         self.show()
         self.searchLine.setFocus()
 
+    def bindFind(self, owner: QWidget) -> QShortcut:
+        """Open this bar with the Find key while the focus is in a widget.
+
+        The shortcut works in `owner` and its children only. A window with
+        several views, each with its own bar, would otherwise find the key
+        ambiguous and run none of them.
+
+        :param owner: the widget whose focus the key belongs to
+        :return: the shortcut, which `owner` keeps alive
+        """
+        return QShortcut(
+            SC_SEARCH,
+            owner,
+            context=Qt.ShortcutContext.WidgetWithChildrenShortcut,
+            activated=self.showFocused,
+        )
+
     def initLayout(self):
         pathLayout = QHBoxLayout(self)
         pathLayout.setContentsMargins(0, 0, 0, 0)
         pathLayout.setSpacing(0)
         pathLayout.addWidget(self.searchLine)
+        pathLayout.addWidget(self.resultLabel)
         pathLayout.addWidget(self.prevBtn)
         pathLayout.addWidget(self.nextBtn)
         pathLayout.addWidget(self.filterBtn)

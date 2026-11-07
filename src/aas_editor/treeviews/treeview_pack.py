@@ -28,6 +28,7 @@ from typing import Optional
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt, QModelIndex, QSettings, QPoint, pyqtSignal
 from PyQt6.QtGui import (
+    QKeySequence,
     QDropEvent,
     QDragEnterEvent,
     QKeyEvent,
@@ -41,8 +42,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QApplication,
 )
-from basyx.aas.adapter.json import read_aas_json_file, AASToJsonEncoder
-from basyx.aas.adapter.xml import read_aas_xml_file
+from basyx.aas.adapter.json import AASToJsonEncoder
 from basyx.aas.model import (
     AssetAdministrationShell,
     Submodel,
@@ -55,7 +55,8 @@ import aas_editor.widgets.messsageBoxes
 from aas_editor.delegates import EditDelegate
 from aas_editor.ui.value_editor import ValueEditDialog, value_dialog_args
 from aas_editor.application.save import SaveStatus, save
-from aas_editor.infrastructure.package_io import read_package, write_package
+from aas_editor.infrastructure.package_io import write_package
+from aas_editor.infrastructure.submodel_templates import SubmodelTemplates
 from aas_editor.package import Package, StoredFile
 from aas_editor.settings import (
     FILTER_AAS_FILES,
@@ -63,11 +64,12 @@ from aas_editor.settings import (
     NOT_GIVEN,
     REFERABLE_INHERITORS_ATTRS,
     AAS_FILE_TYPES,
-    APPLICATION_NAME,
+    SETTINGS_APPLICATION_NAME,
     IAT,
     SUBMODELS,
 )
 from aas_editor.settings.app_settings import (
+    recent_settings,
     NAME_ROLE,
     OBJECT_ROLE,
     PACKAGE_ROLE,
@@ -86,7 +88,7 @@ from aas_editor.settings.app_settings import (
     UPDATE_ROLE,
     RECOVERY_DIR,
 )
-from aas_editor.settings.shortcuts import SC_OPEN, SC_SAVE_ALL
+from aas_editor.settings.shortcuts import SC_OPEN, SC_SAVE, SC_SAVE_ALL
 from aas_editor.settings.icons import (
     NEW_PACK_ICON,
     OPEN_ICON,
@@ -235,11 +237,15 @@ class PackTreeView(TreeView):
     viewKind = ViewKind.PACKAGES
     # A dialog asked to show the files of a package.
     packageFilesRequested = pyqtSignal(object)
+    # How many open packages hold changes that are not saved. The status bar
+    # of the window shows it.
+    unsavedPackagesChanged = pyqtSignal(int)
 
     def __init__(self, parent=None, **kwargs):
         self.copyBufferObjStores = dict()
         self.copyBufferFiles = dict()
-        self.scanFolderForExistFiles()
+        # Listed now and read when the menu of a file is first opened.
+        self.submodelTemplates = SubmodelTemplates(SUBMODEL_TEMPLATES_FOLDER)
         super(PackTreeView, self).__init__(
             parent,
             emptyViewMsg=self.EMPTY_VIEW_MSG,
@@ -247,53 +253,44 @@ class PackTreeView(TreeView):
             **kwargs,
         )
         PackTreeView.__instance = self
+        self.setAccessibleName("Package tree")
         self.recentFilesSeparator = None
         self.setAcceptDrops(True)
         self.setExpandsOnDoubleClick(False)
         self.setSelectionBehavior(self.SelectionBehavior.SelectItems)
         self.setHeader(PackHeaderView(Qt.Orientation.Horizontal, self))
+        # Save means the package of the focused view, so its entry follows
+        # the focus and not only the selection.
+        QApplication.instance().focusChanged.connect(self.onFocusChanged)
 
-    # Scan the folder SUBMODEL_TEMPLATES_FOLDER and create a set filesObjStores of SetObjectStore elements and its names
-    def scanFolderForExistFiles(self):
-        sm_templates_path = SUBMODEL_TEMPLATES_FOLDER
+    def loadTemplate(self, relative: Path) -> list[Submodel] | None:
+        """Reads one submodel template, the first time it is asked for.
 
-        if not sm_templates_path.is_dir():
-            sm_templates_path.mkdir()
+        The templates are not read when the view is made, because there are
+        more than 250 of them and reading them takes seconds. Nothing changes
+        what was read, and a paste copies the submodel first.
 
-        aasxFiles = [file for file in sm_templates_path.rglob("*.aasx")]
-        xmlFiles = [file for file in sm_templates_path.rglob("*.xml")]
-        jsonFiles = [file for file in sm_templates_path.rglob("*.json")]
-        smFiles = aasxFiles + xmlFiles + jsonFiles
+        Args:
+            relative: The path of the file in the folder of the templates.
 
-        # Read the aas files and store it in SetIdentifiableStore in dictionary fileObjDict.
-        for smFile in smFiles:
-            try:
-                fileType = smFile.suffix.lower().strip()
-                if fileType == ".xml":
-                    objStore = read_aas_xml_file(smFile.as_posix())
-                elif fileType == ".json":
-                    objStore = read_aas_json_file(smFile.as_posix())
-                elif fileType == ".aasx":
-                    # Failsafe, as before. The tolerant reader also closes
-                    # the file and opens templates with missing files.
-                    parts = read_package(smFile, failsafe=True)
-                    objStore = parts.objects
-                    # The files of the template come along with a submodel
-                    # that is copied from it.
-                    self.copyBufferFiles[
-                        smFile.relative_to(sm_templates_path)
-                    ] = PackageContent(parts.objects, parts.files)
-                else:
-                    raise TypeError("Wrong file type:", smFile.suffix)
-                # Save path to the file relative to the submodel folder
-                self.copyBufferObjStores[
-                    smFile.relative_to(sm_templates_path)
-                ] = objStore
-            except Exception as e:
-                # If a package is with an error, that file will be skipped.
-                logging.exception(
-                    f"Error while reading {smFile}: {e}. Submodels can not be read"
+        Returns:
+            The submodels of the file, or None if it cannot be read.
+        """
+        if relative not in self.copyBufferObjStores:
+            content = self.submodelTemplates.read(relative)
+            if content is None:
+                return None
+            self.copyBufferObjStores[relative] = content.objects
+            if content.files is not None:
+                # Held here, because the clipboard keeps its source weakly.
+                self.copyBufferFiles[relative] = PackageContent(
+                    content.objects, content.files
                 )
+        return [
+            obj
+            for obj in self.copyBufferObjStores[relative]
+            if isinstance(obj, Submodel)
+        ]
 
     @property
     def defaultNewFileType(self):
@@ -373,13 +370,19 @@ class PackTreeView(TreeView):
             recentFileAct = QAction(
                 "", self, statusTip=f"Open recent file", visible=False
             )
+            # Connected once. The file it opens is its data, which
+            # `updateRecentFileActs` sets, so a refresh adds no connection.
+            recentFileAct.triggered.connect(
+                partial(self.openRecentFile, recentFileAct)
+            )
             self.recentFileActs.append(recentFileAct)
 
         self.saveAct = QAction(
             SAVE_ICON,
             "Save",
             self,
-            statusTip="Save current file",
+            shortcut=SC_SAVE,
+            statusTip="Save the package that has the focus",
             triggered=lambda: self.savePack(),
             enabled=False,
         )
@@ -414,7 +417,7 @@ class PackTreeView(TreeView):
             "&Save All",
             self,
             shortcut=SC_SAVE_ALL,
-            statusTip="Save all files",
+            statusTip="Save every package that has unsaved changes",
             triggered=lambda: self.saveAll(),
             enabled=True,
         )
@@ -463,32 +466,41 @@ class PackTreeView(TreeView):
             checkable=True,
         )
 
-        self.existSubmodelCopyActsFromFiles: typing.Dict[
-            str, typing.List[QAction]
-        ] = self.initExistSubmodelCopyActsFromFiles()
-
         self.autoScrollFromSrcAct.toggle()
         self.setItemDelegate(EditDelegate(self))
 
-    def initExistSubmodelCopyActsFromFiles(self):
-        existSubmodelCopyActsFromFiles = {}  # {"file1": list(QAction_copySubmodel1, QAction_copySubmodel2, ...)}
-        # filesObjStores contains packages and its instances
-        for file, objStore in self.copyBufferObjStores.items():
-            copyExistSubmodelActs = []
-            for obj in objStore:
-                if isinstance(obj, Submodel):
-                    name = obj.id_short if not obj.id_short == "" else obj.id
-                    existSubmodelAct = QAction(
-                        name,
-                        self,
-                        statusTip=f"Copy existing submodel in current package",
-                        triggered=lambda: self.onAddExistingSubmodelPushed(),
-                    )
-                    existSubmodelAct.setData(obj)
-                    existSubmodelAct.setProperty("copyBufferKey", str(file))
-                    copyExistSubmodelActs.append(existSubmodelAct)
-            existSubmodelCopyActsFromFiles[file] = copyExistSubmodelActs
-        return existSubmodelCopyActsFromFiles
+    def fillTemplateMenu(self, menu: QMenu) -> None:
+        """Puts the submodels of the template files of a menu into it.
+
+        Two files can share a menu, because the folders of versions are not
+        shown. It runs when the menu is first shown, and not again.
+
+        Args:
+            menu: The menu of a file.
+        """
+        files = self.templateFilesOfMenu.pop(menu, [])
+        if not files:
+            return
+        menu.clear()
+        unreadable = 0
+        for relative in files:
+            submodels = self.loadTemplate(relative)
+            if submodels is None:
+                unreadable += 1
+                continue
+            for obj in submodels:
+                existSubmodelAct = QAction(
+                    obj.id_short or obj.id,
+                    menu,
+                    statusTip="Copy existing submodel in current package",
+                    triggered=lambda: self.onAddExistingSubmodelPushed(),
+                )
+                existSubmodelAct.setData(obj)
+                existSubmodelAct.setProperty("copyBufferKey", str(relative))
+                menu.addAction(existSubmodelAct)
+        if not menu.actions():
+            text = "Cannot be read" if unreadable else "No submodel"
+            menu.addAction(text).setEnabled(False)
 
     def onAddExistingSubmodelPushed(self):
         action = self.sender()
@@ -623,12 +635,11 @@ class PackTreeView(TreeView):
         )
         self.addExistSubmodelsMenu.setIcon(ADD_ICON)
         self.addExistSubmodelsMenu.menuAction().setEnabled(False)
+        # The files of each menu that was not filled yet.
+        self.templateFilesOfMenu: dict[QMenu, list[Path]] = {}
 
-        # 2. Iterate through your file paths
-        for (
-            filepath,
-            copyPasteSubmodelActs,
-        ) in self.existSubmodelCopyActsFromFiles.items():
+        # 2. The folders and files, listed without reading any of them
+        for filepath in self.submodelTemplates.files():
             # current_level tracks where we are in the tree for this specific file
             current_level = self.addExistSubmodelsMenu
 
@@ -651,8 +662,14 @@ class PackTreeView(TreeView):
                 else:
                     current_level = current_level.addMenu(part)
 
-            # 3. Add the actual actions to the deepest nested menu found/created
-            current_level.addActions(copyPasteSubmodelActs)
+            # 3. The deepest menu is the file. It reads the file when it opens.
+            if current_level not in self.templateFilesOfMenu:
+                self.templateFilesOfMenu[current_level] = []
+                current_level.addAction("Reading...").setEnabled(False)
+                current_level.aboutToShow.connect(
+                    partial(self.fillTemplateMenu, current_level)
+                )
+            self.templateFilesOfMenu[current_level].append(filepath)
         self.attrsMenu.insertMenu(self.addAct, self.addExistSubmodelsMenu)
 
     def updateActions(self, index: QModelIndex):
@@ -708,10 +725,29 @@ class PackTreeView(TreeView):
             for act in self.openInActs:
                 act.setEnabled(True)
 
-    def updateSaveActs(self, index: QModelIndex):
+    def onFocusChanged(self, old: QWidget, now: QWidget):
+        """Keep the Save entry on the package that the focus is in"""
+        try:
+            self.updateSaveTarget()
+        except RuntimeError:
+            # The view was deleted, and the application outlived it.
+            pass
+
+    def updateSaveTarget(self):
+        """Enable the Save entry, and name the package that it saves"""
         self.saveAct.setEnabled(self.isSaveOk())
-        self.saveAct.setText(f"Save {index.data(PACKAGE_ROLE)}")
-        self.saveAct.setToolTip(f"Save {index.data(PACKAGE_ROLE)}")
+        pack = self.focusedPackage()
+        # The key saves the package of the focused view, so the entry says
+        # which package that is.
+        name = f"Save {pack.name}" if pack is not None else "Save"
+        keys = self.saveAct.shortcut().toString(
+            QKeySequence.SequenceFormat.NativeText
+        )
+        self.saveAct.setText(name)
+        self.saveAct.setToolTip(f"{name} ({keys})")
+
+    def updateSaveActs(self, index: QModelIndex):
+        self.updateSaveTarget()
         self.saveAsAct.setEnabled(self.isSaveOk())
         for act in self.saveInActs:
             act.setEnabled(self.isSaveOk())
@@ -749,8 +785,7 @@ class PackTreeView(TreeView):
         )
 
     def isSaveOk(self) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE)
-        return True if pack else False
+        return self.focusedPackage() is not None
 
     def isCloseOk(self) -> bool:
         pack = self.currentIndex().data(PACKAGE_ROLE)
@@ -970,6 +1005,24 @@ class PackTreeView(TreeView):
                 (package,) = packages
         return package
 
+    def focusedPackage(self):
+        """Return the package that Save acts on.
+
+        With the focus in a tab, it is the package that the tab shows, whether
+        or not the selection of this tree follows the tabs. Anywhere else it
+        is the package of the selected row, or the only open package.
+        """
+        from aas_editor.widgets.tab import TabWithTreeView
+
+        widget = QApplication.focusWidget()
+        while widget is not None and widget is not self:
+            if isinstance(widget, TabWithTreeView):
+                if widget.package is not None:
+                    return widget.package
+                break
+            widget = widget.parentWidget()
+        return self.activePackage()
+
     def updateWindowModified(self) -> None:
         """Derive the shared window modified flag from the per-package changed flags.
 
@@ -977,10 +1030,38 @@ class PackTreeView(TreeView):
         opened package still holds unsaved changes.
         """
         packs = self.model().data(QModelIndex(), OPENED_PACKS_ROLE)
-        self.setWindowModified(any(pack.changed for pack in packs))
+        unsaved = sum(1 for pack in packs if pack.changed)
+        self.setWindowModified(unsaved > 0)
+        self.updateSaveAllAct(unsaved)
+        self.unsavedPackagesChanged.emit(unsaved)
+
+    def updateSaveAllAct(self, unsaved: int) -> None:
+        """Tell in the tooltip of Save All what it would save.
+
+        :param unsaved: the number of packages with unsaved changes
+        """
+        keys = self.saveAllAct.shortcut().toString(
+            QKeySequence.SequenceFormat.NativeText
+        )
+        what = (
+            "No package has unsaved changes"
+            if unsaved == 0
+            else "Save the 1 package that has unsaved changes"
+            if unsaved == 1
+            else f"Save the {unsaved} packages that have unsaved changes"
+        )
+        self.saveAllAct.setToolTip(f"Save All: {what} ({keys})")
+
+    def onRowsInserted(self, parent: QModelIndex, first: int, last: int):
+        super().onRowsInserted(parent, first, last)
+        if not parent.isValid():
+            # A package that was restored after a crash is open and unsaved,
+            # and the only open package is the one that Save means.
+            self.updateWindowModified()
+            self.updateSaveActs(self.currentIndex())
 
     def savePack(self, pack: Package = None, file: str = None) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE) if pack is None else pack
+        pack = self.focusedPackage() if pack is None else pack
         originalFile = pack.file  # write(file) may change pack.file on Save-As
         try:
             target = Path(file).absolute() if file else pack.file
@@ -1042,7 +1123,7 @@ class PackTreeView(TreeView):
 
         :return: the number of references that were added
         """
-        pack = self.currentIndex().data(PACKAGE_ROLE)
+        pack = self.activePackage()
         try:
             # One undo step. The rows follow the change that it reports.
             return pack.all_submodels_to_aas()
@@ -1055,7 +1136,7 @@ class PackTreeView(TreeView):
     def savePackInTypeWithDialog(
         self, filetype=None, pack: Package = None
     ) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE) if pack is None else pack
+        pack = self.focusedPackage() if pack is None else pack
         file = (
             pack.file.as_posix()
             if filetype is None
@@ -1066,7 +1147,7 @@ class PackTreeView(TreeView):
     def savePackAsWithDialog(
         self, file=None, pack: Package = None, filter=FILTER_AAS_FILES
     ) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE) if pack is None else pack
+        pack = self.focusedPackage() if pack is None else pack
         saved = False
         file = pack.file.as_posix() if file is None else file
         while not saved:
@@ -1126,7 +1207,7 @@ class PackTreeView(TreeView):
                     if res == QMessageBox.StandardButton.Save:
                         # A save that was refused, cancelled, or failed must
                         # not close the package and lose its changes.
-                        if not self.savePack():
+                        if not self.savePack(pack):
                             return
                     elif res == QMessageBox.StandardButton.Cancel:
                         return
@@ -1197,14 +1278,14 @@ class PackTreeView(TreeView):
         if self.isRecoveryFile(file):
             return
         self.removeFromRecentFiles(file)
-        settings = QSettings(IAT, APPLICATION_NAME)
+        settings = recent_settings()
         files = settings.value("recentFiles", [])
         files.insert(0, file)
         del files[MAX_RECENT_FILES:]
         settings.setValue("recentFiles", files)
 
     def removeFromRecentFiles(self, file: str):
-        settings = QSettings(IAT, APPLICATION_NAME)
+        settings = recent_settings()
         files = settings.value("recentFiles", [])
         try:
             files.remove(file)
@@ -1214,8 +1295,14 @@ class PackTreeView(TreeView):
             files = []
         settings.setValue("recentFiles", files)
 
+    def openRecentFile(self, action: QAction, checked: bool = False) -> None:
+        """Opens the file that a recent file action shows now."""
+        file = action.data()
+        if file:
+            self.openPack(file=file)
+
     def updateRecentFileActs(self):
-        settings = QSettings(IAT, APPLICATION_NAME)
+        settings = recent_settings()
         files = settings.value("recentFiles", [])
         try:
             files = files[:MAX_RECENT_FILES]
@@ -1226,10 +1313,11 @@ class PackTreeView(TreeView):
             recentFileAct = self.recentFileActs[i]
             display_text = file if len(file) < 30 else f"..{file[-30:]}"
             recentFileAct.setText(display_text)
+            recentFileAct.setData(file)
             recentFileAct.setVisible(True)
-            recentFileAct.triggered.connect(partial(self.openPack, file=file))
 
         for i in range(len(files), MAX_RECENT_FILES):
+            self.recentFileActs[i].setData(None)
             self.recentFileActs[i].setVisible(False)
 
         self.recentFilesSeparator.setVisible(bool(files))

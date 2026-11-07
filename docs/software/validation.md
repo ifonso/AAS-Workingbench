@@ -34,6 +34,8 @@ check = save_check_for(report)
 `anchor` is `None` for a finding about the package, such as a file that nothing refers to.
 The dock lists them with severity, rule, location and message, filters by severity and by rule, and selects the `anchor` on a double click. `ValidationReport.of(findings)` sorts errors first and keeps the document order within a severity, but the order inside a severity follows an unordered set for shells, submodels, and descriptions.
 
+**Counts, F8 and hints (phase J):** the status bar counts the errors, warnings and hints of the current package while the dock is hidden ([ADR 0029](adr/0029-validation-runs-while-the-panel-is-hidden.md)). Errors and warnings are the findings of `ALL_RULES`, which the dock lists. A hint is a finding of `HINT_RULES`, whatever severity the rule gives it (eleven rules, five of them warnings), and the dock does not list it, so a package can show "No findings" in the dock and a hint in the bar of a tab. `application.validation.count_findings` and `is_listed` draw that line. F8 and Shift+F8 go through the errors and then the warnings of the report, and select the element of each in the tree.
+
 ### Severity and the save gate (D5)
 
 | Severity | Meaning | Gate |
@@ -123,7 +125,7 @@ The work package list named AASd-006, 007, 012, 013, 077, 119, 129, 133 and 134 
 The probes changed it: 077 and 134 are enforced, 013 does not exist in V3, 012 cannot be checked, and 006 and 007 can be checked in part.
 They added AASd-002, 005, 020, 109, 116, 118 and 130.
 
-AASc-3a-004 to 007 are the constraints of Part 3a that tie the category of a concept description to the data type of its IEC 61360 record. The Part 3a text is not in the local specifications, so the wording and the sets of data types come from the verification code of Package Explorer (`AasCore.Aas3_1`, `verification.cs` and `constants.cs`), which is generated from it. None of the 132 bundled templates sets one of these categories (their descriptions have none, `PARAMETER` or `CONSTANT`), so none gets a finding. The other constraints of Part 3a that the editor knows are advisories of the IEC 61360 dialog (AASc-3a-008 to 010), not rules.
+AASc-3a-004 to 007 are the constraints of Part 3a that tie the category of a concept description to the data type of its IEC 61360 record. The Part 3a text is not in the local specifications. The sets of data types are those of the published text, IDTA-01003-a V3.1.1, constraints AASc-3a-004 to 007 in `documentation/IDTA-01003-a/modules/ROOT/pages/includes/constraints.adoc` of [admin-shell-io/aas-specs-iec61360](https://github.com/admin-shell-io/aas-specs-iec61360) (tag `v3.1.1`, CC BY 4.0), and were compared with it one by one. The sentences of the findings are written for this project. None of the 132 bundled templates sets one of these categories (their descriptions have none, `PARAMETER` or `CONSTANT`), so none gets a finding. The other constraints of Part 3a that the editor knows are advisories of the IEC 61360 dialog (AASc-3a-008 to 010), not rules.
 
 AASd-129 follows the V3.1 text, without the exception of V3.2 for operation variables.
 No bundled template has a template qualifier in an instance submodel, so the exception changes nothing for them.

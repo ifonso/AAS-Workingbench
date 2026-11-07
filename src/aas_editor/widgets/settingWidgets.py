@@ -30,7 +30,9 @@ from aas_editor.domain.default_languages import DefaultLanguagesError
 from aas_editor.domain.default_languages import parse_default_languages
 from aas_editor.domain.id_templates import check_id_template
 from aas_editor.settings import AppSettings, Setting
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import style_as_problem
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import focus_first_field
 from aas_editor.widgets.groupBoxes import OptionGroupBox
 
 
@@ -76,7 +78,7 @@ class TextSettingsGroupBox(OptionGroupBox):
             form.addRow(setting.display_name or setting.name, edit)
         self.problemLabel = QLabel()
         self.problemLabel.setWordWrap(True)
-        self.problemLabel.setStyleSheet(PROBLEM_STYLE)
+        style_as_problem(self.problemLabel)
         self.problemLabel.hide()
         layout.addWidget(self.problemLabel)
         self._showProblem()
@@ -220,6 +222,7 @@ class SettingsDialog(QDialog):
         self.layout.addWidget(scroll)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
+        finish_dialog(self)
         screen = QGuiApplication.primaryScreen()
         limit = (
             int(screen.availableGeometry().height() * 0.9) if screen else 700
@@ -228,6 +231,10 @@ class SettingsDialog(QDialog):
         self.resize(
             max(body.sizeHint().width() + 40, 520), min(wanted + 60, limit)
         )
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        focus_first_field(self)
 
     def accept(self) -> None:
         # A text that cannot be used stays on screen with its reason.

@@ -15,6 +15,7 @@ from collections.abc import Sequence
 
 from basyx.aas import model
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QShowEvent
 from PyQt6.QtGui import QStandardItem
 from PyQt6.QtGui import QStandardItemModel
 from PyQt6.QtWidgets import QAbstractItemView
@@ -33,8 +34,8 @@ from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
 from aas_editor.domain.references import describe_reference
-from aas_editor.ui.colors import ADVISORY_STYLE
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import style_as_advisory
+from aas_editor.ui.colors import style_as_problem
 from aas_editor.domain.data_specifications import DATA_TYPE_GROUPS
 from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 from aas_editor.domain.data_specifications import LEVEL_TYPE_LABELS
@@ -43,9 +44,11 @@ from aas_editor.domain.data_specifications import MAX_PREFERRED_NAME
 from aas_editor.domain.data_specifications import MAX_SHORT_NAME
 from aas_editor.domain.data_specifications import Iec61360Draft
 from aas_editor.domain.data_specifications import check_draft
-from aas_editor.ui.concept_dialogs import accept_button
 from aas_editor.ui.concept_dialogs import answered_yes
-from aas_editor.ui.concept_dialogs import make_buttons
+from aas_editor.ui.dialog_layout import accept_button
+from aas_editor.ui.dialog_layout import finish_dialog
+from aas_editor.ui.dialog_layout import focus_first_field
+from aas_editor.ui.dialog_layout import make_button_box
 from aas_editor.ui.user_defaults import default_languages
 
 
@@ -60,15 +63,20 @@ class LanguageRows(QWidget):
 
     changed = pyqtSignal()
 
-    def __init__(self, longest: int, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, longest: int, what: str = "Text", parent: QWidget | None = None
+    ) -> None:
         """Builds the widget.
 
         Args:
             longest: The longest text, which the rows show as a tooltip.
+            what: What the rows hold, which names their fields for a screen
+                reader, such as "Preferred name".
             parent: The parent widget.
         """
         super().__init__(parent)
         self._longest = longest
+        self._what = what
         self._rows: list[tuple[QLineEdit, QLineEdit, QWidget]] = []
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
@@ -94,8 +102,10 @@ class LanguageRows(QWidget):
         language_edit = QLineEdit(language)
         language_edit.setPlaceholderText("en")
         language_edit.setMaximumWidth(80)
+        language_edit.setAccessibleName(f"{self._what}, language")
         language_edit.setToolTip("Language tag, such as en or de-DE")
         text_edit = QLineEdit(text)
+        text_edit.setAccessibleName(f"{self._what}, text")
         text_edit.setPlaceholderText(f"Text (at most {self._longest})")
         remove = QPushButton("Remove")
         line.addWidget(language_edit)
@@ -178,9 +188,9 @@ class Iec61360Dialog(QDialog):
             draft.value_list or (), key=lambda pair: (pair.value, id(pair))
         )
 
-        self.preferred_name = LanguageRows(MAX_PREFERRED_NAME)
-        self.short_name = LanguageRows(MAX_SHORT_NAME)
-        self.definition = LanguageRows(MAX_DEFINITION)
+        self.preferred_name = LanguageRows(MAX_PREFERRED_NAME, "Preferred name")
+        self.short_name = LanguageRows(MAX_SHORT_NAME, "Short name")
+        self.definition = LanguageRows(MAX_DEFINITION, "Definition")
         self.unit = QLineEdit(draft.unit)
         self.unit.setPlaceholderText("such as m/s")
         self.unit_id = QLineEdit(draft.unit_id)
@@ -202,6 +212,7 @@ class Iec61360Dialog(QDialog):
         levels.addStretch(1)
         self.value_list_label = QLabel()
         self.pairs_list = QListWidget()
+        self.pairs_list.setAccessibleName("Pairs of the value list")
         self.pairs_list.setMaximumHeight(96)
         self.pairs_list.setSelectionMode(
             QAbstractItemView.SelectionMode.SingleSelection
@@ -255,15 +266,17 @@ class Iec61360Dialog(QDialog):
 
         self.problems_label = QLabel()
         self.problems_label.setWordWrap(True)
-        self.problems_label.setStyleSheet(PROBLEM_STYLE)
+        style_as_problem(self.problems_label)
         self.advisories_label = QLabel()
         self.advisories_label.setWordWrap(True)
-        self.advisories_label.setStyleSheet(ADVISORY_STYLE)
-        self.buttons = make_buttons(self, accept_text)
+        style_as_advisory(self.advisories_label)
+        self.buttons = make_button_box(self, accept_text, safe_default=True)
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
-        content_layout.addWidget(QLabel("Template"))
+        template_label = QLabel("Template")
+        template_label.setBuddy(template)
+        content_layout.addWidget(template_label)
         content_layout.addWidget(template)
         content_layout.addWidget(names)
         content_layout.addWidget(values)
@@ -275,6 +288,7 @@ class Iec61360Dialog(QDialog):
         layout.addWidget(self.problems_label)
         layout.addWidget(self.advisories_label)
         layout.addWidget(self.buttons)
+        finish_dialog(self)
 
         self.preferred_name.set_rows(draft.preferred_name)
         self.short_name.set_rows(draft.short_name)
@@ -296,6 +310,11 @@ class Iec61360Dialog(QDialog):
         for check in self.level_checks.values():
             check.stateChanged.connect(self._update)
         self._update()
+
+    def showEvent(self, event: QShowEvent | None) -> None:  # noqa: N802
+        """Starts in the first field, not on the scroll area."""
+        super().showEvent(event)
+        focus_first_field(self)
 
     @staticmethod
     def _data_type_box() -> QComboBox:

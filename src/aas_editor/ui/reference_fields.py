@@ -16,6 +16,7 @@ Three classes cover the type hints of the SDK: `ReferenceGroupBox` for
 `widgets/widgetUtil.py` picks them.
 """
 
+from collections.abc import Callable
 from typing import Any
 from typing import cast
 
@@ -30,8 +31,9 @@ from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QWidget
 
-from aas_editor.ui.colors import ADVISORY_STYLE
-from aas_editor.ui.colors import PROBLEM_STYLE
+from aas_editor.ui.colors import advisory_style
+from aas_editor.ui.colors import keep_styled
+from aas_editor.ui.colors import problem_style
 from aas_editor.domain.reference_picker import ReferenceRule
 from aas_editor.domain.reference_picker import ReferenceStatus
 from aas_editor.domain.reference_picker import class_for_key_type
@@ -57,8 +59,6 @@ _WATCHED = (
     QEvent.Type.FocusOut,
     QEvent.Type.Hide,
 )
-_PROBLEM_STYLE = PROBLEM_STYLE
-_DANGLING_STYLE = ADVISORY_STYLE
 
 
 def package_of(widget: QWidget) -> Any:
@@ -179,6 +179,10 @@ def _packages_in(shown: Any) -> set[Any]:
     return set(found) if found else set()
 
 
+def _no_style() -> str:
+    return ""
+
+
 class ReferenceFieldMixin:
     """The picker button and the status line, for a form that makes a reference.
 
@@ -205,6 +209,10 @@ class ReferenceFieldMixin:
         self._picker_button.clicked.connect(self.choose_from_package)
         self._status_label = QLabel(owner)
         self._status_label.setWordWrap(True)
+        # What colors the line: nothing, a problem, or an advisory. It is
+        # asked again after a switch of theme.
+        self._status_style: Callable[[], str] = _no_style
+        keep_styled(self._status_label, lambda: self._status_style())
         owner.layout().addRow(self._picker_button)
         owner.layout().addRow(self._status_label)
         self._refresh_timer = QTimer(owner)
@@ -291,22 +299,25 @@ class ReferenceFieldMixin:
         reference = self.current_reference()
         if reference is None:
             self._status = None
-            self._show(self._problem, _PROBLEM_STYLE)
+            self._show(self._problem, problem_style)
             self._gate(valid=False)
             return
         self._gate(valid=True)
         objects = self._objects()
         if not objects:
             self._status = None
-            self._show("", "")
+            self._show("", _no_style)
             return
         status = status_of(ReferenceIndex(objects), reference)
         self._status = status
-        self._show(status.text, _DANGLING_STYLE if status.is_dangling else "")
+        self._show(
+            status.text, advisory_style if status.is_dangling else _no_style
+        )
 
-    def _show(self, text: str, style: str) -> None:
+    def _show(self, text: str, style: Callable[[], str]) -> None:
         self._status_label.setText(text)
-        self._status_label.setStyleSheet(style)
+        self._status_style = style
+        self._status_label.setStyleSheet(style())
 
     def _gate(self, valid: bool) -> None:
         """Keeps OK disabled while this field cannot make a reference."""

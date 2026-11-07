@@ -86,7 +86,7 @@ _SORTABLE = frozenset(
     }
 )
 
-CANNOT_SORT = "Cannot apply selected sort order!"
+CANNOT_SORT = "The file cannot keep this order, so nothing was sorted"
 """The text of Package Explorer for an order that cannot be applied."""
 
 

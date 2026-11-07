@@ -53,3 +53,48 @@ def test_the_tree_keeps_what_its_columns_need_in_a_small_window() -> None:
 
     assert left == 520
     assert left + right == DEFAULT_SIZE[0]
+
+
+# The orientation that a session saved
+
+
+@pytest.mark.parametrize(
+    ("saved", "expected"),
+    [
+        (1, "horizontal"),
+        (2, "vertical"),
+        ("1", "horizontal"),
+        ("2", "vertical"),
+        ("Horizontal", "horizontal"),
+        ("Orientation.Vertical", "vertical"),
+        ("vertical", "vertical"),
+    ],
+)
+def test_a_saved_orientation_is_read_whatever_form_the_store_gave(
+    saved: object, expected: str
+) -> None:
+    from aas_editor.domain.window_layout import saved_orientation
+
+    assert saved_orientation(saved) == expected
+
+
+def test_an_orientation_that_is_an_enum_member_is_read_by_its_value() -> None:
+    import enum
+
+    from aas_editor.domain.window_layout import saved_orientation
+
+    class Orientation(enum.Flag):
+        Horizontal = 1
+        Vertical = 2
+
+    assert saved_orientation(Orientation.Vertical) == "vertical"
+    assert saved_orientation(Orientation.Horizontal) == "horizontal"
+
+
+@pytest.mark.parametrize(
+    "saved", [None, "", "diagonal", 0, 3, -1, 2.5, True, [2], b"2"]
+)
+def test_a_saved_value_that_is_no_orientation_says_none(saved: object) -> None:
+    from aas_editor.domain.window_layout import saved_orientation
+
+    assert saved_orientation(saved) is None
