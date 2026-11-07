@@ -33,7 +33,7 @@ FILES = {
 @pytest.fixture
 def world(views, monkeypatch: pytest.MonkeyPatch, qapp: object):
     """A package with files, and the answers that the dialogs give."""
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     document = make_file_element("Document", DOC, "application/pdf")
     note = make_file_element("Note", NOTE, "text/plain")
@@ -110,7 +110,7 @@ def world(views, monkeypatch: pytest.MonkeyPatch, qapp: object):
 
 @pytest.fixture
 def controller(world):
-    from aas_editor.ui.file_controller import FileController
+    from aas_workingbench.ui.file_controller import FileController
 
     return FileController(world.package, None)
 
@@ -123,7 +123,7 @@ def _content(package, name: str) -> bytes:
 
 @pytest.fixture
 def read_mode() -> Iterator[None]:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     edit_mode().set_editing(False)
     yield
@@ -360,7 +360,7 @@ def test_removing_a_file_nothing_refers_to_asks_nothing(
 def test_several_files_are_removed_as_one_step_with_one_question(
     world, controller, monkeypatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     questions: list[int] = []
 
@@ -466,8 +466,8 @@ def test_choosing_a_default_thumbnail_and_adding_one(
 def test_the_default_thumbnail_is_removed_after_a_question_and_the_file_stays(
     world, controller, monkeypatch, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui import file_dialogs
 
     questions: list[str] = []
     monkeypatch.setattr(
@@ -497,7 +497,7 @@ def test_the_default_thumbnail_is_removed_after_a_question_and_the_file_stays(
 def test_declining_the_question_keeps_the_default_thumbnail(
     world, controller, monkeypatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     monkeypatch.setattr(file_dialogs, "confirm", lambda parent, text: False)
 
@@ -520,7 +520,7 @@ def test_without_a_default_thumbnail_there_is_nothing_to_remove(
 def test_a_removed_default_thumbnail_can_be_chosen_again(
     world, controller, monkeypatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     monkeypatch.setattr(file_dialogs, "confirm", lambda parent, text: True)
     asset = world.shell.asset_information
@@ -535,7 +535,7 @@ def test_a_removed_default_thumbnail_can_be_chosen_again(
 def test_remove_default_thumbnail_is_offered_on_a_shell_that_has_one(
     views,
 ) -> None:
-    from aas_editor.ui.file_actions import register_file_actions
+    from aas_workingbench.ui.file_actions import register_file_actions
 
     register_file_actions()
     shown = views()
@@ -561,8 +561,8 @@ def test_remove_default_thumbnail_is_offered_on_a_shell_that_has_one(
 def test_the_package_thumbnail_is_changed_saved_and_read_back(
     world, controller, monkeypatch, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui import file_dialogs
 
     image = tmp_path / "cover.png"
     image.write_bytes(b"\x89PNG cover")
@@ -589,7 +589,7 @@ def test_the_package_thumbnail_is_changed_saved_and_read_back(
 def test_a_file_that_is_no_image_is_refused_with_a_message(
     world, controller, monkeypatch, tmp_path: Path
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     text = tmp_path / "notes.txt"
     text.write_bytes(b"hello")
@@ -605,7 +605,7 @@ def test_a_file_that_is_no_image_is_refused_with_a_message(
 def test_cancelling_the_picker_keeps_the_package_thumbnail(
     world, controller, monkeypatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: None)
 
@@ -617,8 +617,8 @@ def test_cancelling_the_picker_keeps_the_package_thumbnail(
 def test_a_changed_package_thumbnail_survives_a_crash(
     world, controller, monkeypatch, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui import file_dialogs
 
     source = tmp_path / "source.aasx"
     world.package.write(source)
@@ -626,7 +626,7 @@ def test_a_changed_package_thumbnail_survives_a_crash(
     image = tmp_path / "new.jpg"
     image.write_bytes(b"jpeg")
     monkeypatch.setattr(file_dialogs, "pick_thumbnail_image", lambda p: image)
-    from aas_editor.ui.file_controller import FileController
+    from aas_workingbench.ui.file_controller import FileController
 
     assert FileController(package, None).change_package_thumbnail()
 
@@ -641,7 +641,7 @@ def test_a_changed_package_thumbnail_survives_a_crash(
 def test_an_unchanged_package_thumbnail_keeps_the_cheap_recovery(
     world, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = tmp_path / "source.aasx"
     world.package.write(source)
@@ -656,7 +656,7 @@ def test_an_unchanged_package_thumbnail_keeps_the_cheap_recovery(
 def test_the_panel_says_which_package_thumbnail_there_is(
     world, controller, panel, monkeypatch, tmp_path: Path
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     before = panel.summary_label.text()
     image = tmp_path / "cover.png"
@@ -670,7 +670,7 @@ def test_the_panel_says_which_package_thumbnail_there_is(
 
 
 def test_the_package_thumbnail_button_is_off_in_read_mode(world, panel) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     on = panel.thumbnail_button.isEnabled()
     edit_mode().set_editing(False)
@@ -702,8 +702,8 @@ def test_a_file_element_without_a_stored_file_cannot_be_edited(
 
 
 def _make_dangling(world) -> None:
-    from aas_editor.application import supplementary_files as files
-    from aas_editor.application.changes import observer_for
+    from aas_workingbench.application import supplementary_files as files
+    from aas_workingbench.application.changes import observer_for
 
     files.remove_file(
         world.package.commandStack,
@@ -718,7 +718,7 @@ def _make_dangling(world) -> None:
 def test_the_dangling_references_are_listed_and_repaired_by_a_stored_file(
     world, controller, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     _make_dangling(world)
     world.answers.chosen = NOTE
@@ -753,7 +753,7 @@ def test_the_dangling_references_are_listed_and_repaired_by_a_stored_file(
 def test_a_dangling_path_is_cleared_in_the_repair_dialog(
     world, controller, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     _make_dangling(world)
 
@@ -774,7 +774,7 @@ def test_a_dangling_path_is_cleared_in_the_repair_dialog(
 def test_a_dangling_path_is_repaired_with_a_new_file(
     world, controller, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     _make_dangling(world)
     source = tmp_path / "doc.pdf"
@@ -802,7 +802,7 @@ def test_a_dangling_path_is_repaired_with_a_new_file(
 
 @pytest.fixture
 def panel(world, qtbot):
-    from aas_editor.ui.package_files import PackageFilesPanel
+    from aas_workingbench.ui.package_files import PackageFilesPanel
 
     panel = PackageFilesPanel(lambda: world.package)
     qtbot.addWidget(panel)
@@ -831,8 +831,8 @@ def test_the_panel_lists_each_file_with_what_refers_to_it(panel) -> None:
 
 
 def test_the_panel_follows_changes_and_undo(world, panel, qtbot) -> None:
-    from aas_editor.application import supplementary_files as files
-    from aas_editor.application.changes import observer_for
+    from aas_workingbench.application import supplementary_files as files
+    from aas_workingbench.application.changes import observer_for
 
     files.rename_file(
         world.package.commandStack,
@@ -922,7 +922,7 @@ def test_the_edit_button_is_for_text_files_only(world, panel) -> None:
 def test_the_buttons_that_change_the_package_are_off_in_read_mode(
     world, panel
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     panel.table.selectRow(0)
     edit_mode().set_editing(False)
@@ -947,7 +947,7 @@ def test_the_buttons_that_change_the_package_are_off_in_read_mode(
 
 
 def test_the_panel_without_a_package_says_so(qtbot) -> None:
-    from aas_editor.ui.package_files import PackageFilesPanel
+    from aas_workingbench.ui.package_files import PackageFilesPanel
 
     panel = PackageFilesPanel(lambda: None)
     qtbot.addWidget(panel)
@@ -958,7 +958,7 @@ def test_the_panel_without_a_package_says_so(qtbot) -> None:
 
 
 def test_the_buttons_fit_a_panel_of_the_width_of_a_dock(qtbot) -> None:
-    from aas_editor.ui.package_files import PackageFilesPanel
+    from aas_workingbench.ui.package_files import PackageFilesPanel
 
     panel = PackageFilesPanel(lambda: None)
     qtbot.addWidget(panel)
@@ -999,9 +999,9 @@ def test_the_dangling_summary_is_shown(world, panel) -> None:
 
 @pytest.fixture
 def registered(qapp: object) -> Iterator[None]:
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.file_actions import action_ids
-    from aas_editor.ui.file_actions import register_file_actions
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.file_actions import action_ids
+    from aas_workingbench.ui.file_actions import register_file_actions
 
     register_file_actions()
     yield
@@ -1021,9 +1021,9 @@ def _enabled(shown, action_id: str, *path: str) -> bool:
 
 
 def test_registering_twice_adds_each_action_once(registered: None) -> None:
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.file_actions import register_file_actions
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.file_actions import register_file_actions
 
     register_file_actions()
 
@@ -1055,7 +1055,7 @@ def test_file_actions_are_enabled_on_the_rows_of_stored_files(
 def test_the_rename_action_renames_and_updates_the_references(
     views, registered: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     note = make_file_element("Note", NOTE, "text/plain")
     shown = views()
@@ -1076,7 +1076,7 @@ def test_the_rename_action_renames_and_updates_the_references(
 def test_the_rows_of_the_file_store_follow_a_rename_and_its_undo(
     views, registered: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     shown = views()
     package = shown.open_package(make_shell(), files=FILES)
@@ -1127,7 +1127,7 @@ def test_file_element_actions_are_enabled_on_a_file_element_only(
 def test_the_choose_action_links_a_file_element(
     views, registered: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     doc = make_file_element("Doc", DOC)
     shown = views()

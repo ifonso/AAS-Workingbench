@@ -55,7 +55,7 @@ def stub_modal_dialogs(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(autouse=True)
 def edit_mode_on() -> Iterator[None]:
     """Starts every test in Edit mode, which is global state of the editor."""
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     edit_mode().set_editing(True)
     yield
@@ -65,7 +65,7 @@ def edit_mode_on() -> Iterator[None]:
 @pytest.fixture(autouse=True)
 def hints_mode_on() -> Iterator[None]:
     """Starts every test with hints on, which is global state of the editor."""
-    from aas_editor.application.hints import hints_mode
+    from aas_workingbench.application.hints import hints_mode
 
     hints_mode().set_on(True)
     yield
@@ -79,7 +79,7 @@ def hint_kinds_on() -> Iterator[None]:
     It is set without saving, so a test that saves kinds to its own settings
     can load them again as a new session does.
     """
-    from aas_editor.application.hints import hint_kinds
+    from aas_workingbench.application.hints import hint_kinds
 
     hint_kinds().load(())
     yield
@@ -90,15 +90,15 @@ def hint_kinds_on() -> Iterator[None]:
 def qapp() -> Iterator[QApplication]:
     """Provides the session-wide QApplication.
 
-    Every test that imports aas_editor must request it, because
-    aas_editor.settings.app_settings creates QFont, QSize and QIcon objects at
+    Every test that imports aas_workingbench must request it, because
+    aas_workingbench.settings.app_settings creates QFont, QSize and QIcon objects at
     import time, which require an active QApplication.
     """
     app = QApplication.instance() or QApplication(sys.argv)
     # The editor names Inter, which Qt finds only once the file is registered.
     # Without it a test that measures text would measure a fallback font, and
     # the numbers would depend on which test registered the font first.
-    from aas_editor.ui.theme.fonts import install_fonts
+    from aas_workingbench.ui.theme.fonts import install_fonts
 
     install_fonts()
     yield app
@@ -139,7 +139,7 @@ def own_settings(
     """
     from PyQt6.QtCore import QSettings
 
-    from aas_editor.settings import app_settings
+    from aas_workingbench.settings import app_settings
 
     folder = tmp_path_factory.mktemp("settings")
     patches = pytest.MonkeyPatch()
@@ -163,7 +163,7 @@ def own_settings(
 @pytest.fixture
 def empty_settings(own_settings: None) -> Iterator[None]:
     """Starts a test with nothing saved, and leaves nothing for the next."""
-    from aas_editor.settings import app_settings
+    from aas_workingbench.settings import app_settings
 
     def clear() -> None:
         app_settings.SETTINGS.clear()

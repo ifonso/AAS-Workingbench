@@ -11,17 +11,19 @@ from tests.factories import make_submodel
 from tests.reference_factories import Linked
 from tests.reference_factories import make_linked
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.bulk_edit import BulkAttribute
-from aas_editor.application.operations.bulk_edit import BulkPlan
-from aas_editor.application.operations.bulk_edit import EntryStatus
-from aas_editor.application.operations.bulk_edit import ExtensionKey
-from aas_editor.application.operations.bulk_edit import change_commands
-from aas_editor.application.operations.bulk_edit import group_extensions
-from aas_editor.application.operations.bulk_edit import languages_in
-from aas_editor.application.operations.bulk_edit import plan_change_attribute
-from aas_editor.application.operations.bulk_edit import (
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.bulk_edit import BulkAttribute
+from aas_workingbench.application.operations.bulk_edit import BulkPlan
+from aas_workingbench.application.operations.bulk_edit import EntryStatus
+from aas_workingbench.application.operations.bulk_edit import ExtensionKey
+from aas_workingbench.application.operations.bulk_edit import change_commands
+from aas_workingbench.application.operations.bulk_edit import group_extensions
+from aas_workingbench.application.operations.bulk_edit import languages_in
+from aas_workingbench.application.operations.bulk_edit import (
+    plan_change_attribute,
+)
+from aas_workingbench.application.operations.bulk_edit import (
     remove_extension_commands,
 )
 

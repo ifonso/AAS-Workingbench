@@ -9,7 +9,7 @@ from PyQt6.QtTest import QTest
 import pytest
 from tests.conftest import TEST_DATA_DIR
 
-from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
 pytest.importorskip(
     "PyQt6.QtWebEngineWidgets", reason="PyQt6.QtWebEngineWidgets not available"
@@ -21,7 +21,7 @@ PACKAGE = "IDTA 02002-1-0_Template_ContactInformation.aasx"
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path):
     """The main window with one package that has findings."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     source = tmp_path / PACKAGE
     shutil.copy(TEST_DATA_DIR / PACKAGE, source)
@@ -42,8 +42,8 @@ def editor(qapp: object, qtbot, tmp_path: Path):
 
 
 def test_the_counts_are_in_the_status_bar_with_the_panel_hidden(editor) -> None:
-    from aas_editor.application.validation import count_findings
-    from aas_editor.ui.validation_service import service_for
+    from aas_workingbench.application.validation import count_findings
+    from aas_workingbench.ui.validation_service import service_for
 
     status = editor.controller.status
     counts = count_findings(service_for(editor.package).report)
@@ -81,7 +81,7 @@ def test_f8_and_shift_f8_have_one_owner_each_in_the_window(editor) -> None:
 
 
 def test_f8_goes_to_a_finding_in_the_package_tree(editor) -> None:
-    from aas_editor.ui.validation_service import service_for
+    from aas_workingbench.ui.validation_service import service_for
 
     first = service_for(editor.package).report.findings[0]
     editor.view.setFocus()
@@ -104,8 +104,8 @@ def test_a_click_on_the_counts_shows_the_panel(editor) -> None:
 
 def _hints_of(editor, obj: object) -> int:
     """How many hints the SDK-level report has about an object."""
-    from aas_editor.application.validation import is_hint
-    from aas_editor.ui.validation_service import service_for
+    from aas_workingbench.application.validation import is_hint
+    from aas_workingbench.ui.validation_service import service_for
 
     report = service_for(editor.package).hint_report
     return sum(1 for f in report.findings if is_hint(f) and f.anchor is obj)
@@ -191,7 +191,7 @@ def test_a_click_on_the_hints_of_the_row_opens_the_hints_view_of_the_package(
         editor.controller.status.hints_button, Qt.MouseButton.LeftButton
     )
 
-    from aas_editor.ui.validation_dock import HINTS_VIEW
+    from aas_workingbench.ui.validation_dock import HINTS_VIEW
 
     dock = editor.controller.dock
     assert dock.isVisible()

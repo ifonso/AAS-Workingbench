@@ -29,8 +29,8 @@ LONG_TITLE = "ACollectionWithAVeryLongNameThatHasToBeElidedInItsTab"
 @pytest.fixture
 def tabs(views, qtbot: QtBot, request: pytest.FixtureRequest):
     """A tab widget with a first tab that is empty, like the main window."""
-    from aas_editor.ui.theme import theme_manager
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.ui.theme import theme_manager
+    from aas_workingbench.widgets.tab import TabWidget
 
     theme_manager().apply(getattr(request, "param", "light"))
     shown = views()

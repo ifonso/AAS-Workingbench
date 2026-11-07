@@ -23,9 +23,9 @@ PACKAGE_PATH = (TEST_DATA_DIR / PACKAGE).as_posix()
 @pytest.fixture(scope="module", autouse=True)
 def registered_actions(qapp: object) -> Iterator[None]:
     """Registers the actions that `__main__` registers before the first view."""
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     before = {s.action_id for s in default_registry().specs_for(ViewKind.ANY)}
     register_paste_actions()
@@ -36,7 +36,7 @@ def registered_actions(qapp: object) -> Iterator[None]:
 
 
 def _open(qtbot: Any, path: str | None) -> Any:
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     window = EditorApp(fileToOpen=path)
     qtbot.addWidget(window)

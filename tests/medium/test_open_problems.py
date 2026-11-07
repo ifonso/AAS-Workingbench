@@ -7,9 +7,9 @@ import zipfile
 
 import pytest
 
-from aas_editor.infrastructure.open_problems import diagnose
-from aas_editor.infrastructure.package_io import read_package
-from aas_editor.ui.save_warnings import explain_save_error
+from aas_workingbench.infrastructure.open_problems import diagnose
+from aas_workingbench.infrastructure.package_io import read_package
+from aas_workingbench.ui.save_warnings import explain_save_error
 
 V2_XML = (
     '<?xml version="1.0"?><aas:aasenv '

@@ -16,10 +16,10 @@ from tests.factories import make_collection
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import AddMember
-from aas_editor.application.edits import SetAttribute
-from aas_editor.domain.design_tokens import LIGHT
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import AddMember
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.domain.design_tokens import LIGHT
 
 FOREGROUND = Qt.ItemDataRole.ForegroundRole
 CHANGED = QColor(LIGHT.mark_changed)
@@ -202,7 +202,7 @@ def test_the_index_row_of_a_list_item_that_was_removed_can_still_be_painted(
     second = model.Property(None, value_type=model.datatypes.String, value="b")
     items = make_list("Items", [first, second])
     pack = model_support.pack_table(make_submodel(elements=[items]))
-    from aas_editor.models import DetailedInfoTable
+    from aas_workingbench.models import DetailedInfoTable
 
     list_index = model_support.find_path(
         pack, "", "submodels", "Submodel", "Items"

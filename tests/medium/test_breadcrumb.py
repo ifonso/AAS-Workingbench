@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QWidget
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.ui.breadcrumb import Breadcrumb
+from aas_workingbench.ui.breadcrumb import Breadcrumb
 
 PATH = ["showcase.aasx", "Submodels", "MotorData", "RatedPower"]
 

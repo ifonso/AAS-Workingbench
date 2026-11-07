@@ -19,7 +19,7 @@ import basyx.aas as aas
 import dateutil
 from basyx.aas.model import ModelReference, Reference, Submodel, Referable
 
-from aas_editor.utils.util_type import checkType, issubtype, isoftype
+from aas_workingbench.utils.util_type import checkType, issubtype, isoftype
 
 
 class TestUtilFuncs(TestCase):

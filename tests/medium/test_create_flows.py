@@ -17,22 +17,22 @@ from tests.factories import make_submodel
 from tests.medium.forms import answering
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.application.operations.bulk import RemovableAttribute
-from aas_editor.domain.asset_information import ASSET_KINDS
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.application.operations.bulk import RemovableAttribute
+from aas_workingbench.domain.asset_information import ASSET_KINDS
 
 
 @pytest.fixture
 def creating(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """A package with a shell and two submodels, and ways to create in it."""
-    from aas_editor.ui import create_actions
-    from aas_editor.ui.bulk_actions import register_bulk_actions
-    from aas_editor.ui.bulk_actions import RemoveAttributesDialog
-    from aas_editor.ui.create_actions import register_create_actions
-    from aas_editor.ui.create_dialogs import CreateShellDialog
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
-    from aas_editor.ui.create_dialogs import LinkSubmodelsDialog
-    from aas_editor.ui.create_dialogs import SpecificAssetIdDialog
+    from aas_workingbench.ui import create_actions
+    from aas_workingbench.ui.bulk_actions import register_bulk_actions
+    from aas_workingbench.ui.bulk_actions import RemoveAttributesDialog
+    from aas_workingbench.ui.create_actions import register_create_actions
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.create_dialogs import LinkSubmodelsDialog
+    from aas_workingbench.ui.create_dialogs import SpecificAssetIdDialog
 
     register_create_actions()
     register_bulk_actions()
@@ -85,7 +85,7 @@ def creating(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
             return self.view.registeredActions.find(action_id).isEnabled()
 
         def reloaded(self) -> Any:
-            from aas_editor.package import Package
+            from aas_workingbench.package import Package
 
             path = tmp_path / "created.aasx"
             self.package.write(path)
@@ -125,7 +125,7 @@ class TestCreateShell:
         assert shell.id.startswith("urn:uuid:")
         # Instance, where Package Explorer makes NotApplicable (ADR 0019).
         assert shell.asset_information.asset_kind is model.AssetKind.INSTANCE
-        from aas_editor.settings.app_settings import OBJECT_ROLE
+        from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
         assert lab.view.currentIndex().data(OBJECT_ROLE) is shell
         assert shell.asset_information.global_asset_id.startswith("urn:uuid:")
@@ -288,7 +288,7 @@ class TestCreateSubmodel:
         assert seen == [lab.shell]
         assert submodel.id_short == "Nameplate"
         assert submodel.kind is model.ModellingKind.INSTANCE
-        from aas_editor.settings.app_settings import OBJECT_ROLE
+        from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
         assert lab.view.currentIndex().data(OBJECT_ROLE) is submodel
         assert len(lab.shell.submodel) == 2
@@ -514,7 +514,7 @@ class TestRemoveAttributes:
 
         enabled = lab.run("bulk.remove_attributes", lab.remove_dialog, script)
 
-        from aas_editor.domain.walking import descendants
+        from aas_workingbench.domain.walking import descendants
 
         assert enabled
         assert counts == ["All qualifiers (3)"]

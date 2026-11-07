@@ -25,10 +25,10 @@ def shown(views: Any) -> Iterator[Any]:
     keeps what an earlier test copied. The test puts its own copy in, and takes
     it out, so that it does not depend on the tests that ran before it.
     """
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
-    from aas_editor.ui.reference_actions import register_reference_actions
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.reference_actions import register_reference_actions
 
     register_move_actions()
     register_paste_actions()

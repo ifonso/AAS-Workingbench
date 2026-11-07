@@ -20,8 +20,8 @@ from tests.medium.conftest import ELEMENT_ID
 from tests.medium.conftest import ELEMENT_PATH
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.domain.design_tokens import LIGHT
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.domain.design_tokens import LIGHT
 
 VALUE = "value"
 CHANGED = QColor(LIGHT.mark_changed)
@@ -111,9 +111,9 @@ def test_a_typed_text_reaches_the_model_when_it_is_committed(
 def test_with_an_advisory_shown_editing_and_saving_are_still_possible(
     lab_class, qtbot
 ) -> None:
-    from aas_editor.application.validation import save_check_for
-    from aas_editor.application.validation import validate_package
-    from aas_editor.ui.hints_bar import HintsBar
+    from aas_workingbench.application.validation import save_check_for
+    from aas_workingbench.application.validation import validate_package
+    from aas_workingbench.ui.hints_bar import HintsBar
 
     lab = lab_class(make_property(ELEMENT_ID, "old"))
     attrs = lab.attrs()
@@ -202,7 +202,7 @@ def three(views):
 
 
 def test_after_a_delete_the_previous_sibling_is_current(three) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     shown, submodel, _ = three
     shown.select(shown.index("submodels", "Submodel", "B"))
@@ -217,7 +217,7 @@ def test_after_a_delete_the_previous_sibling_is_current(three) -> None:
 def test_after_a_delete_of_the_first_element_its_parent_is_current(
     three,
 ) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     shown, submodel, _ = three
     shown.select(shown.index("submodels", "Submodel", "A"))
@@ -265,9 +265,9 @@ def test_every_gesture_is_bound_to_one_action_of_the_view(views) -> None:
 def test_a_hint_rule_that_raises_is_shown_with_the_object(
     lab_class, qtbot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application import validation
-    from aas_editor.domain.validation import Rule
-    from aas_editor.ui.hints_bar import HintsBar
+    from aas_workingbench.application import validation
+    from aas_workingbench.domain.validation import Rule
+    from aas_workingbench.ui.hints_bar import HintsBar
 
     def broken(context: Any):
         raise RuntimeError("defect in the hint")
@@ -296,7 +296,7 @@ def test_a_hint_rule_that_raises_is_shown_with_the_object(
 
 
 def test_a_redraw_keeps_hints_mode_and_the_sort_order(lab_class) -> None:
-    from aas_editor.application.hints import hints_mode
+    from aas_workingbench.application.hints import hints_mode
 
     lab = lab_class(make_property(ELEMENT_ID, "text"))
     view = lab.shown.view

@@ -15,10 +15,10 @@ from tests.factories import make_external_reference
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import SetAttribute
-from aas_editor.domain.concept_summary import NOT_FOUND
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.domain.concept_summary import NOT_FOUND
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 
 CONCEPT_ID = "0173-1#02-BAA120#008"
 
@@ -41,7 +41,7 @@ def _concept() -> model.ConceptDescription:
 
 @pytest.fixture
 def panel_for(views, qtbot: QtBot):
-    from aas_editor.ui.embedded_concept import EmbeddedConceptPanel
+    from aas_workingbench.ui.embedded_concept import EmbeddedConceptPanel
 
     def make(target: Any, *others: model.Identifiable) -> Any:
         shown = views()
@@ -196,7 +196,7 @@ class TestPanel:
         assert panel.header.startswith("Concept description Renamed")
 
     def test_the_open_button_opens_the_description(self, panel_for) -> None:
-        from aas_editor.ui.embedded_concept import EmbeddedConceptPanel
+        from aas_workingbench.ui.embedded_concept import EmbeddedConceptPanel
 
         speed = _speed()
         opened: list[model.ConceptDescription] = []
@@ -215,7 +215,7 @@ class TestPanel:
 class TestInATab:
     @pytest.fixture
     def tabs(self, views, qtbot: QtBot):
-        from aas_editor.widgets.tab import TabWidget
+        from aas_workingbench.widgets.tab import TabWidget
 
         speed = _speed()
         shown = views()

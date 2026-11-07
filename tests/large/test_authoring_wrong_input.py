@@ -73,7 +73,7 @@ def _nothing_changed(author: Author, before: str) -> None:
 def test_create_aas_keeps_ok_off_and_says_why_for_wrong_input(
     small: Author, fill, needle: str
 ) -> None:
-    from aas_editor.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
 
     before = snapshot(small.package.objStore)
 
@@ -103,7 +103,7 @@ def test_create_aas_keeps_ok_off_and_says_why_for_wrong_input(
 def test_create_submodel_keeps_ok_off_and_says_why_for_wrong_input(
     small: Author, fill, needle: str
 ) -> None:
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     before = snapshot(small.package.objStore)
 
@@ -127,7 +127,7 @@ def test_create_submodel_keeps_ok_off_and_says_why_for_wrong_input(
 def test_a_specific_asset_id_needs_a_name_and_a_value(
     small: Author, name: str, value: str
 ) -> None:
-    from aas_editor.ui.create_dialogs import SpecificAssetIdDialog
+    from aas_workingbench.ui.create_dialogs import SpecificAssetIdDialog
 
     before = snapshot(small.package.objStore)
 
@@ -204,8 +204,8 @@ def test_the_add_dialog_refuses_wrong_input_with_a_message_and_adds_nothing(
 def test_a_blank_id_in_the_create_dialogs_is_replaced_by_a_generated_one(
     small: Author,
 ) -> None:
-    from aas_editor.ui.create_dialogs import CreateShellDialog
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     def shell(dialog: CreateShellDialog) -> None:
         dialog.id_edit.setText("")
@@ -237,7 +237,7 @@ def test_a_blank_id_in_the_create_dialogs_is_replaced_by_a_generated_one(
 def test_a_rename_dialog_refuses_a_taken_id_and_a_bad_idshort_and_says_why(
     small: Author,
 ) -> None:
-    from aas_editor.ui.reference_dialogs import RenameDialog
+    from aas_workingbench.ui.reference_dialogs import RenameDialog
 
     taken = small.add_element(BOX, model.Property, "Same", _property("Same")[2])
     small.assert_accepted(taken)
@@ -302,7 +302,7 @@ def test_an_idshort_typed_in_a_tab_is_refused_or_fixed_only_when_the_person_agre
 def test_a_concept_description_with_a_taken_id_is_refused_with_a_message(
     small: Author,
 ) -> None:
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
 
     def make(dialog) -> None:
         Form(dialog).type_text("id_", "urn:example:cd:one")

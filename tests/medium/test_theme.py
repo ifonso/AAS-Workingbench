@@ -11,27 +11,27 @@ from PyQt6.QtWidgets import QApplication
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.domain.design_tokens import DARK
-from aas_editor.domain.design_tokens import Density
-from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.ui.colors import advisory_color
-from aas_editor.ui.colors import advisory_style
-from aas_editor.ui.colors import problem_border_style
-from aas_editor.ui.colors import problem_color
-from aas_editor.ui.colors import problem_style
-from aas_editor.ui.theme import current_tokens
-from aas_editor.ui.theme import THEME_DARK
-from aas_editor.ui.theme import THEME_LIGHT
-from aas_editor.ui.theme import THEME_LABELS
-from aas_editor.ui.theme import THEME_NATIVE
-from aas_editor.ui.theme import THEME_SYSTEM
-from aas_editor.ui.theme import theme_manager
-from aas_editor.ui.theme import ThemeManager
-from aas_editor.ui.theme.assets import images
-from aas_editor.ui.theme.assets import write_images
-from aas_editor.ui.theme.palette import build_palette
-from aas_editor.ui.theme.stylesheet import build_stylesheet
-from aas_editor.ui.theme.stylesheet import TEMPLATE_PATH
+from aas_workingbench.domain.design_tokens import DARK
+from aas_workingbench.domain.design_tokens import Density
+from aas_workingbench.domain.design_tokens import LIGHT
+from aas_workingbench.ui.colors import advisory_color
+from aas_workingbench.ui.colors import advisory_style
+from aas_workingbench.ui.colors import problem_border_style
+from aas_workingbench.ui.colors import problem_color
+from aas_workingbench.ui.colors import problem_style
+from aas_workingbench.ui.theme import current_tokens
+from aas_workingbench.ui.theme import THEME_DARK
+from aas_workingbench.ui.theme import THEME_LIGHT
+from aas_workingbench.ui.theme import THEME_LABELS
+from aas_workingbench.ui.theme import THEME_NATIVE
+from aas_workingbench.ui.theme import THEME_SYSTEM
+from aas_workingbench.ui.theme import theme_manager
+from aas_workingbench.ui.theme import ThemeManager
+from aas_workingbench.ui.theme.assets import images
+from aas_workingbench.ui.theme.assets import write_images
+from aas_workingbench.ui.theme.palette import build_palette
+from aas_workingbench.ui.theme.stylesheet import build_stylesheet
+from aas_workingbench.ui.theme.stylesheet import TEMPLATE_PATH
 
 
 @pytest.fixture(autouse=True)

@@ -10,15 +10,15 @@ from tests.reference_factories import CONCEPT_ID
 from tests.reference_factories import MAIN_ID
 from tests.reference_factories import make_linked
 
-from aas_editor.application.operations.delete import plan_delete
-from aas_editor.application.operations.rename import plan_rename_id
-from aas_editor.application.operations.rename import plan_rename_id_short
-from aas_editor.application.operations.rename import suggest_id_short
+from aas_workingbench.application.operations.delete import plan_delete
+from aas_workingbench.application.operations.rename import plan_rename_id
+from aas_workingbench.application.operations.rename import plan_rename_id_short
+from aas_workingbench.application.operations.rename import suggest_id_short
 
 
 @pytest.fixture
 def dialogs(qapp: object):
-    from aas_editor.ui import reference_dialogs
+    from aas_workingbench.ui import reference_dialogs
 
     return reference_dialogs
 

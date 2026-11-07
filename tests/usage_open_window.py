@@ -157,23 +157,29 @@ def install_screen(monkeypatch: pytest.MonkeyPatch) -> Screen:
 
 def register_every_action() -> Callable[[], None]:
     """Registers what `__main__.main` registers, and returns the way to undo it."""
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.blob_actions import register_blob_actions
-    from aas_editor.ui.bulk_actions import register_bulk_actions
-    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
-    from aas_editor.ui.concept_actions import register_concept_actions
-    from aas_editor.ui.conversion_actions import register_conversion_actions
-    from aas_editor.ui.create_actions import register_create_actions
-    from aas_editor.ui.file_actions import register_file_actions
-    from aas_editor.ui.load_report_actions import register_load_report_actions
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
-    from aas_editor.ui.preset_actions import register_preset_actions
-    from aas_editor.ui.reference_actions import register_reference_actions
-    from aas_editor.ui.reference_jump import register_jump_actions
-    from aas_editor.ui.shell_copy_actions import register_shell_copy_actions
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.blob_actions import register_blob_actions
+    from aas_workingbench.ui.bulk_actions import register_bulk_actions
+    from aas_workingbench.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_workingbench.ui.concept_actions import register_concept_actions
+    from aas_workingbench.ui.conversion_actions import (
+        register_conversion_actions,
+    )
+    from aas_workingbench.ui.create_actions import register_create_actions
+    from aas_workingbench.ui.file_actions import register_file_actions
+    from aas_workingbench.ui.load_report_actions import (
+        register_load_report_actions,
+    )
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.preset_actions import register_preset_actions
+    from aas_workingbench.ui.reference_actions import register_reference_actions
+    from aas_workingbench.ui.reference_jump import register_jump_actions
+    from aas_workingbench.ui.shell_copy_actions import (
+        register_shell_copy_actions,
+    )
 
     before = {s.action_id for s in default_registry().specs_for(ViewKind.ANY)}
     for register in (
@@ -207,7 +213,7 @@ def register_every_action() -> Callable[[], None]:
 
 def open_window(qtbot: object, path: Path | None = None) -> SimpleNamespace:
     """Opens the main window, with one file when `path` is given."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     window = EditorApp(fileToOpen=path.as_posix() if path else None)
     qtbot.addWidget(window)  # pyright: ignore[reportAttributeAccessIssue]
@@ -258,7 +264,7 @@ def all_rows(view: object) -> Iterator[QModelIndex]:
 
 def row_named(view: object, *names: str, package: int = 0) -> QModelIndex:
     """Finds a row below a package by the names that the editor finds it by."""
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()  # pyright: ignore[reportAttributeAccessIssue]
     index = proxy.index(package, 0)

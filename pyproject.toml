@@ -3,8 +3,8 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aas_editor"
-version = "0.4.13"
+name = "aas_workingbench"
+version = "0.1.0"
 
 dependencies = [
     "PyQt6",
@@ -62,7 +62,7 @@ Repository = "https://github.com/ifonso/AAS-Workingbench.git"
 Issues = "https://github.com/ifonso/AAS-Workingbench/issues"
 
 [project.gui-scripts]
-aas_editor = "aas_editor.__main__:main"
+aas_workingbench = "aas_workingbench.__main__:main"
 
 [dependency-groups]
 dev = [
@@ -93,10 +93,10 @@ explicit = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["aas_editor*"]
+include = ["aas_workingbench*"]
 
 [tool.setuptools.package-data]
-aas_editor = ["**/*"]
+aas_workingbench = ["**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -112,7 +112,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["aas_editor"]
+source = ["aas_workingbench"]
 omit = ["*/design.py"]
 
 [tool.coverage.report]
@@ -127,8 +127,8 @@ target-version = "py311"
 src = ["src", "tests", "example"]
 extend-exclude = [
     # Generated code.
-    "src/aas_editor/design.py",
-    "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
+    "src/aas_workingbench/design.py",
+    "src/aas_workingbench/tools/handover_doc_llm/handover_submodel.py",
 ]
 
 [tool.ruff.format]
@@ -167,25 +167,25 @@ convention = "google"
 # not listed here, so the full rule set applies to them. Shrink this list over
 # time and never add new code to it.
 [tool.ruff.lint.per-file-ignores]
-"src/aas_editor/*.py" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/additional/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/models/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/settings/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/tools/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/treeviews/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/utils/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
-"src/aas_editor/widgets/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/*.py" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/additional/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/models/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/settings/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/tools/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/treeviews/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/utils/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
+"src/aas_workingbench/widgets/**" = ["B", "C4", "D", "E7", "F401", "F403", "F405", "F541", "F841", "I", "N", "PLW", "PTH", "RET", "SIM", "UP"]
 # Names used only in string annotations and never imported.
-"src/aas_editor/dialogs.py" = ["F821"]
-"src/aas_editor/models/table_packs.py" = ["F821"]
-"src/aas_editor/models/table_standard.py" = ["F821"]
-"src/aas_editor/tools/import_feature/import_file_widget.py" = ["F821"]
-"src/aas_editor/tools/import_feature/import_util.py" = ["F821"]
-"src/aas_editor/widgets/groupBoxes.py" = ["F821"]
+"src/aas_workingbench/dialogs.py" = ["F821"]
+"src/aas_workingbench/models/table_packs.py" = ["F821"]
+"src/aas_workingbench/models/table_standard.py" = ["F821"]
+"src/aas_workingbench/tools/import_feature/import_file_widget.py" = ["F821"]
+"src/aas_workingbench/tools/import_feature/import_util.py" = ["F821"]
+"src/aas_workingbench/widgets/groupBoxes.py" = ["F821"]
 # Trailing whitespace inside an LLM prompt string, where it is content.
-"src/aas_editor/tools/handover_doc_llm/handover_documentation_tool.py" = ["W291"]
+"src/aas_workingbench/tools/handover_doc_llm/handover_documentation_tool.py" = ["W291"]
 # Imports at the end of the module to avoid a circular import.
-"src/aas_editor/package.py" = ["E402"]
+"src/aas_workingbench/package.py" = ["E402"]
 "tests/**" = ["D"]
 "tests/large/test_main_window.py" = ["D", "I", "N", "PLW", "PTH", "RET", "UP"]
 "tests/medium/*.py" = ["B", "D", "I", "N", "PTH", "UP"]
@@ -198,18 +198,18 @@ convention = "google"
 include = ["src", "tests"]
 exclude = [
     "**/__pycache__",
-    "src/aas_editor/design.py",
-    "src/aas_editor/tools/handover_doc_llm/handover_submodel.py",
+    "src/aas_workingbench/design.py",
+    "src/aas_workingbench/tools/handover_doc_llm/handover_submodel.py",
 ]
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
 strict = [
-    "src/aas_editor/application",
-    "src/aas_editor/domain",
-    "src/aas_editor/infrastructure",
-    "src/aas_editor/ui",
+    "src/aas_workingbench/application",
+    "src/aas_workingbench/domain",
+    "src/aas_workingbench/infrastructure",
+    "src/aas_workingbench/ui",
 ]
 reportArgumentType = "warning"
 reportAssignmentType = "warning"

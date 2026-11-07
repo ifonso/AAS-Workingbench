@@ -6,9 +6,9 @@ from tests.factories import make_property
 from tests.factories import make_submodel
 from tests.package_factories import make_annotated_relationship
 
-from aas_editor.domain.walking import descendants
-from aas_editor.domain.walking import is_annotation
-from aas_editor.domain.walking import walk_elements
+from aas_workingbench.domain.walking import descendants
+from aas_workingbench.domain.walking import is_annotation
+from aas_workingbench.domain.walking import walk_elements
 
 
 def test_walk_elements_yields_annotations_when_relationship_is_annotated() -> (

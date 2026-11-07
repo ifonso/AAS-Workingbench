@@ -22,7 +22,7 @@ def lab(lab_class: Any) -> Any:
 
 def _item_tab(lab: Any, position: int) -> Any:
     """Opens the attributes of the item at a position, as a tab does."""
-    from aas_editor.treeviews.treeview_detailed import AttrsTreeView
+    from aas_workingbench.treeviews.treeview_detailed import AttrsTreeView
     from PyQt6.QtWidgets import QWidget
 
     proxy = lab.shown.view.model()
@@ -77,8 +77,8 @@ def test_the_position_cannot_be_edited(lab: Any) -> None:
 def test_the_position_follows_an_item_that_is_removed_before_it(
     lab: Any,
 ) -> None:
-    from aas_editor.application.changes import observer_for
-    from aas_editor.application.edits import RemoveMember
+    from aas_workingbench.application.changes import observer_for
+    from aas_workingbench.application.edits import RemoveMember
 
     attrs = _item_tab(lab, 2)
     first = list(lab.element().value)[0]
@@ -92,7 +92,7 @@ def test_the_position_follows_an_item_that_is_removed_before_it(
 
 
 def test_the_position_follows_an_item_that_moves(lab: Any) -> None:
-    from aas_editor.domain import ordering
+    from aas_workingbench.domain import ordering
 
     attrs = _item_tab(lab, 0)
     first = list(lab.element().value)[0]

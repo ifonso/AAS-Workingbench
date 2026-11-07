@@ -2,9 +2,9 @@
 
 import pytest
 
-from aas_editor.domain import blob_content
-from aas_editor.domain.blob_content import BlobText
-from aas_editor.domain.value_types import InvalidValueError
+from aas_workingbench.domain import blob_content
+from aas_workingbench.domain.blob_content import BlobText
+from aas_workingbench.domain.value_types import InvalidValueError
 
 
 def test_as_text_reads_ascii_as_text() -> None:

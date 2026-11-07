@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from aas_editor import package as package_mod
-from aas_editor.package import Package
-from aas_editor.utils.recovery import (
+from aas_workingbench import package as package_mod
+from aas_workingbench.package import Package
+from aas_workingbench.utils.recovery import (
     find_recovery_files,
     delete_recovery_file,
     cleanup_recovery_dir,
@@ -236,11 +236,11 @@ class TestRecoveryFolder:
     ) -> None:
         from PyQt6.QtCore import QStandardPaths
 
-        from aas_editor.settings import app_settings
+        from aas_workingbench.settings import app_settings
 
         # The package keeps the function that the fixture replaces in
         # `app_settings`, because it was bound when the package was imported.
-        from aas_editor.settings import recovery_dir
+        from aas_workingbench.settings import recovery_dir
 
         folder = recovery_dir()
 
@@ -253,8 +253,8 @@ class TestRecoveryFolder:
     def test_a_test_does_not_use_the_folder_of_the_user(
         self, qapp: object
     ) -> None:
-        from aas_editor.settings import app_settings
-        from aas_editor.settings import recovery_dir
+        from aas_workingbench.settings import app_settings
+        from aas_workingbench.settings import recovery_dir
 
         assert app_settings.recovery_dir() != recovery_dir()
         assert app_settings.OLD_RECOVERY_DIR.name == "old-recovery"
@@ -329,7 +329,9 @@ class TestTakeOver:
         def refuse(source: object, target: object) -> None:
             raise PermissionError("read-only")
 
-        monkeypatch.setattr("aas_editor.utils.recovery.shutil.copy2", refuse)
+        monkeypatch.setattr(
+            "aas_workingbench.utils.recovery.shutil.copy2", refuse
+        )
         with caplog.at_level(logging.WARNING):
             taken = take_over_recovery_files(old, new)
 
@@ -341,8 +343,8 @@ class TestTakeOver:
     def test_a_taken_over_aasx_entry_restores_with_its_files(
         self, qapp: object, tmp_path: Path
     ) -> None:
-        from aas_editor.application import supplementary_files as files
-        from aas_editor.application.changes import observer_for
+        from aas_workingbench.application import supplementary_files as files
+        from aas_workingbench.application.changes import observer_for
 
         original = (
             Path(__file__).parents[1]
@@ -376,8 +378,8 @@ class TestTakeOver:
 class TestUpdateRecovery:
     @pytest.fixture
     def edited(self, qapp: object, json_file: Path, tmp_path: Path):
-        from aas_editor.application.changes import observer_for
-        from aas_editor.application.edits import SetAttribute
+        from aas_workingbench.application.changes import observer_for
+        from aas_workingbench.application.edits import SetAttribute
 
         package = Package(json_file)
         submodel = next(iter(package.submodels))

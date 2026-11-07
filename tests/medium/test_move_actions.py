@@ -13,7 +13,7 @@ from tests.factories import make_operation
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.editing import edit_mode
+from aas_workingbench.application.editing import edit_mode
 
 SUBMODEL = ("submodels", "Submodel")
 
@@ -21,9 +21,9 @@ SUBMODEL = ("submodels", "Submodel")
 @pytest.fixture
 def moves(views):
     """A package that the move actions work on, and ways to drive them."""
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.ui.move_actions import register_move_actions
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.ui.move_actions import register_move_actions
 
     register_move_actions()
 
@@ -229,7 +229,7 @@ def test_list_items_move_and_references_to_them_follow(moves, tmp_path) -> None:
     lab.act("structure.move_end")
 
     reloaded = lab.saved(tmp_path)
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     other = Package(tmp_path / "moved.aasx").objStore.get_item("urn:holder")
     target = other.get_referable("ToA").value
@@ -304,7 +304,7 @@ def test_undo_of_a_delete_puts_the_row_back_where_it_was(moves) -> None:
 def test_undo_of_a_delete_from_an_unordered_set_returns_to_the_sorted_place(
     moves, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import reference_dialogs
+    from aas_workingbench.ui import reference_dialogs
 
     monkeypatch.setattr(reference_dialogs, "confirm_delete", lambda *a: True)
     other = make_submodel(id_="urn:other", id_short="Zzz")

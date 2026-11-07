@@ -2,11 +2,11 @@
 
 import pytest
 
-from aas_editor.domain.rename_pattern import MAX_RESULT_CHARS
-from aas_editor.domain.rename_pattern import PatternContext
-from aas_editor.domain.rename_pattern import PatternError
-from aas_editor.domain.rename_pattern import compile_pattern
-from aas_editor.domain.rename_pattern import render
+from aas_workingbench.domain.rename_pattern import MAX_RESULT_CHARS
+from aas_workingbench.domain.rename_pattern import PatternContext
+from aas_workingbench.domain.rename_pattern import PatternError
+from aas_workingbench.domain.rename_pattern import compile_pattern
+from aas_workingbench.domain.rename_pattern import render
 
 
 def _context(

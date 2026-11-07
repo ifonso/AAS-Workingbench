@@ -38,7 +38,7 @@ def tab(lab_class: Any) -> Any:
 
 def _texts(attrs: Any) -> dict[str, tuple[str, str, str]]:
     """What each row reads, by the attribute of the SDK that it shows."""
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = attrs.model()
     return {
@@ -52,7 +52,7 @@ def _texts(attrs: Any) -> dict[str, tuple[str, str, str]]:
 
 
 def _index(attrs: Any, sdk_name: str, column: int = 0) -> Any:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = attrs.model()
     for row in range(proxy.rowCount()):
@@ -114,7 +114,7 @@ def test_the_value_type_reads_as_an_xsd_type(tab: Any) -> None:
 
 
 def test_the_rows_keep_the_order_of_the_attributes(tab: Any) -> None:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = tab.model()
     names = [proxy.index(row, 0).data(NAME_ROLE) for row in range(5)]
@@ -131,8 +131,8 @@ def test_the_rows_keep_the_order_of_the_attributes(tab: Any) -> None:
 def test_the_name_that_editing_uses_is_the_attribute_of_the_sdk(
     tab: Any,
 ) -> None:
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.settings.app_settings import PARENT_OBJ_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import PARENT_OBJ_ROLE
 
     index = _index(tab, "display_name")
 
@@ -218,7 +218,7 @@ def test_the_keys_of_a_reference_are_named_by_their_position_and_type(
 
 
 def _index_of_child(proxy: Any, parent: Any, sdk_name: str) -> Any:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     for row in range(proxy.rowCount(parent)):
         if proxy.index(row, 0, parent).data(NAME_ROLE) == sdk_name:
@@ -242,7 +242,7 @@ def test_the_description_is_also_the_help_text_of_the_row(tab: Any) -> None:
 def test_the_type_hint_of_python_is_in_its_own_column_named_for_what_it_is(
     tab: Any,
 ) -> None:
-    from aas_editor.settings.app_settings import TYPE_HINT_COLUMN
+    from aas_workingbench.settings.app_settings import TYPE_HINT_COLUMN
 
     proxy = tab.model()
     header = proxy.headerData(
@@ -267,7 +267,7 @@ def test_the_header_names_the_columns_for_a_person(tab: Any) -> None:
 def test_the_search_finds_an_attribute_by_the_name_that_is_shown(
     tab: Any,
 ) -> None:
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 
     proxy = tab.model()
 
@@ -281,7 +281,7 @@ def test_the_search_finds_an_attribute_by_the_name_that_is_shown(
 def test_a_click_on_the_attribute_header_sorts_by_the_names_that_are_shown(
     tab: Any,
 ) -> None:
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 
     proxy = tab.model()
 

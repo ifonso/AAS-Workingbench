@@ -19,10 +19,10 @@ CHOSEN = 16
 @pytest.fixture(autouse=True)
 def restored_state(qapp: object) -> Iterator[None]:
     """Gives the font size of the models and the density back."""
-    from aas_editor.domain.design_tokens import DEFAULT_DENSITY
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PacksTable
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.domain.design_tokens import DEFAULT_DENSITY
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.ui.theme import theme_manager
 
     sizes = (
         PacksTable.currFont.pointSize(),
@@ -38,8 +38,8 @@ def _window(
     qtbot: Any, monkeypatch: pytest.MonkeyPatch, saved: dict[str, Any]
 ) -> Any:
     """Opens the main window as a session that saved `saved` would."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.settings.app_settings import Setting
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.settings.app_settings import Setting
 
     read_setting = Setting.value
     monkeypatch.setattr(
@@ -72,9 +72,9 @@ def _close(window: Any) -> None:
 def test_the_old_default_font_size_takes_the_new_default(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PacksTable
-    from aas_editor.settings.app_settings import DEFAULT_FONT
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.settings.app_settings import DEFAULT_FONT
 
     window = _window(
         qtbot,
@@ -94,8 +94,8 @@ def test_the_old_default_font_size_takes_the_new_default(
 def test_a_font_size_that_a_user_chose_is_kept(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PacksTable
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PacksTable
 
     window = _window(
         qtbot,
@@ -115,8 +115,8 @@ def test_a_font_size_that_a_user_chose_is_kept(
 def test_the_old_default_chosen_again_after_the_migration_is_kept(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
-    from aas_editor.models import PacksTable
+    from aas_workingbench.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
+    from aas_workingbench.models import PacksTable
 
     window = _window(
         qtbot,
@@ -135,7 +135,7 @@ def test_the_old_default_chosen_again_after_the_migration_is_kept(
 def test_a_session_saves_the_version_of_the_font_size_it_ran_with(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
+    from aas_workingbench.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
 
     window = _window(qtbot, monkeypatch, {})
 
@@ -148,9 +148,9 @@ def test_a_session_saves_the_version_of_the_font_size_it_ran_with(
 def test_the_saved_density_is_on_when_the_window_opens(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.domain.design_tokens import ROW_HEIGHTS
-    from aas_editor.domain.design_tokens import Density
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.domain.design_tokens import ROW_HEIGHTS
+    from aas_workingbench.domain.design_tokens import Density
+    from aas_workingbench.ui.theme import theme_manager
 
     window = _window(qtbot, monkeypatch, {"density": Density.DENSE.value})
     view = window.mainTreeView
@@ -168,9 +168,13 @@ def test_the_saved_density_is_on_when_the_window_opens(
 def test_a_header_of_the_previous_release_is_not_restored(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import PACK_TREE_HEADER_LAYOUT_VERSION
-    from aas_editor.settings.app_settings import PACK_TREE_OBJECT_COLUMN_WIDTH
-    from aas_editor.settings.app_settings import TAB_HEADER_LAYOUT_VERSION
+    from aas_workingbench.settings.app_settings import (
+        PACK_TREE_HEADER_LAYOUT_VERSION,
+    )
+    from aas_workingbench.settings.app_settings import (
+        PACK_TREE_OBJECT_COLUMN_WIDTH,
+    )
+    from aas_workingbench.settings.app_settings import TAB_HEADER_LAYOUT_VERSION
 
     first = _window(qtbot, monkeypatch, {})
     first.mainTreeView.header().resizeSection(0, 233)

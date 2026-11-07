@@ -9,9 +9,9 @@ from tests.factories import make_property
 from tests.medium.conftest import ELEMENT_ID
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.application.hints import hints_mode
-from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.application.hints import hints_mode
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
 # -- F-EDT-05 AC1 ------------------------------------------------------------
 
@@ -50,7 +50,7 @@ def _texts(proxy: object, parent: QModelIndex = QModelIndex()) -> list[object]:
 def test_with_hints_off_no_hint_is_shown_and_the_fields_are_unchanged(
     lab_class, qtbot
 ) -> None:
-    from aas_editor.ui.hints_bar import HintsBar
+    from aas_workingbench.ui.hints_bar import HintsBar
 
     prop = make_property(ELEMENT_ID, "text")
     prop.category = "PARAMETER"
@@ -96,7 +96,7 @@ def test_in_read_mode_a_tab_offers_no_action_that_changes_something(
 
 @pytest.fixture
 def two_qualifiers(lab_class):
-    from aas_editor.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
 
     register_move_actions()
     prop = make_property(ELEMENT_ID, "text")

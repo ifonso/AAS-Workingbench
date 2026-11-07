@@ -19,7 +19,7 @@ from tests.serialization import snapshot
 
 
 def _form_of(cls: type) -> Form:
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
 
     return Form(EditObjDialog(cls, None, rmDefParams=False))
 
@@ -97,8 +97,8 @@ def _concrete_model_classes() -> list[type]:
 
 
 def test_no_field_of_any_form_is_shown_in_python(qapp) -> None:
-    from aas_editor.domain.attribute_vocabulary import attribute_info
-    from aas_editor.widgets.groupBoxes import ObjGroupBox
+    from aas_workingbench.domain.attribute_vocabulary import attribute_info
+    from aas_workingbench.widgets.groupBoxes import ObjGroupBox
 
     unnamed: list[str] = []
     for cls in _concrete_model_classes():
@@ -124,7 +124,7 @@ class TestAddingOneItem:
         attrs = lab.attrs()
         parent = self._qualifier_row(lab, attrs)
         attrs.setCurrentIndex(parent)
-        from aas_editor.dialogs import EditObjDialog
+        from aas_workingbench.dialogs import EditObjDialog
 
         with answering(lab.monkeypatch, EditObjDialog, fill):
             attrs.onAddAct(parent)
@@ -194,7 +194,7 @@ class TestAddingOneItem:
         self, lab_class
     ) -> None:
         lab = lab_class(make_property(ELEMENT_ID))
-        from aas_editor.dialogs import EditObjDialog
+        from aas_workingbench.dialogs import EditObjDialog
 
         attrs = lab.attrs()
         parent = self._qualifier_row(lab, attrs)
@@ -269,7 +269,7 @@ def test_a_language_entry_is_titled_text_and_has_a_language_and_a_text(
 def test_the_dialog_is_titled_with_the_name_of_the_metamodel(
     lab_class,
 ) -> None:
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
 
     lab = lab_class(make_property(ELEMENT_ID))
     titles: list[str] = []

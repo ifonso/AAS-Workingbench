@@ -11,9 +11,9 @@ from basyx.aas import model
 import pytest
 from tests.serialization import snapshot
 
-from aas_editor.domain.asset_information import ASSET_KINDS
-from aas_editor.domain.asset_information import DEFAULT_ASSET_KIND
-from aas_editor.infrastructure.package_io import read_package
+from aas_workingbench.domain.asset_information import ASSET_KINDS
+from aas_workingbench.domain.asset_information import DEFAULT_ASSET_KIND
+from aas_workingbench.infrastructure.package_io import read_package
 
 
 def _file_with_kind(path: Path, kind: str) -> Path:

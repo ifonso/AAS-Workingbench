@@ -28,8 +28,8 @@ class MemorySettings:
     """The settings of sessions, kept in a dictionary instead of a file."""
 
     def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from aas_editor.settings.app_settings import NOT_GIVEN
-        from aas_editor.settings.app_settings import Setting
+        from aas_workingbench.settings.app_settings import NOT_GIVEN
+        from aas_workingbench.settings.app_settings import Setting
 
         self.saved: dict[str, Any] = {}
 
@@ -55,9 +55,9 @@ def registered_actions(qapp: object) -> Iterator[None]:
     The registry is global, so what this module added is taken out again for
     the modules after it, as the other large tests do.
     """
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     before = {s.action_id for s in default_registry().specs_for(ViewKind.ANY)}
     register_paste_actions()
@@ -73,7 +73,7 @@ def memory(monkeypatch: pytest.MonkeyPatch) -> MemorySettings:
 
 
 def _open(qtbot: Any, path: str | None = PACKAGE_PATH) -> Any:
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     window = EditorApp(fileToOpen=path)
     qtbot.addWidget(window)
@@ -98,7 +98,7 @@ def shared(qapp: object) -> Iterator[Any]:
     """
     patches = pytest.MonkeyPatch()
     MemorySettings(patches)
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     opened = EditorApp(fileToOpen=PACKAGE_PATH)
     opened.show()
@@ -280,8 +280,8 @@ def test_the_tab_has_no_toolbar_of_its_own(shared: Any) -> None:
 def test_the_undo_of_the_bar_undoes_the_change_of_the_view(
     window: Any, qtbot: Any
 ) -> None:
-    from aas_editor.application.changes import observer_for
-    from aas_editor.application.edits import SetAttribute
+    from aas_workingbench.application.changes import observer_for
+    from aas_workingbench.application.edits import SetAttribute
 
     (package,) = window.packTreeModel.openedPacks()
     target = next(
@@ -305,8 +305,8 @@ def test_the_key_of_undo_still_runs_once_with_the_mirrors_in_the_window(
 ) -> None:
     from PyQt6.QtTest import QTest
 
-    from aas_editor.application.changes import observer_for
-    from aas_editor.application.edits import SetAttribute
+    from aas_workingbench.application.changes import observer_for
+    from aas_workingbench.application.edits import SetAttribute
 
     (package,) = window.packTreeModel.openedPacks()
     target = next(
@@ -364,8 +364,8 @@ def test_the_panels_are_hidden_until_they_are_asked_for(shared: Any) -> None:
 
 
 def test_a_tab_is_as_wide_as_its_title_within_the_limits(shared: Any) -> None:
-    from aas_editor.widgets.tab import TAB_MAX_WIDTH
-    from aas_editor.widgets.tab import TAB_MIN_WIDTH
+    from aas_workingbench.widgets.tab import TAB_MAX_WIDTH
+    from aas_workingbench.widgets.tab import TAB_MIN_WIDTH
 
     bar = shared.mainTabWidget.tabBar()
 
@@ -520,8 +520,8 @@ def test_the_arrangement_of_the_panels_survives_a_restart(
 def test_a_state_of_another_layout_leaves_the_default(
     qapp: object, qtbot: Any, memory: MemorySettings
 ) -> None:
-    from aas_editor.settings.app_settings import DOCKS_LAYOUT_VERSION
-    from aas_editor.settings.app_settings import AppSettings
+    from aas_workingbench.settings.app_settings import DOCKS_LAYOUT_VERSION
+    from aas_workingbench.settings.app_settings import AppSettings
 
     first = _open(qtbot, None)
     _show_panels(first)

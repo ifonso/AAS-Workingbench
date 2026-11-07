@@ -12,16 +12,16 @@ from tests.factories import make_external_reference
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.attach import AttachPlan
-from aas_editor.application.operations.attach import AttachStatus
-from aas_editor.application.operations.attach import attach_commands
-from aas_editor.application.operations.attach import can_hold
-from aas_editor.application.operations.attach import plan_attach
-from aas_editor.domain.clipboard_json import load_members
-from aas_editor.domain.member_json import MemberKind
-from aas_editor.domain.member_json import clone_member
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.attach import AttachPlan
+from aas_workingbench.application.operations.attach import AttachStatus
+from aas_workingbench.application.operations.attach import attach_commands
+from aas_workingbench.application.operations.attach import can_hold
+from aas_workingbench.application.operations.attach import plan_attach
+from aas_workingbench.domain.clipboard_json import load_members
+from aas_workingbench.domain.member_json import MemberKind
+from aas_workingbench.domain.member_json import clone_member
 
 QUALIFIER = {"type": "Mark", "valueType": "xs:string", "value": "x"}
 

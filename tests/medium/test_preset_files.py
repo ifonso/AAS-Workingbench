@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from aas_editor.domain.member_json import MemberKind
-from aas_editor.domain.presets import FILE_NAMES
-from aas_editor.infrastructure.preset_files import SHIPPED_PRESETS_DIR
-from aas_editor.infrastructure.preset_files import ensure_user_dir
-from aas_editor.infrastructure.preset_files import load_presets
+from aas_workingbench.domain.member_json import MemberKind
+from aas_workingbench.domain.presets import FILE_NAMES
+from aas_workingbench.infrastructure.preset_files import SHIPPED_PRESETS_DIR
+from aas_workingbench.infrastructure.preset_files import ensure_user_dir
+from aas_workingbench.infrastructure.preset_files import load_presets
 
 
 def _qualifier(name: str, value: str = "One") -> dict[str, object]:

@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import QMessageBox
 import pytest
 from tests.conftest import TEST_DATA_DIR
 
-SOURCE_ROOT = Path(__file__).resolve().parents[1] / "src" / "aas_editor"
+SOURCE_ROOT = Path(__file__).resolve().parents[1] / "src" / "aas_workingbench"
 TEMPLATES = SOURCE_ROOT / "submodel_templates"
 
 # The largest templates that open without a load report: 30 objects with
@@ -113,23 +113,29 @@ def register_all_actions() -> list[str]:
         The ids of the actions that this call added, so that a test can take
         them out again.
     """
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.blob_actions import register_blob_actions
-    from aas_editor.ui.bulk_actions import register_bulk_actions
-    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
-    from aas_editor.ui.concept_actions import register_concept_actions
-    from aas_editor.ui.conversion_actions import register_conversion_actions
-    from aas_editor.ui.create_actions import register_create_actions
-    from aas_editor.ui.file_actions import register_file_actions
-    from aas_editor.ui.load_report_actions import register_load_report_actions
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
-    from aas_editor.ui.preset_actions import register_preset_actions
-    from aas_editor.ui.reference_actions import register_reference_actions
-    from aas_editor.ui.reference_jump import register_jump_actions
-    from aas_editor.ui.shell_copy_actions import register_shell_copy_actions
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.blob_actions import register_blob_actions
+    from aas_workingbench.ui.bulk_actions import register_bulk_actions
+    from aas_workingbench.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_workingbench.ui.concept_actions import register_concept_actions
+    from aas_workingbench.ui.conversion_actions import (
+        register_conversion_actions,
+    )
+    from aas_workingbench.ui.create_actions import register_create_actions
+    from aas_workingbench.ui.file_actions import register_file_actions
+    from aas_workingbench.ui.load_report_actions import (
+        register_load_report_actions,
+    )
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.preset_actions import register_preset_actions
+    from aas_workingbench.ui.reference_actions import register_reference_actions
+    from aas_workingbench.ui.reference_jump import register_jump_actions
+    from aas_workingbench.ui.shell_copy_actions import (
+        register_shell_copy_actions,
+    )
 
     before = {s.action_id for s in default_registry().specs_for(ViewKind.ANY)}
     for register in (
@@ -156,7 +162,7 @@ def register_all_actions() -> list[str]:
 
 def unregister_actions(action_ids: list[str]) -> None:
     """Takes actions out of the registry again."""
-    from aas_editor.ui.actions import default_registry
+    from aas_workingbench.ui.actions import default_registry
 
     for action_id in action_ids:
         default_registry().unregister(action_id)
@@ -257,11 +263,11 @@ def open_window(
     Yields:
         The window with its copy.
     """
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     boxes = stub_message_boxes(monkeypatch)
     monkeypatch.setattr(
-        "aas_editor.treeviews.treeview_pack.confirm_save",
+        "aas_workingbench.treeviews.treeview_pack.confirm_save",
         lambda check, parent=None, extra=None: True,
     )
     copy = tmp_path / source.name
@@ -289,7 +295,7 @@ def find_row(view: Any, *names: str) -> QModelIndex:
     Raises:
         LookupError: If a name is not below the one before it.
     """
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     index = QModelIndex()
@@ -306,7 +312,7 @@ def find_row(view: Any, *names: str) -> QModelIndex:
 
 def find_first(view: Any, name: str) -> QModelIndex:
     """Finds the first row of a name, looking wide before deep."""
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     queue = [QModelIndex()]

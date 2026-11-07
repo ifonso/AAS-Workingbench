@@ -5,14 +5,14 @@ from tests.factories import make_collection
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.change_marks import ChangeMarks
-from aas_editor.application.change_marks import MarkUpdate
-from aas_editor.application.change_marks import is_markable
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.edits import AddMember
-from aas_editor.application.edits import RemoveMember
-from aas_editor.application.edits import SetAttribute
+from aas_workingbench.application.change_marks import ChangeMarks
+from aas_workingbench.application.change_marks import MarkUpdate
+from aas_workingbench.application.change_marks import is_markable
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.edits import AddMember
+from aas_workingbench.application.edits import RemoveMember
+from aas_workingbench.application.edits import SetAttribute
 
 
 class Package:

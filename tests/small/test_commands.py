@@ -5,11 +5,11 @@ import pytest
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import Change
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import Command
-from aas_editor.application.commands import CommandStack
-from aas_editor.domain.ordering import insert_at
+from aas_workingbench.application.changes import Change
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import Command
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.domain.ordering import insert_at
 
 
 class _Append(Command):

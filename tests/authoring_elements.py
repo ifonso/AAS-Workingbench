@@ -24,8 +24,8 @@ def pick_semantic_id(
     author: Author, form: Form, target: model.Referable
 ) -> None:
     """Presses Choose from package on the semantic id, and picks a target."""
-    from aas_editor.ui.reference_fields import CHOOSE_TEXT
-    from aas_editor.ui.reference_picker import ReferencePickerDialog
+    from aas_workingbench.ui.reference_fields import CHOOSE_TEXT
+    from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
     box = form.widget("semantic_id").widget
     (button,) = [

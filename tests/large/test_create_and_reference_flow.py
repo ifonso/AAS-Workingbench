@@ -32,11 +32,11 @@ PACKAGE = TEST_DATA_DIR / "IDTA 02023 _Template_CarbonFootprint.aasx"
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path) -> Iterator[SimpleNamespace]:
     """The main window with a copy of the package, and the WP7 actions."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui.bulk_actions import register_bulk_actions
-    from aas_editor.ui.create_actions import register_create_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
-    from aas_editor.ui.reference_jump import register_jump_actions
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui.bulk_actions import register_bulk_actions
+    from aas_workingbench.ui.create_actions import register_create_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.reference_jump import register_jump_actions
 
     register_create_actions()
     register_bulk_actions()
@@ -63,7 +63,7 @@ def editor(qapp: object, qtbot, tmp_path: Path) -> Iterator[SimpleNamespace]:
 
 
 def _find(view, parent: QModelIndex, name: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     view.expand(parent)
@@ -97,7 +97,7 @@ def _act(view, action_id: str) -> bool:
 
 
 def _attrs_row(attrs, name: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = attrs.model()
     for row in range(proxy.rowCount()):
@@ -118,15 +118,17 @@ def _undo_all(stack) -> int:
 def test_create_reference_paste_and_remove_are_undoable_and_saved(
     editor, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.operations.bulk import RemovableAttribute
-    from aas_editor.application.operations.bulk import available_attributes
-    from aas_editor.dialogs import EditObjDialog
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import OBJECT_ROLE
-    from aas_editor.ui.bulk_actions import RemoveAttributesDialog
-    from aas_editor.ui.create_dialogs import CreateShellDialog
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
-    from aas_editor.ui.reference_picker import ReferencePickerDialog
+    from aas_workingbench.application.operations.bulk import RemovableAttribute
+    from aas_workingbench.application.operations.bulk import (
+        available_attributes,
+    )
+    from aas_workingbench.dialogs import EditObjDialog
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.ui.bulk_actions import RemoveAttributesDialog
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
     view, package, stack, tabs = (
         editor.view,

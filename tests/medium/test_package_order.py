@@ -13,11 +13,11 @@ import pytest
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.application.save import SaveOptions
-from aas_editor.domain.ordered_store import OrderedIdentifiableStore
-from aas_editor.infrastructure.package_io import PackageParts
-from aas_editor.infrastructure.package_io import read_package
-from aas_editor.infrastructure.package_io import write_package
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.domain.ordered_store import OrderedIdentifiableStore
+from aas_workingbench.infrastructure.package_io import PackageParts
+from aas_workingbench.infrastructure.package_io import read_package
+from aas_workingbench.infrastructure.package_io import write_package
 
 # Not sorted by name or by id, so that no sort can give this order.
 CONCEPT_IDS = ("urn:c:zebra", "urn:c:apple", "urn:c:mango", "urn:c:banana")

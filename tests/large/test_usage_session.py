@@ -66,7 +66,7 @@ def _own_sheets(window: Any) -> dict[str, str]:
 def test_the_theme_menu_switches_the_whole_application_and_back(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.ui.theme import current_tokens
+    from aas_workingbench.ui.theme import current_tokens
 
     window = large.window
     light = current_tokens()
@@ -86,9 +86,9 @@ def test_the_theme_menu_switches_the_whole_application_and_back(
 def test_a_tab_window_and_a_dialog_that_are_open_follow_the_theme(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
-    from aas_editor.ui.theme import current_tokens
-    from aas_editor.widgets.settingWidgets import SettingsDialog
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.ui.theme import current_tokens
+    from aas_workingbench.widgets.settingWidgets import SettingsDialog
+    from aas_workingbench.widgets.tab import TabWidget
 
     large.view.expandAll()
     row = uw.find_first(large.view, "TechnicalData")
@@ -114,8 +114,8 @@ def test_a_tab_window_and_a_dialog_that_are_open_follow_the_theme(
 def test_no_widget_keeps_a_light_color_of_its_own_after_the_dark_theme(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.domain.design_tokens import DARK
-    from aas_editor.domain.design_tokens import LIGHT
+    from aas_workingbench.domain.design_tokens import DARK
+    from aas_workingbench.domain.design_tokens import LIGHT
 
     window = large.window
     window.validationController.dock.show()
@@ -141,7 +141,7 @@ def test_no_widget_keeps_a_light_color_of_its_own_after_the_dark_theme(
 def test_the_highlight_of_the_search_matches_follows_the_theme(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
-    from aas_editor.ui.theme import current_tokens
+    from aas_workingbench.ui.theme import current_tokens
 
     bar = large.window.searchBarPack
     bar.showFocused()
@@ -162,9 +162,9 @@ def test_the_highlight_of_the_search_matches_follows_the_theme(
 def test_the_settings_dialog_changes_the_row_density_of_the_open_trees(
     large: uw.UsageWindow, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.domain.design_tokens import ROW_HEIGHTS
-    from aas_editor.domain.design_tokens import Density
-    from aas_editor.widgets.settingWidgets import SettingsDialog
+    from aas_workingbench.domain.design_tokens import ROW_HEIGHTS
+    from aas_workingbench.domain.design_tokens import Density
+    from aas_workingbench.widgets.settingWidgets import SettingsDialog
 
     def choose_dense(dialog: Any) -> Any:
         box = next(
@@ -193,8 +193,8 @@ def test_the_settings_dialog_changes_the_row_density_of_the_open_trees(
 def test_zoom_in_and_out_of_the_tree_and_of_the_tab_by_key_and_menu(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PacksTable
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PacksTable
 
     tree_size = PacksTable.currFont.pointSize()
     tab_size = DetailedInfoTable.currFont.pointSize()
@@ -221,7 +221,7 @@ def test_zoom_in_and_out_of_the_tree_and_of_the_tab_by_key_and_menu(
 
 def _restart(qtbot: Any, first: uw.UsageWindow) -> Any:
     """Closes the window, so that it saves, and opens another on the file."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     first.window._recoveryTimer.stop()
     first.window.close()
@@ -237,11 +237,11 @@ def test_the_look_of_the_window_comes_back_after_a_restart(
     qtbot: Any,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from aas_editor.domain.design_tokens import Density
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PacksTable
-    from aas_editor.ui.theme import theme_manager
-    from aas_editor.widgets.settingWidgets import SettingsDialog
+    from aas_workingbench.domain.design_tokens import Density
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.ui.theme import theme_manager
+    from aas_workingbench.widgets.settingWidgets import SettingsDialog
 
     window = large.window
 

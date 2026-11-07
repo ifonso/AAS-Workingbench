@@ -35,4 +35,4 @@ The owner decided (2026-11-06) that the default is a light theme in the off-whit
 - **Keep the Breeze sheets and recolor them.** Rejected, and removed in phase M: 800 lines per theme and generated images, and three colors for every change.
 - **Follow the system accent.** Rejected: the system accent returned `#29f7ff` on the machine of the plan, which fails on white.
 - **Follow the system by default.** Rejected by the owner. It stays as a choice.
-- **Put the sheet in a Python string.** Rejected: the template is easier to read and edit as a file. It needs a line in `aas_manager.spec`, which is added.
+- **Put the sheet in a Python string.** Rejected: the template is easier to read and edit as a file. It needs a line in `aas_workingbench.spec`, which is added.

@@ -145,8 +145,8 @@ The tokens map like this:
 
 A preset is a named qualifier, extension, specific asset id, or data specification.
 Presets are JSON files, one for each kind.
-The files that come with the app are in `src/aas_editor/presets/`.
-The files of the user have the same names, and are in the `presets` folder next to `settings.ini` (`src/aas_editor/settings/presets/`, which is not tracked by Git).
+The files that come with the app are in `src/aas_workingbench/presets/`.
+The files of the user have the same names, and are in the `presets` folder next to `settings.ini` (`src/aas_workingbench/settings/presets/`, which is not tracked by Git).
 The dialog has a button that opens this folder.
 
 | File | Key of the member in an entry |

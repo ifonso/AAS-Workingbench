@@ -4,8 +4,8 @@ import re
 
 import pytest
 
-from aas_editor.domain.id_templates import check_id_template
-from aas_editor.domain.id_templates import generate_id
+from aas_workingbench.domain.id_templates import check_id_template
+from aas_workingbench.domain.id_templates import generate_id
 
 
 def test_a_template_with_digits_gives_two_ids_of_that_form() -> None:

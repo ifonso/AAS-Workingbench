@@ -3,18 +3,34 @@ revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'darwin'",
-    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
-    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
-    "python_full_version < '3.12' and sys_platform != 'darwin'",
     "python_full_version >= '3.14' and sys_platform == 'darwin'",
+    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
+    "python_full_version < '3.12' and sys_platform != 'darwin'",
     "python_full_version < '3.12' and sys_platform == 'darwin'",
 ]
 
 [[package]]
-name = "aas-editor"
-version = "0.4.13"
+name = "aas-test-engines"
+version = "1.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fences" },
+    { name = "json-schema-tool" },
+    { name = "jsonpath-ng" },
+    { name = "pyyaml" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c8/8b/91465d446e8479dbbb5649d068fee1836a5f4b4756560513d80abf46df9e/aas_test_engines-1.0.3.tar.gz", hash = "sha256:6f05ef6c87ad2ff6a80c18c94d71047d39074f89824c940681bfd2759a231634", size = 56849, upload-time = "2025-08-05T08:51:54.745Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/03/a85b786431668c83ece17ce0d75f41267f9657beb54fc91dbc3096b6a47d/aas_test_engines-1.0.3-py3-none-any.whl", hash = "sha256:06a9fc998313af6b9f2cb912e0268d67861a173ff87b9f8fe8e13c369df0257f", size = 59837, upload-time = "2025-08-05T08:51:53.691Z" },
+]
+
+[[package]]
+name = "aas-workingbench"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aas-test-engines" },
@@ -93,22 +109,6 @@ dev = [
     { name = "pytest-cov", specifier = ">=6.0" },
     { name = "pytest-qt", specifier = ">=4.4" },
     { name = "ruff", specifier = ">=0.12" },
-]
-
-[[package]]
-name = "aas-test-engines"
-version = "1.0.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "fences" },
-    { name = "json-schema-tool" },
-    { name = "jsonpath-ng" },
-    { name = "pyyaml" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c8/8b/91465d446e8479dbbb5649d068fee1836a5f4b4756560513d80abf46df9e/aas_test_engines-1.0.3.tar.gz", hash = "sha256:6f05ef6c87ad2ff6a80c18c94d71047d39074f89824c940681bfd2759a231634", size = 56849, upload-time = "2025-08-05T08:51:54.745Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/03/a85b786431668c83ece17ce0d75f41267f9657beb54fc91dbc3096b6a47d/aas_test_engines-1.0.3-py3-none-any.whl", hash = "sha256:06a9fc998313af6b9f2cb912e0268d67861a173ff87b9f8fe8e13c369df0257f", size = 59837, upload-time = "2025-08-05T08:51:53.691Z" },
 ]
 
 [[package]]
@@ -2531,10 +2531,10 @@ version = "3.7"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'darwin'",
-    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
-    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
     "python_full_version >= '3.14' and sys_platform == 'darwin'",
+    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/dc/76/3af777226b63a5e64a6b36b1ec5855c14e2b94a37096d4760e595fc43511/networkx-3.7.tar.gz", hash = "sha256:fd77a511bd90f39f3d016351345b52cf5319b813bdca01de3f755d3cca62e96a", size = 1866482, upload-time = "2026-09-21T16:45:16.974Z" }
@@ -2697,10 +2697,10 @@ version = "2.5.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'darwin'",
-    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
-    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
     "python_full_version >= '3.14' and sys_platform == 'darwin'",
+    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/95/b0/c7453d0b6e2073c3264468b106ee1563750cecc910965e67357e3698c83e/numpy-2.5.4.tar.gz", hash = "sha256:9a94cf751c9ad8ebaa835bcd3d40dacf8534ad086b88c38029b65123c7999d2a", size = 20866315, upload-time = "2026-10-10T20:05:31.422Z" }
@@ -4187,10 +4187,10 @@ version = "1.18.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'darwin'",
-    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
-    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
     "python_full_version >= '3.14' and sys_platform == 'darwin'",
+    "python_full_version == '3.13.*' and sys_platform != 'darwin'",
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform != 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
 ]
 dependencies = [

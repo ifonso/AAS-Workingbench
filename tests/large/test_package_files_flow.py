@@ -59,14 +59,14 @@ def _write_package(path: Path, with_spare: bool = False) -> Path:
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
     """The main window with one package and fixed answers for its dialogs."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui import file_dialogs
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.file_actions import register_file_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui import file_dialogs
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.file_actions import register_file_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     before = {s.action_id for s in default_registry().specs_for(ViewKind.ANY)}
     register_file_actions()
@@ -161,7 +161,7 @@ def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
 
 
 def _index(view, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     index = proxy.index(0, 0)
@@ -202,7 +202,7 @@ def _elements(package) -> dict[str, model.File]:
 
 
 def _reload(path: Path):
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     return Package(path)
 
@@ -277,7 +277,7 @@ def test_deleting_a_stored_file_in_the_tree_clears_the_paths_in_one_step(
 def test_a_dangling_path_is_repaired_from_the_refused_save(
     editor, qtbot, monkeypatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     editor.answers.references = editor.answers.references.LEAVE
     _select(editor.view, _index(editor.view, "fileStore", DOC))
@@ -304,8 +304,8 @@ def test_a_dangling_path_is_repaired_from_the_refused_save(
 
 
 def test_the_save_keeps_a_file_that_nothing_refers_to(editor, qtbot) -> None:
-    from aas_editor.application import supplementary_files as files
-    from aas_editor.application.changes import observer_for
+    from aas_workingbench.application import supplementary_files as files
+    from aas_workingbench.application.changes import observer_for
 
     files.create_text_file(
         editor.stack,
@@ -361,7 +361,7 @@ def test_pasting_an_element_into_another_package_copies_its_file(
     )
 
     editor.view.onCopy()
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = editor.view.model()
     target_row = next(

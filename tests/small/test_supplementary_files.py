@@ -15,14 +15,14 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application import supplementary_files as files
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.commands import ReadOnlyError
-from aas_editor.application.supplementary_files import FileNameTakenError
-from aas_editor.application.supplementary_files import NotTextError
-from aas_editor.application.supplementary_files import ReferenceChoice
-from aas_editor.domain.part_names import InvalidPartNameError
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.commands import ReadOnlyError
+from aas_workingbench.application.supplementary_files import FileNameTakenError
+from aas_workingbench.application.supplementary_files import NotTextError
+from aas_workingbench.application.supplementary_files import ReferenceChoice
+from aas_workingbench.domain.part_names import InvalidPartNameError
 
 DOC = "/aasx/files/doc.pdf"
 NOTE = "/aasx/files/note.txt"

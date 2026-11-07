@@ -34,7 +34,7 @@ def _select_row(lab, attrs, name: str, child: str) -> None:
 def _child_names(lab, attrs, name: str) -> list[str]:
     proxy = attrs.model()
     parent: QModelIndex = lab.row(attrs, name).siblingAtColumn(0)
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     return [
         proxy.index(row, 0, parent).data(NAME_ROLE)

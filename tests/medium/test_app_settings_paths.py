@@ -3,7 +3,7 @@ import pytest
 
 @pytest.fixture(scope="module")
 def app_settings(qapp):
-    from aas_editor.settings import app_settings as s
+    from aas_workingbench.settings import app_settings as s
 
     return s
 

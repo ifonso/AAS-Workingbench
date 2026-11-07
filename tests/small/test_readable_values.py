@@ -6,9 +6,9 @@ from basyx.aas import model
 from basyx.aas.model import datatypes
 import pytest
 
-from aas_editor.additional.classes import DictItem
-from aas_editor.domain.readable_values import count_text
-from aas_editor.domain.readable_values import readable_text
+from aas_workingbench.additional.classes import DictItem
+from aas_workingbench.domain.readable_values import count_text
+from aas_workingbench.domain.readable_values import readable_text
 
 
 def _reference(*values: str) -> model.ExternalReference:

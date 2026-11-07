@@ -20,9 +20,9 @@ from tests.medium.failsafe_causes import templates
 from tests.medium.load_report_measure import measure
 from tests.medium.load_report_measure import Measure
 
-from aas_editor.domain.load_report import LoadReport
-from aas_editor.domain.load_report import Scope
-from aas_editor.infrastructure.package_io import read_package
+from aas_workingbench.domain.load_report import LoadReport
+from aas_workingbench.domain.load_report import Scope
+from aas_workingbench.infrastructure.package_io import read_package
 
 NAMES = [relative_name(path) for path in templates()]
 FAILSAFE_COUNT = 49

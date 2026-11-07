@@ -3,7 +3,7 @@
 from basyx.aas import model
 import pytest
 
-from aas_editor.domain import language_tags
+from aas_workingbench.domain import language_tags
 
 WELL_FORMED = [
     "en",

@@ -10,11 +10,11 @@ import basyx.aas.model.concept
 import basyx.aas.model.submodel
 import pytest
 
-from aas_editor.domain.attribute_vocabulary import AttributeInfo
-from aas_editor.domain.attribute_vocabulary import attribute_info
-from aas_editor.domain.attribute_vocabulary import entries
-from aas_editor.domain.attribute_vocabulary import metamodel_name
-from aas_editor.domain.attribute_vocabulary import vocabulary_classes
+from aas_workingbench.domain.attribute_vocabulary import AttributeInfo
+from aas_workingbench.domain.attribute_vocabulary import attribute_info
+from aas_workingbench.domain.attribute_vocabulary import entries
+from aas_workingbench.domain.attribute_vocabulary import metamodel_name
+from aas_workingbench.domain.attribute_vocabulary import vocabulary_classes
 
 # The names of the metamodel are lowerCamelCase.
 _METAMODEL_NAME = re.compile(r"^[a-z][A-Za-z0-9]*$")

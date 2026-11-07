@@ -25,10 +25,10 @@ EDIT = Qt.ItemDataRole.EditRole
 @pytest.fixture
 def world(model_support):
     """A package with one shell, two submodels, and two tabs per request."""
-    from aas_editor.models.search_proxy_model import SearchProxyModel
-    from aas_editor.settings.app_settings import ADD_ITEM_ROLE
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
-    from aas_editor.settings.app_settings import VALUE_COLUMN
+    from aas_workingbench.models.search_proxy_model import SearchProxyModel
+    from aas_workingbench.settings.app_settings import ADD_ITEM_ROLE
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings.app_settings import VALUE_COLUMN
 
     prop = make_property("a", "text")
     prop.description = model.MultiLanguageTextType(
@@ -384,7 +384,7 @@ def test_extensions_deleted_in_a_tab_come_back_in_their_order(
 def test_language_entries_are_added_edited_and_deleted_in_order(
     model_support, world
 ) -> None:
-    from aas_editor.additional.classes import DictItem
+    from aas_workingbench.additional.classes import DictItem
 
     first = world.tab("submodels", "Submodel", "a")
     second = world.tab("submodels", "Submodel", "a")
@@ -426,7 +426,7 @@ def test_language_entries_are_added_edited_and_deleted_in_order(
 def test_a_language_entry_with_a_new_key_keeps_its_position(
     model_support, world
 ) -> None:
-    from aas_editor.additional.classes import DictItem
+    from aas_workingbench.additional.classes import DictItem
 
     tab = world.tab("submodels", "Submodel", "a")
     middle = tab.index(1, 0, model_support.find(tab, "description"))
@@ -473,7 +473,7 @@ def test_linking_shows_the_references_in_the_tabs_of_the_shell_and_removes_them(
 def test_a_file_added_to_the_package_is_removed_by_undo(
     model_support, world, tmp_path: Path
 ) -> None:
-    from aas_editor.package import StoredFile
+    from aas_workingbench.package import StoredFile
 
     source = tmp_path / "note.txt"
     source.write_bytes(b"hello")
@@ -560,7 +560,7 @@ class TestDirtyState:
 class TestReadMode:
     @pytest.fixture
     def reading(self, world):
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         edit_mode().set_editing(False)
         return world
@@ -607,8 +607,8 @@ class TestReadMode:
         assert tab.flags(value) & Qt.ItemFlag.ItemIsEditable
 
     def test_undo_is_refused(self, world, model_support) -> None:
-        from aas_editor.application.commands import ReadOnlyError
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.commands import ReadOnlyError
+        from aas_workingbench.application.editing import edit_mode
 
         tab = world.tab("submodels", "Submodel", "a")
         tab.setData(model_support.find(tab, "value"), "changed", EDIT)
@@ -622,7 +622,7 @@ class TestReadMode:
     def test_editing_works_again_after_switching_back(
         self, reading, model_support
     ) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         edit_mode().set_editing(True)
         tab = reading.tab("submodels", "Submodel", "a")
@@ -634,7 +634,7 @@ class TestReadMode:
 
 
 def test_closing_a_package_leaves_no_undo_step(model_support, world) -> None:
-    from aas_editor.settings import NOT_GIVEN
+    from aas_workingbench.settings import NOT_GIVEN
 
     table = world.table
     package_row = table.index(0, 0)
@@ -646,7 +646,7 @@ def test_closing_a_package_leaves_no_undo_step(model_support, world) -> None:
 
 
 def test_opening_a_package_leaves_no_undo_step(model_support, world) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     other_package = Package()
 

@@ -8,8 +8,8 @@ from basyx.aas.model import datatypes
 from dateutil import relativedelta
 import pytest
 
-from aas_editor.domain import value_types
-from aas_editor.domain.value_types import InvalidValueError
+from aas_workingbench.domain import value_types
+from aas_workingbench.domain.value_types import InvalidValueError
 
 
 def test_xsd_types_list_every_type_that_the_sdk_names() -> None:

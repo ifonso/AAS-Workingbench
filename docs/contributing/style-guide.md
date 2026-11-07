@@ -47,7 +47,7 @@ def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
 
 ### Imports
 
-- Use absolute imports: `from aas_editor.package import Package`.
+- Use absolute imports: `from aas_workingbench.package import Package`.
 - Import one name per line. `ruff` sorts them.
 - Do not use wildcard imports.
 

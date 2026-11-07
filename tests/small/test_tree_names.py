@@ -3,10 +3,10 @@
 from basyx.aas import model
 import pytest
 
-from aas_editor.domain.tree_names import node_description
-from aas_editor.domain.tree_names import node_name
-from aas_editor.domain.tree_names import type_name
-from aas_editor.package import Package
+from aas_workingbench.domain.tree_names import node_description
+from aas_workingbench.domain.tree_names import node_name
+from aas_workingbench.domain.tree_names import type_name
+from aas_workingbench.package import Package
 
 
 @pytest.mark.parametrize(

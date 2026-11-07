@@ -17,7 +17,7 @@ from basyx.aas.adapter.aasx import AASXReader
 import pyecma376_2
 import pytest
 
-from aas_editor.package import Package
+from aas_workingbench.package import Package
 from tests.factories import make_asset_information
 from tests.factories import make_file_element
 from tests.factories import make_shell

@@ -19,13 +19,15 @@ from tests.factories import make_asset_information
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.references import ReferenceChange
-from aas_editor.application.operations.references import reference_commands
-from aas_editor.domain.references import chain
-from aas_editor.domain.references import iter_slots
-from aas_editor.domain.references import map_keys
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.references import ReferenceChange
+from aas_workingbench.application.operations.references import (
+    reference_commands,
+)
+from aas_workingbench.domain.references import chain
+from aas_workingbench.domain.references import iter_slots
+from aas_workingbench.domain.references import map_keys
 
 _Built = tuple[model.Identifiable, list[model.Reference]]
 _Builder = Callable[[dict[str, Any]], _Built]

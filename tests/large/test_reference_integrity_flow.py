@@ -31,7 +31,7 @@ PACKAGE = TEST_DATA_DIR / "IDTA 02023 _Template_CarbonFootprint.aasx"
 LARGEST_TEMPLATE = (
     Path(__file__).parents[2]
     / "src"
-    / "aas_editor"
+    / "aas_workingbench"
     / "submodel_templates"
     / "Purchase Order"
     / "1"
@@ -47,7 +47,7 @@ SLOWEST_PLAN_SECONDS = 2.0
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path) -> Iterator[SimpleNamespace]:
     """The main window with the package, copied so a save cannot touch it."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     source = tmp_path / PACKAGE.name
     shutil.copy(PACKAGE, source)
@@ -91,7 +91,7 @@ def answers(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
 
 
 def _index(view, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     index = proxy.index(0, 0)
@@ -126,7 +126,7 @@ def _column(view, name: str) -> int:
 
 def _referenced_concepts(package, count: int) -> list[model.ConceptDescription]:
     """Concept descriptions that others refer to and whose idShort is unique."""
-    from aas_editor.domain.references import ReferenceIndex
+    from aas_workingbench.domain.references import ReferenceIndex
 
     concepts = list(package.concept_descriptions)
     names = Counter(concept.id_short for concept in concepts)
@@ -143,7 +143,7 @@ def _referenced_concepts(package, count: int) -> list[model.ConceptDescription]:
 
 
 def _uses_of_id(package, id_: str) -> int:
-    from aas_editor.domain.references import ReferenceIndex
+    from aas_workingbench.domain.references import ReferenceIndex
 
     return sum(
         1
@@ -155,7 +155,7 @@ def _uses_of_id(package, id_: str) -> int:
 def test_renaming_and_deleting_keep_the_references_of_a_real_package(
     editor, answers, qtbot
 ) -> None:
-    from aas_editor.domain.references import ReferenceIndex
+    from aas_workingbench.domain.references import ReferenceIndex
 
     view, package, stack = editor.view, editor.package, editor.stack
     original = snapshot(package.objStore)
@@ -237,11 +237,11 @@ def test_renaming_and_deleting_keep_the_references_of_a_real_package(
 
 
 def test_the_plans_stay_fast_on_the_largest_template() -> None:
-    from aas_editor.application.operations.delete import plan_delete
-    from aas_editor.application.operations.fix import plan_fix_references
-    from aas_editor.application.operations.rename import plan_rename_id
-    from aas_editor.domain.references import ReferenceIndex
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.application.operations.delete import plan_delete
+    from aas_workingbench.application.operations.fix import plan_fix_references
+    from aas_workingbench.application.operations.rename import plan_rename_id
+    from aas_workingbench.domain.references import ReferenceIndex
+    from aas_workingbench.infrastructure.package_io import read_package
 
     parts = read_package(LARGEST_TEMPLATE, failsafe=True)
     objects = list(parts.objects)

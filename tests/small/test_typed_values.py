@@ -10,12 +10,12 @@ import pytest
 from tests.factories import make_list
 from tests.factories import make_property
 
-from aas_editor.application.changes import Change
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.edits import SetValueType
-from aas_editor.domain import typed_values
-from aas_editor.domain.value_types import InvalidValueError
+from aas_workingbench.application.changes import Change
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.edits import SetValueType
+from aas_workingbench.domain import typed_values
+from aas_workingbench.domain.value_types import InvalidValueError
 
 
 def _range(

@@ -38,7 +38,7 @@ def _add_file_from_disk(author: Author, source: Path) -> None:
 def test_a_file_is_added_linked_and_made_the_thumbnail_and_the_package_keeps_them(
     author: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.file_dialogs import FileChoiceDialog
+    from aas_workingbench.ui.file_dialogs import FileChoiceDialog
 
     build_everything(author, tmp_path)
     (tmp_path / "datasheet.pdf").write_bytes(PDF)

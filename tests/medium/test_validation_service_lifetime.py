@@ -11,9 +11,9 @@ from basyx.aas import model
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 from PyQt6 import sip
 
-from aas_editor.application.changes import Change
-from aas_editor.application.changes import observer_for
-from aas_editor.ui.validation_service import ValidationService
+from aas_workingbench.application.changes import Change
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.ui.validation_service import ValidationService
 
 
 class _Package:

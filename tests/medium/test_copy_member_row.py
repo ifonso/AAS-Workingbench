@@ -7,8 +7,8 @@ from PyQt6.QtCore import QItemSelectionModel
 from PyQt6.QtWidgets import QApplication
 from tests.factories import make_property
 
-from aas_editor.domain.clipboard_json import load_members
-from aas_editor.domain.member_json import MemberKind
+from aas_workingbench.domain.clipboard_json import load_members
+from aas_workingbench.domain.member_json import MemberKind
 
 
 def _copy_first_qualifier(lab_class: Any) -> str:

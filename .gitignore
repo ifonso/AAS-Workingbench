@@ -20,5 +20,5 @@ htmlcov/
 /.claude/
 .idea/
 *.log
-/src/aas_editor/settings/recovery/
-/src/aas_editor/settings/presets/
+/src/aas_workingbench/settings/recovery/
+/src/aas_workingbench/settings/presets/

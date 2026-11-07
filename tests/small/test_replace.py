@@ -9,13 +9,15 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.replace import plan_reference_updates
-from aas_editor.application.operations.replace import replacement_command
-from aas_editor.domain.conversion import plan_conversion
-from aas_editor.domain.list_settings import ListSettings
-from aas_editor.domain.list_settings import plan_list_rebuild
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.replace import (
+    plan_reference_updates,
+)
+from aas_workingbench.application.operations.replace import replacement_command
+from aas_workingbench.domain.conversion import plan_conversion
+from aas_workingbench.domain.list_settings import ListSettings
+from aas_workingbench.domain.list_settings import plan_list_rebuild
 
 STRING = model.datatypes.String
 

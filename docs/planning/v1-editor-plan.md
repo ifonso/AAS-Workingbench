@@ -80,8 +80,8 @@ Legacy `Package`, models, and tree views call these layers through thin adapters
 ### Layer rule
 
 `domain` and `application` must not import PyQt.
-Legacy modules restrict what they can reuse: `aas_editor.settings.*` (including `NOT_GIVEN`) and `aas_editor.package` load Qt, and `utils.util_classes` has a circular import.
-`aas_editor`, `utils.util_type`, and `additional.classes` load no Qt.
+Legacy modules restrict what they can reuse: `aas_workingbench.settings.*` (including `NOT_GIVEN`) and `aas_workingbench.package` load Qt, and `utils.util_classes` has a circular import.
+`aas_workingbench`, `utils.util_type`, and `additional.classes` load no Qt.
 
 The import test must run in a clean subprocess and assert that `PyQt6` is absent from `sys.modules`, because pytest-qt has already loaded it in the test process.
 

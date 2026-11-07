@@ -5,7 +5,7 @@ import gc
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.locations import LocationStack
+from aas_workingbench.application.locations import LocationStack
 
 
 class _Package:

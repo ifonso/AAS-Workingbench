@@ -6,7 +6,7 @@
 
 Parity with AASX Package Explorer adds repository and registry clients, validation, import and export formats, and plugins.
 Today, widgets, tree views, and models mix UI with file handling and AAS logic.
-Importing `aas_editor.package` also loads `app_settings`, which creates Qt objects at import time.
+Importing `aas_workingbench.package` also loads `app_settings`, which creates Qt objects at import time.
 As a result, AAS logic cannot run or be tested without a `QApplication`.
 
 ## Decision

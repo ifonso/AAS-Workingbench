@@ -2,13 +2,13 @@
 
 import pytest
 
-from aas_editor.application.command_palette import MAX_RECENT
-from aas_editor.application.command_palette import MAX_RESULTS
-from aas_editor.application.command_palette import EntryKind
-from aas_editor.application.command_palette import PaletteEntry
-from aas_editor.application.command_palette import RecentCommands
-from aas_editor.application.command_palette import match_score
-from aas_editor.application.command_palette import rank
+from aas_workingbench.application.command_palette import MAX_RECENT
+from aas_workingbench.application.command_palette import MAX_RESULTS
+from aas_workingbench.application.command_palette import EntryKind
+from aas_workingbench.application.command_palette import PaletteEntry
+from aas_workingbench.application.command_palette import RecentCommands
+from aas_workingbench.application.command_palette import match_score
+from aas_workingbench.application.command_palette import rank
 
 
 def _command(

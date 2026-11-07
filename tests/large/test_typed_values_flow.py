@@ -35,7 +35,7 @@ METHODS = (*PCF, "PcfCalculationMethods")
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path):
     """The main window with the template, copied so that a save is harmless."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     source = tmp_path / PACKAGE
     shutil.copy(TEST_DATA_DIR / PACKAGE, source)
@@ -56,7 +56,7 @@ def editor(qapp: object, qtbot, tmp_path: Path):
 
 
 def _index(view, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     index = proxy.index(0, 0)
@@ -99,8 +99,8 @@ def _footprint(package) -> model.SubmodelElementCollection:
 def test_typed_values_are_entered_refused_converted_and_saved(
     editor, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from aas_editor.dialogs import EditObjDialog
-    from aas_editor.package import Package
+    from aas_workingbench.dialogs import EditObjDialog
+    from aas_workingbench.package import Package
 
     view, package, stack = editor.view, editor.package, editor.stack
     original = snapshot(package.objStore)

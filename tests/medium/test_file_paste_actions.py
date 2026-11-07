@@ -8,8 +8,8 @@ from PyQt6.QtWidgets import QApplication
 from tests.factories import make_file_element
 from tests.factories import make_submodel
 
-from aas_editor.application import supplementary_files as files
-from aas_editor.application.file_transfer import copy_source
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.file_transfer import copy_source
 
 DOC = "/aasx/files/doc.pdf"
 SOURCE_FILES = {DOC: (b"%PDF source", "application/pdf")}
@@ -18,8 +18,8 @@ SOURCE_FILES = {DOC: (b"%PDF source", "application/pdf")}
 @pytest.fixture
 def lab(views, monkeypatch: pytest.MonkeyPatch):
     """A package with a File element and its file, and an empty target."""
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     register_move_actions()
     register_paste_actions()
@@ -113,7 +113,7 @@ def test_a_different_file_of_the_same_name_is_kept_and_the_copy_is_numbered(
 def test_the_pasted_package_saves_and_reads_back_with_both_files(
     lab, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     lab = lab({DOC: (b"%PDF target", "application/pdf")})
     lab.paste_into_target()

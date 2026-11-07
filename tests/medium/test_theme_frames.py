@@ -21,12 +21,12 @@ from PyQt6.QtWidgets import QWidget
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.domain.design_tokens import ColorTokens
-from aas_editor.domain.design_tokens import DARK
-from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.ui.theme import THEME_DARK
-from aas_editor.ui.theme import THEME_LIGHT
-from aas_editor.ui.theme import theme_manager
+from aas_workingbench.domain.design_tokens import ColorTokens
+from aas_workingbench.domain.design_tokens import DARK
+from aas_workingbench.domain.design_tokens import LIGHT
+from aas_workingbench.ui.theme import THEME_DARK
+from aas_workingbench.ui.theme import THEME_LIGHT
+from aas_workingbench.ui.theme import theme_manager
 
 THEMES = [(THEME_LIGHT, LIGHT), (THEME_DARK, DARK)]
 

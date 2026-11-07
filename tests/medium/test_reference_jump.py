@@ -29,10 +29,10 @@ K = model.KeyTypes
 @pytest.fixture
 def jumping(views, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     """A package whose property refers to other objects, and a tab to jump in."""
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.ui import reference_jump
-    from aas_editor.ui.reference_jump import register_jump_actions
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.ui import reference_jump
+    from aas_workingbench.ui.reference_jump import register_jump_actions
+    from aas_workingbench.widgets.tab import TabWidget
 
     register_jump_actions()
     notices: list[str] = []
@@ -194,7 +194,7 @@ def test_the_jump_is_not_offered_on_a_row_without_a_reference(jumping) -> None:
 
 
 def test_the_jump_works_in_read_mode(jumping) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     jump = jumping(lambda world: make_reference_to(world.concept))
     edit_mode().set_editing(False)

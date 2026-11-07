@@ -10,7 +10,7 @@ from tests.medium.forms import Form
 
 
 def _form(owner: type, qtbot) -> Form:
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
 
     dialog = EditObjDialog(owner, parent=None, rmDefParams=False)
     qtbot.addWidget(dialog)
@@ -71,7 +71,7 @@ class TestWholeElement:
     def test_a_property_is_edited_as_a_whole_with_its_type_and_value_shown(
         self, lab_class
     ) -> None:
-        from aas_editor.dialogs import EditObjDialog
+        from aas_workingbench.dialogs import EditObjDialog
 
         lab = lab_class(
             model.Property(
@@ -104,8 +104,8 @@ class TestWholeElement:
 def test_the_completer_of_languages_offers_the_common_codes(
     qapp: object,
 ) -> None:
-    from aas_editor.additional.classes import DictItem
-    from aas_editor.settings.defaults import DEFAULT_COMPLETIONS
+    from aas_workingbench.additional.classes import DictItem
+    from aas_workingbench.settings.defaults import DEFAULT_COMPLETIONS
 
     assert DEFAULT_COMPLETIONS[DictItem]["key"] == [
         "de",

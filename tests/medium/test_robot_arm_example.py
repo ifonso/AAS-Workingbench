@@ -22,15 +22,15 @@ from PyQt6.QtGui import QImage
 import pytest
 from tests.serialization import snapshot
 
-from aas_editor.application.save import SaveOptions
-from aas_editor.domain.references import is_model_reference
-from aas_editor.domain.references import iter_slots
-from aas_editor.domain.validation import validate
-from aas_editor.domain.walking import descendants
-from aas_editor.domain.walking import walk_elements
-from aas_editor.infrastructure.package_io import PackageParts
-from aas_editor.infrastructure.package_io import read_package
-from aas_editor.infrastructure.package_io import write_package
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.domain.references import is_model_reference
+from aas_workingbench.domain.references import iter_slots
+from aas_workingbench.domain.validation import validate
+from aas_workingbench.domain.walking import descendants
+from aas_workingbench.domain.walking import walk_elements
+from aas_workingbench.infrastructure.package_io import PackageParts
+from aas_workingbench.infrastructure.package_io import read_package
+from aas_workingbench.infrastructure.package_io import write_package
 
 REPOSITORY = Path(__file__).resolve().parents[2]
 EXAMPLE = REPOSITORY / "example"

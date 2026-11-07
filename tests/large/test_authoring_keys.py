@@ -44,7 +44,7 @@ def _names(author: Author) -> list[str]:
 def test_keys_add_copy_paste_delete_undo_redo_and_save_a_package(
     author: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
 
     author.start_new_package(tmp_path / "box.aasx")
     make_shell(author)
@@ -94,7 +94,7 @@ def test_keys_add_copy_paste_delete_undo_redo_and_save_a_package(
     author.select_path()
     _press(author, Qt.Key.Key_S, CTRL)
     assert not author.window.isWindowModified(), author.errors
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     reread = Package(tmp_path / "box.aasx")
     assert snapshot(reread.objStore) == after_delete

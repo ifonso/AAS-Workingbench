@@ -9,7 +9,7 @@ from pytestqt.qtbot import QtBot
 
 @pytest.fixture
 def about_text(qapp: object, qtbot: QtBot) -> str:
-    from aas_editor.widgets.messsageBoxes import AboutMessageBox
+    from aas_workingbench.widgets.messsageBoxes import AboutMessageBox
 
     parent = QMainWindow()
     qtbot.addWidget(parent)
@@ -25,8 +25,8 @@ def _plain(rich: str) -> str:
 def test_the_name_shown_to_users_is_aas_workingbench(
     qapp: object, about_text: str
 ) -> None:
-    from aas_editor.settings.app_settings import APPLICATION_NAME
-    from aas_editor.settings.app_settings import WINDOW_TITLE
+    from aas_workingbench.settings.app_settings import APPLICATION_NAME
+    from aas_workingbench.settings.app_settings import WINDOW_TITLE
 
     assert APPLICATION_NAME == "AAS Workingbench"
     assert WINDOW_TITLE.startswith("AAS Workingbench ")
@@ -55,9 +55,9 @@ def test_the_dialog_credits_the_project_that_this_one_is_based_on(
 
 
 def test_the_report_links_lead_to_this_repository(qapp: object) -> None:
-    from aas_editor.settings.app_settings import APPLICATION_LINK
-    from aas_editor.settings.app_settings import CONTACT
-    from aas_editor.settings.app_settings import REPORT_ERROR_LINK
+    from aas_workingbench.settings.app_settings import APPLICATION_LINK
+    from aas_workingbench.settings.app_settings import CONTACT
+    from aas_workingbench.settings.app_settings import REPORT_ERROR_LINK
 
     assert APPLICATION_LINK == "https://github.com/ifonso/AAS-Workingbench"
     assert REPORT_ERROR_LINK == (
@@ -69,7 +69,7 @@ def test_the_report_links_lead_to_this_repository(qapp: object) -> None:
 def test_the_stored_settings_of_users_keep_their_old_name(
     qapp: object,
 ) -> None:
-    from aas_editor.settings.app_settings import IAT
-    from aas_editor.settings.app_settings import SETTINGS_APPLICATION_NAME
+    from aas_workingbench.settings.app_settings import IAT
+    from aas_workingbench.settings.app_settings import SETTINGS_APPLICATION_NAME
 
     assert (IAT, SETTINGS_APPLICATION_NAME) == ("IAT", "AAS Manager")

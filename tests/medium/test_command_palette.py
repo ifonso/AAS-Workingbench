@@ -17,15 +17,15 @@ from tests.factories import make_collection
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.command_palette import EntryKind
-from aas_editor.application.command_palette import PaletteEntry
-from aas_editor.application.command_palette import RecentCommands
-from aas_editor.application.editing import edit_mode
-from aas_editor.settings.app_settings import OBJECT_ROLE
-from aas_editor.ui.actions import ViewKind
-from aas_editor.ui.actions import default_registry
-from aas_editor.ui.command_palette import PaletteController
-from aas_editor.ui.command_palette import install_palette
+from aas_workingbench.application.command_palette import EntryKind
+from aas_workingbench.application.command_palette import PaletteEntry
+from aas_workingbench.application.command_palette import RecentCommands
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.ui.actions import ViewKind
+from aas_workingbench.ui.actions import default_registry
+from aas_workingbench.ui.command_palette import PaletteController
+from aas_workingbench.ui.command_palette import install_palette
 
 
 @pytest.fixture
@@ -35,9 +35,9 @@ def window(qtbot: QtBot, views):
     The commands used last are kept in memory, so that no test writes to the
     settings of the user.
     """
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     # The application registers these before its first view.
     register_move_actions()
@@ -101,7 +101,7 @@ def window(qtbot: QtBot, views):
 @pytest.fixture
 def native_look(qapp: QApplication) -> Iterator[None]:
     """Gives the other tests the look of the platform back."""
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.ui.theme import theme_manager
 
     QStandardPaths.setTestModeEnabled(True)
     yield
@@ -545,8 +545,8 @@ def test_an_element_that_the_tree_hides_is_reported_and_nothing_breaks(
 def test_the_palette_is_painted_in_the_colors_of_the_theme(
     window, native_look: None, theme: str
 ) -> None:
-    from aas_editor.ui.theme import current_tokens
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.ui.theme import current_tokens
+    from aas_workingbench.ui.theme import theme_manager
 
     theme_manager().apply(theme)
     window.main_.show()
@@ -571,7 +571,7 @@ def test_the_palette_is_painted_in_the_colors_of_the_theme(
 def test_a_switch_of_theme_changes_what_the_next_opening_paints(
     window, native_look: None
 ) -> None:
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.ui.theme import theme_manager
 
     window.main_.show()
 

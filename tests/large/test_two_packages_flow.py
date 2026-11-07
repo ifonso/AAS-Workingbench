@@ -101,7 +101,7 @@ def test_both_packages_show_in_the_tree_and_in_the_recent_files(
 def test_a_submodel_with_its_file_is_copied_to_the_other_package(
     editor,
 ) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     _select(editor, _row(editor, 0, "submodels", "Submodel"))
     editor.view.onCopy()
@@ -131,7 +131,7 @@ def test_a_submodel_with_its_file_is_copied_to_the_other_package(
 
 
 def test_a_concept_description_is_copied_to_the_other_package(editor) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     _select(editor, _row(editor, 1, "concept_descriptions", "Screwing"))
     editor.view.onCopy()
@@ -180,7 +180,7 @@ def test_closing_a_package_with_changes_and_cancel_keeps_it_open(
 
 
 def test_closing_with_save_writes_the_change_and_closes(editor) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     _edit_value(editor, 1)
     editor.screen.box_answer = QMessageBox.StandardButton.Save
@@ -272,7 +272,7 @@ def test_a_recent_file_that_is_gone_says_so_and_leaves_the_list(
 def test_save_all_saves_the_others_when_one_package_cannot_be_saved(
     editor,
 ) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     template = editor.tmp_path / "AIDeployment.aasx"
     shutil.copy(
@@ -280,7 +280,7 @@ def test_save_all_saves_the_others_when_one_package_cannot_be_saved(
             (
                 Path(__file__).parents[2]
                 / "src"
-                / "aas_editor"
+                / "aas_workingbench"
                 / "submodel_templates"
             ).rglob("IDTA 02059-1-0-1_Template_AIDeployment.aasx")
         ),
@@ -309,7 +309,7 @@ def test_save_all_saves_the_others_when_one_package_cannot_be_saved(
 
 
 def test_close_all_with_save_writes_both_and_closes_both(editor) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     _edit_value(editor, 1)
     cell = _row(editor, 0, "submodels", "Submodel", "Name").siblingAtColumn(
@@ -368,7 +368,7 @@ def test_closing_the_window_with_changes_asks_and_cancel_keeps_it_open(
 
 
 def test_closing_the_window_with_yes_saves_every_package(editor) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     _edit_value(editor, 1)
     editor.screen.box_answer = QMessageBox.StandardButton.Yes

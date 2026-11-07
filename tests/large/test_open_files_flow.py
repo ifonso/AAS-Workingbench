@@ -34,7 +34,10 @@ pytest.importorskip(
 )
 
 TEMPLATES = (
-    Path(__file__).parents[2] / "src" / "aas_editor" / "submodel_templates"
+    Path(__file__).parents[2]
+    / "src"
+    / "aas_workingbench"
+    / "submodel_templates"
 )
 CORPUS_ROOT = os.environ.get("AAS_CORPUS_ROOT")
 SAMPLES = (

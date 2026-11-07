@@ -6,9 +6,9 @@ from basyx.aas import model
 import pytest
 from tests.factories import make_property
 
-from aas_editor.application.validation import hints_for
-from aas_editor.application.validation import validate_package
-from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+from aas_workingbench.application.validation import hints_for
+from aas_workingbench.application.validation import validate_package
+from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
 
 @pytest.fixture

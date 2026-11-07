@@ -34,7 +34,7 @@ are the property of their owners.
 Specifications and templates
 ----------------------------
 
-Submodel templates (src/aas_editor/submodel_templates/)
+Submodel templates (src/aas_workingbench/submodel_templates/)
     The folder holds submodel templates and their specification documents as
     published by the IDTA in https://github.com/admin-shell-io/submodel-templates.
     That repository states the license Creative Commons Attribution 4.0
@@ -89,7 +89,7 @@ aas-test-engines (aas_test_engines/ and the installed package)
     stand-alone build: the schema above, and an HTML template that the
     installed package also has. The folder has no license file of its own.
 
-Tabler Icons (src/aas_editor/icons/tabler/)
+Tabler Icons (src/aas_workingbench/icons/tabler/)
     Version 3.50.0 of https://github.com/tabler/tabler-icons, the outline
     style. The 53 SVG files are unmodified copies, and are the icons of
     actions in the toolbars, menus and trees. MIT License, "Copyright (c)
@@ -97,7 +97,7 @@ Tabler Icons (src/aas_editor/icons/tabler/)
     folder, and is the text of the same release. The editor draws the files
     in a color of the theme, and does not change them.
 
-Icons of the kinds of AAS elements (src/aas_editor/icons/kinds/)
+Icons of the kinds of AAS elements (src/aas_workingbench/icons/kinds/)
     The 24 SVG files that mark the kinds of elements in the trees (shell,
     submodel, concept description, the elements, and the parts such as
     qualifier and reference) are the own work of this project, drawn for it in
@@ -110,7 +110,7 @@ Icons of the kinds of AAS elements (src/aas_editor/icons/kinds/)
     outline of a font, was copied, traced or used as a model. They carry no
     third-party license and need no attribution.
 
-Inter (src/aas_editor/fonts/)
+Inter (src/aas_workingbench/fonts/)
     The font of the user interface. Inter is by The Inter Project Authors
     (https://github.com/rsms/inter), and the font file states "Copyright 2016
     The Inter Project Authors". SIL Open Font License, Version 1.1. The font
@@ -128,7 +128,7 @@ Inter (src/aas_editor/fonts/)
     The OFL asks that each copy of the font carries its license. The folder
     does, and so does the stand-alone build, which also ships this NOTICE.
 
-Fluent 2 color values (src/aas_editor/domain/design_tokens.py)
+Fluent 2 color values (src/aas_workingbench/domain/design_tokens.py)
     The neutral colors of the light and dark themes (backgrounds, foregrounds
     and strokes) are values of the alias tokens of Fluent 2, read from
     https://github.com/microsoft/fluentui (packages/tokens/src/alias/
@@ -169,7 +169,7 @@ Fluent 2 color values (src/aas_editor/domain/design_tokens.py)
     Fluent is used only to say what the colors follow, and the project is not
     affiliated with or endorsed by Microsoft.
 
-Logos (src/aas_editor/icons/logo.*, full_logo.*, full_logo3.svg)
+Logos (src/aas_workingbench/icons/logo.*, full_logo.*, full_logo3.svg)
     Part of the AAS Manager code base. Their origin and license are not
     recorded in the repository. They are the only files of icons.
 
@@ -184,7 +184,7 @@ Of unrecorded origin
     Huszagh, based on the Breeze color scheme), their images, and the
     generated breeze_resources.py. None of that is in the repository or in
     the stand-alone build any more. The themes now are made from the colors
-    in src/aas_editor/domain/design_tokens.py (see above).
+    in src/aas_workingbench/domain/design_tokens.py (see above).
 
 
 Software that the editor installs

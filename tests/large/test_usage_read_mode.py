@@ -43,7 +43,7 @@ def large(
 
 
 def _row(window: uw.UsageWindow, name: str) -> Any:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     window.view.expandAll()
     return next(
@@ -56,7 +56,7 @@ def _row(window: uw.UsageWindow, name: str) -> Any:
 
 def _read_mode(window: uw.UsageWindow) -> Any:
     """Selects a property, switches to Read mode, and returns its snapshot."""
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     window.view.setCurrentIndex(_row(window, "ManufacturerName"))
     original = snapshot(window.package.objStore)
@@ -189,7 +189,7 @@ def test_every_action_of_the_context_menu_that_edits_is_off_in_read_mode(
 def test_the_buttons_and_entries_that_read_mode_turned_off_say_why(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.ui.actions import READ_MODE_REASON
+    from aas_workingbench.ui.actions import READ_MODE_REASON
 
     _read_mode(large)
     large.window.filesDock.show()
@@ -208,7 +208,7 @@ def test_the_buttons_and_entries_that_read_mode_turned_off_say_why(
 def test_copy_stays_on_in_read_mode_for_any_row_of_a_tab(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     large.view.setCurrentIndex(_row(large, "ManufacturerName"))
     edit_mode().set_editing(False)
@@ -240,7 +240,7 @@ def test_save_in_read_mode_leaves_a_package_with_no_changes_as_it_is(
 def test_save_in_read_mode_still_writes_the_changes_made_before_it(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     large.view.setCurrentIndex(_row(large, "ManufacturerName"))
     large.view.registeredActions.find("structure.move_end").trigger()
@@ -256,7 +256,7 @@ def test_save_in_read_mode_still_writes_the_changes_made_before_it(
 
 
 def test_edit_mode_again_brings_every_edit_back(large: uw.UsageWindow) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     original = _read_mode(large)
     edit_mode().set_editing(True)

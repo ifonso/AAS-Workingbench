@@ -20,18 +20,18 @@ from tests.factories import make_property
 from tests.factories import make_reference_to
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import SetAttribute
-from aas_editor.domain.design_tokens import ColorTokens
-from aas_editor.domain.design_tokens import DARK
-from aas_editor.domain.design_tokens import DEFAULT_DENSITY
-from aas_editor.domain.design_tokens import Density
-from aas_editor.domain.design_tokens import INDENT
-from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.domain.design_tokens import ROW_HEIGHTS
-from aas_editor.ui.theme import THEME_DARK
-from aas_editor.ui.theme import THEME_LIGHT
-from aas_editor.ui.theme import theme_manager
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.domain.design_tokens import ColorTokens
+from aas_workingbench.domain.design_tokens import DARK
+from aas_workingbench.domain.design_tokens import DEFAULT_DENSITY
+from aas_workingbench.domain.design_tokens import Density
+from aas_workingbench.domain.design_tokens import INDENT
+from aas_workingbench.domain.design_tokens import LIGHT
+from aas_workingbench.domain.design_tokens import ROW_HEIGHTS
+from aas_workingbench.ui.theme import THEME_DARK
+from aas_workingbench.ui.theme import THEME_LIGHT
+from aas_workingbench.ui.theme import theme_manager
 
 SUBMODEL = ("submodels", "Submodel")
 FOREGROUND = Qt.ItemDataRole.ForegroundRole
@@ -57,8 +57,8 @@ def light_theme(qapp: QApplication) -> Iterator[None]:
 @pytest.fixture
 def restored_zoom() -> Iterator[None]:
     """Gives the font size of the models back after a test zoomed it."""
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PacksTable
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PacksTable
 
     sizes = (
         PacksTable.currFont.pointSize(),
@@ -321,7 +321,7 @@ def test_a_selected_row_has_a_bar_at_its_left_edge(
 def test_a_match_of_the_search_has_the_find_color(
     views, qtbot: QtBot, theme: str, tokens: ColorTokens
 ) -> None:
-    from aas_editor.widgets.search import SearchBar
+    from aas_workingbench.widgets.search import SearchBar
 
     shown, _ = _package_tree(views, qtbot, make_property("Speed"))
     theme_manager().apply(theme)

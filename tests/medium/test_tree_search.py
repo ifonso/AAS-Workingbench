@@ -23,8 +23,8 @@ pytest.importorskip(
 @pytest.fixture
 def searched(views: Any) -> Any:
     """A package tree with a bar that searches its names."""
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
-    from aas_editor.widgets import SearchBar
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.widgets import SearchBar
 
     package_views = views()
     package_views.open_package(
@@ -47,7 +47,7 @@ def searched(views: Any) -> Any:
 
 
 def _name(index: QModelIndex) -> str:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     return str(index.data(NAME_ROLE))
 
@@ -144,7 +144,7 @@ def test_two_bars_in_one_window_do_not_make_the_find_key_ambiguous(
     searched: Any, qtbot: QtBot
 ) -> None:
     """The key runs in the part of the window that has the focus."""
-    from aas_editor.widgets import SearchBar
+    from aas_workingbench.widgets import SearchBar
 
     side = QWidget(searched.window)
     field = QLineEdit(side)

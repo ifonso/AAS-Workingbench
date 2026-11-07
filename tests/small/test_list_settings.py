@@ -6,12 +6,12 @@ from tests.factories import make_external_reference
 from tests.factories import make_file_element
 from tests.factories import make_submodel
 
-from aas_editor.domain.list_settings import ListSettings
-from aas_editor.domain.list_settings import derive_settings
-from aas_editor.domain.list_settings import detect_settings
-from aas_editor.domain.list_settings import plan_list_rebuild
-from aas_editor.domain.list_settings import settings_of
-from aas_editor.domain.replacement import ConversionRefused
+from aas_workingbench.domain.list_settings import ListSettings
+from aas_workingbench.domain.list_settings import derive_settings
+from aas_workingbench.domain.list_settings import detect_settings
+from aas_workingbench.domain.list_settings import plan_list_rebuild
+from aas_workingbench.domain.list_settings import settings_of
+from aas_workingbench.domain.replacement import ConversionRefused
 
 STRING = model.datatypes.String
 INT = model.datatypes.Int

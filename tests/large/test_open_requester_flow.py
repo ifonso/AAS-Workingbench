@@ -152,7 +152,7 @@ def test_every_object_of_the_file_shows_in_the_tree(editor) -> None:
 
 
 def test_every_row_opens_a_tab_that_shows_no_python_name(editor) -> None:
-    from aas_editor.domain.attribute_display import is_generated_id_short
+    from aas_workingbench.domain.attribute_display import is_generated_id_short
 
     opened: list[str] = []
     leaked: list[str] = []
@@ -178,7 +178,7 @@ def test_every_row_opens_a_tab_that_shows_no_python_name(editor) -> None:
 def test_a_changed_value_is_saved_and_the_rest_is_as_the_sdk_read_it(
     editor,
 ) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     before = read_package(editor.original)
     assert _enter(editor.view, "value", "ISO metric", *THREAD_SYSTEM)
@@ -243,7 +243,7 @@ def test_the_saved_file_has_the_current_relationship_types_and_opens_again(
 def test_validation_finds_no_error_and_its_hints_are_true(
     editor, qtbot
 ) -> None:
-    from aas_editor.ui.validation_service import service_for
+    from aas_workingbench.ui.validation_service import service_for
 
     controller = editor.window.validationController
     editor.view.setCurrentIndex(row_named(editor.view))

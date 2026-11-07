@@ -7,7 +7,10 @@ Every number here comes from a test in `tests/`, named next to the table.
 ## Using the rules
 
 ```python
-from aas_editor.application.validation import save_check_for, validate_package
+from aas_workingbench.application.validation import (
+    save_check_for,
+    validate_package,
+)
 
 # Linear in the size of the package: 45 ms for Purchase Order.
 report = validate_package(package.save_source())

@@ -7,12 +7,12 @@ from tests.factories import make_shell
 from tests.factories import make_submodel
 from tests.package_factories import make_annotated_relationship
 
-from aas_editor.domain.file_references import FileReference
-from aas_editor.domain.file_references import file_references
-from aas_editor.domain.file_references import is_package_path
-from aas_editor.domain.file_references import missing_files
-from aas_editor.domain.file_references import references_in
-from aas_editor.domain.file_references import unreferenced_files
+from aas_workingbench.domain.file_references import FileReference
+from aas_workingbench.domain.file_references import file_references
+from aas_workingbench.domain.file_references import is_package_path
+from aas_workingbench.domain.file_references import missing_files
+from aas_workingbench.domain.file_references import references_in
+from aas_workingbench.domain.file_references import unreferenced_files
 
 
 @pytest.mark.parametrize(

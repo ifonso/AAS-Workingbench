@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QLabel
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.ui.empty_state import EmptyState
+from aas_workingbench.ui.empty_state import EmptyState
 
 
 class Start:

@@ -11,8 +11,8 @@ from tests.medium.conftest import ELEMENT_ID
 from tests.medium.conftest import ELEMENT_PATH
 from tests.serialization import snapshot
 
-from aas_editor.domain.list_settings import ListSettings
-from aas_editor.domain.replacement import ReplacementPlan
+from aas_workingbench.domain.list_settings import ListSettings
+from aas_workingbench.domain.replacement import ReplacementPlan
 
 ACTION = "conversion.list_settings"
 STRING = model.datatypes.String
@@ -28,8 +28,8 @@ class Rebuilds:
     """Runs the action on the list of a lab, with the dialogs stubbed."""
 
     def __init__(self, lab: Any, monkeypatch: pytest.MonkeyPatch) -> None:
-        from aas_editor.ui import reference_dialogs
-        from aas_editor.ui import replacement_dialogs
+        from aas_workingbench.ui import reference_dialogs
+        from aas_workingbench.ui import replacement_dialogs
 
         self.lab = lab
         self.settings: ListSettings | None = None
@@ -64,7 +64,9 @@ class Rebuilds:
 
 @pytest.fixture
 def registered(qapp: object) -> None:
-    from aas_editor.ui.conversion_actions import register_conversion_actions
+    from aas_workingbench.ui.conversion_actions import (
+        register_conversion_actions,
+    )
 
     register_conversion_actions()
 
@@ -249,7 +251,7 @@ def test_the_edit_of_a_fixed_attribute_points_to_the_action(
 
 
 def test_the_dialog_starts_with_the_settings_of_the_list(qapp: object) -> None:
-    from aas_editor.ui.replacement_dialogs import ListSettingsDialog
+    from aas_workingbench.ui.replacement_dialogs import ListSettingsDialog
 
     item_list = model.SubmodelElementList(
         "Items",
@@ -269,7 +271,7 @@ def test_the_dialog_starts_with_the_settings_of_the_list(qapp: object) -> None:
 def test_the_dialog_gives_a_global_id_as_an_external_reference(
     qapp: object,
 ) -> None:
-    from aas_editor.ui.replacement_dialogs import ListSettingsDialog
+    from aas_workingbench.ui.replacement_dialogs import ListSettingsDialog
 
     item_list = model.SubmodelElementList(
         "Items", model.Property, value_type_list_element=STRING
@@ -287,7 +289,7 @@ def test_the_dialog_gives_a_global_id_as_an_external_reference(
 def test_the_value_type_applies_to_property_and_range_items_only(
     qapp: object,
 ) -> None:
-    from aas_editor.ui.replacement_dialogs import ListSettingsDialog
+    from aas_workingbench.ui.replacement_dialogs import ListSettingsDialog
 
     item_list = model.SubmodelElementList(
         "Items", model.Property, value_type_list_element=INT
@@ -301,7 +303,7 @@ def test_the_value_type_applies_to_property_and_range_items_only(
 
 
 def test_detecting_takes_the_settings_the_items_share(qapp: object) -> None:
-    from aas_editor.ui.replacement_dialogs import ListSettingsDialog
+    from aas_workingbench.ui.replacement_dialogs import ListSettingsDialog
 
     item_list = model.SubmodelElementList(
         "Items",
@@ -319,7 +321,7 @@ def test_detecting_takes_the_settings_the_items_share(qapp: object) -> None:
 
 
 def test_detecting_is_off_for_a_list_without_items(qapp: object) -> None:
-    from aas_editor.ui.replacement_dialogs import ListSettingsDialog
+    from aas_workingbench.ui.replacement_dialogs import ListSettingsDialog
 
     item_list = model.SubmodelElementList(
         "Items", model.Property, value_type_list_element=INT

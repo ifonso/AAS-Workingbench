@@ -11,10 +11,10 @@ from tests.factories import make_operation
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.domain.clipboard_json import ClipboardError
-from aas_editor.domain.clipboard_json import clone
-from aas_editor.domain.clipboard_json import dump_objects
-from aas_editor.domain.clipboard_json import load_objects
+from aas_workingbench.domain.clipboard_json import ClipboardError
+from aas_workingbench.domain.clipboard_json import clone
+from aas_workingbench.domain.clipboard_json import dump_objects
+from aas_workingbench.domain.clipboard_json import load_objects
 
 
 class TestRoundTrip:

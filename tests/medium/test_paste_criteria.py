@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import QApplication
 from tests.factories import make_property
 from tests.medium.test_paste_actions import pasting  # noqa: F401
 
-from aas_editor.domain.clipboard_json import dump_objects
+from aas_workingbench.domain.clipboard_json import dump_objects
 
 
 def _ids(container: object) -> list[str | None]:

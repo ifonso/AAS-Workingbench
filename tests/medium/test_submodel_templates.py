@@ -40,7 +40,7 @@ def folder(tmp_path: Path) -> Path:
 @pytest.fixture
 def read_count(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
     """The files that were read, in order."""
-    from aas_editor.infrastructure import submodel_templates
+    from aas_workingbench.infrastructure import submodel_templates
 
     reads: list[Path] = []
     real = submodel_templates.read_package
@@ -52,7 +52,7 @@ def read_count(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
     monkeypatch.setattr(submodel_templates, "read_package", counting)
     # The view read the files itself before, with these functions. If it still
     # holds one, a read through it counts too.
-    from aas_editor.treeviews import treeview_pack
+    from aas_workingbench.treeviews import treeview_pack
 
     for name in ("read_package", "read_aas_json_file", "read_aas_xml_file"):
         original = getattr(treeview_pack, name, None)
@@ -71,7 +71,9 @@ def read_count(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
 def test_listing_the_templates_reads_none_of_them(
     qapp: object, folder: Path, read_count: list[Path]
 ) -> None:
-    from aas_editor.infrastructure.submodel_templates import SubmodelTemplates
+    from aas_workingbench.infrastructure.submodel_templates import (
+        SubmodelTemplates,
+    )
 
     names = SubmodelTemplates(folder).files()
 
@@ -86,7 +88,9 @@ def test_listing_the_templates_reads_none_of_them(
 def test_a_template_is_read_once(
     qapp: object, folder: Path, read_count: list[Path]
 ) -> None:
-    from aas_editor.infrastructure.submodel_templates import SubmodelTemplates
+    from aas_workingbench.infrastructure.submodel_templates import (
+        SubmodelTemplates,
+    )
 
     templates = SubmodelTemplates(folder)
     path = Path("Group/1/0/Beta.json")
@@ -101,7 +105,9 @@ def test_a_template_is_read_once(
 
 
 def test_an_aasx_template_brings_its_files(qapp: object, folder: Path) -> None:
-    from aas_editor.infrastructure.submodel_templates import SubmodelTemplates
+    from aas_workingbench.infrastructure.submodel_templates import (
+        SubmodelTemplates,
+    )
 
     content = SubmodelTemplates(folder).read(Path("Group/1/0/Alpha.aasx"))
 
@@ -113,7 +119,9 @@ def test_an_aasx_template_brings_its_files(qapp: object, folder: Path) -> None:
 def test_a_template_that_cannot_be_read_is_skipped_and_not_tried_again(
     qapp: object, folder: Path, read_count: list[Path]
 ) -> None:
-    from aas_editor.infrastructure.submodel_templates import SubmodelTemplates
+    from aas_workingbench.infrastructure.submodel_templates import (
+        SubmodelTemplates,
+    )
 
     templates = SubmodelTemplates(folder)
     path = Path("Group/1/0/Broken.json")
@@ -134,11 +142,13 @@ def view(
     folder: Path,
     read_count: list[Path],
 ) -> Any:
-    from aas_editor.models import PackTreeViewItem
-    from aas_editor.models import PacksTable
-    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
-    from aas_editor.treeviews import treeview_pack
+    from aas_workingbench.models import PackTreeViewItem
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    )
+    from aas_workingbench.treeviews import treeview_pack
 
     monkeypatch.setattr(treeview_pack, "SUBMODEL_TEMPLATES_FOLDER", folder)
     window = QWidget()
@@ -245,7 +255,7 @@ def test_two_versions_of_a_file_share_one_menu_and_both_are_listed(
 ) -> None:
     # The folders of versions are not shown, so these two share the menu "Beta.json".
     _write_json(folder / "Group" / "2" / "0" / "Beta.json", "Delta")
-    from aas_editor.treeviews.treeview_pack import PackTreeView
+    from aas_workingbench.treeviews.treeview_pack import PackTreeView
 
     again = PackTreeView(view.parent())
     group = _submenu(again.addExistSubmodelsMenu, "Group")
@@ -261,7 +271,9 @@ def test_a_json_template_with_a_defective_submodel_still_gives_the_others(
 ) -> None:
     import json
 
-    from aas_editor.infrastructure.submodel_templates import SubmodelTemplates
+    from aas_workingbench.infrastructure.submodel_templates import (
+        SubmodelTemplates,
+    )
 
     path = folder / "Group" / "1" / "0" / "Beta.json"
     data = json.loads(path.read_text(encoding="utf-8"))

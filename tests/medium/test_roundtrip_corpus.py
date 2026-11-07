@@ -5,7 +5,7 @@ supplementary files, the package thumbnail, the core properties, and the zip
 entries. The corpus has three sources:
 
 * The packages in tests/data, always.
-* The AASX templates in src/aas_editor/submodel_templates. A sample of them
+* The AASX templates in src/aas_workingbench/submodel_templates. A sample of them
   runs by default, and it always holds the templates that point to a file
   missing in the package. Set AAS_CORPUS_TEMPLATES=all to run every template:
 
@@ -39,10 +39,10 @@ import pyecma376_2
 from pyecma376_2.package_model import normalize_part_name
 import pytest
 
-from aas_editor.application.save import SaveOptions
-from aas_editor.application.save import check_save
-from aas_editor.domain.walking import walk_elements
-from aas_editor.package import Package
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.application.save import check_save
+from aas_workingbench.domain.walking import walk_elements
+from aas_workingbench.package import Package
 from tests.factories import make_asset_information
 from tests.factories import make_blob
 from tests.factories import make_file_element
@@ -53,7 +53,10 @@ from tests.factories import write_aasx
 
 TEST_DATA_DIR = Path(__file__).parents[1] / "data"
 TEMPLATES_DIR = (
-    Path(__file__).parents[2] / "src" / "aas_editor" / "submodel_templates"
+    Path(__file__).parents[2]
+    / "src"
+    / "aas_workingbench"
+    / "submodel_templates"
 )
 CORPUS_ROOT_VARIABLE = "AAS_CORPUS_ROOT"
 TEMPLATES_VARIABLE = "AAS_CORPUS_TEMPLATES"

@@ -61,9 +61,9 @@ def _attributes_a_tab_shows(cls: type) -> set[str]:
     and the parameters of its constructor, which are set on the object.
     """
     # The settings must be imported first, or the utils import in a circle.
-    import aas_editor.settings  # noqa: F401
-    from aas_editor.utils.util import getAttrsOfCls
-    from aas_editor.utils.util_classes import ClassesInfo
+    import aas_workingbench.settings  # noqa: F401
+    from aas_workingbench.utils.util import getAttrsOfCls
+    from aas_workingbench.utils.util_classes import ClassesInfo
 
     of_class = {
         name
@@ -77,7 +77,7 @@ def _attributes_a_tab_shows(cls: type) -> set[str]:
 def test_every_attribute_of_every_class_of_the_sdk_has_an_entry(
     qapp: object,
 ) -> None:
-    from aas_editor.domain.attribute_vocabulary import attribute_info
+    from aas_workingbench.domain.attribute_vocabulary import attribute_info
 
     unnamed = sorted(
         f"{cls.__name__}.{attribute}"
@@ -126,16 +126,18 @@ def test_every_row_of_a_bundled_package_has_a_name_in_the_vocabulary(
 ) -> None:
     from PyQt6.QtCore import QModelIndex
 
-    from aas_editor.domain.attribute_vocabulary import attribute_info
-    from aas_editor.domain.attribute_vocabulary import LIST_INDEX
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PackTreeViewItem
-    from aas_editor.models import PacksTable
-    from aas_editor.package import Package
-    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.settings.app_settings import PARENT_OBJ_ROLE
+    from aas_workingbench.domain.attribute_vocabulary import attribute_info
+    from aas_workingbench.domain.attribute_vocabulary import LIST_INDEX
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PackTreeViewItem
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    )
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import PARENT_OBJ_ROLE
 
     columns = [*DEFAULT_COLUMNS_IN_PACKS_TABLE, *EXTENDED_COLUMNS_IN_PACK_TABLE]
     table = PacksTable(columns, PackTreeViewItem(None, None))

@@ -11,7 +11,7 @@ from pytestqt.qtbot import QtBot
 @pytest.fixture
 def view(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch) -> Any:
     """A package tree view whose `openPack` records the files it is asked for."""
-    from aas_editor.treeviews import treeview_pack
+    from aas_workingbench.treeviews import treeview_pack
 
     window = QWidget()
     qtbot.addWidget(window)
@@ -31,7 +31,7 @@ def view(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 def _remember(*files: str) -> None:
-    from aas_editor.settings.app_settings import recent_settings
+    from aas_workingbench.settings.app_settings import recent_settings
 
     recent_settings().setValue("recentFiles", list(files))
 

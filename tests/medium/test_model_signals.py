@@ -53,7 +53,7 @@ def test_detail_table_keeps_the_contract_when_it_is_filled(
 def test_update_keeps_the_contract_when_the_item_has_children(
     model_support,
 ) -> None:
-    from aas_editor.settings.app_settings import UPDATE_ROLE
+    from aas_workingbench.settings.app_settings import UPDATE_ROLE
 
     table = model_support.pack_table(_submodel_with_collection())
     model_support.watch(table)
@@ -70,7 +70,7 @@ def test_update_keeps_the_contract_when_the_item_has_children(
 def test_update_keeps_the_contract_when_the_item_has_no_children(
     model_support,
 ) -> None:
-    from aas_editor.settings.app_settings import UPDATE_ROLE
+    from aas_workingbench.settings.app_settings import UPDATE_ROLE
 
     table = model_support.pack_table(_submodel_with_collection())
     model_support.watch(table)
@@ -82,7 +82,7 @@ def test_update_keeps_the_contract_when_the_item_has_no_children(
 
 
 def test_update_keeps_the_contract_in_the_detail_table(model_support) -> None:
-    from aas_editor.settings.app_settings import UPDATE_ROLE
+    from aas_workingbench.settings.app_settings import UPDATE_ROLE
 
     pack_table = model_support.pack_table(_submodel_with_collection())
     details = model_support.detail_table(pack_table, "submodels", "Submodel")
@@ -98,7 +98,7 @@ def test_update_keeps_the_contract_in_the_detail_table(model_support) -> None:
 def test_proxy_keeps_the_contract_when_the_source_updates(
     model_support, model_name: str
 ) -> None:
-    from aas_editor.settings.app_settings import UPDATE_ROLE
+    from aas_workingbench.settings.app_settings import UPDATE_ROLE
 
     pack_table = model_support.pack_table(_submodel_with_collection())
     source = (
@@ -125,7 +125,7 @@ def test_proxy_keeps_the_contract_when_the_source_updates(
 class TestRowsAtPositions:
     @pytest.fixture
     def collection_tree(self, model_support):
-        from aas_editor.models.search_proxy_model import SearchProxyModel
+        from aas_workingbench.models.search_proxy_model import SearchProxyModel
 
         collection = make_collection(
             "Collection", [make_property("a"), make_property("b")]

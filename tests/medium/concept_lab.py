@@ -2,7 +2,7 @@
 
 A lab opens a package in the package tree and offers ways to select a row, run
 an action, answer its questions, and look at the result. The Qt modules of
-`aas_editor` need a `QApplication`, so the class is built when a test asks for
+`aas_workingbench` need a `QApplication`, so the class is built when a test asks for
 the fixture, not when the module is imported.
 """
 
@@ -29,13 +29,13 @@ def build_lab_class(
     Returns:
         A class. `Lab(*objects)` opens a package with the objects.
     """
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.settings.app_settings import OBJECT_ROLE
-    from aas_editor.ui import concept_actions
-    from aas_editor.ui import concept_dialogs
-    from aas_editor.ui import reference_dialogs
-    from aas_editor.ui.concept_actions import register_concept_actions
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.ui import concept_actions
+    from aas_workingbench.ui import concept_dialogs
+    from aas_workingbench.ui import reference_dialogs
+    from aas_workingbench.ui.concept_actions import register_concept_actions
 
     register_concept_actions()
 

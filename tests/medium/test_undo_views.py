@@ -348,7 +348,7 @@ class TestSavedState:
         # The one-letter idShorts of the test package are errors of AASd-002,
         # which the save gate asks about (D5).
         monkeypatch.setattr(
-            "aas_editor.treeviews.treeview_pack.confirm_save",
+            "aas_workingbench.treeviews.treeview_pack.confirm_save",
             lambda check, parent=None, extra=None: True,
         )
 
@@ -419,7 +419,7 @@ class TestSavedState:
     def test_refused_save_leaves_the_package_changed(
         self, views, tmp_path: Path
     ) -> None:
-        from aas_editor.package import Package
+        from aas_workingbench.package import Package
 
         source = write_package_with_missing_file(tmp_path / "dangling.aasx")
         package = Package(source)
@@ -448,7 +448,7 @@ class TestSavedState:
 
 class TestReadModeInTheViews:
     def test_editing_actions_are_disabled_and_come_back(self, views) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         shown = views()
         shown.open_package(make_submodel(elements=[_collection()]))
@@ -489,7 +489,7 @@ class TestReadModeInTheViews:
         assert view.undoAct.isEnabled()
 
     def test_inline_editing_is_blocked_while_reading(self, views) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         shown = views()
         shown.open_package(make_submodel(elements=[_collection()]))
@@ -505,7 +505,7 @@ class TestReadModeInTheViews:
         assert not shown.view.model().flags(cell) & Qt.ItemFlag.ItemIsEditable
 
     def test_delete_shortcut_changes_nothing_while_reading(self, views) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         collection = _collection()
         shown = views()
@@ -520,7 +520,7 @@ class TestReadModeInTheViews:
         assert "Read mode" in shown.shown_errors[0]
 
     def test_undo_shows_a_clear_error_while_reading(self, views) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         collection = _collection()
         shown = views()
@@ -537,7 +537,7 @@ class TestReadModeInTheViews:
     def test_link_action_is_refused_with_an_error_while_reading(
         self, views
     ) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         shown = views()
         package = shown.open_package(
@@ -635,13 +635,13 @@ class TestOtherTabsKeepTheirState:
 
 
 def _add_role() -> int:
-    from aas_editor.settings.app_settings import ADD_ITEM_ROLE
+    from aas_workingbench.settings.app_settings import ADD_ITEM_ROLE
 
     return ADD_ITEM_ROLE
 
 
 def _row_named(view, name: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     # The rows are found by the attribute of the SDK. The first column shows
     # the name that the metamodel gives, such as idShort for id_short.

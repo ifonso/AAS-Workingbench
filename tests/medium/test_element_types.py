@@ -75,7 +75,7 @@ def _multi_language_property() -> Case:
         assert dict(element.value or {}) == {"en": "Hello", "de": "Hallo"}
 
     def edit(lab: Any, attrs: Any) -> None:
-        from aas_editor.additional.classes import DictItem
+        from aas_workingbench.additional.classes import DictItem
 
         assert lab.set(attrs, "value", DictItem("en", "Hi"), "DictItem 0"), (
             lab.refusal
@@ -493,8 +493,8 @@ def _constructor_parameters(element_type: type) -> list[str]:
 def test_form_and_attributes_have_every_attribute_of_the_class(
     lab, name: str
 ) -> None:
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.utils.util_classes import ClassesInfo
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.utils.util_classes import ClassesInfo
 
     case = CASES[name]()
     element_type = case.element_type

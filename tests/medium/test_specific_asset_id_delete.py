@@ -39,8 +39,8 @@ def _written(shell: model.AssetAdministrationShell) -> dict:
 def test_the_last_specific_asset_id_goes_and_the_file_has_no_list(
     model_support,
 ) -> None:
-    from aas_editor.settings.app_settings import NOT_GIVEN
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings.app_settings import NOT_GIVEN
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
     shell = _shell("urn:asset:1")
     table = model_support.pack_table(shell)
@@ -61,8 +61,8 @@ def test_the_last_specific_asset_id_goes_and_the_file_has_no_list(
 
 
 def test_the_removal_is_one_undo_step(model_support) -> None:
-    from aas_editor.settings.app_settings import NOT_GIVEN
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings.app_settings import NOT_GIVEN
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
     shell = _shell("urn:asset:1")
     table = model_support.pack_table(shell)
@@ -84,8 +84,8 @@ def test_the_removal_is_one_undo_step(model_support) -> None:
 def test_the_last_asset_id_of_a_shell_without_a_global_one_is_kept(
     model_support,
 ) -> None:
-    from aas_editor.settings.app_settings import NOT_GIVEN
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings.app_settings import NOT_GIVEN
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
     shell = _shell(None)
     table = model_support.pack_table(shell)

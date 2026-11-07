@@ -13,14 +13,16 @@ from tests.factories import make_submodel
 
 @pytest.fixture
 def view_support(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
-    from aas_editor.models import PackTreeViewItem
-    from aas_editor.models import PacksTable
-    from aas_editor.package import Package
-    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.treeviews.treeview_pack import PackTreeView
-    from aas_editor.widgets.messsageBoxes import ErrorMessageBox
+    from aas_workingbench.models import PackTreeViewItem
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    )
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.treeviews.treeview_pack import PackTreeView
+    from aas_workingbench.widgets.messsageBoxes import ErrorMessageBox
 
     errors: list[str] = []
     windows: list[QWidget] = []

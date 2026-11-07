@@ -28,7 +28,7 @@ pytest.importorskip(
 def test_renaming_an_id_and_an_idshort_updates_the_references_that_name_them(
     author: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.reference_dialogs import RenameDialog
+    from aas_workingbench.ui.reference_dialogs import RenameDialog
 
     build_everything(author, tmp_path)
     author.stack.mark_saved()

@@ -27,8 +27,8 @@ from tests.validation_factories import model_reference_to_submodel
 from tests.validation_factories import store_with
 from tests.validation_factories import template_qualifier
 
-from aas_editor.domain.validation import Severity
-from aas_editor.domain.validation import validate
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.domain.validation import validate
 
 DOCUMENT = "/aasx/files/document.pdf"
 

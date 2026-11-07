@@ -9,10 +9,10 @@ from basyx.aas import model
 from PyQt6.QtCore import Qt
 import pytest
 
-from aas_editor.application.changes import Change
-from aas_editor.application.changes import observer_for
-from aas_editor.domain.ordering import insert_at
-from aas_editor.domain.ordering import move_to
+from aas_workingbench.application.changes import Change
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.domain.ordering import insert_at
+from aas_workingbench.domain.ordering import move_to
 from tests.factories import make_collection
 from tests.factories import make_property
 from tests.factories import make_submodel
@@ -21,7 +21,7 @@ from tests.factories import make_submodel
 @pytest.fixture
 def two_tabs(model_support):
     """Two tabs that show the same property, each behind a proxy."""
-    from aas_editor.models.search_proxy_model import SearchProxyModel
+    from aas_workingbench.models.search_proxy_model import SearchProxyModel
 
     prop = make_property("Name", "pump")
     submodel = make_submodel(elements=[prop])
@@ -42,7 +42,7 @@ def two_tabs(model_support):
 
         @staticmethod
         def value_text(proxy) -> str:
-            from aas_editor.settings.app_settings import VALUE_COLUMN
+            from aas_workingbench.settings.app_settings import VALUE_COLUMN
 
             row = model_support.find(proxy, "value")
             return proxy.index(row.row(), VALUE_COLUMN).data(
@@ -126,8 +126,8 @@ def test_tab_shows_new_id_short_when_the_package_tree_renames_the_element(
 def test_other_tab_shows_new_extension_when_a_tab_adds_one(
     model_support,
 ) -> None:
-    from aas_editor.models.search_proxy_model import SearchProxyModel
-    from aas_editor.settings.app_settings import ADD_ITEM_ROLE
+    from aas_workingbench.models.search_proxy_model import SearchProxyModel
+    from aas_workingbench.settings.app_settings import ADD_ITEM_ROLE
 
     submodel = make_submodel(elements=[make_property("Name")])
     pack_table = model_support.pack_table(submodel)
@@ -154,8 +154,8 @@ def test_other_tab_shows_new_extension_when_a_tab_adds_one(
 def test_other_tab_drops_the_extension_when_a_tab_deletes_it(
     model_support,
 ) -> None:
-    from aas_editor.models.search_proxy_model import SearchProxyModel
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.models.search_proxy_model import SearchProxyModel
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
     submodel = make_submodel(elements=[make_property("Name")])
     submodel.extension.add(model.Extension(name="Note"))
@@ -263,7 +263,7 @@ class TestFollowsCommands:
         self, model_support, tree
     ) -> None:
         first = list(tree.owner.value)[0]
-        from aas_editor.domain.ordering import set_id_short
+        from aas_workingbench.domain.ordering import set_id_short
 
         set_id_short(first, "z")
 

@@ -30,7 +30,7 @@ def shown(views: Any) -> Any:
 
 
 def _value_cell(attrs: Any, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = attrs.model()
     index = QModelIndex()

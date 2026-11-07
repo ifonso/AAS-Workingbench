@@ -6,18 +6,18 @@ from tests.factories import make_collection
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.operations.bulk_edit import BulkAttribute
-from aas_editor.domain.member_json import MemberKind
-from aas_editor.infrastructure.preset_files import SHIPPED_PRESETS_DIR
-from aas_editor.infrastructure.preset_files import load_presets
+from aas_workingbench.application.operations.bulk_edit import BulkAttribute
+from aas_workingbench.domain.member_json import MemberKind
+from aas_workingbench.infrastructure.preset_files import SHIPPED_PRESETS_DIR
+from aas_workingbench.infrastructure.preset_files import load_presets
 
 
 @pytest.fixture
 def widgets(qapp, qtbot):
     """Builds the dialogs and registers them with qtbot."""
-    from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
-    from aas_editor.ui.bulk_dialogs import RemoveExtensionsDialog
-    from aas_editor.ui.preset_dialogs import PresetDialog
+    from aas_workingbench.ui.bulk_dialogs import ChangeAttributeDialog
+    from aas_workingbench.ui.bulk_dialogs import RemoveExtensionsDialog
+    from aas_workingbench.ui.preset_dialogs import PresetDialog
 
     class Widgets:
         def change(self, objects, targets):
@@ -144,11 +144,11 @@ def test_nothing_is_chosen_when_the_filter_matches_nothing(
 
 
 def test_a_refused_row_follows_a_switch_of_theme(widgets, qapp) -> None:
-    from aas_editor.domain.design_tokens import DARK
-    from aas_editor.domain.design_tokens import LIGHT
-    from aas_editor.ui.theme import THEME_DARK
-    from aas_editor.ui.theme import THEME_LIGHT
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.domain.design_tokens import DARK
+    from aas_workingbench.domain.design_tokens import LIGHT
+    from aas_workingbench.ui.theme import THEME_DARK
+    from aas_workingbench.ui.theme import THEME_LIGHT
+    from aas_workingbench.ui.theme import theme_manager
 
     props = [make_property("A"), make_property("B")]
     dialog = None

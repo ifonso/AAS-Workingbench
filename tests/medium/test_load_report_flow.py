@@ -16,12 +16,12 @@ from tests.factories import make_submodel
 from tests.medium.load_report_measure import LOSES_A_SUBMODEL
 from tests.package_factories import write_package_with_same_id_in_two_parts
 
-from aas_editor.application.save import check_save
-from aas_editor.application.save import SaveOptions
-from aas_editor.domain.load_report import build_report
-from aas_editor.domain.load_report import LoadReport
-from aas_editor.domain.load_report import RawRecord
-from aas_editor.domain.load_report import Severity
+from aas_workingbench.application.save import check_save
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.domain.load_report import build_report
+from aas_workingbench.domain.load_report import LoadReport
+from aas_workingbench.domain.load_report import RawRecord
+from aas_workingbench.domain.load_report import Severity
 
 
 def _report(count_details: int = 2) -> LoadReport:
@@ -55,7 +55,7 @@ def shown_reports(
     qapp: object, monkeypatch: pytest.MonkeyPatch
 ) -> list[tuple[str, list[str]]]:
     """Records the summary and the rows of each load report dialog."""
-    from aas_editor.ui.load_report_dialog import LoadReportDialog
+    from aas_workingbench.ui.load_report_dialog import LoadReportDialog
 
     shown: list[tuple[str, list[str]]] = []
 
@@ -77,7 +77,7 @@ def shown_reports(
 def test_the_dialog_names_the_package_and_counts_before_it_lists(
     qapp: object, qtbot: QtBot
 ) -> None:
-    from aas_editor.ui.load_report_dialog import LoadReportDialog
+    from aas_workingbench.ui.load_report_dialog import LoadReportDialog
 
     dialog = LoadReportDialog("template.aasx", _report())
     qtbot.addWidget(dialog)
@@ -92,7 +92,7 @@ def test_the_dialog_names_the_package_and_counts_before_it_lists(
 def test_the_dialog_lists_the_biggest_losses_first(
     qapp: object, qtbot: QtBot
 ) -> None:
-    from aas_editor.ui.load_report_dialog import LoadReportDialog
+    from aas_workingbench.ui.load_report_dialog import LoadReportDialog
 
     dialog = LoadReportDialog("template.aasx", _report())
     qtbot.addWidget(dialog)
@@ -111,7 +111,7 @@ def test_the_dialog_lists_the_biggest_losses_first(
 def test_the_copy_button_puts_the_whole_report_on_the_clipboard(
     qapp: object, qtbot: QtBot
 ) -> None:
-    from aas_editor.ui.load_report_dialog import LoadReportDialog
+    from aas_workingbench.ui.load_report_dialog import LoadReportDialog
 
     report = _report()
     dialog = LoadReportDialog("template.aasx", report)
@@ -129,7 +129,7 @@ def test_the_copy_button_puts_the_whole_report_on_the_clipboard(
 def test_the_dialog_for_an_empty_report_is_not_shown(
     qapp: object, shown_reports: list[tuple[str, list[str]]]
 ) -> None:
-    from aas_editor.ui.load_report_dialog import show_load_report
+    from aas_workingbench.ui.load_report_dialog import show_load_report
 
     show_load_report("template.aasx", LoadReport())
 
@@ -141,12 +141,14 @@ def test_the_dialog_for_an_empty_report_is_not_shown(
 
 @pytest.fixture
 def tree_view(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
-    from aas_editor.models import PackTreeViewItem
-    from aas_editor.models import PacksTable
-    from aas_editor.package import Package
-    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
-    from aas_editor.treeviews.treeview_pack import PackTreeView
+    from aas_workingbench.models import PackTreeViewItem
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    )
+    from aas_workingbench.treeviews.treeview_pack import PackTreeView
 
     # The user agrees to open a package that fails strict reading.
     monkeypatch.setattr(
@@ -209,8 +211,8 @@ def test_opening_a_package_that_is_open_says_so_before_it_reads_the_file(
     shown_reports: list[tuple[str, list[str]]],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import recent_settings
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import recent_settings
 
     opened = tree_view.openPack(LOSES_A_SUBMODEL.as_posix())
     assert opened is not None
@@ -246,9 +248,11 @@ def test_opening_a_package_that_is_open_says_so_before_it_reads_the_file(
 
 @pytest.fixture
 def registered(qapp: object) -> Iterator[None]:
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.load_report_actions import ACTION_ID
-    from aas_editor.ui.load_report_actions import register_load_report_actions
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.load_report_actions import ACTION_ID
+    from aas_workingbench.ui.load_report_actions import (
+        register_load_report_actions,
+    )
 
     register_load_report_actions()
     register_load_report_actions()
@@ -302,9 +306,9 @@ def test_the_action_shows_the_report_of_the_package(
 def test_a_refused_save_offers_the_full_list_of_what_was_left_out(
     qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.ui.save_warnings import IssuesDialog
-    from aas_editor.ui.save_warnings import show_save_refused
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui.save_warnings import IssuesDialog
+    from aas_workingbench.ui.save_warnings import show_save_refused
 
     package = Package(LOSES_A_SUBMODEL, failsafe=True)
     check = check_save(package.save_source(), LOSES_A_SUBMODEL, SaveOptions())
@@ -321,7 +325,7 @@ def test_a_refused_save_offers_the_full_list_of_what_was_left_out(
 def test_the_refused_save_lists_what_the_package_lacks(
     qapp: object, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     package = Package(LOSES_A_SUBMODEL, failsafe=True)
 
@@ -338,7 +342,7 @@ def test_the_refused_save_lists_what_the_package_lacks(
 def test_the_report_survives_a_crash_recovery(
     qapp: object, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     package = Package(LOSES_A_SUBMODEL, failsafe=True)
     package.changed = True

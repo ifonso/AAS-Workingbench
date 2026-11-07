@@ -2,10 +2,10 @@
 
 import pytest
 
-from aas_editor.domain.window_layout import DEFAULT_SIZE
-from aas_editor.domain.window_layout import first_run_size
-from aas_editor.domain.window_layout import window_size
-from aas_editor.domain.window_layout import zone_widths
+from aas_workingbench.domain.window_layout import DEFAULT_SIZE
+from aas_workingbench.domain.window_layout import first_run_size
+from aas_workingbench.domain.window_layout import window_size
+from aas_workingbench.domain.window_layout import zone_widths
 
 PREVIEW_MIN_TAB_WIDTH = 720
 
@@ -73,7 +73,7 @@ def test_the_tree_keeps_what_its_columns_need_in_a_small_window() -> None:
 def test_a_saved_orientation_is_read_whatever_form_the_store_gave(
     saved: object, expected: str
 ) -> None:
-    from aas_editor.domain.window_layout import saved_orientation
+    from aas_workingbench.domain.window_layout import saved_orientation
 
     assert saved_orientation(saved) == expected
 
@@ -81,7 +81,7 @@ def test_a_saved_orientation_is_read_whatever_form_the_store_gave(
 def test_an_orientation_that_is_an_enum_member_is_read_by_its_value() -> None:
     import enum
 
-    from aas_editor.domain.window_layout import saved_orientation
+    from aas_workingbench.domain.window_layout import saved_orientation
 
     class Orientation(enum.Flag):
         Horizontal = 1
@@ -95,6 +95,6 @@ def test_an_orientation_that_is_an_enum_member_is_read_by_its_value() -> None:
     "saved", [None, "", "diagonal", 0, 3, -1, 2.5, True, [2], b"2"]
 )
 def test_a_saved_value_that_is_no_orientation_says_none(saved: object) -> None:
-    from aas_editor.domain.window_layout import saved_orientation
+    from aas_workingbench.domain.window_layout import saved_orientation
 
     assert saved_orientation(saved) is None

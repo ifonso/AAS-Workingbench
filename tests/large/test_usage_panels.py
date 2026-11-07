@@ -43,8 +43,8 @@ def large(
     tmp_path: Path,
 ) -> Iterator[uw.UsageWindow]:
     """The main window on a copy of the Technical Data template."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui import preset_actions
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui import preset_actions
 
     # Selecting a File opens a preview with QtWebEngine, which ends the test
     # process with an access violation after the tests passed (CHANGELOG, Known
@@ -62,7 +62,7 @@ def large(
 
 def _children(window: uw.UsageWindow, holder: str) -> list[QModelIndex]:
     """The rows below a collection of the submodel, in the order shown."""
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     window.view.expandAll()
     parent = next(
@@ -76,7 +76,7 @@ def _children(window: uw.UsageWindow, holder: str) -> list[QModelIndex]:
 
 
 def _collection(window: uw.UsageWindow, holder: str) -> Any:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     window.view.expandAll()
     return next(
@@ -92,7 +92,7 @@ def _order(window: uw.UsageWindow, holder: str) -> list[str]:
 
 
 def _saved(window: uw.UsageWindow, tmp_path: Path, name: str) -> Any:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     window.package.write(tmp_path / name)
     return Package(tmp_path / name)
@@ -186,7 +186,7 @@ def test_delete_of_the_selection_removes_the_rows_and_undo_brings_them_back(
 
 
 def test_the_panel_buttons_follow_the_read_mode(large: uw.UsageWindow) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     rows = _children(large, GENERAL)
     uw.select(large.view, rows[0], rows[1])
@@ -225,7 +225,7 @@ def test_shift_and_down_extend_the_selection_and_open_the_panel(
 def test_change_attribute_renames_three_rows_in_the_file_and_undo_restores(
     large: uw.UsageWindow, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
+    from aas_workingbench.ui.bulk_dialogs import ChangeAttributeDialog
 
     rows = _children(large, GENERAL)
     names = _order(large, GENERAL)
@@ -262,7 +262,7 @@ def test_change_attribute_renames_three_rows_in_the_file_and_undo_restores(
 def test_a_preset_qualifier_goes_to_each_selected_row_and_into_the_file(
     large: uw.UsageWindow, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.preset_dialogs import PresetDialog
+    from aas_workingbench.ui.preset_dialogs import PresetDialog
 
     rows = _children(large, GENERAL)
     collection = _collection(large, GENERAL)
@@ -346,7 +346,7 @@ def test_the_files_panel_lists_the_stored_file_and_a_click_selects_a_row(
 def test_removing_the_file_in_the_panel_unlinks_nothing_silently_and_undo_returns_it(
     large: uw.UsageWindow, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     original = snapshot(large.package.objStore)
     asked: list[Any] = []
@@ -382,7 +382,7 @@ def _without_files(
     window: uw.UsageWindow, rows: list[QModelIndex]
 ) -> list[QModelIndex]:
     """The rows that are not a File, whose tab would load a preview."""
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     return [r for r in rows if not isinstance(r.data(OBJECT_ROLE), model.File)]
 
@@ -442,7 +442,7 @@ def test_close_all_to_the_right_and_to_the_left_leave_the_chosen_tab(
 def test_a_tab_of_a_deleted_element_closes_itself(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     tabs = large.window.mainTabWidget
     rows = _without_files(large, _children(large, GENERAL))
@@ -462,7 +462,7 @@ def test_a_tab_of_a_deleted_element_closes_itself(
 def test_open_in_new_window_shows_the_row_in_a_window_of_its_own(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.widgets.tab import TabWidget
 
     rows = _without_files(large, _children(large, GENERAL))
     before = len(TabWidget.openedTabWidgets)

@@ -7,7 +7,7 @@ from tests.factories import make_operation
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.editing import edit_mode
+from aas_workingbench.application.editing import edit_mode
 
 SUBMODEL = ("submodels", "Submodel")
 
@@ -15,9 +15,9 @@ SUBMODEL = ("submodels", "Submodel")
 @pytest.fixture
 def panel(views, qtbot):
     """A package of six properties, its tree view, and the panel."""
-    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.selection_panel import SelectionPanel
+    from aas_workingbench.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.selection_panel import SelectionPanel
 
     register_move_actions()
     register_bulk_edit_actions()
@@ -156,7 +156,7 @@ def test_rows_of_different_parents_are_said_to_be(panel) -> None:
 def test_the_dock_opens_for_a_selection_until_the_user_closes_it(
     panel, qtbot
 ) -> None:
-    from aas_editor.ui.selection_panel import SelectionDock
+    from aas_workingbench.ui.selection_panel import SelectionDock
 
     lab = panel()
     window = QMainWindow()

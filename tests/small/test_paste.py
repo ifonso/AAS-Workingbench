@@ -9,12 +9,12 @@ from tests.factories import make_property
 from tests.factories import make_store
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.paste import PasteError
-from aas_editor.application.operations.paste import PastePlan
-from aas_editor.application.operations.paste import paste_commands
-from aas_editor.application.operations.paste import plan_paste
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.paste import PasteError
+from aas_workingbench.application.operations.paste import PastePlan
+from aas_workingbench.application.operations.paste import paste_commands
+from aas_workingbench.application.operations.paste import plan_paste
 
 
 def _ids(container: object) -> list[str | None]:

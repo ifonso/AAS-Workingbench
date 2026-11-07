@@ -28,8 +28,8 @@ def _window(
     """
     from PyQt6.QtWidgets import QApplication
 
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.settings.app_settings import Setting
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.settings.app_settings import Setting
 
     read_setting = Setting.value
     monkeypatch.setattr(
@@ -64,7 +64,7 @@ def _header(window: Any) -> Any:
 
 def _fitting_width(window: Any) -> int:
     """The width that a new tab gives the attribute column."""
-    from aas_editor.settings.app_settings import ATTR_MAX_SHARE
+    from aas_workingbench.settings.app_settings import ATTR_MAX_SHARE
 
     view = window.mainTabWidget.currentWidget().attrsTreeView
     return min(
@@ -82,8 +82,8 @@ def _state_with_a_dragged_attribute_column(
     qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> bytes:
     """The state that a user leaves a header in after dragging a column."""
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
-    from aas_editor.settings.app_settings import TYPE_HINT_COLUMN
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import TYPE_HINT_COLUMN
 
     window = _window(qtbot, monkeypatch, {})
     header = _header(window)
@@ -97,8 +97,8 @@ def _state_with_a_dragged_attribute_column(
 def test_a_state_of_an_earlier_layout_does_not_hide_the_new_default(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
-    from aas_editor.settings.app_settings import TYPE_HINT_COLUMN
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import TYPE_HINT_COLUMN
 
     state = _state_with_a_dragged_attribute_column(qtbot, monkeypatch)
 
@@ -117,7 +117,7 @@ def test_a_state_of_an_earlier_layout_does_not_hide_the_new_default(
 def test_a_state_that_was_saved_without_a_layout_is_not_restored_either(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 
     state = _state_with_a_dragged_attribute_column(qtbot, monkeypatch)
 
@@ -138,9 +138,9 @@ def test_a_state_that_was_saved_without_a_layout_is_not_restored_either(
 def test_what_the_user_changed_after_that_is_kept(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
-    from aas_editor.settings.app_settings import TAB_HEADER_LAYOUT_VERSION
-    from aas_editor.settings.app_settings import TYPE_HINT_COLUMN
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import TAB_HEADER_LAYOUT_VERSION
+    from aas_workingbench.settings.app_settings import TYPE_HINT_COLUMN
 
     state = _state_with_a_dragged_attribute_column(qtbot, monkeypatch)
 
@@ -162,8 +162,8 @@ def test_what_the_user_changed_after_that_is_kept(
 def test_columns_that_nobody_sized_are_fitted_again(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
-    from aas_editor.settings.app_settings import TAB_HEADER_LAYOUT_VERSION
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import TAB_HEADER_LAYOUT_VERSION
 
     state = _state_with_a_dragged_attribute_column(qtbot, monkeypatch)
 
@@ -187,7 +187,7 @@ def test_columns_that_nobody_sized_are_fitted_again(
 def test_closing_writes_that_the_user_dragged_a_column(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import ATTRIBUTE_COLUMN
+    from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 
     written: dict[str, Any] = {}
     window = _window(qtbot, monkeypatch, {}, written)
@@ -222,7 +222,9 @@ def _pack_state_with_a_dragged_object_column(
 def test_the_header_of_the_package_tree_of_an_earlier_layout_is_dropped(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import PACK_TREE_OBJECT_COLUMN_WIDTH
+    from aas_workingbench.settings.app_settings import (
+        PACK_TREE_OBJECT_COLUMN_WIDTH,
+    )
 
     state = _pack_state_with_a_dragged_object_column(qtbot, monkeypatch)
 
@@ -241,7 +243,9 @@ def test_the_header_of_the_package_tree_of_an_earlier_layout_is_dropped(
 def test_the_header_of_the_package_tree_of_this_layout_is_kept(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import PACK_TREE_HEADER_LAYOUT_VERSION
+    from aas_workingbench.settings.app_settings import (
+        PACK_TREE_HEADER_LAYOUT_VERSION,
+    )
 
     state = _pack_state_with_a_dragged_object_column(qtbot, monkeypatch)
 
@@ -293,7 +297,7 @@ def test_the_zones_of_this_layout_are_restored(
 ) -> None:
     from PyQt6.QtCore import QSize
 
-    from aas_editor.settings.app_settings import ZONES_LAYOUT_VERSION
+    from aas_workingbench.settings.app_settings import ZONES_LAYOUT_VERSION
 
     window = _window(
         qtbot,

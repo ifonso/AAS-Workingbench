@@ -9,11 +9,11 @@ from tests.factories import make_samm_concept
 from tests.factories import make_store
 from tests.factories import make_submodel
 
-from aas_editor.domain.concept_order import CANNOT_SORT
-from aas_editor.domain.concept_order import ConceptOrder
-from aas_editor.domain.concept_order import can_sort_permanently
-from aas_editor.domain.concept_order import ranks_for
-from aas_editor.domain.concept_order import sort_key
+from aas_workingbench.domain.concept_order import CANNOT_SORT
+from aas_workingbench.domain.concept_order import ConceptOrder
+from aas_workingbench.domain.concept_order import can_sort_permanently
+from aas_workingbench.domain.concept_order import ranks_for
+from aas_workingbench.domain.concept_order import sort_key
 
 
 def _used(prop: model.Property, concept_id: str) -> model.Property:

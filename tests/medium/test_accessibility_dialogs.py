@@ -18,31 +18,31 @@ from tests.factories import make_submodel
 
 
 def _create_shell() -> Any:
-    from aas_editor.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
 
     return CreateShellDialog([])
 
 
 def _create_submodel() -> Any:
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     return CreateSubmodelDialog([], [make_shell()])
 
 
 def _link_submodels() -> Any:
-    from aas_editor.ui.create_dialogs import LinkSubmodelsDialog
+    from aas_workingbench.ui.create_dialogs import LinkSubmodelsDialog
 
     return LinkSubmodelsDialog(make_shell(), [make_submodel()])
 
 
 def _specific_asset_id() -> Any:
-    from aas_editor.ui.create_dialogs import SpecificAssetIdDialog
+    from aas_workingbench.ui.create_dialogs import SpecificAssetIdDialog
 
     return SpecificAssetIdDialog()
 
 
 def _change_attribute() -> Any:
-    from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
+    from aas_workingbench.ui.bulk_dialogs import ChangeAttributeDialog
 
     props = [make_property("RatedPower"), make_property("Speed")]
     return ChangeAttributeDialog([make_submodel(elements=props)], props)
@@ -51,7 +51,7 @@ def _change_attribute() -> Any:
 def _list_settings() -> Any:
     from basyx.aas import model
 
-    from aas_editor.ui.replacement_dialogs import ListSettingsDialog
+    from aas_workingbench.ui.replacement_dialogs import ListSettingsDialog
 
     return ListSettingsDialog(
         model.SubmodelElementList(
@@ -85,14 +85,14 @@ def test_a_dialog_has_a_name_for_each_control(
 
 
 def _iec61360() -> Any:
-    from aas_editor.domain.data_specifications import Iec61360Draft
-    from aas_editor.ui.iec61360_dialog import Iec61360Dialog
+    from aas_workingbench.domain.data_specifications import Iec61360Draft
+    from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
 
     return Iec61360Dialog(Iec61360Draft())
 
 
 def _settings() -> Any:
-    from aas_editor.widgets.settingWidgets import SettingsDialog
+    from aas_workingbench.widgets.settingWidgets import SettingsDialog
 
     return SettingsDialog()
 

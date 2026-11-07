@@ -132,7 +132,7 @@ def test_an_entity_starts_as_a_self_managed_entity(lab) -> None:
 def test_the_other_types_are_made_empty_and_selected(
     lab, element_type: type
 ) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     element = _made(lab, element_type)
 

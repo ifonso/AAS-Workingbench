@@ -8,27 +8,29 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.create import CreateError
-from aas_editor.application.operations.create import add_shell
-from aas_editor.application.operations.create import (
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.create import CreateError
+from aas_workingbench.application.operations.create import add_shell
+from aas_workingbench.application.operations.create import (
     add_specific_asset_id_command,
 )
-from aas_editor.application.operations.create import add_submodel
-from aas_editor.application.operations.create import (
+from aas_workingbench.application.operations.create import add_submodel
+from aas_workingbench.application.operations.create import (
     generate_global_asset_id_command,
 )
-from aas_editor.application.operations.create import global_asset_id_command
-from aas_editor.application.operations.create import new_shell
-from aas_editor.application.operations.create import new_submodel
-from aas_editor.application.operations.create import (
+from aas_workingbench.application.operations.create import (
+    global_asset_id_command,
+)
+from aas_workingbench.application.operations.create import new_shell
+from aas_workingbench.application.operations.create import new_submodel
+from aas_workingbench.application.operations.create import (
     remove_specific_asset_id_command,
 )
-from aas_editor.application.operations.create import shell_of
-from aas_editor.application.operations.create import unlinked_submodels
-from aas_editor.application.operations.rename import DuplicateIdError
-from aas_editor.domain.asset_information import build_specific_asset_id
+from aas_workingbench.application.operations.create import shell_of
+from aas_workingbench.application.operations.create import unlinked_submodels
+from aas_workingbench.application.operations.rename import DuplicateIdError
+from aas_workingbench.domain.asset_information import build_specific_asset_id
 
 
 class _Owner:

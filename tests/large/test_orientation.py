@@ -18,9 +18,9 @@ pytest.importorskip(
 @pytest.fixture(scope="module", autouse=True)
 def registered_actions(qapp: object) -> Iterator[None]:
     """Registers the paste actions, as `__main__` does before the first view."""
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     before = {s.action_id for s in default_registry().specs_for(ViewKind.ANY)}
     register_paste_actions()
@@ -31,7 +31,7 @@ def registered_actions(qapp: object) -> Iterator[None]:
 
 
 def _open(qtbot: Any) -> Any:
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     window = EditorApp()
     qtbot.addWidget(window)
@@ -55,7 +55,7 @@ def test_a_first_run_puts_the_zones_side_by_side(
 def test_a_saved_vertical_orientation_is_restored(
     qapp: object, qtbot: Any
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
+    from aas_workingbench.settings.app_settings import AppSettings
 
     AppSettings.ORIENTATION.setValue(Qt.Orientation.Vertical)
 
@@ -81,7 +81,7 @@ def test_choosing_the_orientation_in_one_window_is_kept_for_the_next(
 def test_a_saved_horizontal_orientation_is_restored(
     qapp: object, qtbot: Any
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
+    from aas_workingbench.settings.app_settings import AppSettings
 
     AppSettings.ORIENTATION.setValue(Qt.Orientation.Horizontal)
 
@@ -97,7 +97,7 @@ def test_a_saved_horizontal_orientation_is_restored(
 def test_a_value_of_an_old_release_keeps_the_default_layout(
     qapp: object, qtbot: Any, old: object
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
+    from aas_workingbench.settings.app_settings import AppSettings
 
     AppSettings.ORIENTATION.setValue(old)
 

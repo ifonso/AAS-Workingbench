@@ -55,8 +55,8 @@ def _every_element_type() -> list[model.SubmodelElement]:
 @pytest.fixture
 def moves(views):
     """A submodel with one element of each type, and the move actions."""
-    from aas_editor.package import Package
-    from aas_editor.ui.move_actions import register_move_actions
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui.move_actions import register_move_actions
 
     register_move_actions()
 

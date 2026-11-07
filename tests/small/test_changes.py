@@ -7,11 +7,11 @@ import pytest
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import Change
-from aas_editor.application.changes import ChangeKind
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.changes import observer_for
-from aas_editor.application.listeners import Subscription
+from aas_workingbench.application.changes import Change
+from aas_workingbench.application.changes import ChangeKind
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.listeners import Subscription
 
 
 class _Recorder:

@@ -6,14 +6,14 @@ bundled templates and the JSON files made for these tests.
 
 import pytest
 
-from aas_editor.domain.load_report import LoadReport
-from aas_editor.domain.load_report import Outcome
-from aas_editor.domain.load_report import RawRecord
-from aas_editor.domain.load_report import Scope
-from aas_editor.domain.load_report import Severity
-from aas_editor.domain.load_report import build_report
-from aas_editor.domain.load_report import duplicate_in_other_part
-from aas_editor.domain.load_report import parse_record
+from aas_workingbench.domain.load_report import LoadReport
+from aas_workingbench.domain.load_report import Outcome
+from aas_workingbench.domain.load_report import RawRecord
+from aas_workingbench.domain.load_report import Scope
+from aas_workingbench.domain.load_report import Severity
+from aas_workingbench.domain.load_report import build_report
+from aas_workingbench.domain.load_report import duplicate_in_other_part
+from aas_workingbench.domain.load_report import parse_record
 
 PART = "/aasx/data/data.aas.xml"
 

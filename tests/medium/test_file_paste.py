@@ -9,9 +9,9 @@ from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.application import supplementary_files as files
-from aas_editor.application.file_transfer import copy_source
-from aas_editor.domain.clipboard_json import clone
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.file_transfer import copy_source
+from aas_workingbench.domain.clipboard_json import clone
 
 DOC = "/aasx/files/doc.pdf"
 
@@ -139,7 +139,7 @@ def test_a_copy_inside_the_same_package_does_not_touch_its_files(views) -> None:
 def test_the_pasted_file_is_written_by_a_save_and_read_again(
     views, tmp_path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     shown, source, target, submodel = _two_packages(
         views, {DOC: (b"%PDF target", "application/pdf")}
@@ -266,7 +266,7 @@ def test_replacing_without_a_known_source_adds_no_file(views) -> None:
 def test_replacing_a_submodel_brings_its_file_along(views, monkeypatch) -> None:
     from PyQt6.QtCore import Qt
 
-    from aas_editor.ui import reference_dialogs
+    from aas_workingbench.ui import reference_dialogs
 
     monkeypatch.setattr(
         reference_dialogs, "confirm_reference_changes", lambda *a, **k: True

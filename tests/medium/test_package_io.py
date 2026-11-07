@@ -20,11 +20,11 @@ from basyx.aas.adapter.aasx import AASXWriter
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 import pytest
 
-from aas_editor.application.save import SaveOptions
-from aas_editor.domain.parts import Thumbnail
-from aas_editor.infrastructure.package_io import PackageParts
-from aas_editor.infrastructure.package_io import read_package
-from aas_editor.infrastructure.package_io import write_package
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.domain.parts import Thumbnail
+from aas_workingbench.infrastructure.package_io import PackageParts
+from aas_workingbench.infrastructure.package_io import read_package
+from aas_workingbench.infrastructure.package_io import write_package
 from tests.factories import make_asset_information
 from tests.factories import make_file_element
 from tests.factories import make_property
@@ -56,8 +56,8 @@ def _parts_with(*elements: model.SubmodelElement) -> PackageParts:
 
 def test_module_does_not_import_package_or_qt_when_it_is_imported() -> None:
     code = (
-        "import sys, aas_editor.infrastructure.package_io\n"
-        "print([n for n in sys.modules if n == 'aas_editor.package' "
+        "import sys, aas_workingbench.infrastructure.package_io\n"
+        "print([n for n in sys.modules if n == 'aas_workingbench.package' "
         "or n.split('.')[0] == 'PyQt6'])"
     )
 

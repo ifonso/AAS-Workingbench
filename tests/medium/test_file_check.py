@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from aas_editor.tools.aas_test.file_check import CHECKED_VERSION
-from aas_editor.tools.aas_test.file_check import checkFile
+from aas_workingbench.tools.aas_test.file_check import CHECKED_VERSION
+from aas_workingbench.tools.aas_test.file_check import checkFile
 
 DATA_DIR = Path(__file__).parents[1] / "data"
 

@@ -10,18 +10,18 @@ from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import Change
-from aas_editor.application.changes import ChangeKind
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.commands import ReadOnlyError
-from aas_editor.application.editing import EditMode
-from aas_editor.application.edits import AddMember
-from aas_editor.application.edits import AddSupplementaryFile
-from aas_editor.application.edits import RemoveMember
-from aas_editor.application.edits import ReplaceMember
-from aas_editor.application.edits import SetAttribute
-from aas_editor.application.edits import link_submodels
+from aas_workingbench.application.changes import Change
+from aas_workingbench.application.changes import ChangeKind
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.commands import ReadOnlyError
+from aas_workingbench.application.editing import EditMode
+from aas_workingbench.application.edits import AddMember
+from aas_workingbench.application.edits import AddSupplementaryFile
+from aas_workingbench.application.edits import RemoveMember
+from aas_workingbench.application.edits import ReplaceMember
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.application.edits import link_submodels
 
 
 @pytest.fixture

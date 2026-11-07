@@ -10,18 +10,18 @@ from tests.factories import make_store
 from tests.factories import make_valid_environment
 from tests.validation_factories import store_with
 
-from aas_editor.domain.validation import ALL_RULES
-from aas_editor.domain.validation import Finding
-from aas_editor.domain.validation import Rule
-from aas_editor.domain.validation import Severity
-from aas_editor.domain.validation import ValidationReport
-from aas_editor.domain.validation import validate
-from aas_editor.domain.validation.coverage import COVERAGE
-from aas_editor.domain.validation.coverage import EDITOR_RULE_REASONS
-from aas_editor.domain.validation.coverage import ConstraintCoverage
-from aas_editor.domain.validation.coverage import Enforcement
-from aas_editor.domain.validation.coverage import known_rule_ids
-from aas_editor.domain.validation.coverage import rules_for
+from aas_workingbench.domain.validation import ALL_RULES
+from aas_workingbench.domain.validation import Finding
+from aas_workingbench.domain.validation import Rule
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.domain.validation import ValidationReport
+from aas_workingbench.domain.validation import validate
+from aas_workingbench.domain.validation.coverage import COVERAGE
+from aas_workingbench.domain.validation.coverage import EDITOR_RULE_REASONS
+from aas_workingbench.domain.validation.coverage import ConstraintCoverage
+from aas_workingbench.domain.validation.coverage import Enforcement
+from aas_workingbench.domain.validation.coverage import known_rule_ids
+from aas_workingbench.domain.validation.coverage import rules_for
 
 
 def _finding(rule_id: str, severity: Severity, blocks: bool = False) -> Finding:

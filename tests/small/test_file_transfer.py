@@ -10,16 +10,16 @@ from tests.factories import make_file_element
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.application import supplementary_files as files
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.edits import AddMember
-from aas_editor.application.file_transfer import CopySource
-from aas_editor.application.file_transfer import plan_transfer
-from aas_editor.application.file_transfer import transfer_reports
-from aas_editor.application.file_transfer import with_copied_files
-from aas_editor.application.operations.companions import gather_companions
-from aas_editor.domain.file_references import references_in
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.edits import AddMember
+from aas_workingbench.application.file_transfer import CopySource
+from aas_workingbench.application.file_transfer import plan_transfer
+from aas_workingbench.application.file_transfer import transfer_reports
+from aas_workingbench.application.file_transfer import with_copied_files
+from aas_workingbench.application.operations.companions import gather_companions
+from aas_workingbench.domain.file_references import references_in
 
 DOC = "/aasx/files/doc.pdf"
 

@@ -14,19 +14,21 @@ from tests.factories import make_property
 from tests.factories import make_valid_environment
 from tests.validation_factories import store_with
 
-from aas_editor.application.save import SaveCheck
-from aas_editor.application.save import SaveOptions
-from aas_editor.application.save import SaveStatus
-from aas_editor.application.save import check_save
-from aas_editor.application.save import save
-from aas_editor.application.validation import SaveGate
-from aas_editor.domain.load_report import LoadReport
-from aas_editor.domain.parts import CoreProperties
-from aas_editor.domain.parts import Thumbnail
-from aas_editor.domain.validation import Finding
-from aas_editor.domain.validation import Rule
-from aas_editor.domain.validation.context import ValidationContext
-from aas_editor.domain.validation.rules.identity import RULES as IDENTITY_RULES
+from aas_workingbench.application.save import SaveCheck
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.application.save import SaveStatus
+from aas_workingbench.application.save import check_save
+from aas_workingbench.application.save import save
+from aas_workingbench.application.validation import SaveGate
+from aas_workingbench.domain.load_report import LoadReport
+from aas_workingbench.domain.parts import CoreProperties
+from aas_workingbench.domain.parts import Thumbnail
+from aas_workingbench.domain.validation import Finding
+from aas_workingbench.domain.validation import Rule
+from aas_workingbench.domain.validation.context import ValidationContext
+from aas_workingbench.domain.validation.rules.identity import (
+    RULES as IDENTITY_RULES,
+)
 
 DOCUMENT = "/aasx/files/document.pdf"
 OPTIONS = SaveOptions()

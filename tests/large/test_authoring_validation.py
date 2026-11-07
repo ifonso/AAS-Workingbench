@@ -111,7 +111,7 @@ def test_validation_lists_each_mistake_with_its_rule_and_the_place(
 def test_the_save_refuses_the_missing_file_and_writes_nothing(
     mistaken: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     path = tmp_path / "box.aasx"
     on_disk = path.read_bytes()
@@ -143,8 +143,8 @@ def test_the_save_refuses_the_missing_file_and_writes_nothing(
 def test_the_findings_go_when_the_mistakes_are_fixed_and_the_package_saves(
     mistaken: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.ui.reference_dialogs import RenameDialog
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui.reference_dialogs import RenameDialog
 
     mistaken.select_path(*BOX, "Q")
     with mistaken.answering(

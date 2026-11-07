@@ -18,9 +18,9 @@ import pytest
 from tests.medium.failsafe_causes import relative_name
 from tests.medium.failsafe_causes import templates
 
-from aas_editor.domain.validation import ValidationReport
-from aas_editor.domain.validation import validate
-from aas_editor.infrastructure.package_io import read_package
+from aas_workingbench.domain.validation import ValidationReport
+from aas_workingbench.domain.validation import validate
+from aas_workingbench.infrastructure.package_io import read_package
 
 PURCHASE_ORDER = "Purchase Order/1/0/IDTA-02050_Template_PurchaseOrder.aasx"
 

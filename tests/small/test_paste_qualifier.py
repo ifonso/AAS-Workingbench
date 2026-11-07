@@ -7,15 +7,15 @@ from tests.factories import make_property
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.paste_qualifier import (
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.paste_qualifier import (
     PasteQualifierError,
 )
-from aas_editor.application.operations.paste_qualifier import (
+from aas_workingbench.application.operations.paste_qualifier import (
     paste_qualifier_commands,
 )
-from aas_editor.application.operations.paste_qualifier import (
+from aas_workingbench.application.operations.paste_qualifier import (
     plan_paste_into_qualifier,
 )
 

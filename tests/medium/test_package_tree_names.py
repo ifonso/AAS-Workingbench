@@ -72,7 +72,7 @@ def test_the_groups_of_a_package_read_in_words_of_the_aas(shown: Any) -> None:
 
 
 def test_the_groups_are_still_found_by_the_name_of_the_sdk(shown: Any) -> None:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     names = _children(shown, NAME_ROLE)
 
@@ -113,7 +113,7 @@ def test_a_file_is_a_supplementary_file(shown: Any) -> None:
 def test_the_variables_of_an_operation_read_as_the_metamodel_names_them(
     shown: Any,
 ) -> None:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     path = ("submodels", "Submodel", "Start")
 
@@ -146,7 +146,7 @@ def test_an_object_that_is_not_a_group_reads_its_id_short(shown: Any) -> None:
 def test_the_tab_of_a_group_is_titled_as_the_tree_names_it(
     shown: Any, qtbot: QtBot
 ) -> None:
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.widgets.tab import TabWidget
 
     tab_widget = TabWidget(unclosable=True)
     qtbot.addWidget(tab_widget)

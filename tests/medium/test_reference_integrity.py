@@ -555,7 +555,7 @@ class TestDelete:
     def test_delete_is_refused_in_read_mode(
         self, views, answers: Answers
     ) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         linked = make_linked()
         shown = views()
@@ -572,7 +572,9 @@ class TestDelete:
 class TestActions:
     @pytest.fixture(autouse=True)
     def registered(self, qapp: object) -> None:
-        from aas_editor.ui.reference_actions import register_reference_actions
+        from aas_workingbench.ui.reference_actions import (
+            register_reference_actions,
+        )
 
         register_reference_actions()
 
@@ -693,7 +695,7 @@ class TestActions:
         assert "No reference needs" in answers.boxes[0].text()
 
     def test_actions_are_disabled_in_read_mode(self, views) -> None:
-        from aas_editor.application.editing import edit_mode
+        from aas_workingbench.application.editing import edit_mode
 
         linked = make_linked()
         shown = views()

@@ -29,7 +29,7 @@ def settings_of_the_test(empty_settings: None) -> None:
 class ModelSupport:
     """Builds the legacy item models over BaSyx objects.
 
-    The Qt modules of `aas_editor` need a `QApplication`, so they are imported
+    The Qt modules of `aas_workingbench` need a `QApplication`, so they are imported
     when a test asks for this support, not at the top of the test module.
     """
 
@@ -51,11 +51,11 @@ class ModelSupport:
                 content and the content type.
         """
 
-        from aas_editor.models import PackTreeViewItem
-        from aas_editor.models import PacksTable
-        from aas_editor.package import Package
-        from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-        from aas_editor.settings.app_settings import (
+        from aas_workingbench.models import PackTreeViewItem
+        from aas_workingbench.models import PacksTable
+        from aas_workingbench.package import Package
+        from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+        from aas_workingbench.settings.app_settings import (
             DEFAULT_COLUMNS_IN_PACKS_TABLE,
         )
 
@@ -72,13 +72,13 @@ class ModelSupport:
 
     def package_of(self, table: QAbstractItemModel):
         """Returns the one package that a package tree model shows."""
-        from aas_editor.settings.app_settings import PACKAGE_ROLE
+        from aas_workingbench.settings.app_settings import PACKAGE_ROLE
 
         return table.index(0, 0).data(PACKAGE_ROLE)
 
     def detail_table(self, pack_table: QAbstractItemModel, *names: str):
         """Creates the model of a tab that shows the item found by its names."""
-        from aas_editor.models import DetailedInfoTable
+        from aas_workingbench.models import DetailedInfoTable
 
         index = self.find_path(pack_table, "", *names)
         return DetailedInfoTable(index)
@@ -99,7 +99,7 @@ class ModelSupport:
         parent: QModelIndex | None = None,
     ) -> QModelIndex:
         """Finds the child of a parent by the name in the first column."""
-        from aas_editor.settings.app_settings import NAME_ROLE
+        from aas_workingbench.settings.app_settings import NAME_ROLE
 
         parent = parent if parent is not None else QModelIndex()
         for row in range(table.rowCount(parent)):
@@ -112,7 +112,7 @@ class ModelSupport:
         self, table: QAbstractItemModel, parent: QModelIndex | None = None
     ) -> list[str]:
         """Lists the names of the children of a parent, in row order."""
-        from aas_editor.settings.app_settings import NAME_ROLE
+        from aas_workingbench.settings.app_settings import NAME_ROLE
 
         parent = parent if parent is not None else QModelIndex()
         return [
@@ -164,14 +164,16 @@ def model_support(
 @pytest.fixture
 def views(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     """Builds the package tree view and the views of tabs over packages."""
-    from aas_editor.models import PackTreeViewItem
-    from aas_editor.models import PacksTable
-    from aas_editor.package import Package
-    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.treeviews.treeview_pack import PackTreeView
-    from aas_editor.widgets.messsageBoxes import ErrorMessageBox
+    from aas_workingbench.models import PackTreeViewItem
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    )
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.treeviews.treeview_pack import PackTreeView
+    from aas_workingbench.widgets.messsageBoxes import ErrorMessageBox
 
     errors: list[str] = []
 
@@ -239,7 +241,9 @@ def views(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
 
         def attrs_view(self, *names: str, package: int = 0):
             """Opens the attributes of an item in a view, as a tab does."""
-            from aas_editor.treeviews.treeview_detailed import AttrsTreeView
+            from aas_workingbench.treeviews.treeview_detailed import (
+                AttrsTreeView,
+            )
 
             holder = QWidget()
             qtbot.addWidget(holder)
@@ -259,10 +263,10 @@ ELEMENT_PATH = (*SUBMODEL_PATH, ELEMENT_ID)
 @pytest.fixture
 def lab_class(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """The class of labs: a package with a submodel, and ways to edit it."""
-    from aas_editor.dialogs import EditObjDialog
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.ui.value_editor import ValueEditDialog
+    from aas_workingbench.dialogs import EditObjDialog
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.ui.value_editor import ValueEditDialog
 
     class Lab:
         refusal = ""
@@ -330,7 +334,9 @@ def lab_class(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
             return index.siblingAtColumn(1)
 
         def set(self, attrs, name: str, value: object, *children: str) -> bool:
-            from aas_editor.settings.app_settings import DATA_CHANGE_FAILED_ROLE
+            from aas_workingbench.settings.app_settings import (
+                DATA_CHANGE_FAILED_ROLE,
+            )
 
             index = self.row(attrs, name, *children)
             edited = attrs.model().setData(

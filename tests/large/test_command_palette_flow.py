@@ -12,11 +12,11 @@ from PyQt6.QtWidgets import QApplication
 import pytest
 from tests.conftest import TEST_DATA_DIR
 
-from aas_editor.application.command_palette import EntryKind
-from aas_editor.application.command_palette import RecentCommands
-from aas_editor.settings.app_settings import OBJECT_ROLE
-from aas_editor.ui.actions import ViewKind
-from aas_editor.ui.actions import default_registry
+from aas_workingbench.application.command_palette import EntryKind
+from aas_workingbench.application.command_palette import RecentCommands
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.ui.actions import ViewKind
+from aas_workingbench.ui.actions import default_registry
 
 pytest.importorskip(
     "PyQt6.QtWebEngineWidgets", reason="PyQt6.QtWebEngineWidgets not available"
@@ -28,10 +28,10 @@ PACKAGE = "IDTA 02002-1-0_Template_ContactInformation.aasx"
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path):
     """The main window with one package."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     # The application registers its actions before its first window.
     register_move_actions()

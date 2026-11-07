@@ -9,19 +9,19 @@ from tests.factories import make_property
 from tests.factories import make_store
 from tests.factories import make_submodel
 
-from aas_editor.domain.concept_order import ConceptOrder
-from aas_editor.domain.concept_order import first_use_ranks
-from aas_editor.domain.concept_order import sort_key
-from aas_editor.domain.concepts import concept_for_pair
-from aas_editor.domain.concepts import concept_reference
-from aas_editor.domain.concepts import concepts_by_id_short
-from aas_editor.domain.concepts import empty_concepts
-from aas_editor.domain.concepts import holders_of
-from aas_editor.domain.concepts import is_empty_concept
-from aas_editor.domain.concepts import new_concept_for
-from aas_editor.domain.data_specifications import TemplateMatch
-from aas_editor.domain.data_specifications import iec_content_of
-from aas_editor.domain.data_specifications import match_template
+from aas_workingbench.domain.concept_order import ConceptOrder
+from aas_workingbench.domain.concept_order import first_use_ranks
+from aas_workingbench.domain.concept_order import sort_key
+from aas_workingbench.domain.concepts import concept_for_pair
+from aas_workingbench.domain.concepts import concept_reference
+from aas_workingbench.domain.concepts import concepts_by_id_short
+from aas_workingbench.domain.concepts import empty_concepts
+from aas_workingbench.domain.concepts import holders_of
+from aas_workingbench.domain.concepts import is_empty_concept
+from aas_workingbench.domain.concepts import new_concept_for
+from aas_workingbench.domain.data_specifications import TemplateMatch
+from aas_workingbench.domain.data_specifications import iec_content_of
+from aas_workingbench.domain.data_specifications import match_template
 
 
 def _with_semantics(

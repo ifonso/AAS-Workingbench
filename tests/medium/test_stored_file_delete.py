@@ -18,8 +18,8 @@ FILES = {PART: (b"hello", "text/plain")}
 def test_deleting_a_stored_file_row_removes_the_file_and_undo_brings_it_back(
     model_support,
 ) -> None:
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
-    from aas_editor.settings.app_settings import NOT_GIVEN
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings.app_settings import NOT_GIVEN
 
     table = model_support.pack_table(make_shell(), files=FILES)
     model_support.watch(table)
@@ -44,7 +44,7 @@ def test_deleting_a_stored_file_row_removes_the_file_and_undo_brings_it_back(
 
 
 def _open_referenced(views, monkeypatch, answer_name: str):
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     shown = views()
     submodel = make_submodel(
@@ -105,7 +105,7 @@ PARTS = {
 def test_several_stored_files_are_deleted_in_one_step_with_one_question(
     views, monkeypatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     asked: list[int] = []
 

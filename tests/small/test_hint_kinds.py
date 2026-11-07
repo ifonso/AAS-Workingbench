@@ -3,19 +3,19 @@
 from basyx.aas import model
 from tests.factories import make_property
 
-from aas_editor.application.hints import HINT_KIND_NAMES
-from aas_editor.application.hints import HintKinds
-from aas_editor.application.hints import group_hints
-from aas_editor.application.hints import hint_count_here
-from aas_editor.application.hints import hint_kind_name
-from aas_editor.application.hints import hint_kind_tip
-from aas_editor.application.hints import hints_here_text
-from aas_editor.application.hints import hints_shown
-from aas_editor.domain.validation import HINT_RULES
-from aas_editor.domain.validation import Finding
-from aas_editor.domain.validation import Severity
-from aas_editor.domain.validation import ValidationReport
-from aas_editor.domain.validation.rules import hints as hint_rules
+from aas_workingbench.application.hints import HINT_KIND_NAMES
+from aas_workingbench.application.hints import HintKinds
+from aas_workingbench.application.hints import group_hints
+from aas_workingbench.application.hints import hint_count_here
+from aas_workingbench.application.hints import hint_kind_name
+from aas_workingbench.application.hints import hint_kind_tip
+from aas_workingbench.application.hints import hints_here_text
+from aas_workingbench.application.hints import hints_shown
+from aas_workingbench.domain.validation import HINT_RULES
+from aas_workingbench.domain.validation import Finding
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.domain.validation import ValidationReport
+from aas_workingbench.domain.validation.rules import hints as hint_rules
 
 
 def _finding(
