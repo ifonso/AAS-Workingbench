@@ -124,7 +124,7 @@ skip_covered = true
 [tool.ruff]
 line-length = 80
 target-version = "py311"
-src = ["src", "tests"]
+src = ["src", "tests", "example"]
 extend-exclude = [
     # Generated code.
     "src/aas_editor/design.py",

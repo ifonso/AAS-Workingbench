@@ -24,6 +24,7 @@ Every edit, add, delete and paste can be undone, and a Read mode refuses changes
 Values are checked against their XSD type as you type, renames update the references that point at the renamed object, and the files stored in a package can be managed from a panel.
 A set of validation rules covers constraints of the metamodel that the SDK does not enforce.
 The [changelog](CHANGELOG.md) has the full list, including the known limits, and [`docs/`](docs/README.md) has the architecture, decision records and guides.
+The folder [`example/`](example/README.md) holds a complete, fictional package of a pick and place robot arm to open in the editor, with the script that builds it.
 
 ## Build
 

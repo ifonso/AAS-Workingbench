@@ -3,6 +3,7 @@ from basyx.aas.model import (
     Submodel,
     ConceptDescription,
 )
+from pyecma376_2.core_properties import OPCCoreProperties
 
 from aas_editor.package import Package, StoredFile
 from aas_editor.settings.aas_settings import (
@@ -63,4 +64,11 @@ CLASSES_INFO[Package] = {
         FILESTORE: {ADD_ACT_AAS_TXT: "Add file", ADD_TYPE: StoredFile},
     },
     IS_EDITABLE_IN_GUI: False,
+}
+
+# The tab of a package shows its core properties. The class of the SDK also
+# holds the tables that it reads and writes them with, which are no data of the
+# package, and showed as lists of Python functions.
+CLASSES_INFO[OPCCoreProperties] = {
+    HIDDEN_ATTRS: ("ATTRIBUTES", "ATTRIBUTES_BY_TAG", "NSMAP"),
 }
