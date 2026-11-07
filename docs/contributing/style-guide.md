@@ -21,7 +21,7 @@ Run `make check` before opening a pull request.
 |---|---|---|---|
 | New packages and `tests/` | ruff, 80 columns | Full set | Google style |
 | Existing modules listed in `per-file-ignores` | ruff, 80 columns | Reduced set | Keep the surrounding `mixedCase` |
-| Generated code (`breeze_resources.py`, `handover_submodel.py`) | Excluded | Excluded | Not applicable |
+| Generated code (`handover_submodel.py`) | Excluded | Excluded | Not applicable |
 | `design.py`, the layout of the main window, written by hand and kept out of the checks until it is rewritten | Excluded | Excluded | Keep the surrounding `mixedCase` |
 
 [ADR 0003](../software/adr/0003-python-style.md) explains why.

@@ -75,14 +75,6 @@ aas-test-engines (aas_test_engines/ and the installed package)
     stand-alone build: the schema above, and an HTML template that the
     installed package also has. The folder has no license file of its own.
 
-Breeze stylesheets (src/aas_editor/themes/dark.qss and light.qss)
-    MIT License. The headers of both files name Colin Duquesnoy and Alex Huszagh
-    as the authors, and hold the license text. The stylesheets are based on the
-    Breeze color scheme, and are not affiliated with KDE. The generated
-    breeze_resources.py holds the compiled resources of the theme folders. The
-    other files in src/aas_editor/themes/, such as grey.qss and default.qss,
-    state no license of their own.
-
 Tabler Icons (src/aas_editor/icons/tabler/)
     Version 3.50.0 of https://github.com/tabler/tabler-icons, the outline
     style. The 53 SVG files are unmodified copies, and are the icons of
@@ -168,11 +160,17 @@ Logos (src/aas_editor/icons/logo.*, full_logo.*, full_logo3.svg)
     recorded in the repository. They are the only files of icons.
 
 Of unrecorded origin
-    Still of unrecorded origin after the icons of actions were replaced: the
-    logos above, the schema file in aas_test_engines/ (see above), and the
-    style sheets of src/aas_editor/themes/ that name no license (see above).
-    The old icons of actions, whose names matched the Material Design Icons
-    set and whose origin was not recorded, were removed from the repository.
+    Still of unrecorded origin: the logos above, and the schema file in
+    aas_test_engines/ (see above).
+    Of unrecorded origin, and removed from the repository: the old icons of
+    actions, whose names matched the Material Design Icons set, and the
+    style sheets grey.qss and default.qss of the old themes with their
+    images, which stated no license. Removed with them are the Breeze style
+    sheets dark.qss and light.qss (MIT License, by Colin Duquesnoy and Alex
+    Huszagh, based on the Breeze color scheme), their images, and the
+    generated breeze_resources.py. None of that is in the repository or in
+    the stand-alone build any more. The themes now are made from the colors
+    in src/aas_editor/domain/design_tokens.py (see above).
 
 
 Software that the editor installs

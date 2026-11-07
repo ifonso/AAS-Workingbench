@@ -425,10 +425,10 @@ Probes that shaped this, on Windows with Qt 6.12:
 
 | File | Fate |
 |---|---|
-| `themes/*.qss`, `themes/dark`, `light`, `grey`, images | Removed in the last theme phase, after approval. They are from Breeze, MIT |
+| `themes/*.qss`, `themes/dark`, `light`, `grey`, images | Removed in phase M. `dark.qss` and `light.qss` are from Breeze, MIT. The origin of `grey.qss`, `default.qss`, and the images of their folders was not recorded, and `NOTICE` says that they are gone |
 | `themes/breeze_resources.py`, `breeze.qrc` | Removed. A search finds no import of `breeze_resources`. Generated, so it is deleted, not edited |
 | `ui/colors.py` | Keeps its names, and its constants become lookups of the current theme. `PROBLEM_STYLE` and others must become functions or be applied by object property, since a string fixed at import cannot follow a theme switch |
-| `settings/colors.py` | Same. `table_standard.py`, `search.py`, and `base.py` ask the theme. `LIGHT_BLUE_ALTERNATE` goes |
+| `settings/colors.py` | Same. `table_standard.py`, `search.py`, and `base.py` ask the theme. `LIGHT_BLUE_ALTERNATE` goes. The file itself went in phase M, when `LIGHT_BLUE`, its last color, had no user |
 | `settings/icons.py` | Names stay, so the code that uses them does not change. `initialize_all_icons` installs the engine. `getCharsIcon` goes, once kinds exist. **Global QIcons are kept, with the engine asking the theme at paint time**, so a switch only needs a repaint |
 | `design.py` | Its header says generated, and the agent guide says not to edit it by hand, and its source `mainwindow_base.ui` exists. Whether regenerating still reproduces `design.py` was not checked. Phase H settles this first, and changes the source and regenerates if it does |
 | `widgets/tab.py:884` and other local `setStyleSheet` | Replaced by object names and rules in the template |
@@ -440,7 +440,7 @@ They adopt by inheritance, because the sheet applies to the whole application. O
 
 ### Switching theme
 
-View, Appearance: `Follow system`, `Light`, `Dark`, optional `Native`. Density and "Reduce motion" are in the Settings dialog. The saved `theme` setting is read as: `light` to Light, `dark` and `grey` to Dark, `default` to Native, and an unset value to Follow system. Saved tabs and packages are unaffected.
+View, Appearance: `Follow system`, `Light`, `Dark`, optional `Native`. Density and "Reduce motion" are in the Settings dialog. The saved `theme` setting is read as: `light` and `default` to Light, `dark` and `grey` to Dark, and a name that is not known, or an unset value, to Light, which the owner chose as the default (this replaces the first reading, which sent `default` to Native and an unset value to Follow system). Saved tabs and packages are unaffected.
 
 ### High resolution
 
@@ -489,7 +489,7 @@ Sizes are days of one person's work. Risk is about regressions in legacy code. E
 | J | `feat/validation-at-a-glance` | 2.5 | B | Medium | Counts in status bar, `F8`, strip links to finding, dock headers fit. The run while hidden, after measuring | Validation dock, timing on a large package |
 | K | `feat/dialog-layout` | 3 | D, C | Medium | Dialog pattern, `QDialogButtonBox`, accent, spacing across about 20 dialogs | `test_dialog_layout.py` |
 | L | `feat/keyboard-and-accessibility` | 3 | H | Low | `F6`, focus ring, names, buddies | Medium: walker test |
-| M | `refactor/remove-legacy-themes` | 1 | D to K, decision 5 | Low | Delete Breeze sheets, resources. Theme mapping. Default to Follow system. Docs, spec | Migration, frozen build |
+| M | `refactor/remove-legacy-themes` | 1 | D to K, decision 5 | Low | Delete Breeze sheets, resources. Theme mapping. Default to Light, by the owner's decision 1 (the plan said Follow system). Docs, spec | Migration, frozen build |
 
 **Total: about 33 days.** Order: A, B, and C can start now and in parallel, and they bring the most value per day. D is the base. E and F can run in parallel after it, and I, J, and K too. H waits for F, and conflicts with most, so it should be alone. M is last.
 
@@ -532,6 +532,9 @@ Proposed only, none added now:
 - **Defect of B, fixed:** `Ctrl+S` saves the package of the tab when the focus is in a tab, and not the package of the selected row.
 - [x] L, `feat/keyboard-and-accessibility`, done: `F6` and `Shift+F6` between the tree (or the start panel), the tab, and the bottom panel that is open, `Ctrl+1` and `Ctrl+2` to the tree and the tab, and `Ctrl+L` to edit the path as text, all in the Navigate menu. Tab goes through the breadcrumb before the attributes. The focus ring is two pixels and a token on buttons, tabs, check boxes, and radio buttons, and the ring inside a button that is filled with the accent is the new token `focus_on_accent`. A walker (`tests/accessibility.py`) reads the name that a screen reader would read for every visible control of the main surfaces and of nine dialogs, and found the trees, tables, tab bars, title buttons of the panels, and several fields without one. Differs from the plan: the focus returns to its origin after a dialog because Qt does it, and it has no test of its own; the command bar is not a pane, because its buttons have no focus in a Qt toolbar and each is a menu entry with its key; the focus ring of the rows of a tree stays the focus rectangle of the style, because a ring around the tree would be the box that was taken away. Not done: NVDA, VoiceOver, and Orca (still unverified), High contrast, and a name for the Qt strips of tabs of the bottom panels after a drag.
 - **Defects of H, fixed on `feat/keyboard-and-accessibility`:** the 252 submodel templates were read at the start of every window (7.4 s to 0.66 s offscreen), a recent file could open several times, the large tests wrote into the recent files of the user, a saved orientation was never restored, and in the dark theme the trees and headers were boxed.
+
+- [x] M, `refactor/remove-legacy-themes`, done: the Breeze style sheets, their images, `breeze.qrc` and `breeze_resources.py`, `ThemeManager.apply_legacy`, `toggleStylesheet`, the `themes:` search path, and `settings/colors.py` (`LIGHT_BLUE` had no user) are gone. The theme list reads Follow system, Light, Dark, and Native, and Light is the default, by decision 1 of the owner, which replaces the row of this table (Follow system). A saved `grey` or `dark` is Dark, `light` or `default` is Light, and a name that is not known is Light (`application/theme_choice.py`). Differs from the plan: `default` goes to Light and not to Native, and the ids of the theme list are `system`, `light`, `dark`, and `native`. `NOTICE` loses the Breeze entry and records the style sheets of unrecorded origin as removed, and `aas_manager.spec` loses the theme lines. A frozen build was run (output outside the repository, 1455 MiB): it starts on Windows, shows the window with the title "AAS Workingbench 0.4.13 (Metamodel V3.1)", and holds no `themes` folder, no `.qss` file, and no Breeze file, only `ui/theme/app.qss.template`. Not seen in the frozen build: a picture of its window, and the theme after a restart.
+- **Defects of H, fixed on `refactor/remove-legacy-themes`:** the close cross of the only tab of a window could be drawn on the title (a picture read "showcase.aa×sx"), because Qt deletes a cross that is no more wanted with `deleteLater()` and the cross stayed on screen where it was made until the event loop came round. The tab bar hides it at once. And a width that the user dragged for the columns of the first tab was lost at every start, because the columns were restored before the package was open and opening it fitted them again. They are restored after, and the session saves whether the user sized them.
 
 ## 7. Decisions for the owner
 
