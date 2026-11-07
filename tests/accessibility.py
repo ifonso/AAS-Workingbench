@@ -24,6 +24,7 @@ from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtWidgets import QPlainTextEdit
+from PyQt6.QtWidgets import QTabBar
 from PyQt6.QtWidgets import QTextEdit
 from PyQt6.QtWidgets import QToolButton
 from PyQt6.QtWidgets import QWidget
@@ -103,7 +104,7 @@ def _problem(widget: QWidget) -> str | None:
     if isinstance(widget, QAbstractButton):
         return _button_problem(widget)
     # A header is read with the view that it belongs to.
-    needs_name = isinstance(widget, _FIELDS) or (
+    needs_name = isinstance(widget, (*_FIELDS, QTabBar)) or (
         isinstance(widget, QAbstractItemView)
         and not isinstance(widget, QHeaderView)
     )

@@ -191,6 +191,7 @@ class TabBar(QTabBar):
     def __init__(self, parent=None):
         super(TabBar, self).__init__(parent)
         self.menuIndexTab = None
+        self.setAccessibleName("Tabs")
 
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.setElideMode(Qt.TextElideMode.ElideRight)
@@ -667,6 +668,7 @@ class TabWithTreeView(QWidget):
         self.breadcrumb.set_path(
             [name for name, _ in self.pathSegments()], self._typeText()
         )
+        self.fixTabOrder()
 
         icon = self.packItem.data(Qt.ItemDataRole.DecorationRole)
         if icon:
@@ -683,6 +685,27 @@ class TabWithTreeView(QWidget):
         ) if self.prevItems else self.backAct.setDisabled(True)
         if state:
             self.attrsTreeView.header().restoreState(state)
+
+    def fixTabOrder(self) -> None:
+        """Makes Tab go the way the eye does: tabs, path, copy, search, rows.
+
+        The segments of the path are made for each object, so Qt would put them
+        after the panels at the bottom of the window.
+        """
+        chain: list[QWidget] = [
+            *self.breadcrumb.focus_widgets(),
+            self.copyPathBtn,
+            self.searchBtn,
+            self.attrsTreeView,
+        ]
+        bar = self.tabWidget.tabBar() if self.tabWidget is not None else None
+        if bar is not None:
+            chain.insert(0, bar)
+        if len({widget.window() for widget in chain}) != 1:
+            # Not yet in a window, such as a tab that is being made.
+            return
+        for first, second in zip(chain, chain[1:]):
+            QWidget.setTabOrder(first, second)
 
     def _followPackage(self, package):
         """Learn about the removal of the object that the tab shows"""
@@ -1006,6 +1029,8 @@ class TabWidget(QTabWidget):
 
     def onCurrTabChanged(self, index: int):
         if index >= 0:
+            # The tab bar leads to the tab that is shown.
+            self.widget(index).fixTabOrder()
             packItem = QModelIndex(self.widget(index).packItem)
             self.currItemChanged.emit(packItem)
         else:

@@ -163,10 +163,18 @@ QMessageBox QPushButton:default:pressed {
     border-color: $accent_hover;
 }
 
-QPushButton:default:focus,
+QPushButton:default:focus {
+    border: ${focus_stroke}px solid $focus;
+    padding: 2px 11px;
+}
+
+/* On a button that is filled with the accent, the ring is inside the fill and
+   has the color of the text. The color of the page would be heavy there and
+   would hide where the button ends. */
+
 QPushButton[primary="true"]:focus,
 QMessageBox QPushButton:default:focus {
-    border: ${focus_stroke}px solid $focus;
+    border: ${focus_stroke}px solid $focus_on_accent;
     padding: 2px 11px;
 }
 
@@ -344,6 +352,17 @@ QRadioButton::indicator:hover {
     border-color: $fg_primary;
 }
 
+/* The ring of a box or a dot is its edge, one pixel wider on each side. The
+   box is one pixel smaller in each direction, so that the control keeps its
+   size when the ring comes. */
+
+QCheckBox::indicator:focus,
+QRadioButton::indicator:focus {
+    width: 12px;
+    height: 12px;
+    border: ${focus_stroke}px solid $focus;
+}
+
 QCheckBox::indicator:checked,
 QRadioButton::indicator:checked,
 QCheckBox::indicator:indeterminate,
@@ -367,6 +386,14 @@ QCheckBox::indicator:indeterminate {
 
 QRadioButton::indicator:checked {
     image: url("$image_dir/radio-dot.svg");
+}
+
+/* A checked box is filled with the accent, so its ring comes after that rule. */
+
+QCheckBox::indicator:checked:focus,
+QCheckBox::indicator:indeterminate:focus,
+QRadioButton::indicator:checked:focus {
+    border-color: $focus;
 }
 
 QCheckBox::indicator:disabled,
@@ -449,12 +476,15 @@ QTabBar {
     background-color: transparent;
 }
 
+/* A tab has a transparent edge all round, as wide as the focus ring, so that
+   the ring takes no room when it comes. The padding is what is left of the old
+   5 by 12 pixels. */
+
 QTabBar::tab {
     background-color: transparent;
     color: $fg_secondary;
-    border: none;
-    border-bottom: ${focus_stroke}px solid transparent;
-    padding: 5px 12px;
+    border: ${focus_stroke}px solid transparent;
+    padding: 3px 10px 5px 10px;
 }
 
 QTabBar::tab:hover {
@@ -463,6 +493,14 @@ QTabBar::tab:hover {
 
 QTabBar::tab:selected {
     color: $fg_primary;
+    border-bottom-color: $accent;
+}
+
+/* The tab that has the focus, which is the selected one: the ring, and under
+   it still the line that says which tab is shown. */
+
+QTabBar::tab:selected:focus {
+    border-color: $focus;
     border-bottom-color: $accent;
 }
 

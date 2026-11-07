@@ -87,7 +87,26 @@ def test_every_text_and_icon_token_has_a_pair():
         "accent_hover",
         "stroke_strong",
         "focus",
+        "focus_on_accent",
     }
+
+
+@pytest.mark.parametrize("tokens", [LIGHT, DARK], ids=lambda t: t.name)
+def test_the_ring_on_the_filled_button_is_not_the_ring_on_the_page(tokens):
+    # A black or white ring on the accent is heavy, and it hides the edge of
+    # the button. The ring inside the button takes the color of its text.
+    assert tokens.focus_on_accent == tokens.accent_on
+    assert tokens.focus_on_accent != tokens.focus
+
+
+@pytest.mark.parametrize("tokens", [LIGHT, DARK], ids=lambda t: t.name)
+@pytest.mark.parametrize("background", ["accent", "accent_hover"])
+def test_the_ring_on_the_filled_button_can_be_seen(tokens, background):
+    ratio = contrast_ratio(
+        tokens.color("focus_on_accent"), tokens.color(background)
+    )
+
+    assert ratio >= ICON_CONTRAST
 
 
 def test_text_pairs_ask_4_5_and_icon_pairs_ask_3():
