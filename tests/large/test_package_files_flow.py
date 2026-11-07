@@ -8,6 +8,7 @@ packages are saved and read again to see what a user would send.
 
 from pathlib import Path
 from types import SimpleNamespace
+import zipfile
 
 from basyx.aas import model
 from PyQt6.QtCore import QItemSelectionModel
@@ -302,9 +303,7 @@ def test_a_dangling_path_is_repaired_from_the_refused_save(
     assert sorted(reloaded.fileStore) == sorted([NOTE, THUMB])
 
 
-def test_the_save_warns_about_a_file_that_nothing_refers_to(
-    editor, qtbot
-) -> None:
+def test_the_save_keeps_a_file_that_nothing_refers_to(editor, qtbot) -> None:
     from aas_editor.application import supplementary_files as files
     from aas_editor.application.changes import observer_for
 
@@ -320,11 +319,10 @@ def test_the_save_warns_about_a_file_that_nothing_refers_to(
         editor.package, (editor.tmp_path / "spare.aasx").as_posix()
     )
 
-    title, texts, has_extra = editor.answers.refused[0]
-    assert saved is False
-    assert title == "Save package"
-    assert f"    {SPARE}" in texts
-    assert has_extra
+    assert saved is True
+    assert not editor.answers.refused
+    with zipfile.ZipFile(editor.tmp_path / "spare.aasx") as archive:
+        assert SPARE.lstrip("/") in archive.namelist()
 
 
 def test_read_mode_disables_the_buttons_of_the_panel(editor, qtbot) -> None:

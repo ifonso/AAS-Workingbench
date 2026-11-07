@@ -312,6 +312,19 @@ def test_a_preset_on_a_selection_of_a_package_and_a_row_changes_nothing(
 # The package files panel
 
 
+COVER = "/aasx/files/coverpage.png"
+DECLARED_FILES = 6
+
+
+def _select_cover(panel: Any) -> None:
+    (row,) = [
+        number
+        for number in range(panel.table.rowCount())
+        if panel.table.item(number, 0).text() == COVER
+    ]
+    panel.table.selectRow(row)
+
+
 def test_the_files_panel_lists_the_stored_file_and_a_click_selects_a_row(
     large: uw.UsageWindow,
 ) -> None:
@@ -320,13 +333,12 @@ def test_the_files_panel_lists_the_stored_file_and_a_click_selects_a_row(
     panel.follow_current_package()
     panel.refresh()
 
-    panel.table.selectRow(0)
+    _select_cover(panel)
 
     assert large.window.filesDock.isVisible()
-    assert panel.table.rowCount() == 1
-    assert panel.table.item(0, 0).text() == "/aasx/files/coverpage.png"
-    assert panel.table.item(0, 1).text() == "image/png"
-    assert panel.selected_name() == "/aasx/files/coverpage.png"
+    assert panel.table.rowCount() == DECLARED_FILES
+    assert panel.table.item(panel.table.currentRow(), 1).text() == "image/png"
+    assert panel.selected_name() == COVER
     assert panel.rename_button.isEnabled()
     assert panel.save_button.isEnabled()
 
@@ -349,19 +361,16 @@ def test_removing_the_file_in_the_panel_unlinks_nothing_silently_and_undo_return
     panel = large.window.filesDock.panel
     panel.follow_current_package()
     panel.refresh()
-    panel.table.selectRow(0)
+    _select_cover(panel)
 
     panel.remove_button.click()
     panel.refresh()
-    gone = (
-        panel.table.rowCount(),
-        "/aasx/files/coverpage.png" in large.package.fileStore,
-    )
+    gone = (panel.table.rowCount(), COVER in large.package.fileStore)
     large.view.onUndo()
     panel.refresh()
 
-    assert gone == (0, False)
-    assert panel.table.rowCount() == 1
+    assert gone == (DECLARED_FILES - 1, False)
+    assert panel.table.rowCount() == DECLARED_FILES
     assert "/aasx/files/coverpage.png" in large.package.fileStore
     assert snapshot(large.package.objStore) == original
 
