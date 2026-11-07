@@ -6,6 +6,11 @@ a package that is not open, so the dock filters by severity and by rule, and
 shows how many findings the filters hide. A double click selects the element
 of the finding in the package tree.
 
+The dock has two views, chosen with a tab bar at the top. "Errors and warnings"
+is the list above. "Hints" groups the hints of the whole package by kind, in
+`hints_view`, and is the one place with the count of all of them (ADR 0031).
+F8 goes through the errors and warnings only.
+
 The dock follows the current package of the tree, and clears when that package
 is closed. The service in `validation_service` runs the rules, debounced, so
 that typing and editing never wait for them.
@@ -29,8 +34,10 @@ from PyQt6.QtWidgets import QHBoxLayout
 from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
+from PyQt6.QtWidgets import QStackedWidget
 from PyQt6.QtWidgets import QStyle
 from PyQt6.QtWidgets import QTableView
+from PyQt6.QtWidgets import QTabBar
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
@@ -38,6 +45,7 @@ from aas_editor.application.validation import finding_key
 from aas_editor.domain.validation import Finding
 from aas_editor.domain.validation import Severity
 from aas_editor.domain.validation import ValidationReport
+from aas_editor.ui.hints_view import HintsView
 from aas_editor.ui.validation_service import ValidatedPackage
 from aas_editor.ui.validation_service import ValidationService
 from aas_editor.ui.validation_service import service_for
@@ -48,9 +56,12 @@ ALL_RULES_LABEL = "All rules"
 # The space around the text of a header: its padding, and the sort arrow.
 HEADER_PADDING = 24
 HINTS_NOTE = (
-    "Hints are advice, not rules, so they are not listed here. They show above "
-    "the attributes of the object they are about, and the status bar counts them."
+    "Hints are advice, not rules, so they are not in this list. The Hints view "
+    "lists them for the whole package. They also show above the attributes of "
+    "the object they are about."
 )
+FINDINGS_VIEW, HINTS_VIEW = range(2)
+VIEW_LABELS = ("Errors and warnings", "Hints")
 SEVERITY_LABELS = {
     Severity.ERROR: "Error",
     Severity.WARNING: "Warning",
@@ -200,6 +211,9 @@ class ValidationDock(QDockWidget):
         rule_box: The filter for one rule.
         severity_boxes: The check boxes of the severity filter.
         filter: The proxy model that applies the filters.
+        view_bar: The tabs that choose between the errors and warnings and
+            the hints.
+        hints_view: The hints of the package by kind.
     """
 
     finding_activated = pyqtSignal(object)
@@ -211,6 +225,7 @@ class ValidationDock(QDockWidget):
         self._service: ValidationService | None = None
         self._active = True
         self._report = ValidationReport()
+        self._hint_report = ValidationReport()
 
         self.counts_label = QLabel(self)
         # A package can have hints and no finding. Without this line the dock
@@ -271,13 +286,34 @@ class ValidationDock(QDockWidget):
         self.findings_table.doubleClicked.connect(self._open_row)
         self.findings_table.activated.connect(self._open_row)
 
+        findings_page = QWidget(self)
+        page_layout = QVBoxLayout(findings_page)
+        page_layout.setContentsMargins(0, 0, 0, 0)
+        page_layout.addWidget(self.counts_label)
+        page_layout.addWidget(self.note_label)
+        page_layout.addLayout(severity_row)
+        page_layout.addWidget(self.findings_table)
+
+        self.hints_view = HintsView(self)
+        self.hints_view.finding_activated.connect(self.finding_activated)
+        self.hints_view.counted.connect(self._on_hints_counted)
+        self.view_bar = QTabBar(self)
+        self.view_bar.setObjectName("validationViews")
+        self.view_bar.setAccessibleName("Validation view")
+        self.view_bar.setExpanding(False)
+        self.view_bar.setDrawBase(True)
+        for label in VIEW_LABELS:
+            self.view_bar.addTab(label)
+        self._views = QStackedWidget(self)
+        self._views.addWidget(findings_page)
+        self._views.addWidget(self.hints_view)
+        self.view_bar.currentChanged.connect(self._views.setCurrentIndex)
+
         body = QWidget(self)
         layout = QVBoxLayout(body)
         layout.setContentsMargins(2, 2, 2, 2)
-        layout.addWidget(self.counts_label)
-        layout.addWidget(self.note_label)
-        layout.addLayout(severity_row)
-        layout.addWidget(self.findings_table)
+        layout.addWidget(self.view_bar)
+        layout.addWidget(self._views, 1)
         self.setWidget(body)
         self.filter.sort(SEVERITY_COLUMN, Qt.SortOrder.AscendingOrder)
         self._show_report()
@@ -300,6 +336,7 @@ class ValidationDock(QDockWidget):
         self._detach()
         self._package = None if package is None else weakref.ref(package)
         self._report = ValidationReport()
+        self._hint_report = ValidationReport()
         if package is not None:
             self._service = service_for(package)
             self._service.report_changed.connect(self._on_report)
@@ -328,13 +365,37 @@ class ValidationDock(QDockWidget):
     def refresh(self) -> None:
         """Runs the rules now."""
         if self._service is not None:
-            self._service.listen(self)
+            self._service.listen(self, with_hints=True)
             self._service.refresh()
 
     @property
     def report(self) -> ValidationReport:
         """The findings that the dock lists before its filters."""
         return self._report
+
+    @property
+    def hint_report(self) -> ValidationReport:
+        """The findings and hints that the Hints view groups."""
+        return self._hint_report
+
+    @property
+    def current_view(self) -> int:
+        """Which view is shown: `FINDINGS_VIEW` or `HINTS_VIEW`."""
+        return self.view_bar.currentIndex()
+
+    def show_hints(self) -> None:
+        """Shows the dock on the Hints view, as a click on the hints asks."""
+        self.view_bar.setCurrentIndex(HINTS_VIEW)
+        self.show()
+        self.raise_()
+        self._attach()
+
+    def show_findings(self) -> None:
+        """Shows the dock on the list of errors and warnings."""
+        self.view_bar.setCurrentIndex(FINDINGS_VIEW)
+        self.show()
+        self.raise_()
+        self._attach()
 
     def visible_findings(self) -> list[Finding]:
         """Returns the findings that pass the filters, in the order shown."""
@@ -364,6 +425,7 @@ class ValidationDock(QDockWidget):
         row = self._row_of(finding)
         if row is None:
             return False
+        self.view_bar.setCurrentIndex(FINDINGS_VIEW)
         self.show()
         self.raise_()
         self._attach()
@@ -399,7 +461,9 @@ class ValidationDock(QDockWidget):
 
     def _attach(self) -> None:
         if self._service is not None and self._active:
-            self._service.listen(self)
+            # The hints are run for the Hints view, and they cost little more:
+            # the status bar asks for them too while hints mode is on.
+            self._service.listen(self, with_hints=True)
             if self._report is not self._service.report:
                 self._on_report()
 
@@ -412,10 +476,17 @@ class ValidationDock(QDockWidget):
     def _on_report(self) -> None:
         if self._service is not None:
             self._report = self._service.report
+            self._hint_report = self._service.hint_report
         self._show_report()
+
+    def _on_hints_counted(self, count: int) -> None:
+        self.view_bar.setTabText(
+            HINTS_VIEW, f"{VIEW_LABELS[HINTS_VIEW]} ({count})"
+        )
 
     def _show_report(self) -> None:
         report = self._report
+        self.hints_view.set_report(self._hint_report, self.package is not None)
         # Index the rule box by the rule it showed, so a refresh keeps it.
         chosen = self.rule_box.currentData()
         counts = report.counts_by_rule()

@@ -8,8 +8,9 @@ of the validation service, which runs debounced, so typing never waits for it.
 
 An error or a warning is a finding of the rules, and the Validation panel lists
 it, so a click on the bar opens the panel at that finding. A hint is advice and
-is not in the panel, so a bar that has only hints does not link anywhere. The
-tooltip says which is which.
+is in the Hints view of the panel, with the hints of the whole package, so a bar
+that has only hints does not link anywhere. The tooltip says which is which.
+A kind of hint that the user turned off in that view is left out of the bar.
 """
 
 from PyQt6.QtCore import QEvent
@@ -22,7 +23,9 @@ from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_editor.application.hints import hint_kinds
 from aas_editor.application.hints import hints_mode
+from aas_editor.application.hints import hints_shown
 from aas_editor.application.validation import hints_for
 from aas_editor.application.validation import is_hint
 from aas_editor.application.validation import is_listed
@@ -37,8 +40,8 @@ from aas_editor.ui.validation_service import service_for
 MAX_SHOWN = 5
 KINDS_TIP = (
     "Errors and warnings break the rules of the specification, and the "
-    "Validation panel lists them. Hints are advice, not rules, and the panel "
-    "does not list them."
+    "Validation panel lists them. Hints are advice, not rules. The Hints view "
+    "of the panel lists them for the whole package, and turns a kind off."
 )
 _LABELS = {
     Severity.ERROR: "Error",
@@ -105,7 +108,8 @@ def linked_finding(findings: tuple[Finding, ...]) -> Finding | None:
 
     Returns:
         The first error or warning, or None when there are only hints,
-        because the panel does not list hints.
+        because a click opens the list of errors and warnings, and a hint is
+        in the Hints view.
     """
     return next((f for f in findings if is_listed(f)), None)
 
@@ -179,6 +183,7 @@ class HintsBar(QFrame):
         self._target: object | None = None
         self._service: ValidationService | None = None
         hints_mode().subscribe(self._on_mode)
+        hint_kinds().subscribe(self._on_kinds)
         self.hide()
 
     @property
@@ -248,6 +253,13 @@ class HintsBar(QFrame):
             # The tab was deleted, and the subscription outlived it.
             pass
 
+    def _on_kinds(self) -> None:
+        try:
+            self._update()
+        except RuntimeError:
+            # The tab was deleted, and the subscription outlived it.
+            pass
+
     def _enter(self) -> None:
         if (
             self._package is None
@@ -272,7 +284,7 @@ class HintsBar(QFrame):
         service = self._service
         findings: tuple[Finding, ...] = ()
         if service is not None and self._target is not None:
-            findings = hints_for(service.hint_report, self._target)
+            findings = hints_shown(hints_for(service.hint_report, self._target))
         if not findings:
             self.label.clear()
             self._linked = None

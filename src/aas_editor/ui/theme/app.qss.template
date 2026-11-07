@@ -629,10 +629,12 @@ QStatusBar::item {
     border: none;
 }
 
-/* The counts of findings and hints in the status bar, and the note of the
-   Validation panel. The text of a finding is colored by its worst severity. */
+/* The counts of findings, and the hints of the current object, in the status
+   bar, and the notes of the Validation panel. The text of a finding is colored
+   by its worst severity. The hints button looks as the findings one does. */
 
-QToolButton#validationStatusFindings {
+QToolButton#validationStatusFindings,
+QToolButton#validationStatusHints {
     padding: 0 6px;
 }
 
@@ -644,7 +646,6 @@ QToolButton#validationStatusFindings[state="warning"] {
     color: $status_warning;
 }
 
-QLabel#validationStatusHints,
 QLabel#validationNote {
     color: $fg_secondary;
 }

@@ -24,17 +24,18 @@ check = save_check_for(report)
 | Engine | `domain/validation/engine.py` | `validate(objects, stored_files=None, rules=ALL_RULES, tolerant=False)` returns a `ValidationReport`. A rule that raises is a defect and is not caught, unless `tolerant` is true: then it is logged and reported as a warning of the rule `EDT-RULE-FAILED`. |
 | Findings | `domain/validation/findings.py` | `Finding` (rule id, severity, message, subject, anchor, attribute, `blocks_save`) and `ValidationReport` (`errors`, `warnings`, `blocking`, `of_rule`, `counts_by_rule`). |
 | Coverage | `domain/validation/coverage.py` | The table below, as data. A test keeps it in step with the rules. |
-| Hint rules | `domain/validation/rules/hints.py` | `HINT_RULES`: eleven rules for hints mode, outside `ALL_RULES`. |
+| Hint rules | `domain/validation/rules/hints.py` | `HINT_RULES`: eleven rules for hints mode, outside `ALL_RULES`. The Hints view of the dock lists their findings. |
 | Field checks | `domain/validation/field_checks.py` | The checks of single texts, which the rules and the hints under dialog fields share. |
 | Application | `application/validation.py` | `validate_package(source)`, `save_check_for(report)`, and `SaveGate`, the check of a save. |
 | Service | `ui/validation_service.py` | One for each package. It runs the rules, debounced, for the dock and the hints. |
-| Dock | `ui/validation_dock.py` | The findings with the severity and rule filters. |
+| Dock | `ui/validation_dock.py` | Two views. Errors and warnings with the severity and rule filters, and Hints. |
+| Hints view | `ui/hints_view.py` | The hints of the package grouped by kind, with a count for each, and a check box that turns a kind off. |
 
 **The validation dock (WP5b):** a finding has `anchor`, the shell, submodel, concept description or element to select when the user opens it, and `subject`, the object that is wrong (a `Qualifier`, a `SpecificAssetId`, or a file name).
 `anchor` is `None` for a finding about the package, such as a file that nothing refers to.
 The dock lists them with severity, rule, location and message, filters by severity and by rule, and selects the `anchor` on a double click. `ValidationReport.of(findings)` sorts errors first and keeps the document order within a severity, but the order inside a severity follows an unordered set for shells, submodels, and descriptions.
 
-**Counts, F8 and hints (phase J):** the status bar counts the errors, warnings and hints of the current package while the dock is hidden ([ADR 0029](adr/0029-validation-runs-while-the-panel-is-hidden.md)). Errors and warnings are the findings of `ALL_RULES`, which the dock lists. A hint is a finding of `HINT_RULES`, whatever severity the rule gives it (eleven rules, five of them warnings), and the dock does not list it, so a package can show "No findings" in the dock and a hint in the bar of a tab. `application.validation.count_findings` and `is_listed` draw that line. F8 and Shift+F8 go through the errors and then the warnings of the report, and select the element of each in the tree.
+**Counts, F8 and hints (phase J):** the status bar counts the errors and warnings of the current package while the dock is hidden ([ADR 0029](adr/0029-validation-runs-while-the-panel-is-hidden.md)). Errors and warnings are the findings of `ALL_RULES`, which the Errors and warnings view of the dock lists. A hint is a finding of `HINT_RULES`, whatever severity the rule gives it (eleven rules, five of them warnings). The status bar does not count the hints of the package, because nearly every element has a few and the number never reaches zero. It says how many the current object has, such as "3 hints here", and nothing when it has none, when hints mode is off, or when its kinds are off. A click on it opens the Hints view of the dock ([ADR 0031](adr/0031-hints-say-where-you-are-and-the-panel-lists-them.md)), so a package can show "No findings" in the list of findings and hints in the Hints view. `application.validation.count_findings` and `is_listed` draw that line. F8 and Shift+F8 go through the errors and then the warnings of the report, and select the element of each in the tree.
 
 ### Severity and the save gate (D5)
 
@@ -132,7 +133,11 @@ No bundled template has a template qualifier in an instance submodel, so the exc
 
 ## Hints
 
-Hints mode adds the findings of eleven hint rules to the report. A hint that Package Explorer calls High is a warning, and a Notice is info. The dock and the save gate do not list them.
+Hints mode adds the findings of eleven hint rules to the report. A hint that Package Explorer calls High is a warning, and a Notice is info. The list of errors and warnings and the save gate do not list them, F8 does not stop at them, and the Hints view of the dock does.
+
+The Hints view groups the hints of the package by rule, largest first, with the name that a person reads and the count (`application.hints.group_hints`). A group opens to its elements, and a double click or Enter on an element selects it in the tree. For Technical Data (IDTA 02003 1.2.1, V3.0) the groups are 43 without a display name, 41 with a description in one language, 11 with a deprecated category and 1 without a description. It is the one place with the count of the package, and `tests/medium/test_hints_view.py` checks that its counts equal what `validate_package(..., with_hints=True)` reports for that template.
+
+A check box on each group turns a kind off. The kinds that are off are the user's and not the package's: they are kept in `settings.ini` as `disabledHintKinds`, hold for every package and every session, and are never written to the AASX file. A kind that is off is left out of "3 hints here" and of the bar above a tab, and stays in the Hints view so that it can be turned on again, as can all of them with "Turn all kinds on". It hides findings from the views only, so `HINT_RULES` and what they find are as before.
 
 | Rule | Severity | Hint | Source |
 |---|---|---|---|

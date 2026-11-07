@@ -282,6 +282,9 @@ class AppSettings:
     # Whether the user sized the name or type column of that header. A state
     # that was saved before this was written counts as sized, since it may be.
     TABTREEVIEW_COLUMNS_SIZED = Setting("tabTreeViewColumnsSized", True, bool)
+    # The kinds of hints that the user turned off, as rule ids joined by
+    # commas. The Hints view of the Validation panel sets it.
+    DISABLED_HINT_KINDS = Setting("disabledHintKinds", "", str)
 
     DEFAULT_NEW_FILETYPE = Setting(
         name="defaultNewFileType",
