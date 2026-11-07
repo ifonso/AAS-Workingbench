@@ -279,6 +279,9 @@ class AppSettings:
     TABTREEVIEW_HEADER_STATE = Setting("tabTreeViewHeaderState", None)
     # The layout that the saved state of the tab header was made for.
     TABTREEVIEW_HEADER_LAYOUT = Setting("tabTreeViewHeaderLayout", 0, int)
+    # Whether the user sized the name or type column of that header. A state
+    # that was saved before this was written counts as sized, since it may be.
+    TABTREEVIEW_COLUMNS_SIZED = Setting("tabTreeViewColumnsSized", True, bool)
 
     DEFAULT_NEW_FILETYPE = Setting(
         name="defaultNewFileType",

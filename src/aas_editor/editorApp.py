@@ -137,6 +137,7 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             self.openAASFile(fileToOpen)
         else:
             self.openLastSessionFiles()
+        self.applyLastSessionTabHeader()
 
     def loadThemes(self):
         # Each id of a theme maps to the text of its entry in the menu.
@@ -879,6 +880,14 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             customLists = json.load(json_file)
             packTreeViewHeader.setCustomLists(customLists)
         packTreeViewHeader.initMenu()
+
+    def applyLastSessionTabHeader(self):
+        """Puts the columns of the last session on the first tab.
+
+        This runs after the package of the first tab is open, because opening
+        an item in a tab sets its header up again, and what was restored
+        before would be gone.
+        """
         # A state that an earlier release saved would bring its columns back.
         tabTreeViewHeaderState = restorable_state(
             AppSettings.TABTREEVIEW_HEADER_STATE.value(),
@@ -886,8 +895,12 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
             TAB_HEADER_LAYOUT_VERSION,
         )
         if tabTreeViewHeaderState:
-            self.mainTabWidget.currentWidget().attrsTreeView.header().restoreState(
-                tabTreeViewHeaderState
+            attrsTreeView = self.mainTabWidget.currentWidget().attrsTreeView
+            attrsTreeView.header().restoreState(tabTreeViewHeaderState)
+            # The view fits its columns to the room when it is shown, unless
+            # the user sized them, and a restored state does not tell it so.
+            attrsTreeView.userSizedColumns = bool(
+                AppSettings.TABTREEVIEW_COLUMNS_SIZED.value()
             )
 
     def applyLastSessionTreeFontSizes(self):
@@ -1013,6 +1026,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
         AppSettings.TABTREEVIEW_HEADER_LAYOUT.setValue(
             TAB_HEADER_LAYOUT_VERSION
+        )
+        AppSettings.TABTREEVIEW_COLUMNS_SIZED.setValue(
+            self.mainTabWidget.currentWidget().attrsTreeView.userSizedColumns
         )
         AppSettings.PACKTREEVIEW_HEADER_LAYOUT.setValue(
             PACK_TREE_HEADER_LAYOUT_VERSION
