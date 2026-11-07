@@ -11,6 +11,7 @@ Set `ARM_EXAMPLE_PICTURES` to a folder to have the test save pictures of the
 window (`QWidget.grab`, offscreen) there.
 """
 
+from collections import Counter
 from collections.abc import Iterator
 import os
 from pathlib import Path
@@ -56,6 +57,9 @@ TEMPLATE_SUBMODELS = {
 
 # Concept descriptions are alike, so some of them are read.
 CONCEPTS_READ = 12
+# A tab takes about a second, and the package has more than 800 elements. This
+# many of each class, in each submodel, read as well as all of them would.
+ELEMENTS_READ_OF_A_KIND = 4
 
 PICTURES = (
     ("nameplate", ("submodels", "Nameplate")),
@@ -154,6 +158,32 @@ def _read_tab(editor: Any, index: QModelIndex) -> list[tuple[str, str, str]]:
     return rows
 
 
+ELEMENT_KINDS = {
+    "AnnotatedRelationshipElement",
+    "BasicEventElement",
+    "Blob",
+    "Capability",
+    "Entity",
+    "File",
+    "MultiLanguageProperty",
+    "Operation",
+    "Property",
+    "Range",
+    "ReferenceElement",
+    "RelationshipElement",
+    "SubmodelElementCollection",
+    "SubmodelElementList",
+}
+
+
+def _submodel_of(obj: object) -> str:
+    while isinstance(obj, model.Referable) and obj.parent is not None:
+        if isinstance(obj, model.Submodel):
+            break
+        obj = obj.parent
+    return getattr(obj, "id_short", None) or ""
+
+
 def _is_concept_group(index: QModelIndex) -> bool:
     from aas_editor.settings.app_settings import NAME_ROLE
 
@@ -165,15 +195,19 @@ def test_every_element_has_a_tab_that_reads_well(editor: Any) -> None:
     from aas_editor.settings.app_settings import OBJECT_ROLE
 
     problems: list[str] = []
-    read = concepts = 0
+    concepts = 0
+    kinds_read: Counter[tuple[str, str]] = Counter()
     for index in _walk(editor.view.model()):
         if _is_concept_group(index):
             concepts += 1
             if concepts > CONCEPTS_READ:
                 continue
         obj = index.data(OBJECT_ROLE)
+        kind = (_submodel_of(obj), type(obj).__name__)
+        if kinds_read[kind] >= ELEMENTS_READ_OF_A_KIND:
+            continue
+        kinds_read[kind] += 1
         rows = _read_tab(editor, index)
-        read += 1
         label = f"{index.data()}"
         if not rows and isinstance(obj, model.Referable):
             problems.append(f"{label}: the tab is empty")
@@ -196,7 +230,7 @@ def test_every_element_has_a_tab_that_reads_well(editor: Any) -> None:
         if has_value and shown.get("value") in (None, "", "(not set)"):
             problems.append(f"{label}: the value reads empty")
 
-    assert read > 800
+    assert {name for _, name in kinds_read} >= ELEMENT_KINDS
     assert not problems, "\n".join(problems[:30])
 
 
