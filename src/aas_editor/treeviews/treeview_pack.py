@@ -980,6 +980,16 @@ class PackTreeView(TreeView):
             FileController(package, self).add_from_disk()
 
     def openPack(self, file: str) -> Optional[Package]:
+        # Before the file is read: reading a package that is open takes as long
+        # as the first time, adds it to the recent files again, and shows its
+        # load report again, to say at the end that it is open.
+        if Path(file).absolute() in self.model().data(
+            QModelIndex(), OPENED_FILES_ROLE
+        ):
+            QMessageBox.critical(
+                self, "Error", f"Package {file} is already opened"
+            )
+            return None
         try:
             try:
                 pack = Package(file, failsafe=False)
@@ -1043,14 +1053,8 @@ class PackTreeView(TreeView):
                 self, f"Package {file} couldn't be opened: {e}"
             ).exec()
         else:
-            openedPacks = self.model().data(QModelIndex(), OPENED_FILES_ROLE)
-            if Path(file).absolute() in openedPacks:
-                QMessageBox.critical(
-                    self, "Error", f"Package {file} is already opened"
-                )
-            else:
-                self.add_pack_to_tree(pack)
-                return pack
+            self.add_pack_to_tree(pack)
+            return pack
         return None
 
     def add_pack_to_tree(self, pack: Package):

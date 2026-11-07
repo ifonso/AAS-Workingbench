@@ -46,7 +46,7 @@ class InlineHint(QObject):
         self.label.hide()
         self._place_below(field)
         field.textChanged.connect(self.update)
-        hints_mode().subscribe(self._on_mode)
+        self._mode_subscription = hints_mode().subscribe(self._on_mode)
         self.update()
 
     @property
@@ -74,7 +74,7 @@ class InlineHint(QObject):
             self.update()
         except RuntimeError:
             # The dialog was deleted, and the subscription outlived it.
-            pass
+            self._mode_subscription.cancel()
 
     def _place_below(self, field: QLineEdit) -> None:
         parent = field.parentWidget()

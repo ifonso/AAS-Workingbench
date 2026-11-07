@@ -87,7 +87,7 @@ class ValidationStatus(QWidget):
         # The service names its listeners by identity.
         self._token = object()
         self._service: ValidationService | None = None
-        hints_mode().subscribe(self._on_hints_mode)
+        self._mode_subscription = hints_mode().subscribe(self._on_hints_mode)
         self.hide()
 
     @property
@@ -143,7 +143,7 @@ class ValidationStatus(QWidget):
             self._update()
         except RuntimeError:
             # The widget was deleted, and the subscription outlived it.
-            pass
+            self._mode_subscription.cancel()
 
     def _update(self) -> None:
         if self._service is None:

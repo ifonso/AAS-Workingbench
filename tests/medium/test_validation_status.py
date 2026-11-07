@@ -5,6 +5,7 @@ The counts keep the report up to date while the Validation panel is hidden
 the main window connects them, without the main window.
 """
 
+import logging
 import time
 
 from basyx.aas import model
@@ -155,6 +156,29 @@ def test_hints_come_back_with_hints_mode(window) -> None:
 
     assert not window.status.hints_label.isHidden()
     assert window.status.counts.hints >= 1
+
+
+def test_hints_mode_does_not_fail_in_a_window_that_was_deleted(
+    views, caplog: pytest.LogCaptureFixture
+) -> None:
+    from PyQt6 import sip
+
+    from aas_editor.ui.validation_window import install_validation
+
+    shown = views()
+    main = QMainWindow()
+    main.mainTreeView = shown.view  # type: ignore[attr-defined]
+    main.packTreeModel = shown.table  # type: ignore[attr-defined]
+    controller = install_validation(main)
+    # The Python objects outlive the window, as the objects of a test do.
+    sip.delete(main)
+    assert sip.isdeleted(controller.hints_action)
+
+    with caplog.at_level(logging.ERROR):
+        hints_mode().set_on(False)
+        hints_mode().set_on(True)
+
+    assert "Listener failed" not in caplog.text
 
 
 def test_the_counts_are_hidden_without_a_package(window) -> None:

@@ -178,7 +178,7 @@ class HintsBar(QFrame):
         self._package: ValidatedPackage | None = None
         self._target: object | None = None
         self._service: ValidationService | None = None
-        hints_mode().subscribe(self._on_mode)
+        self._mode_subscription = hints_mode().subscribe(self._on_mode)
         self.hide()
 
     @property
@@ -246,7 +246,7 @@ class HintsBar(QFrame):
             self._update()
         except RuntimeError:
             # The tab was deleted, and the subscription outlived it.
-            pass
+            self._mode_subscription.cancel()
 
     def _enter(self) -> None:
         if (
