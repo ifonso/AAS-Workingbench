@@ -1,6 +1,6 @@
 """Reads and writes AAS packages through the BaSyx adapters.
 
-All AAS content goes through `basyx`. Three things need more than its public
+All AAS content goes through `basyx`. These things need more than its public
 API, and all are isolated here and covered by tests:
 
 * `_TolerantReader` overrides protected methods of `AASXReader`. The SDK
@@ -9,6 +9,9 @@ API, and all are isolated here and covered by tests:
   annotations. The reader also notes which part it parses and which objects
   each part holds, because the SDK skips an object whose id an earlier part
   has without a log record.
+* `_accept_old_relationships` wraps a method of the reader inside the SDK.
+  Many AASX files have the `www.` relationship types of the first versions. The
+  SDK accepts that for the origin only, and then finds no AAS part in the file.
 * `_SdkLogCapture` listens to the logger of the SDK during one read. Failsafe
   mode logs every object it skips, and that is the only account of it.
 * `_read_thumbnail` reads the part name and the content type of the package
@@ -185,6 +188,34 @@ class _CaptureHandler(logging.Handler):
         self._capture.add(record)
 
 
+_OLD_RELATIONSHIPS = "http://www.admin-shell.io/aasx/relationships/"
+_RELATIONSHIPS = "http://admin-shell.io/aasx/relationships/"
+
+
+def _accept_old_relationships(opc_reader: Any) -> None:
+    """Makes a package reader report old relationship types as current ones.
+
+    The result of `get_related_parts_by_type` is cached by the reader, so the
+    types are moved in that result, once for each part. A save writes the
+    current types, which migrates the file.
+
+    Args:
+        opc_reader: The `pyecma376_2` reader that the `AASXReader` holds.
+    """
+    original = opc_reader.get_related_parts_by_type
+
+    def related_parts(part_name: str = "/") -> Any:
+        related = original(part_name)
+        for old_type in [
+            name for name in related if name.startswith(_OLD_RELATIONSHIPS)
+        ]:
+            current = _RELATIONSHIPS + old_type[len(_OLD_RELATIONSHIPS) :]
+            related[current].extend(related.pop(old_type))
+        return related
+
+    opc_reader.get_related_parts_by_type = related_parts
+
+
 class _TolerantReader(AASXReader):
     """An AASX reader that records files it cannot find and does not fail.
 
@@ -208,6 +239,7 @@ class _TolerantReader(AASXReader):
         capture: _SdkLogCapture | None = None,
     ) -> None:
         super().__init__(file, failsafe=failsafe)  # pyright: ignore[reportUnknownMemberType]
+        _accept_old_relationships(self.reader)
         self.missing_files: list[MissingFile] = []
         self._capture = capture
         self._parts: list[tuple[str, list[model.Identifiable]]] = []
