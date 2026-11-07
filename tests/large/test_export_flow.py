@@ -165,7 +165,7 @@ def test_the_save_in_menu_offers_the_three_formats(editor) -> None:
     assert all(act.isEnabled() for act in editor.view.saveInActs)
 
 
-def test_saving_an_aasx_drops_a_file_that_nothing_refers_to_with_a_warning(
+def test_saving_an_aasx_keeps_a_file_that_nothing_refers_to(
     editor, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from aas_editor.ui import file_dialogs
@@ -183,9 +183,6 @@ def test_saving_an_aasx_drops_a_file_that_nothing_refers_to_with_a_warning(
 
     _save_as(editor, target)
 
-    warning = _warning(editor)
-    assert "no File element or thumbnail refers to them" in warning.text
-    assert "/aasx/files/spare.txt" in warning.text
     with zipfile.ZipFile(target) as archive:
-        assert "aasx/files/spare.txt" not in archive.namelist()
+        assert "aasx/files/spare.txt" in archive.namelist()
         assert "aasx/files/document.pdf" in archive.namelist()

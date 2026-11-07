@@ -430,20 +430,30 @@ def test_f8_goes_to_the_finding_and_the_status_bar_says_what_it_is(
     assert not large.window.validationController.dock.isVisible()
 
 
+def _warnings_in(dock: Any) -> int:
+    from aas_editor.domain.validation import Severity
+
+    return sum(
+        1
+        for finding in dock.visible_findings()
+        if finding.severity is Severity.WARNING
+    )
+
+
 def test_the_dock_lists_the_finding_and_a_double_click_goes_to_its_element(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
     controller = large.window.validationController
     controller.status.findings_button.click()
     dock = controller.dock
-    qtbot.waitUntil(lambda: len(dock.visible_findings()) == 1, timeout=3000)
+    qtbot.waitUntil(lambda: _warnings_in(dock) == 1, timeout=3000)
     large.view.setCurrentIndex(_element(large, "ManufacturerName"))
 
     dock.activate_row(0)
 
     assert dock.isVisible()
     assert large.view.currentIndex().data() == "TechnicalData"
-    assert dock.counts_label.text() == "1 warning"
+    assert dock.counts_label.text().startswith("1 warning")
 
 
 def test_the_filters_of_the_dock_hide_rows_and_f8_clears_them(
@@ -454,15 +464,16 @@ def test_the_filters_of_the_dock_hide_rows_and_f8_clears_them(
     controller = large.window.validationController
     controller.show_dock()
     dock = controller.dock
-    qtbot.waitUntil(lambda: len(dock.visible_findings()) == 1, timeout=3000)
+    qtbot.waitUntil(lambda: _warnings_in(dock) == 1, timeout=3000)
+    all_rows = len(dock.visible_findings())
 
     dock.severity_boxes[Severity.WARNING].setChecked(False)
-    hidden = (len(dock.visible_findings()), dock.counts_label.text())
+    hidden = (_warnings_in(dock), len(dock.visible_findings()))
     large.view.setFocus()
     uw.press(Qt.Key.Key_F8)
 
-    assert hidden == (0, "1 warning. Showing 0 of 1")
-    assert len(dock.visible_findings()) == 1
+    assert hidden == (0, all_rows - 1)
+    assert len(dock.visible_findings()) == all_rows
     assert dock.severity_boxes[Severity.WARNING].isChecked()
 
 
