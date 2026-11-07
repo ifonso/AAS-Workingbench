@@ -1,0 +1,660 @@
+#  Copyright (C) 2025  Igor Garmaev, garmaev@gmx.net
+#
+#  This program is made available under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+#  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
+import datetime
+import decimal
+from abc import abstractmethod
+from collections import namedtuple
+from enum import Enum
+from inspect import isabstract
+from typing import Optional, Type, TypeVar
+
+import dateutil
+import pytz
+from PyQt6 import QtGui
+from PyQt6.QtCore import pyqtSignal, Qt, QTimer
+from PyQt6.QtGui import QMouseEvent, QIntValidator
+from PyQt6.QtWidgets import (
+    QLineEdit,
+    QComboBox,
+    QWidget,
+    QCompleter,
+    QHBoxLayout,
+    QPlainTextEdit,
+    QPushButton,
+    QFileDialog,
+    QVBoxLayout,
+    QDateEdit,
+    QDateTimeEdit,
+    QCheckBox,
+)
+from basyx.aas.model.datatypes import Date
+
+from aas_workingbench.additional.classes import DictItem
+from aas_workingbench.ui.value_editor import (
+    BinaryEdit,
+    MultiLineTextEdit,
+    ValueEdit,
+    ValueTypeBox,
+)
+from aas_workingbench.utils.util import inheritors
+from aas_workingbench.utils.util_classes import PreObject
+from aas_workingbench.utils.util_type import (
+    isoftype,
+    issubtype,
+    getTypeName,
+    getArgs,
+)
+from aas_workingbench.widgets.buttons import CloseButton
+
+
+class LineEdit(QLineEdit):
+    clicked = pyqtSignal()
+
+    def __init__(self, parent=None, **kwargs):
+        super(LineEdit, self).__init__(parent, **kwargs)
+        self.setToolTip(self.text())
+        self.textChanged.connect(self.onTextChanged)
+
+    def onTextChanged(self, text):
+        self.setToolTip(text)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        else:
+            super(LineEdit, self).mouseReleaseEvent(event)
+
+
+class ComboBox(QComboBox):
+    def __init__(self, parent: Optional[QWidget] = ...):
+        super(ComboBox, self).__init__(parent)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+    def wheelEvent(self, e: QtGui.QWheelEvent) -> None:
+        if not self.hasFocus():
+            e.ignore()
+        else:
+            super(ComboBox, self).wheelEvent(e)
+
+
+class CompleterComboBox(ComboBox):
+    def __init__(self, parent: Optional[QWidget] = ...):
+        super(CompleterComboBox, self).__init__(parent)
+        lineEdit = CompleterLineEdit()
+        lineEdit.setObjectName("comboLine")
+        lineEdit.setStyleSheet("#comboLine{border:0;}")
+        self.setLineEdit(lineEdit)
+        self.setEditable(True)
+        self.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        completer = self.completer()
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
+
+class CompleterLineEdit(QLineEdit):
+    clicked = pyqtSignal()
+
+    def __init__(self, parent: Optional[QWidget] = ...) -> None:
+        if parent is ...:
+            super(CompleterLineEdit, self).__init__()
+        else:
+            super(CompleterLineEdit, self).__init__(parent)
+        self.textEdited.connect(self.onTextEdited)
+
+    def mouseReleaseEvent(self, a0: QMouseEvent) -> None:
+        if a0.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+            self.completer().setCompletionMode(
+                QCompleter.CompletionMode.UnfilteredPopupCompletion
+            )
+            self.callPopup()
+            self.selectAll()
+        super(CompleterLineEdit, self).mouseReleaseEvent(a0)
+
+    def onTextEdited(self):
+        # force to show all items when text is empty
+        if not self.text():
+            self.completer().setCompletionMode(
+                QCompleter.CompletionMode.UnfilteredPopupCompletion
+            )
+            # completion list will be hidden now; we will show it again after a delay
+            QTimer.singleShot(100, self.callPopup)
+        else:
+            self.completer().setCompletionMode(
+                QCompleter.CompletionMode.PopupCompletion
+            )
+
+    def callPopup(self):
+        self.completer().setCompletionPrefix("")
+        self.completer().complete()
+
+
+class DictItemEdit(QWidget):
+    def __init__(self, parent=None):
+        super(DictItemEdit, self).__init__(parent)
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+        self.keyWidget = LineEdit()
+        self.valueWidget = LineEdit()
+        self.layout.addWidget(self.keyWidget)
+        self.layout.addWidget(self.valueWidget)
+        self.setLayout(self.layout)
+
+    def setKeyText(self, text: str):
+        self.keyWidget.setText(text)
+
+    def setValueText(self, text: str):
+        self.valueWidget.setText(text)
+
+    def setCurrentData(self, data: DictItem):
+        self.setKeyText(data.key)
+        self.setValueText(data.value)
+
+    def currentData(self) -> DictItem:
+        keyData = self.keyWidget.text()
+        valueData = self.valueWidget.text()
+        return DictItem(keyData, valueData)
+
+
+class BytesEdit(BinaryEdit):
+    """Shows the bytes of a Blob as text or hex, in the dialogs generated for
+    the bytes of an object. The user loads and saves files, and never types a
+    Python literal."""
+
+    def getPreObj(self):
+        return PreObject.useExistingObject(self.data())
+
+    def getObj2add(self):
+        return self.data()
+
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            val = val.init()
+        self.set_data(bytes(val) if val is not None else None)
+
+
+class WidgetWithTZinfo(QWidget):
+    @abstractmethod
+    def __init__(self, parent=None):
+        super(WidgetWithTZinfo, self).__init__(parent)
+        self._initLayout()
+
+    def _initLayout(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self)
+        self.setLayout(layout)
+
+    def initTZinfoEdit(self):
+        self.tzinfoEdit = SpecialInputWidget(datetime.tzinfo)
+        self.layout().addWidget(self.tzinfoEdit)
+
+
+class DurationEdit(QWidget):
+    def __init__(self, parent=None, useValidators=True):
+        super(DurationEdit, self).__init__(parent)
+        self.useValidators = useValidators
+        self._initLayout()
+        self.initLineEdits()
+
+    def _initLayout(self):
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self)
+        self.setLayout(layout)
+
+    def initLineEdits(self):
+        self.yearsEdit = QLineEdit(self)
+        self.monthsEdit = QLineEdit(self)
+        self.daysEdit = QLineEdit(self)
+        self.hoursEdit = QLineEdit(self)
+        self.minutesEdit = QLineEdit(self)
+        self.secondsEdit = QLineEdit(self)
+        self.microsecondsEdit = QLineEdit(self)
+
+        self.yearsEdit.setPlaceholderText("years")
+        self.monthsEdit.setPlaceholderText("months")
+        self.daysEdit.setPlaceholderText("days")
+        self.hoursEdit.setPlaceholderText("hours")
+        self.minutesEdit.setPlaceholderText("minutes")
+        self.secondsEdit.setPlaceholderText("s")
+        self.microsecondsEdit.setPlaceholderText("μs")
+
+        self.lineEdits = (
+            self.yearsEdit,
+            self.monthsEdit,
+            self.daysEdit,
+            self.hoursEdit,
+            self.minutesEdit,
+            self.secondsEdit,
+            self.microsecondsEdit,
+        )
+        for lineEdit in self.lineEdits:
+            self.layout().addWidget(lineEdit)
+            if self.useValidators:
+                lineEdit.setValidator(QIntValidator())
+
+    def duration(self) -> dateutil.relativedelta.relativedelta:
+        return self.getObj2add()
+
+    @staticmethod
+    def _fieldText(field) -> str:
+        if isoftype(field, PreObject):
+            field = field.init()
+        return str(field) if field else ""
+
+    def setVal(self, val: dateutil.relativedelta.relativedelta):
+        Duration_kwargs = namedtuple(
+            "Duration_kwargs",
+            "years months days hours minutes seconds microseconds",
+        )
+        if isoftype(val, PreObject):
+            if val.existingObjUsed:
+                val = val.existingObj
+            else:
+                val = Duration_kwargs(**val.kwargs)
+        if isinstance(
+            val, (dateutil.relativedelta.relativedelta, Duration_kwargs)
+        ):
+            # The line edits take text, and a field that is zero stays empty.
+            self.yearsEdit.setText(self._fieldText(val.years))
+            self.monthsEdit.setText(self._fieldText(val.months))
+            self.daysEdit.setText(self._fieldText(val.days))
+            self.hoursEdit.setText(self._fieldText(val.hours))
+            self.minutesEdit.setText(self._fieldText(val.minutes))
+            self.secondsEdit.setText(self._fieldText(val.seconds))
+            self.microsecondsEdit.setText(self._fieldText(val.microseconds))
+        else:
+            raise TypeError(
+                "arg1 must be instance of type dateutil.relativedelta.relativedelta:",
+                type(val),
+            )
+
+    def setDuration(self, val: dateutil.relativedelta.relativedelta):
+        self.setVal(val)
+
+    def getPreObj(self):
+        kwargs = {
+            "years": PreObject(int, (self.yearsEdit.text(),), {})
+            if self.yearsEdit.text()
+            else 0,
+            "months": PreObject(int, (self.monthsEdit.text(),), {})
+            if self.monthsEdit.text()
+            else 0,
+            "days": PreObject(int, (self.daysEdit.text(),), {})
+            if self.daysEdit.text()
+            else 0,
+            "hours": PreObject(int, (self.hoursEdit.text(),), {})
+            if self.hoursEdit.text()
+            else 0,
+            "minutes": PreObject(int, (self.minutesEdit.text(),), {})
+            if self.minutesEdit.text()
+            else 0,
+            "seconds": PreObject(int, (self.secondsEdit.text(),), {})
+            if self.secondsEdit.text()
+            else 0,
+            "microseconds": PreObject(int, (self.microsecondsEdit.text(),), {})
+            if self.microsecondsEdit.text()
+            else 0,
+        }
+        return PreObject(dateutil.relativedelta.relativedelta, tuple(), kwargs)
+
+    def getObj2add(self):
+        return self.getPreObj().init()
+
+
+class DateEdit(QDateEdit):
+    def __init__(self, parent=None):
+        super(DateEdit, self).__init__(parent)
+        self.initQDateEdit()
+
+    def initQDateEdit(self):
+        self.setKeyboardTracking(False)
+        self.setDisplayFormat("dd.MM.yyyy")
+
+    def date(self) -> Date:
+        date = super().date().toPyDate()
+        dateDate = Date(year=date.year, month=date.month, day=date.day)
+        return dateDate
+
+    def setDate(self, val: datetime.date):
+        assert isinstance(val, datetime.date), (
+            "val must be instance of type datetime.date"
+        )
+        super().setDate(val)
+
+
+class DateTimeEdit(WidgetWithTZinfo):
+    def __init__(self, parent=None):
+        super(DateTimeEdit, self).__init__(parent)
+        self.initQDateTimeEdit()
+        self.initTZinfoEdit()
+
+    def initQDateTimeEdit(self):
+        self.dateTimeEdit = QDateTimeEdit(self)
+        self.dateTimeEdit.setKeyboardTracking(False)
+        self.dateTimeEdit.setDisplayFormat("dd.MM.yyyy hh:mm:ss.zzz")
+        self.layout().addWidget(self.dateTimeEdit)
+
+    def dateTime(self) -> datetime.datetime:
+        dateTime = self.dateTimeEdit.dateTime().toPyDateTime()
+        tzinfo = self.tzinfoEdit.getObj2add()
+        dateTime = dateTime.replace(tzinfo=tzinfo)
+        return dateTime
+
+    def setDateTime(self, val: datetime.datetime):
+        assert isinstance(val, datetime.datetime), (
+            "val must be instance of type datetime.datetime"
+        )
+        self.dateTimeEdit.setDateTime(val)
+        self.tzinfoEdit.setVal(val.tzinfo)
+
+
+class TimeEdit(WidgetWithTZinfo):
+    def __init__(self, parent=None):
+        super(TimeEdit, self).__init__(parent)
+        self.initQTimeEdit()
+        self.initTZinfoEdit()
+
+    def initQTimeEdit(self):
+        self.timeEdit = QDateTimeEdit(self)
+        self.timeEdit.setKeyboardTracking(False)
+        self.timeEdit.setDisplayFormat("hh:mm:ss.zzz")
+        self.layout().addWidget(self.timeEdit)
+
+    def time(self) -> datetime.time:
+        time = self.timeEdit.time().toPyTime()
+        tzinfo = self.tzinfoEdit.getObj2add()
+        time = time.replace(tzinfo=tzinfo)
+        return time
+
+    def setTime(self, val: datetime.time):
+        assert isinstance(val, datetime.time), (
+            "val must be instance of type datetime.time"
+        )
+        self.timeEdit.setTime(val)
+        self.tzinfoEdit.setVal(val.tzinfo)
+
+
+class StandardInputWidget(QWidget):
+    closeClicked = pyqtSignal()
+
+    types = (bool, str, int, float, decimal.Decimal, Enum, Type)
+
+    def __init__(
+        self,
+        attrType,
+        parent=None,
+        objVal=None,
+        optional=False,
+        useValidators=True,
+        **kwargs,
+    ):
+        super(StandardInputWidget, self).__init__(parent)
+        self.objType = attrType
+        self.optional = optional
+        self.useValidators = useValidators
+        self.widget = self._initWidget(**kwargs)
+        self.setVal(objVal)
+        self.setupLayout()
+
+    def setupLayout(self):
+        widgetLayout = QHBoxLayout(self)
+        widgetLayout.setContentsMargins(1, 1, 1, 1)
+        widgetLayout.addWidget(self.widget)
+        self.setLayout(widgetLayout)
+
+    def setClosable(self, closable=True):
+        if closable:
+            # Add close btn next to widget
+            self.closeBtn = CloseButton(self)
+            self.closeBtn.clicked.connect(lambda x: self.closeClicked.emit())
+            self.layout().insertWidget(0, self.closeBtn)
+
+    def _initWidget(self, **kwargs):
+        if issubtype(self.objType, bool):
+            widget = QCheckBox(self)
+        elif issubtype(self.objType, str) and kwargs.get("multiline"):
+            # A text that may hold line breaks, like the text of a language.
+            widget = MultiLineTextEdit(self)
+        elif issubtype(self.objType, str):
+            widget = LineEdit(self)
+            if kwargs.get("completions"):
+                completer = QCompleter(kwargs["completions"], self)
+                completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+                widget.setCompleter(completer)
+        elif issubtype(self.objType, int):
+            widget = LineEdit(self)
+            if self.useValidators:
+                widget.setValidator(QIntValidator())
+        elif issubtype(self.objType, (float, decimal.Decimal)):
+            widget = LineEdit(self)
+        elif issubtype(self.objType, (Enum, Type)):
+            if issubtype(self.objType, Enum):
+                # add enum types to types
+                types = [member for member in self.objType]
+            else:  # Type
+                union = getArgs(self.objType)[0]
+                if type(union) == TypeVar:
+                    # add Type inheritors to types, but only the ones that can
+                    # be made: an abstract class is no type for the children
+                    # of a list, and the SDK refuses all of them
+                    baseType = union.__bound__
+                    types = [
+                        typ
+                        for typ in inheritors(baseType)
+                        if not isabstract(typ)
+                    ]
+                else:
+                    # add Union Type attrs to types
+                    types = getArgs(union)
+
+            widget = (
+                ComboBox(self) if len(types) <= 6 else CompleterComboBox(self)
+            )
+
+            for typ in types:
+                widget.addItem(getTypeName(typ), typ)
+            widget.model().sort(0, Qt.SortOrder.AscendingOrder)
+
+            if widget.count():
+                widget.setCurrentIndex(0)
+        else:
+            raise TypeError(f"Unsupported type: {self.objType}")
+
+        return widget
+
+    def getPreObj(self):
+        if issubtype(self.objType, bool):
+            return PreObject(self.objType, (self.widget.isChecked(),), {})
+        elif issubtype(self.objType, (str, int, float, decimal.Decimal)):
+            return PreObject(self.objType, (self.widget.text(),), {})
+        elif issubtype(self.objType, Enum):
+            return PreObject(self.objType, (self.widget.currentData(),), {})
+        elif issubtype(self.objType, Type):
+            return PreObject.useExistingObject(self.widget.currentData())
+
+    def getObj2add(self):
+        return self.getPreObj().init()
+
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            if val.existingObjUsed:
+                val = val.existingObj
+            else:
+                val = val.args[0]
+
+        if issubtype(self.objType, bool) and isoftype(val, bool):
+            self.widget.setChecked(bool(val))
+        elif issubtype(self.objType, (str, int, float)) and isoftype(
+            val, (str, int, float)
+        ):
+            self.widget.setText(str(val))
+        elif issubtype(self.objType, decimal.Decimal) and isoftype(
+            val, (decimal.Decimal, int, float)
+        ):
+            self.widget.setText(str(float(val)))
+        elif issubtype(self.objType, (Enum, Type)):
+            index = self.widget.findData(val)
+            if index >= 0:
+                self.widget.setCurrentIndex(index)
+
+
+class SpecialInputWidget(StandardInputWidget):
+    types = (
+        dateutil.relativedelta.relativedelta,
+        datetime.time,
+        datetime.date,
+        datetime.datetime,
+        datetime.tzinfo,
+        bytes,
+        bytearray,
+    )
+
+    def _initWidget(self, **kwargs):
+        if issubtype(self.objType, datetime.tzinfo):
+            timezones = pytz.all_timezones
+            widget = CompleterComboBox(self)
+            widget.addItem("None", None)
+            for timezone in timezones:
+                widget.addItem(timezone, timezone)
+        elif issubtype(self.objType, datetime.datetime):
+            widget = DateTimeEdit(self)
+        elif issubtype(self.objType, datetime.date):
+            widget = DateEdit(self)
+        elif issubtype(self.objType, datetime.time):
+            widget = TimeEdit(self)
+        elif issubtype(self.objType, dateutil.relativedelta.relativedelta):
+            widget = DurationEdit(self, useValidators=self.useValidators)
+        elif issubtype(self.objType, (bytes, bytearray)):
+            widget = BytesEdit(self)
+        else:
+            raise TypeError(f"Unsupported type: {self.objType}")
+        return widget
+
+    def getPreObj(self):
+        if issubtype(self.objType, datetime.tzinfo):
+            text = self.widget.currentData()
+            if text is not None:
+                return PreObject(pytz.timezone, (text,), {})
+            else:
+                return PreObject(type(None), (), {})
+        elif issubtype(self.objType, datetime.datetime):
+            return PreObject.useExistingObject(self.widget.dateTime())
+        elif issubtype(self.objType, datetime.date):
+            return PreObject.useExistingObject(self.widget.date())
+        elif issubtype(self.objType, datetime.time):
+            return PreObject.useExistingObject(self.widget.time())
+        elif issubtype(
+            self.objType,
+            (dateutil.relativedelta.relativedelta, bytes, bytearray),
+        ):
+            return self.widget.getPreObj()
+
+    def getObj2add(self):
+        """Return resulting obj due to user input data"""
+        if issubtype(self.objType, datetime.tzinfo):
+            text = self.widget.currentData()
+            if text is not None:
+                obj = pytz.timezone(text)
+            else:
+                obj = None
+        elif issubtype(self.objType, datetime.datetime):
+            obj = self.widget.dateTime()
+        elif issubtype(self.objType, datetime.date):
+            obj = self.widget.date()
+        elif issubtype(self.objType, datetime.time):
+            obj = self.widget.time()
+        elif issubtype(
+            self.objType,
+            (dateutil.relativedelta.relativedelta, bytes, bytearray),
+        ):
+            obj = self.widget.getObj2add()
+            if obj is not None and issubtype(self.objType, bytearray):
+                obj = bytearray(obj)
+        else:
+            raise TypeError(f"Unsupported type: {self.objType}")
+        return obj
+
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            if issubtype(self.objType, bytes) and issubtype(val.objType, bytes):
+                self.widget.setVal(val)
+                # TODO: impement for date types
+        elif val is not None:
+            if issubtype(self.objType, datetime.datetime) and isoftype(
+                val, datetime.datetime
+            ):
+                self.widget.setDateTime(val)
+            elif issubtype(self.objType, datetime.date) and isoftype(
+                val, datetime.date
+            ):
+                self.widget.setDate(val)
+            elif issubtype(self.objType, datetime.time) and isoftype(
+                val, datetime.time
+            ):
+                self.widget.setTime(val)
+            elif issubtype(self.objType, datetime.tzinfo) and isoftype(
+                val, datetime.tzinfo
+            ):
+                self.widget.setCurrentIndex(self.widget.findData(val))
+            elif issubtype(
+                self.objType, dateutil.relativedelta.relativedelta
+            ) and isoftype(val, dateutil.relativedelta.relativedelta):
+                self.widget.setDuration(val)
+            elif issubtype(self.objType, bytes) and isoftype(val, bytes):
+                self.widget.setVal(val)
+
+
+class ValueTypeInputWidget(StandardInputWidget):
+    """Chooses the XSD type of a value, such as xs:int, by its name.
+
+    Used for every attribute that holds the class of an XSD type, like the
+    value_type of a Property.
+    """
+
+    def _initWidget(self, **kwargs):
+        return ValueTypeBox(None, parent=self)
+
+    def getPreObj(self):
+        return PreObject.useExistingObject(self.widget.value_type())
+
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            val = val.init()
+        if isinstance(val, type):
+            self.widget.set_value_type(val)
+
+
+class TypedValueInputWidget(StandardInputWidget):
+    """A value that follows the value type of the object it belongs to.
+
+    The form links it to the widget of the value type, so that the text is
+    checked against the chosen type while the user types.
+    """
+
+    def _initWidget(self, **kwargs):
+        return ValueEdit(parent=self)
+
+    def setValueType(self, valueType):
+        self.widget.set_value_type(valueType)
+
+    def getPreObj(self):
+        # Raises InvalidValueError, with a message for the user, if the text
+        # is no value of the type.
+        return PreObject.useExistingObject(self.widget.value())
+
+    def setVal(self, val):
+        if isoftype(val, PreObject):
+            val = val.init()
+        self.widget.set_value(val)

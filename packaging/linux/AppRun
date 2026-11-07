@@ -1,0 +1,31 @@
+#!/bin/sh
+# Entry point of the AppImage. It starts the PyInstaller build that
+# build_appimage.sh put in usr/lib/AAS_Workingbench, and passes on the arguments
+# (a file to open, for example).
+set -eu
+
+HERE="$(dirname "$(readlink -f "$0")")"
+APP_DIR="$HERE/usr/lib/AAS_Workingbench"
+
+# Chromium, inside QtWebEngine, sandboxes its processes with user namespaces.
+# Where the system forbids them for programs without privileges, Chromium
+# refuses to start ("No usable sandbox!"), and with it the two tools of the
+# application that show a web page (the handover documentation and the AAS test
+# tool). The window of the editor does not use it.
+# The sandbox is turned off only for such a system, and only when the user has
+# not chosen: set QTWEBENGINE_DISABLE_SANDBOX to 0 or 1 to decide yourself.
+needs_no_sandbox() {
+    # Debian and old Ubuntu kernels: 0 means unprivileged users have none.
+    [ "$(cat /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null || echo 1)" = "0" ] && return 0
+    # Zero namespaces are allowed in total.
+    [ "$(cat /proc/sys/user/max_user_namespaces 2>/dev/null || echo 1)" = "0" ] && return 0
+    # Ubuntu 23.10 and later restrict them through AppArmor.
+    [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = "1" ] && return 0
+    return 1
+}
+
+if [ -z "${QTWEBENGINE_DISABLE_SANDBOX:-}" ] && needs_no_sandbox; then
+    export QTWEBENGINE_DISABLE_SANDBOX=1
+fi
+
+exec "$APP_DIR/AAS_Workingbench" "$@"

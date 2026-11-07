@@ -1,9 +1,24 @@
-# Project exclude paths
+# Virtual environments
+/.venv/
 /venv/
+
+# Python build and cache output
+__pycache__/
 *.pyc
-*.log
 *.egg-info
 dist
 build
+
+# Tool caches and reports
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE, agents and runtime output
+/.claude/
 .idea/
-/aas_editor/settings/recovery/
+*.log
+/src/aas_workingbench/settings/recovery/
+/src/aas_workingbench/settings/presets/

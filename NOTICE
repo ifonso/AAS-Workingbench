@@ -1,0 +1,219 @@
+AAS Workingbench
+================
+
+AAS Workingbench is licensed under the GNU General Public License,
+version 3. The license text is in the file LICENSE.
+
+This project is a fork of AAS Manager (https://github.com/rwth-iat/aas_manager),
+which is also licensed under the GNU General Public License, version 3. Parts
+of the source code carry the copyright notice of Igor Garmaev, the author of
+AAS Manager. Those notices stay in the files.
+
+This file lists third-party material that the repository contains or that the
+software installs. It is for information. The license of each item applies to
+that item, and nothing here changes or replaces it. Where the license of an
+item is not named here, read the item's own files.
+
+
+Not affiliated and not endorsed
+-------------------------------
+
+This project is not affiliated with, sponsored by, or endorsed by the
+organizations that publish the standards, specifications, templates and
+dictionaries named below, or by the authors of the software named below.
+Their names are used only to say what the software works with.
+
+The Asset Administration Shell, its specifications, and the names of
+organizations, standards and products named in this project belong to their
+respective owners. This includes, without limitation, the Industrial Digital
+Twin Association (IDTA), Plattform Industrie 4.0, the International
+Electrotechnical Commission (IEC), ECLASS, and Eclipse BaSyx. Names and marks
+are the property of their owners.
+
+
+Specifications and templates
+----------------------------
+
+Submodel templates (src/aas_workingbench/submodel_templates/)
+    The folder holds submodel templates and their specification documents as
+    published by the IDTA in https://github.com/admin-shell-io/submodel-templates.
+    That repository states the license Creative Commons Attribution 4.0
+    International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/.
+    The copyright in each template remains with the IDTA and the authors named
+    in the template. The files are included to be opened and used as
+    templates by the editor. Each template folder has its own README.md and
+    specification document, which name its version and origin.
+
+Example package (example/)
+    The package example/robot_arm_pick_and_place.aasx and the script that
+    builds it, example/build_robot_arm.py, are fictional and the own work of
+    this project, under its license. The script reads eight of the templates
+    above when it runs. The package keeps their structure, their semantic ids,
+    their supplemental semantic ids and the texts that name their elements,
+    and it holds copies of the concept descriptions that those templates carry
+    for the semantic ids that it uses, which may name entries of ECLASS or of
+    the IEC Common Data Dictionary (see below). Those parts are the IDTA's,
+    under CC BY 4.0 as above, adapted: the example fills them with its own
+    values, and drops the template qualifiers, the categories and the stray
+    spaces in two semantic ids. The pictures and the PDF files are drawn by the
+    script, with no outside file.
+
+AAS metamodel schema (aas_test_engines/data/file/3.0.yml)
+    A JSON schema of the metamodel of the Asset Administration Shell, in YAML.
+    The repository does not record where the file came from. The metamodel
+    specification is published by the IDTA and Plattform Industrie 4.0 in
+    https://github.com/admin-shell-io/aas-specs-metamodel, which states the
+    license CC BY 4.0.
+
+Measurement units
+    The specification of measurement units is published in
+    https://github.com/admin-shell-io/aas-specs-measurement-units, which
+    states the license CC BY 4.0.
+
+Dictionaries (ECLASS, IEC Common Data Dictionary, and others)
+    The software does not ship a global dictionary as such. The submodel
+    templates above may refer to dictionary entries or hold some, and a
+    package that a user opens, or a dictionary that a user loads or imports,
+    may contain such content. The license of that content stays with its
+    owner, and this project grants no rights over it. The user is responsible
+    for the license of the dictionaries and data that the user loads.
+
+
+Software included in the repository
+-----------------------------------
+
+aas-test-engines (aas_test_engines/ and the installed package)
+    The installed package states the Apache License 2.0,
+    https://github.com/admin-shell-io/aas-test-engines. The folder
+    aas_test_engines/ holds data files that the editor ships with the
+    stand-alone build: the schema above, and an HTML template that the
+    installed package also has. The folder has no license file of its own.
+
+Tabler Icons (src/aas_workingbench/icons/tabler/)
+    Version 3.50.0 of https://github.com/tabler/tabler-icons, the outline
+    style. The 53 SVG files are unmodified copies, and are the icons of
+    actions in the toolbars, menus and trees. MIT License, "Copyright (c)
+    2020-2026 Paweł Kuna". The license text is in the file LICENSE of that
+    folder, and is the text of the same release. The editor draws the files
+    in a color of the theme, and does not change them.
+
+Icons of the kinds of AAS elements (src/aas_workingbench/icons/kinds/)
+    The 24 SVG files that mark the kinds of elements in the trees (shell,
+    submodel, concept description, the elements, and the parts such as
+    qualifier and reference) are the own work of this project, drawn for it in
+    2026, and are under its license, the GNU General Public License, version
+    3. Each is a shape for the family of the kind, with one or two letters for
+    the kind. The shapes and the letters were drawn from scratch on a grid of
+    16 by 16 pixels with a stroke of 1.33. The letters are skeletons of lines
+    that were made for these files, and are written as paths, so no font is
+    needed and none is embedded. No file of another set of icons, and no
+    outline of a font, was copied, traced or used as a model. They carry no
+    third-party license and need no attribution.
+
+Inter (src/aas_workingbench/fonts/)
+    The font of the user interface. Inter is by The Inter Project Authors
+    (https://github.com/rsms/inter), and the font file states "Copyright 2016
+    The Inter Project Authors". SIL Open Font License, Version 1.1. The font
+    has no Reserved Font Name. The file Inter-Variable.ttf is the variable
+    font, version "4.001;git-66647c0bb" (release 4.1 of the project), copied
+    unmodified from the Google Fonts repository
+    (https://github.com/google/fonts, folder ofl/inter, commit e1d6480) under
+    the name Inter[opsz,wght].ttf, and renamed only to avoid brackets in a
+    file name. The license is in the file OFL.txt of that folder, which is
+    LICENSE.txt of release 4.1. The copy in the Google Fonts repository has
+    the year 2020 in its first line and the same text otherwise. The font
+    states that "Inter UI and Inter is a trademark of rsms". The license
+    grants no right to that name beyond what it says, and this project does
+    not use the name for anything but the font itself.
+    The OFL asks that each copy of the font carries its license. The folder
+    does, and so does the stand-alone build, which also ships this NOTICE.
+
+Fluent 2 color values (src/aas_workingbench/domain/design_tokens.py)
+    The neutral colors of the light and dark themes (backgrounds, foregrounds
+    and strokes) are values of the alias tokens of Fluent 2, read from
+    https://github.com/microsoft/fluentui (packages/tokens/src/alias/
+    lightColor.ts, darkColor.ts and global/colors.ts) on 2026-11-06. Only
+    those hex values are used, and no file of that repository is copied. The
+    repository states the MIT License, "Copyright (c) Microsoft
+    Corporation". The accent and status colors are this project's own. The
+    MIT License asks that its copyright notice and permission notice go with
+    "all copies or substantial portions of the Software". A few color values
+    are hardly a substantial portion, and the notice is given here anyway:
+
+        Copyright (c) Microsoft Corporation.
+
+        Permission is hereby granted, free of charge, to any person obtaining
+        a copy of this software and associated documentation files (the
+        "Software"), to deal in the Software without restriction, including
+        without limitation the rights to use, copy, modify, merge, publish,
+        distribute, sublicense, and/or sell copies of the Software, and to
+        permit persons to whom the Software is furnished to do so, subject to
+        the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+        EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+        NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+        BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+        ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+        CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+
+    The same repository's LICENSE adds that the fonts and icons that Fluent
+    UI React references are under separate terms
+    (https://aka.ms/fluentui-assets-license). This project uses none of
+    those fonts or icons, and the color values are not among them. The name
+    Fluent is used only to say what the colors follow, and the project is not
+    affiliated with or endorsed by Microsoft.
+
+Logos (src/aas_workingbench/icons/logo.*, full_logo.*, full_logo3.svg)
+    Part of the AAS Manager code base. Their origin and license are not
+    recorded in the repository. They are the only files of icons.
+
+Of unrecorded origin
+    Still of unrecorded origin: the logos above, and the schema file in
+    aas_test_engines/ (see above).
+    Of unrecorded origin, and removed from the repository: the old icons of
+    actions, whose names matched the Material Design Icons set, and the
+    style sheets grey.qss and default.qss of the old themes with their
+    images, which stated no license. Removed with them are the Breeze style
+    sheets dark.qss and light.qss (MIT License, by Colin Duquesnoy and Alex
+    Huszagh, based on the Breeze color scheme), their images, and the
+    generated breeze_resources.py. None of that is in the repository or in
+    the stand-alone build any more. The themes now are made from the colors
+    in src/aas_workingbench/domain/design_tokens.py (see above).
+
+
+Software that the editor installs
+---------------------------------
+
+The following packages are installed from PyPI by "uv sync", and are not
+modified or copied into this repository. Each has its own license, which the
+package carries. The licenses below are the ones that the package metadata
+gave for the locked versions on 2026-11-06.
+
+    PyQt6, PyQt6-WebEngine, PyQt6-QScintilla   GNU GPL v3 (Riverbank Computing)
+    basyx-python-sdk                           MIT (Eclipse BaSyx; the editor
+                                               installs the fork
+                                               rwth-iat/basyx-python-sdk at a
+                                               pinned commit)
+    openpyxl, toml, pytz                       MIT
+    langchain, langchain-community             MIT
+    jsonschema                                 MIT
+    pypdf                                      BSD-3-Clause
+    sentence-transformers                      Apache License 2.0
+    torch                                      BSD-style and other licenses,
+                                               listed in its metadata
+    faiss-cpu                                  MIT and BSD-3-Clause
+    PyInstaller (build only)                   GPL v2 or later with an
+                                               exception for the programs it
+                                               builds
+
+The full list, with versions, is in uv.lock. The license of a package that is
+not named here is in the package.
+
+The stand-alone executable that "pyinstaller" builds bundles these packages.
+Whoever distributes it must meet the terms of their licenses.

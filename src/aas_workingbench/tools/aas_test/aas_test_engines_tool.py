@@ -1,0 +1,71 @@
+#  Copyright (C) 2025  Igor Garmaev, garmaev@gmx.net
+#
+#  This program is made available under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+#  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
+from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QFileDialog
+from aas_workingbench.settings import FILTER_AAS_FILES
+from aas_workingbench.tools.aas_test.file_check import (
+    CHECKED_VERSION,
+    checkFile,
+)
+from aas_workingbench.widgets.messsageBoxes import ErrorMessageBox
+from aas_workingbench.widgets.dropfilebox import DropFileQWebEngineView
+
+
+class AasTestEnginesToolDialog(QDialog):
+    def __init__(self, parent=None):  # <1>
+        super().__init__(parent)
+        self._initLayout()
+        self.setWindowTitle(f"AAS-Test-Engines Tool (checks {CHECKED_VERSION})")
+        self.setMinimumSize(500, 300)
+
+        description = (
+            "Official test tooling for the Asset Administration Shell: "
+            "https://github.com/admin-shell-io/aas-test-engines<br>"
+            f"This tool checks files against Metamodel {CHECKED_VERSION}. "
+            "A valid V3.1 file can be reported with findings."
+        )
+        self.html_renderer = DropFileQWebEngineView(
+            self,
+            emptyViewMsg="Drop AAS file to test here",
+            description=description,
+        )
+        self.html_renderer.setMinimumSize(300, 300)
+        self.html_renderer.fileDropped.connect(self.checkFile)
+
+        self.chooseButton = QPushButton(
+            f"Choose file",
+            self,
+            toolTip="Choose file",
+            clicked=self.chooseAndCheckFile,
+        )
+        self.layout().addWidget(self.html_renderer)
+        self.layout().addWidget(self.chooseButton)
+
+    def _initLayout(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self)
+        self.setLayout(layout)
+
+    def chooseAndCheckFile(self):
+        file, _ = QFileDialog.getOpenFileName(
+            self, "Open AAS file", filter=FILTER_AAS_FILES
+        )
+        if file:
+            self.checkFile(file)
+        else:
+            return
+
+    def checkFile(self, file):
+        try:
+            result = checkFile(file)
+            self.html_renderer.setHtml(result.to_html())
+        except Exception as e:
+            ErrorMessageBox.withTraceback(self, str(e)).exec()

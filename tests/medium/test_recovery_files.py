@@ -1,0 +1,301 @@
+"""Crash recovery keeps what happened to the supplementary files.
+
+A file that nothing refers to yet is written into the AASX of a recovery like
+any other stored file (ADR 0030). Only a package that the SDK cannot write
+needs a `.files.json` beside its JSON recovery. Removed and renamed files must
+also come back as they were, not as the original file has them.
+"""
+
+from pathlib import Path
+
+from tests.factories import make_file_element
+from tests.factories import make_shell
+from tests.factories import make_store
+from tests.factories import make_submodel
+from tests.factories import write_aasx
+
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.changes import observer_for
+
+DOCUMENT = "/aasx/files/document.pdf"
+DRAFT = "/aasx/files/draft.txt"
+
+
+def _open_package(tmp_path: Path):
+    from aas_workingbench.package import Package
+
+    submodel = make_submodel(
+        elements=[make_file_element("Document", DOCUMENT, "application/pdf")]
+    )
+    source = write_aasx(
+        tmp_path / "source.aasx",
+        make_store(make_shell(submodels=[submodel]), submodel),
+        files={DOCUMENT: (b"%PDF original", "application/pdf")},
+    )
+    return Package(source), source
+
+
+def _restore(package, source: Path, tmp_path: Path):
+    from aas_workingbench.package import Package
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+    return Package.restore_from_recovery(recovery, source)
+
+
+def _bytes(package, name: str) -> bytes:
+    return files.read_file(package.fileStore, name)
+
+
+def test_a_new_file_that_nothing_refers_to_survives_a_crash(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, source = _open_package(tmp_path)
+    files.add_file(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        DRAFT,
+        "unsaved draft".encode(),
+        "text/plain",
+    )
+
+    restored = _restore(package, source, tmp_path)
+
+    assert sorted(restored.fileStore) == [DOCUMENT, DRAFT]
+    assert _bytes(restored, DRAFT) == b"unsaved draft"
+    assert restored.fileStore.get_content_type(DRAFT) == "text/plain"
+    assert _bytes(restored, DOCUMENT) == b"%PDF original"
+
+
+def test_the_restored_file_is_stored_again_by_a_save(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, source = _open_package(tmp_path)
+    submodel = next(iter(package.submodels))
+    files.add_and_link(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        submodel.submodel_element.get_object_by_attribute(
+            "id_short", "Document"
+        ),
+        DRAFT,
+        b"linked later",
+        "text/plain",
+    )
+    files.create_text_file(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        "/aasx/files/unused.txt",
+        "not referenced",
+    )
+
+    restored = _restore(package, source, tmp_path)
+
+    assert "/aasx/files/unused.txt" in restored.fileStore
+    assert _bytes(restored, "/aasx/files/unused.txt") == b"not referenced"
+    assert _bytes(restored, DRAFT) == b"linked later"
+
+
+def test_a_file_renamed_in_the_session_is_restored_under_the_new_name(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, source = _open_package(tmp_path)
+    files.rename_file(
+        package.commandStack,
+        observer_for(package),
+        package.objStore,
+        package.fileStore,
+        DOCUMENT,
+        "/aasx/central/document.pdf",
+    )
+
+    restored = _restore(package, source, tmp_path)
+
+    assert sorted(restored.fileStore) == ["/aasx/central/document.pdf"]
+    assert files.find_dangling(restored.objStore, restored.fileStore) == []
+
+
+def test_a_file_removed_in_the_session_stays_removed_after_a_crash(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, source = _open_package(tmp_path)
+    files.remove_file(
+        package.commandStack,
+        observer_for(package),
+        package.objStore,
+        package.fileStore,
+        DOCUMENT,
+        files.ReferenceChoice.CLEAR,
+    )
+
+    restored = _restore(package, source, tmp_path)
+
+    assert sorted(restored.fileStore) == []
+
+
+def test_a_restore_without_the_original_says_which_files_are_missing(
+    qapp: object, tmp_path: Path
+) -> None:
+    # The JSON recovery holds the objects only, so the files of an unchanged
+    # package are in the original and nowhere else.
+    package, source = _open_package(tmp_path)
+    package.changed = True
+    recovery = package.write_recovery(tmp_path / "recovery")
+    source.unlink()
+
+    from aas_workingbench.package import Package
+
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert recovery.suffix == ".json"
+    assert [file.path for file in restored.missingFiles] == [DOCUMENT]
+    assert list(restored.fileStore) == []
+
+
+def test_a_restore_with_the_original_has_no_missing_files(
+    qapp: object, tmp_path: Path
+) -> None:
+    from aas_workingbench.package import Package
+
+    package, source = _open_package(tmp_path)
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert restored.missingFiles == ()
+
+
+def test_a_restore_of_an_aasx_recovery_without_the_original_keeps_its_files(
+    qapp: object, tmp_path: Path
+) -> None:
+    from aas_workingbench.package import Package
+
+    package, source = _open_package(tmp_path)
+    files.create_text_file(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        DRAFT,
+        "x",
+    )
+    recovery = package.write_recovery(tmp_path / "recovery")
+    source.unlink()
+
+    restored = Package.restore_from_recovery(recovery, source)
+
+    assert recovery.suffix == ".aasx"
+    assert restored.missingFiles == ()
+    assert sorted(restored.fileStore) == [DOCUMENT, DRAFT]
+
+
+def test_an_unchanged_package_keeps_the_cheap_json_recovery(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, _ = _open_package(tmp_path)
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    assert recovery.suffix == ".json"
+    assert not list((tmp_path / "recovery").glob("*.files.json"))
+
+
+def _package_that_only_json_can_recover(tmp_path: Path):
+    """A package with a new file and a File that has no stored file.
+
+    The SDK cannot write the dangling path, so the recovery is JSON and the new
+    file goes to a `.files.json` beside it.
+    """
+    package, source = _open_package(tmp_path)
+    submodel = next(iter(package.submodels))
+    submodel.submodel_element.add(make_file_element("Dangling", "/gone.pdf"))
+    files.create_text_file(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        DRAFT,
+        "x",
+    )
+    return package, source
+
+
+def test_an_aasx_recovery_carries_the_files_that_nothing_refers_to(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, _ = _open_package(tmp_path)
+    files.create_text_file(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        DRAFT,
+        "x",
+    )
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    assert recovery.suffix == ".aasx"
+    assert not list((tmp_path / "recovery").glob("*.files.json"))
+
+
+def test_a_recovery_that_an_older_version_wrote_is_still_restored(
+    qapp: object, tmp_path: Path
+) -> None:
+    # An AASX of the old kind does not hold the file that nothing refers to,
+    # and the `.files.json` beside it does.
+    import base64
+    import json
+
+    from aas_workingbench.package import EXTRA_FILES_SUFFIX
+    from aas_workingbench.package import Package
+
+    _, source = _open_package(tmp_path)
+    (tmp_path / "recovery").mkdir()
+    old = tmp_path / "recovery" / "old.aasx"
+    old.write_bytes(source.read_bytes())
+    old.with_name(f"old{EXTRA_FILES_SUFFIX}").write_text(
+        json.dumps(
+            {
+                "files": [
+                    {
+                        "name": DRAFT,
+                        "content_type": "text/plain",
+                        "data": base64.b64encode(b"from before").decode(),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = Package.restore_from_recovery(old, source)
+
+    assert _bytes(restored, DRAFT) == b"from before"
+
+
+def test_the_recovery_files_are_deleted_together(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, _ = _package_that_only_json_can_recover(tmp_path)
+    recovery_dir = tmp_path / "recovery"
+    package.write_recovery(recovery_dir)
+    assert list(recovery_dir.glob("*.files.json"))
+
+    package.delete_recovery(recovery_dir)
+
+    assert list(recovery_dir.iterdir()) == []
+
+
+def test_cleanup_keeps_the_extra_files_of_a_restored_recovery(
+    qapp: object, tmp_path: Path
+) -> None:
+    from aas_workingbench.utils.recovery import cleanup_recovery_dir
+
+    package, _ = _package_that_only_json_can_recover(tmp_path)
+    recovery_dir = tmp_path / "recovery"
+    recovery = package.write_recovery(recovery_dir)
+
+    cleanup_recovery_dir(recovery_dir, [recovery])
+
+    assert list(recovery_dir.glob("*.files.json"))
+    assert recovery.exists()

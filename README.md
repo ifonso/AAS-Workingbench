@@ -1,67 +1,108 @@
-<!-- PROJECT LOGO -->
-<br />
-<p align="center">
-  <a href="https://github.com/rwth-iat/aas_manager">
-    <img src="aas_editor/icons/full_logo3.svg" alt="Logo" width="240" height="80">
-  </a>
-  <p align="center">
-    AAS Manager is a free, open source, cross-platform visual viewer/editor based on <a href="https://www.riverbankcomputing.com/software/pyqt/"><strong>PyQt</strong></a> Framework and <a href="https://github.com/eclipse-basyx/basyx-python-sdk"><strong>Eclipse BaSyx Python SDK</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/rwth-iat/aas_manager/releases">Download</a>
-    ·
-    <a href="https://github.com/rwth-iat/aas_manager/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/rwth-iat/aas_manager/issues">Request Feature</a>
-  </p>
-</p>
+# AAS Workingbench
 
+A desktop editor for AASX files of the Asset Administration Shell, written in Python with PyQt6.
 
+## Purpose
 
-|                                                      Screenshots                                                      |                                                                                                                   |
-| :--------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: |
-|   ![](https://github.com/rwth-iat/aas_manager/raw/master/screenshots/dark_theme.PNG) Grey theme        |        ![](https://github.com/rwth-iat/aas_manager/raw/master/screenshots/light_theme.PNG) Light theme        |
-|   ![](https://github.com/rwth-iat/aas_manager/raw/master/screenshots/add_dialog.PNG) Dialog for creating objects   |   ![](https://github.com/rwth-iat/aas_manager/raw/master/screenshots/edit_in_dialog.PNG) Dialog for value editing   |
-|   ![](https://github.com/rwth-iat/aas_manager/raw/master/screenshots/edit_in_cell.PNG) Edit value in the treetable cell   |   ![](https://github.com/rwth-iat/aas_manager/raw/master/screenshots/columns_management.PNG) Columns management in the treetable   |
-|   ![](https://github.com/rwth-iat/aas_manager/raw/master/screenshots/context_menu.PNG) Context menu of object in the treetable  |  |
+AAS Workingbench is a fork of [AAS Manager](https://github.com/rwth-iat/aas_manager) (`rwth-iat/aas_manager`), developed at RWTH Aachen.
+It aims to edit AASX files with the same robustness as [AASX Package Explorer](https://github.com/eclipse-aaspe/package-explorer), with a more pleasant interface, and to do so on Linux, Windows and macOS.
+Package Explorer is the reference, and the editor is not at parity with it yet: some features are missing, and a few are out of scope on purpose.
+[Feature parity](docs/software/feature-parity.md) tracks the gap, and the [V1 editor plan](docs/planning/v1-editor-plan.md) lists what is out of scope.
 
+The project also plans AI features that make modeling, verification and the use of industry standards easier, and an MCP server.
+None of that exists yet.
+The one LLM feature today is inherited from upstream: a [handover documentation tool](src/aas_workingbench/tools/handover_doc_llm/README.md) that drafts a Handover Documentation submodel from a PDF through a model provider that you configure.
 
-For further information about the Asset Administration Shell, see the publication "Details of the Asset Administration Shell" [(Version 3) ](
-https://www.plattform-i40.de/PI40/Redaktion/EN/Downloads/Publikation/Details_of_the_Asset_Administration_Shell_Part1_V3.html
-) or [(Version 2)](
-https://www.plattform-i40.de/PI40/Redaktion/EN/Downloads/Publikation/Details_of_the_Asset_Administration_Shell_Part1_V2.html
-) by Plattform Industrie 4.0.
+Only Windows has been used to run the editor in the current work.
+Continuous integration runs the checks on Ubuntu, and the release workflow builds a zip for Windows and an AppImage for Linux.
+Nothing builds for macOS, so macOS is a goal and not a claim.
 
-## Installation
-### User version
-You can find binaries of the editor for Windows or Linux systems in [the releases](https://github.com/rwth-iat/aas_manager/releases).
+## What the editor does
 
-### Development version
-1. Clone the repo
-   ```sh
-   git clone https://github.com/rwth-iat/aas_manager.git
-   ```
-2. Install requirements
-   ```sh
-   pip install .
-   ```
-   Note: If errors occur, try installing the packages one by one in the same order like in dependencies in `pyproject.toml` file.
-  
-   **Linux Dependencies:**
-   On some Linux distributions, you may encounter PyQt5-related errors when running the application. If this happens, you'll need to install missing system dependencies. See issue [#38](https://github.com/rwth-iat/aas_manager/issues/38) for detailed instructions and solutions.
+It opens, edits and saves AASX, JSON and XML packages for metamodel V3.1.x, and reads V3.0 files as V3.1, as the SDK does.
+Every edit, add, delete and paste can be undone, and a Read mode refuses changes.
+Values are checked against their XSD type as you type, renames update the references that point at the renamed object, and the files stored in a package can be managed from a panel.
+A set of validation rules covers constraints of the metamodel that the SDK does not enforce.
+The [changelog](CHANGELOG.md) has the full list, including the known limits, and [`docs/`](docs/README.md) has the architecture, decision records and guides.
+The folder [`example/`](example/README.md) holds a complete, fictional package of a pick and place robot arm to open in the editor, with the script that builds it.
 
-3. Run ``main.py`` file
+## Build
 
-OR
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and Git.
+You do not need to install Python, because uv fetches the version the project asks for (3.11 or newer).
 
-3. Freeze an application into stand-alone executable
-   ```sh
-   pyinstaller aas_manager.spec
-   ```
-4. Run the executable in ``dist`` folder
+On Windows, some template paths exceed 260 characters, so clone with long paths enabled:
 
-## License
-GPLv3. See [LICENSE](LICENSE).
+```sh
+git clone -c core.longpaths=true https://github.com/ifonso/AAS-Workingbench.git
+cd AAS-Workingbench
+```
+
+If you cloned without it, run `git config core.longpaths true` in the clone, then `git reset` and `git checkout -- .`.
+On Debian and Ubuntu, Qt also needs two system libraries, which CI installs:
+
+```sh
+sudo apt-get install libegl1 libopengl0
+```
+
+Install the locked environment and start the editor from source:
+
+```sh
+uv sync --locked
+uv run python -m aas_workingbench
+```
+
+Running the editor rewrites the tracked file `src/aas_workingbench/settings/settings.ini`.
+Do not commit that change, and discard it with `git checkout -- src/aas_workingbench/settings/settings.ini`.
+
+CI checks the code and runs the small and medium tests with these commands:
+
+```sh
+uv run ruff format --check
+uv run ruff check
+uv run pyright
+uv run pytest -m "small or medium"
+```
+
+Pyright prints warnings for older modules, and they do not fail the check.
+If GNU Make is installed, `make check` runs the same four commands, and `make` lists the other targets.
+
+To build a stand-alone executable with PyInstaller:
+
+```sh
+uv run --group build pyinstaller --noconfirm aas_workingbench.spec
+```
+
+The result is the folder `dist/AAS_Workingbench`, which holds the executable `AAS_Workingbench` (`AAS_Workingbench.exe` on Windows).
+[`packaging/README.md`](packaging/README.md) says how to make the release files from it: the Windows zip and the Linux AppImage.
+`make build` runs the same command.
+
+## Related projects
+
+These are the standards and foundations that the editor builds on.
+
+| Project | Why it matters |
+|---|---|
+| [eclipse-basyx/basyx-python-sdk](https://github.com/eclipse-basyx/basyx-python-sdk) | The Python SDK that holds the metamodel classes and reads and writes AASX, JSON and XML. The editor installs a fork, [`rwth-iat/basyx-python-sdk`](https://github.com/rwth-iat/basyx-python-sdk), pinned to a commit in `pyproject.toml`. |
+| [admin-shell-io/aas-specs-metamodel](https://github.com/admin-shell-io/aas-specs-metamodel) | The specification of the metamodel, with the constraints that the editor validates. |
+| [admin-shell-io/aas-specs-measurement-units](https://github.com/admin-shell-io/aas-specs-measurement-units) | The specification of how measurement units are described in the AAS. |
 
 ## Contact
-If you have any questions, please contact [Igor Garmaev](https://github.com/zrgt): [i.garmaev@plt.rwth-aachen.de](mailto:i.garmaev@plt.rwth-aachen.de)
+
+Write to [contato@ifonso.com.br](mailto:contato@ifonso.com.br), or open an issue at [github.com/ifonso/AAS-Workingbench](https://github.com/ifonso/AAS-Workingbench/issues).
+
+## Contributing
+
+Issues and pull requests are welcome at [github.com/ifonso/AAS-Workingbench](https://github.com/ifonso/AAS-Workingbench/issues).
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), which points to the guides in [`docs/contributing/`](docs/contributing/development.md).
+
+## License and notices
+
+AAS Workingbench is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE).
+Parts of the code descend from AAS Manager, copyright Igor Garmaev and contributors, which is licensed under the same terms.
+[NOTICE](NOTICE) lists the third-party material that the repository contains or installs, with the license it names for each.
+
+The Asset Administration Shell, its specifications and submodel templates, and the global dictionaries such as ECLASS and the IEC Common Data Dictionary belong to their owners.
+This project is not affiliated with or endorsed by them.
+The software ships no dictionary as such, although templates and packages may refer to dictionary entries or hold some, and it grants no rights over any.
+You are responsible for the licenses of the dictionaries and data that you load.

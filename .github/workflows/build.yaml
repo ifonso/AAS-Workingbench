@@ -1,0 +1,92 @@
+name: Build packages
+
+# The build of the release files, shared by the release workflow and the manual
+# build. It publishes nothing: each job uploads its file as an artifact of the run.
+# How to build the same files by hand: packaging/README.md.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows zip
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Get version from pyproject.toml
+        id: version
+        shell: bash
+        run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: Build with PyInstaller
+        shell: bash
+        run: uv run --locked --group build pyinstaller --noconfirm aas_workingbench.spec
+
+      - name: Zip the build
+        shell: bash
+        working-directory: dist
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: 7z a "AAS_Workingbench-${VERSION}-windows-x64.zip" AAS_Workingbench
+
+      - name: Upload the zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: dist/AAS_Workingbench-*-windows-x64.zip
+          # The zip is compressed already.
+          compression-level: 0
+          if-no-files-found: error
+
+  linux:
+    name: Linux AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # PyInstaller copies the libraries that the Qt plugins need from this
+      # machine into the build, so they have to be installed here. A library
+      # that is missing is left out of the AppImage without an error.
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libegl1 libopengl0 libgl1 libglib2.0-0 libdbus-1-3 libfontconfig1 \
+            libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 \
+            libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+            libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
+            libnss3 libasound2t64 libxcomposite1 libxdamage1 libxrandr2 \
+            libxtst6 libxshmfence1
+
+      - name: Get version from pyproject.toml
+        id: version
+        run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: Build with PyInstaller
+        run: uv run --locked --group build pyinstaller --noconfirm aas_workingbench.spec
+
+      - name: Build the AppImage
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: bash packaging/linux/build_appimage.sh
+
+      - name: Upload the AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: dist/AAS_Workingbench-*-x86_64.AppImage
+          # The AppImage is compressed already.
+          compression-level: 0
+          if-no-files-found: error
