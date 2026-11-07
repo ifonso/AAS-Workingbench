@@ -10,11 +10,11 @@ from tests.factories import make_property
 from tests.factories import make_reference_to
 from tests.factories import make_submodel
 
-from aas_editor.ui.theme.kind_icons import KIND_FILES
-from aas_editor.ui.theme.kind_icons import KIND_NAMES
-from aas_editor.ui.theme.kind_icons import KINDS_FOLDER
-from aas_editor.ui.theme.kind_icons import SUBMODEL_REFERENCE
-from aas_editor.ui.theme.kind_icons import kind_name
+from aas_workingbench.ui.theme.kind_icons import KIND_FILES
+from aas_workingbench.ui.theme.kind_icons import KIND_NAMES
+from aas_workingbench.ui.theme.kind_icons import KINDS_FOLDER
+from aas_workingbench.ui.theme.kind_icons import SUBMODEL_REFERENCE
+from aas_workingbench.ui.theme.kind_icons import kind_name
 
 SVG = "{http://www.w3.org/2000/svg}"
 # What can show in a tree besides the subclasses that are found by walking the

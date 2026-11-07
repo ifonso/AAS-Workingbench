@@ -27,7 +27,7 @@ from arm_helpers import submodel_id
 TEMPLATES = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "aas_editor"
+    / "aas_workingbench"
     / "submodel_templates"
 )
 

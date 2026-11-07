@@ -25,11 +25,14 @@ from basyx.aas.adapter.json import AASToJsonEncoder
 from basyx.aas.adapter.json.json_deserialization import AASFromJsonDecoder
 from basyx.aas.adapter.xml.xml_deserialization import AASFromXmlDecoder
 
-from aas_editor.infrastructure.package_io import _TolerantReader
-from aas_editor.infrastructure.package_io import read_package
+from aas_workingbench.infrastructure.package_io import _TolerantReader
+from aas_workingbench.infrastructure.package_io import read_package
 
 TEMPLATES_DIR = (
-    Path(__file__).parents[2] / "src" / "aas_editor" / "submodel_templates"
+    Path(__file__).parents[2]
+    / "src"
+    / "aas_workingbench"
+    / "submodel_templates"
 )
 
 DUPLICATE_ID = "duplicate id"

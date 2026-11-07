@@ -26,9 +26,9 @@ from tests.medium.test_user_defaults import settings  # noqa: F401
 from tests.reference_factories import make_linked
 from tests.serialization import snapshot
 
-from aas_editor.domain.asset_information import ASSET_KINDS
-from aas_editor.settings.app_settings import NAME_ROLE
-from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.domain.asset_information import ASSET_KINDS
+from aas_workingbench.settings.app_settings import NAME_ROLE
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
 # -- F-EDT-02 AC2 ------------------------------------------------------------
 
@@ -66,7 +66,7 @@ def test_a_template_submodel_is_made_with_the_id_of_the_template_pattern(
     creating,  # noqa: F811
     settings,  # noqa: F811
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
+    from aas_workingbench.settings.app_settings import AppSettings
 
     settings(AppSettings.ID_TEMPLATE_SUBMODEL_INSTANCE, "urn:inst:DDDD")
     settings(AppSettings.ID_TEMPLATE_SUBMODEL_TEMPLATE, "urn:tmpl:DDDD")
@@ -136,7 +136,7 @@ def test_declining_the_question_keeps_the_shell(
 
 @pytest.fixture
 def two_shells(views, answers):  # noqa: F811
-    from aas_editor.ui.reference_actions import register_reference_actions
+    from aas_workingbench.ui.reference_actions import register_reference_actions
 
     register_reference_actions()
     first = make_shell("urn:shell:a", "First")
@@ -211,7 +211,7 @@ def test_a_rename_that_cannot_be_done_says_why_and_changes_nothing(
 
 @pytest.fixture
 def bar(qapp, qtbot):
-    from aas_editor.ui.hints_bar import HintsBar
+    from aas_workingbench.ui.hints_bar import HintsBar
 
     widget = HintsBar()
     qtbot.addWidget(widget)
@@ -278,7 +278,7 @@ _LITERALS = {
 def test_each_asset_kind_is_written_as_its_literal_and_read_back(
     creating,  # noqa: F811
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     lab = creating()
     created: dict[model.AssetKind, model.AssetAdministrationShell] = {}
@@ -341,8 +341,8 @@ def test_a_copy_of_a_submodel_within_a_package_is_deep(
 ) -> None:
     from PyQt6.QtWidgets import QApplication
 
-    from aas_editor.ui import paste_dialogs
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui import paste_dialogs
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     register_paste_actions()
     monkeypatch.setattr(
@@ -380,8 +380,8 @@ def test_a_submodel_copied_to_another_package_brings_its_concept_descriptions(
 ) -> None:
     from PyQt6.QtWidgets import QApplication
 
-    from aas_editor.ui import paste_dialogs
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui import paste_dialogs
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     register_paste_actions()
     monkeypatch.setattr(
@@ -500,7 +500,7 @@ def dangling(views):
 def test_a_reference_to_no_submodel_can_be_edited(
     dangling, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
     from tests.medium.forms import Form
     from tests.medium.forms import answering
 
@@ -532,7 +532,7 @@ def test_a_reference_to_no_submodel_can_be_edited(
 def test_a_reference_to_no_submodel_can_be_removed_and_is_not_written(
     dangling, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     attrs = dangling.attrs
     proxy = attrs.model()
@@ -558,7 +558,7 @@ def test_renaming_a_submodel_updates_the_shell_and_the_semantic_references(
     views,
     answers,  # noqa: F811
 ) -> None:
-    from aas_editor.ui.reference_actions import register_reference_actions
+    from aas_workingbench.ui.reference_actions import register_reference_actions
 
     register_reference_actions()
     submodel = make_submodel("urn:sm:old", "Main", [make_property("P")])

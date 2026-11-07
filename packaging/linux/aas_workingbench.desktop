@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AAS Workingbench
+GenericName=Asset Administration Shell editor
+Comment=Edit Asset Administration Shell packages (AASX, JSON, XML)
+Exec=AAS_Workingbench %F
+Icon=aas_workingbench
+Terminal=false
+Categories=Development;Engineering;
+MimeType=application/asset-administration-shell-package;
+Keywords=AAS;AASX;Asset Administration Shell;Industrie 4.0;

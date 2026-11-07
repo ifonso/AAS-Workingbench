@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import QWidget
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.domain.validation import Finding
+from aas_workingbench.domain.validation import Finding
 
 from tests.factories import make_file_element
 from tests.factories import make_property
@@ -40,15 +40,17 @@ class Dialogs:
 
 @pytest.fixture
 def view_support(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
-    from aas_editor.models import PackTreeViewItem
-    from aas_editor.models import PacksTable
-    from aas_editor.package import Package
-    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
-    from aas_editor.settings.app_settings import OPENED_PACKS_ROLE
-    from aas_editor.treeviews.treeview_pack import PackTreeView
-    from aas_editor.ui.save_warnings import IssuesDialog
-    from aas_editor.widgets.messsageBoxes import ErrorMessageBox
+    from aas_workingbench.models import PackTreeViewItem
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    )
+    from aas_workingbench.settings.app_settings import OPENED_PACKS_ROLE
+    from aas_workingbench.treeviews.treeview_pack import PackTreeView
+    from aas_workingbench.ui.save_warnings import IssuesDialog
+    from aas_workingbench.widgets.messsageBoxes import ErrorMessageBox
 
     # The settings file of the user must not change what a save writes.
     monkeypatch.setattr(Package, "writeJsonInAasx", False)
@@ -104,7 +106,7 @@ def view_support(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
             )
             view.setCurrentIndex(item)
 
-    from aas_editor.settings import app_settings as view_support_roles
+    from aas_workingbench.settings import app_settings as view_support_roles
 
     return Support
 
@@ -121,7 +123,7 @@ def _saved_names(folder: Path) -> list[str]:
 def test_save_is_refused_and_original_is_kept_when_file_has_no_part(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = write_package_with_missing_file(tmp_path / "dangling.aasx")
     before = source.read_bytes()
@@ -148,7 +150,7 @@ def test_save_is_refused_and_original_is_kept_when_file_has_no_part(
 def test_save_as_json_is_allowed_when_file_has_no_part(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = write_package_with_missing_file(tmp_path / "dangling.aasx")
     package = Package(source)
@@ -167,7 +169,7 @@ def test_save_as_json_is_allowed_when_file_has_no_part(
 def test_save_as_keeps_file_when_user_refuses_to_lose_files(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = write_package_with_missing_file(tmp_path / "dangling.aasx")
     package = Package(source)
@@ -185,7 +187,7 @@ def test_save_as_keeps_file_when_user_refuses_to_lose_files(
 def test_save_is_refused_when_partial_package_overwrites_its_source(
     view_support, tmp_path: Path, aasx_file: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = tmp_path / "source.aasx"
     source.write_bytes(aasx_file.read_bytes())
@@ -202,7 +204,7 @@ def test_save_is_refused_when_partial_package_overwrites_its_source(
 def test_save_as_keeps_going_when_partial_package_is_saved_elsewhere(
     view_support, tmp_path: Path, aasx_file: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = tmp_path / "source.aasx"
     source.write_bytes(aasx_file.read_bytes())
@@ -224,7 +226,7 @@ def test_save_as_keeps_going_when_partial_package_is_saved_elsewhere(
 
 
 def _package_with_unreferenced_file(tmp_path: Path):
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     submodel = make_submodel(
         elements=[make_file_element("Document", DOCUMENT_PART)]
@@ -267,7 +269,7 @@ def test_save_asks_before_it_drops_the_files_when_it_writes_json(
 def test_save_to_aasx_keeps_files_that_nothing_refers_to_without_asking(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     package = _package_with_unreferenced_file(tmp_path)
     view = view_support.open_package(package)
@@ -288,7 +290,7 @@ def test_save_to_aasx_keeps_files_that_nothing_refers_to_without_asking(
 def test_save_writes_to_own_file_when_no_file_is_given(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     submodel = make_submodel()
     source = write_aasx(
@@ -310,7 +312,7 @@ def test_save_writes_to_own_file_when_no_file_is_given(
 def test_link_action_adds_references_when_user_asks_for_it(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = write_aasx(
         tmp_path / "plain.aasx", make_store(make_shell(), make_submodel())
@@ -329,7 +331,7 @@ def test_link_action_adds_references_when_user_asks_for_it(
 def test_link_action_adds_nothing_when_references_exist(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     submodel = make_submodel()
     source = write_aasx(
@@ -354,7 +356,7 @@ def test_link_action_adds_nothing_when_references_exist(
 def test_close_keeps_package_open_when_save_is_refused(
     view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = write_package_with_missing_file(tmp_path / "dangling.aasx")
     package = Package(source)
@@ -373,7 +375,7 @@ def test_close_keeps_package_open_when_save_is_refused(
 def test_save_all_skips_package_when_it_has_no_changes(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = write_package_with_missing_file(tmp_path / "dangling.aasx")
     package = Package(source)
@@ -392,7 +394,7 @@ def test_save_all_skips_package_when_it_has_no_changes(
 def test_open_shows_missing_files_when_part_is_missing(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     source = write_package_with_missing_file(tmp_path / "dangling.aasx")
     view = view_support.open_package(Package())
@@ -411,7 +413,7 @@ def test_open_shows_missing_files_when_part_is_missing(
 def test_open_shows_no_dialog_when_package_is_complete(
     view_support, tmp_path: Path, aasx_file: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     view = view_support.open_package(Package())
 
@@ -429,8 +431,8 @@ def test_open_shows_no_dialog_when_package_is_complete(
 def test_dialog_offers_save_anyway_and_cancel_when_it_asks_for_confirmation(
     qapp: object, qtbot: QtBot
 ) -> None:
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     dialog = IssuesDialog(
         "Save package",
@@ -452,8 +454,8 @@ def test_dialog_offers_save_anyway_and_cancel_when_it_asks_for_confirmation(
 
 
 def test_dialog_has_only_ok_when_it_informs(qapp: object, qtbot: QtBot) -> None:
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     dialog = IssuesDialog("Title", "Summary", [SaveIssue("Problem.")])
     qtbot.addWidget(dialog)
@@ -464,7 +466,7 @@ def test_dialog_has_only_ok_when_it_informs(qapp: object, qtbot: QtBot) -> None:
 def _answer(
     monkeypatch: pytest.MonkeyPatch, answer: Callable[[QDialog], None]
 ) -> None:
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     monkeypatch.setattr(IssuesDialog, "exec", answer)
 
@@ -472,9 +474,9 @@ def _answer(
 def test_confirm_save_is_true_when_user_accepts(
     qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.save import SaveCheck
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import confirm_save
+    from aas_workingbench.application.save import SaveCheck
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import confirm_save
 
     _answer(monkeypatch, lambda dialog: dialog.accept())
 
@@ -486,9 +488,9 @@ def test_confirm_save_is_true_when_user_accepts(
 def test_confirm_save_is_false_when_user_cancels(
     qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.save import SaveCheck
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import confirm_save
+    from aas_workingbench.application.save import SaveCheck
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import confirm_save
 
     _answer(monkeypatch, lambda dialog: dialog.reject())
 
@@ -504,10 +506,10 @@ def _press_extra(dialog) -> None:
 def test_a_refused_save_offers_to_repair_dangling_file_paths(
     qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.save import DANGLING_FILES
-    from aas_editor.application.save import SaveCheck
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import show_save_refused
+    from aas_workingbench.application.save import DANGLING_FILES
+    from aas_workingbench.application.save import SaveCheck
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import show_save_refused
 
     _answer(monkeypatch, _press_extra)
     repaired: list[bool] = []
@@ -521,9 +523,9 @@ def test_a_refused_save_offers_to_repair_dangling_file_paths(
 def test_a_refused_save_without_a_file_problem_has_no_repair_button(
     qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.save import SaveCheck
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import show_save_refused
+    from aas_workingbench.application.save import SaveCheck
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import show_save_refused
 
     buttons: list[object] = []
     _answer(monkeypatch, lambda dialog: buttons.append(dialog.extra_button))
@@ -538,10 +540,10 @@ def test_a_refused_save_without_a_file_problem_has_no_repair_button(
 def test_the_warning_about_files_not_written_offers_to_show_the_files(
     qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.save import FILES_NOT_WRITTEN
-    from aas_editor.application.save import SaveCheck
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import confirm_save
+    from aas_workingbench.application.save import FILES_NOT_WRITTEN
+    from aas_workingbench.application.save import SaveCheck
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import confirm_save
 
     _answer(monkeypatch, _press_extra)
     shown: list[bool] = []
@@ -558,9 +560,9 @@ def test_the_warning_about_files_not_written_offers_to_show_the_files(
 def test_saving_a_package_with_a_dangling_file_opens_the_repair_on_request(
     view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.ui.file_controller import FileController
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui.file_controller import FileController
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     source = write_package_with_missing_file(tmp_path / "dangling.aasx")
     before = source.read_bytes()
@@ -584,7 +586,7 @@ def test_saving_a_package_with_a_dangling_file_opens_the_repair_on_request(
 def test_saving_json_with_files_can_show_the_files_first(
     view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     package = _package_with_unreferenced_file(tmp_path)
     view = view_support.open_package(package)
@@ -604,7 +606,7 @@ def test_saving_json_with_files_can_show_the_files_first(
 
 
 def _package_with_one_letter_id_short(tmp_path: Path):
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     submodel = make_submodel(elements=[make_property("X", "1")])
     source = write_aasx(
@@ -633,7 +635,7 @@ def test_save_asks_with_the_rules_that_the_package_breaks(
 def test_save_writes_the_package_when_the_user_confirms_the_errors(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     package = _package_with_one_letter_id_short(tmp_path)
     view = view_support.open_package(package)
@@ -665,7 +667,7 @@ def test_save_does_not_ask_when_the_package_only_has_warnings(
 ) -> None:
     import basyx.aas.model as model
 
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     dangling = model.ReferenceElement(
         "Link",
@@ -690,8 +692,8 @@ def test_save_does_not_ask_when_the_package_only_has_warnings(
 def test_save_still_works_when_a_rule_raises(
     view_support, tmp_path: Path
 ) -> None:
-    from aas_editor.application.validation import SaveGate
-    from aas_editor.domain.validation import Rule
+    from aas_workingbench.application.validation import SaveGate
+    from aas_workingbench.domain.validation import Rule
 
     def broken(context: object) -> Iterator[Finding]:
         raise RuntimeError("defect in the rule")

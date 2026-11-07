@@ -2,24 +2,24 @@
 
 import pytest
 
-from aas_editor.domain.design_tokens import CONTRAST_PAIRS
-from aas_editor.domain.design_tokens import DARK
-from aas_editor.domain.design_tokens import DEFAULT_DENSITY
-from aas_editor.domain.design_tokens import DIALOG_GAP
-from aas_editor.domain.design_tokens import DIALOG_PADDING
-from aas_editor.domain.design_tokens import ICON_CONTRAST
-from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.domain.design_tokens import ROW_HEIGHTS
-from aas_editor.domain.design_tokens import ROW_TEXT_PADDING
-from aas_editor.domain.design_tokens import SPACING
-from aas_editor.domain.design_tokens import TEXT_CONTRAST
-from aas_editor.domain.design_tokens import THEMES
-from aas_editor.domain.design_tokens import TYPE_RAMP
-from aas_editor.domain.design_tokens import ColorTokens
-from aas_editor.domain.design_tokens import Density
-from aas_editor.domain.design_tokens import contrast_ratio
-from aas_editor.domain.design_tokens import fitting_row_height
-from aas_editor.domain.design_tokens import parse_density
+from aas_workingbench.domain.design_tokens import CONTRAST_PAIRS
+from aas_workingbench.domain.design_tokens import DARK
+from aas_workingbench.domain.design_tokens import DEFAULT_DENSITY
+from aas_workingbench.domain.design_tokens import DIALOG_GAP
+from aas_workingbench.domain.design_tokens import DIALOG_PADDING
+from aas_workingbench.domain.design_tokens import ICON_CONTRAST
+from aas_workingbench.domain.design_tokens import LIGHT
+from aas_workingbench.domain.design_tokens import ROW_HEIGHTS
+from aas_workingbench.domain.design_tokens import ROW_TEXT_PADDING
+from aas_workingbench.domain.design_tokens import SPACING
+from aas_workingbench.domain.design_tokens import TEXT_CONTRAST
+from aas_workingbench.domain.design_tokens import THEMES
+from aas_workingbench.domain.design_tokens import TYPE_RAMP
+from aas_workingbench.domain.design_tokens import ColorTokens
+from aas_workingbench.domain.design_tokens import Density
+from aas_workingbench.domain.design_tokens import contrast_ratio
+from aas_workingbench.domain.design_tokens import fitting_row_height
+from aas_workingbench.domain.design_tokens import parse_density
 
 PAIR_IDS = [pair.name for pair in CONTRAST_PAIRS]
 

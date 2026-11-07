@@ -33,7 +33,9 @@ def entry(model_support):
             return details.setData(index, value, Qt.ItemDataRole.EditRole)
 
         def message(self, details, attribute: str) -> str:
-            from aas_editor.settings.app_settings import DATA_CHANGE_FAILED_ROLE
+            from aas_workingbench.settings.app_settings import (
+                DATA_CHANGE_FAILED_ROLE,
+            )
 
             index = model_support.find(details, attribute)
             return details.data(index, DATA_CHANGE_FAILED_ROLE)
@@ -163,7 +165,7 @@ def test_clearing_the_text_of_a_number_removes_the_value(entry) -> None:
 
 
 def test_typing_in_the_package_tree_parses_the_value_too(model_support) -> None:
-    from aas_editor.settings.app_settings import DATA_CHANGE_FAILED_ROLE
+    from aas_workingbench.settings.app_settings import DATA_CHANGE_FAILED_ROLE
 
     prop = make_property("p", 3, datatypes.Int)
     table = model_support.pack_table(make_submodel(elements=[prop]))
@@ -190,7 +192,7 @@ def test_an_edit_of_a_value_is_one_undoable_step(entry) -> None:
 
 
 def test_the_text_of_a_value_is_refused_in_read_mode(entry) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     prop = make_property("p", 3, datatypes.Int)
     shown = entry(prop)
@@ -326,7 +328,7 @@ class TestChangingTheValueType:
     def test_the_other_rows_of_the_tab_show_the_converted_value(
         self, entry, model_support
     ) -> None:
-        from aas_editor.settings.app_settings import VALUE_COLUMN
+        from aas_workingbench.settings.app_settings import VALUE_COLUMN
 
         prop = make_property("p", "12", datatypes.String)
         shown = entry(prop)

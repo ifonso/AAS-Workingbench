@@ -7,11 +7,11 @@ from PyQt6.QtCore import QStandardPaths
 from PyQt6.QtWidgets import QApplication
 import pytest
 
-from aas_editor.domain.design_tokens import DARK
-from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.ui.theme import THEME_DARK
-from aas_editor.ui.theme import THEME_LIGHT
-from aas_editor.ui.theme import theme_manager
+from aas_workingbench.domain.design_tokens import DARK
+from aas_workingbench.domain.design_tokens import LIGHT
+from aas_workingbench.ui.theme import THEME_DARK
+from aas_workingbench.ui.theme import THEME_LIGHT
+from aas_workingbench.ui.theme import theme_manager
 
 
 @pytest.fixture(autouse=True)
@@ -24,7 +24,7 @@ def native_look(qapp: QApplication) -> Iterator[None]:
 
 
 def test_the_editor_is_light_on_the_light_theme(qapp: QApplication) -> None:
-    from aas_editor.widgets.jsonEditor import JSONEditor
+    from aas_workingbench.widgets.jsonEditor import JSONEditor
 
     theme_manager().apply(THEME_LIGHT)
 
@@ -41,7 +41,7 @@ def test_the_editor_is_light_on_the_light_theme(qapp: QApplication) -> None:
 
 
 def test_the_editor_is_dark_on_the_dark_theme(qapp: QApplication) -> None:
-    from aas_editor.widgets.jsonEditor import JSONEditor
+    from aas_workingbench.widgets.jsonEditor import JSONEditor
 
     theme_manager().apply(THEME_DARK)
 
@@ -58,7 +58,7 @@ def test_the_editor_is_dark_on_the_dark_theme(qapp: QApplication) -> None:
 def test_the_colors_of_the_syntax_are_those_of_the_theme(
     qapp: QApplication,
 ) -> None:
-    from aas_editor.widgets.jsonEditor import JSONEditor
+    from aas_workingbench.widgets.jsonEditor import JSONEditor
 
     theme_manager().apply(THEME_LIGHT)
 
@@ -74,7 +74,7 @@ def test_the_colors_of_the_syntax_are_those_of_the_theme(
 def test_an_editor_that_is_open_follows_a_switch_of_theme(
     qapp: QApplication,
 ) -> None:
-    from aas_editor.widgets.jsonEditor import JSONEditor
+    from aas_workingbench.widgets.jsonEditor import JSONEditor
 
     theme_manager().apply(THEME_LIGHT)
     editor = JSONEditor()

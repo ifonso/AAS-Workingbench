@@ -11,10 +11,10 @@ from tests.reference_factories import MAIN_ID
 from tests.reference_factories import OTHER_ID
 from tests.reference_factories import make_linked
 
-from aas_editor.domain.references import ReferenceIndex
-from aas_editor.domain.references import describe_reference
-from aas_editor.domain.references import iter_slots
-from aas_editor.domain.references import path_of
+from aas_workingbench.domain.references import ReferenceIndex
+from aas_workingbench.domain.references import describe_reference
+from aas_workingbench.domain.references import iter_slots
+from aas_workingbench.domain.references import path_of
 
 
 class TestIds:

@@ -1,128 +1,116 @@
 name: Create release on push to main
 
+# A push to main (a merged pull request is one) builds the release files and
+# publishes them as a GitHub release, named after the version in pyproject.toml.
+# When the tag of that version exists already, nothing is built and no release is
+# made, so a push that does not change the version does not fail.
+# "Run workflow" on another branch builds the files and publishes nothing.
+
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-    types:
-      - closed
+
+permissions:
+  contents: read
+
+# Two runs must not race to create the same tag.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  create_release:
-    name: Create Release
-    if: github.event_name == 'push' || github.event.pull_request.merged == true
+  prepare:
+    name: Read the version
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+      tag: ${{ steps.get_version.outputs.tag }}
+      metamodel: ${{ steps.get_metamodel.outputs.version }}
+      tag_exists: ${{ steps.tag_exists.outputs.exists }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          # The tags are needed to see whether this version was released.
           fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v6
 
       - name: Get version from pyproject.toml
         id: get_version
-        run: echo "version=$(uv version --short)" >> $GITHUB_OUTPUT
+        run: |
+          VERSION=$(uv version --short)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Get metamodel version
         id: get_metamodel
         run: |
-          VERSION=$(sed -n 's/^AAS_METAMODEL_VERSION = "\(.*\)"\r*$/\1/p' src/aas_editor/settings/app_settings.py)
+          VERSION=$(sed -n 's/^AAS_METAMODEL_VERSION = "\(.*\)"\r*$/\1/p' src/aas_workingbench/settings/app_settings.py)
           test -n "${VERSION}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Get previous tag
-        id: get_prev_tag
-        # A repository without tags has no previous tag. The output is then
-        # empty, and the notes list every commit.
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
-          echo "prev-tag=${PREV_TAG}" >> $GITHUB_OUTPUT
-
-      - name: Generate release notes
-        id: generate_release_notes
-        run: |
-          PREV_TAG=${{ steps.get_prev_tag.outputs.prev-tag }}
-          CURRENT_TAG=v${{ steps.get_version.outputs.version }}
-          if [ -n "${PREV_TAG}" ]; then
-            RELEASE_NOTES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"%h - %s (%an)")
-          else
-            RELEASE_NOTES=$(git log HEAD --pretty=format:"%h - %s (%an)")
-          fi
-          echo "${RELEASE_NOTES}" > release_notes.txt
-          {
-            echo "notes<<EOF"
-            echo "${RELEASE_NOTES}"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Check whether the tag exists
+        id: tag_exists
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Release V${{ steps.get_version.outputs.version }} (Support of AAS Metamodel V${{ steps.get_metamodel.outputs.version }})
-          body: ${{ steps.generate_release_notes.outputs.notes }}
-          draft: false
-          prerelease: false
-
-      - name: Save Release URL File for publish
-        uses: actions/upload-artifact@v4
-        with:
-          name: release_url
-          path: release_notes.txt
+          TAG: ${{ steps.get_version.outputs.tag }}
+        run: |
+          if git rev-parse --quiet --verify "refs/tags/${TAG}" > /dev/null; then
+            echo "The tag ${TAG} exists already: nothing to release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
   build:
     name: Build packages
-    needs: create_release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            TARGET: ubuntu
-            CMD_BUILD: >
-              uv run --locked --group build pyinstaller aas_manager.spec &&
-              cd dist/ &&
-              zip -r AAS_Manager_Linux.zip AAS_Manager
-            OUT_FILE_NAME: AAS_Manager_Linux.zip
-            ASSET_MIME: application/zip
-          - os: windows-latest
-            TARGET: windows
-            CMD_BUILD: |
-              uv run --locked --group build pyinstaller aas_manager.spec
-              cd dist
-              7z a AAS_Manager_Win.zip AAS_Manager
-            OUT_FILE_NAME: AAS_Manager_Win.zip
-            ASSET_MIME: application/zip
+    needs: prepare
+    if: needs.prepare.outputs.tag_exists == 'false'
+    uses: ./.github/workflows/build.yaml
+
+  release:
+    name: Create release
+    needs: [prepare, build]
+    # Only the main branch publishes. The tag does not exist yet (see above).
+    if: needs.prepare.outputs.tag_exists == 'false' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      # Creates the tag and the release.
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v6
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          enable-cache: true
+          fetch-depth: 0
 
-      - name: Install system dependencies (Ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0
+      - name: Download the packages
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
 
-      - name: Build with pyinstaller for ${{ matrix.TARGET }}
-        run: ${{ matrix.CMD_BUILD }}
+      - name: Generate release notes
+        # A repository without tags has no previous tag. The notes then list
+        # every commit.
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)
+          if [ -n "${PREV_TAG}" ]; then
+            git log "${PREV_TAG}..HEAD" --pretty=format:"%h - %s (%an)" > release_notes.txt
+          else
+            git log HEAD --pretty=format:"%h - %s (%an)" > release_notes.txt
+          fi
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Create GitHub Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./dist/${{ matrix.OUT_FILE_NAME }}
-          asset_name: ${{ matrix.OUT_FILE_NAME }}
-          asset_content_type: ${{ matrix.ASSET_MIME }}
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          METAMODEL: ${{ needs.prepare.outputs.metamodel }}
+        run: |
+          ls -l dist
+          gh release create "${TAG}" dist/* \
+            --target "${GITHUB_SHA}" \
+            --title "AAS Workingbench ${VERSION} (AAS Metamodel V${METAMODEL})" \
+            --notes-file release_notes.txt

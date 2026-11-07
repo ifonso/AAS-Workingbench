@@ -21,17 +21,17 @@ from pytestqt.qtbot import QtBot
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.hints import hint_kinds
-from aas_editor.application.hints import hints_mode
-from aas_editor.application.validation import is_hint
-from aas_editor.application.validation import validate_package
-from aas_editor.domain.validation.rules import hints as hint_rules
-from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.application.hints import hint_kinds
+from aas_workingbench.application.hints import hints_mode
+from aas_workingbench.application.validation import is_hint
+from aas_workingbench.application.validation import validate_package
+from aas_workingbench.domain.validation.rules import hints as hint_rules
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
 TECHNICAL_DATA = (
     Path(__file__).parents[2]
     / "src"
-    / "aas_editor"
+    / "aas_workingbench"
     / "submodel_templates"
     / "Technical_Data"
     / "1"
@@ -43,7 +43,7 @@ TECHNICAL_DATA = (
 
 def _make_window(qtbot: QtBot, views):
     """A window with the package tree and the validation controller."""
-    from aas_editor.ui.validation_window import install_validation
+    from aas_workingbench.ui.validation_window import install_validation
 
     shown = views()
     main = QMainWindow()
@@ -180,8 +180,8 @@ def test_the_status_bar_counts_an_edit_of_the_current_object(
     window.select_element(element)
     assert window.status.hints_button.text() == "2 hints here"
 
-    from aas_editor.application.changes import observer_for
-    from aas_editor.application.edits import SetAttribute
+    from aas_workingbench.application.changes import observer_for
+    from aas_workingbench.application.edits import SetAttribute
 
     package.commandStack.push(  # type: ignore[attr-defined]
         SetAttribute(observer_for(package), element, "category", "PARAMETER")
@@ -204,7 +204,7 @@ def test_a_click_on_the_hints_opens_the_hints_view(
 
     QTest.mouseClick(window.status.hints_button, Qt.MouseButton.LeftButton)
 
-    from aas_editor.ui.validation_dock import HINTS_VIEW
+    from aas_workingbench.ui.validation_dock import HINTS_VIEW
 
     assert window.dock.isVisible()
     assert window.dock.current_view == HINTS_VIEW
@@ -219,7 +219,7 @@ def test_a_click_on_the_errors_opens_the_list_of_findings(
 
     QTest.mouseClick(window.status.findings_button, Qt.MouseButton.LeftButton)
 
-    from aas_editor.ui.validation_dock import FINDINGS_VIEW
+    from aas_workingbench.ui.validation_dock import FINDINGS_VIEW
 
     assert window.dock.current_view == FINDINGS_VIEW
 
@@ -371,8 +371,8 @@ def test_the_hints_view_is_up_to_date_after_an_edit(
     window.dock.show_hints()
     assert _group_rows(window)["Missing description"] == "2"
 
-    from aas_editor.application.changes import observer_for
-    from aas_editor.application.edits import SetAttribute
+    from aas_workingbench.application.changes import observer_for
+    from aas_workingbench.application.edits import SetAttribute
 
     package.commandStack.push(  # type: ignore[attr-defined]
         SetAttribute(
@@ -392,7 +392,7 @@ def test_the_hints_view_is_up_to_date_after_an_edit(
 def test_the_grouped_counts_match_what_validate_package_reports_for_a_template(
     window, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui.load_report_dialog import LoadReportDialog
+    from aas_workingbench.ui.load_report_dialog import LoadReportDialog
 
     # The template opens in failsafe mode: the user agrees, and the report of
     # what was left out is not shown.
@@ -471,7 +471,7 @@ def test_every_kind_off_leaves_nothing_here(window) -> None:
 def test_a_kind_that_is_off_is_left_out_of_the_bar_above_a_tab(
     window, qtbot: QtBot
 ) -> None:
-    from aas_editor.ui.hints_bar import HintsBar
+    from aas_workingbench.ui.hints_bar import HintsBar
 
     bar = HintsBar()
     qtbot.addWidget(bar)
@@ -539,7 +539,7 @@ def test_a_button_turns_every_kind_on_again(window) -> None:
 def test_a_kind_that_is_off_stays_off_across_a_restart(
     qtbot: QtBot, views
 ) -> None:
-    from aas_editor.settings import app_settings
+    from aas_workingbench.settings import app_settings
 
     first = _make_window(qtbot, views)
     first.open(make_property("Plain"))
@@ -565,7 +565,7 @@ def test_a_kind_that_is_off_stays_off_across_a_restart(
 
 
 def test_turning_a_kind_on_again_is_saved_too(qtbot: QtBot, views) -> None:
-    from aas_editor.settings import app_settings
+    from aas_workingbench.settings import app_settings
 
     window = _make_window(qtbot, views)
     window.open(make_property("Plain"))
@@ -638,9 +638,9 @@ def test_the_note_of_the_list_of_findings_sends_to_the_hints_view(
 def test_the_hints_button_is_styled_as_the_errors_button_by_the_sheet(
     tmp_path: Path,
 ) -> None:
-    from aas_editor.domain.design_tokens import DARK
-    from aas_editor.domain.design_tokens import LIGHT
-    from aas_editor.ui.theme.stylesheet import build_stylesheet
+    from aas_workingbench.domain.design_tokens import DARK
+    from aas_workingbench.domain.design_tokens import LIGHT
+    from aas_workingbench.ui.theme.stylesheet import build_stylesheet
 
     for tokens in (LIGHT, DARK):
         sheet = build_stylesheet(tokens, image_dir=tmp_path)
@@ -654,9 +654,9 @@ def test_the_hints_button_is_styled_as_the_errors_button_by_the_sheet(
 def test_a_kind_that_is_off_is_drawn_in_the_quiet_color_of_each_theme(
     window, qapp: object
 ) -> None:
-    from aas_editor.domain.design_tokens import DARK
-    from aas_editor.domain.design_tokens import LIGHT
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.domain.design_tokens import DARK
+    from aas_workingbench.domain.design_tokens import LIGHT
+    from aas_workingbench.ui.theme import theme_manager
 
     window.open(make_property("Plain"))
     window.dock.show_hints()
@@ -679,8 +679,8 @@ def test_a_kind_that_is_off_is_drawn_in_the_quiet_color_of_each_theme(
 def test_the_new_views_name_no_color_of_their_own() -> None:
     import re
 
-    import aas_editor.ui.hints_view as view
-    import aas_editor.ui.validation_status as status
+    import aas_workingbench.ui.hints_view as view
+    import aas_workingbench.ui.validation_status as status
 
     for module in (view, status):
         source = Path(module.__file__).read_text(encoding="utf-8")

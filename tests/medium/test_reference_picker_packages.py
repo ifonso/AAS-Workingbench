@@ -17,8 +17,8 @@ from tests.factories import make_submodel
 from tests.medium.conftest import ELEMENT_ID
 from tests.medium.forms import answering
 
-from aas_editor.domain.reference_picker import ReferenceRule
-from aas_editor.domain.reference_picker import PickerSource
+from aas_workingbench.domain.reference_picker import ReferenceRule
+from aas_workingbench.domain.reference_picker import PickerSource
 
 ANYTHING = ReferenceRule(True, True, (model.Referable,))
 CONCEPTS = (model.ConceptDescription,)
@@ -30,7 +30,7 @@ def _objects(*concept_ids: str) -> tuple[model.Identifiable, ...]:
 
 class TestDialog:
     def _dialog(self, qtbot, others=(), **kwargs: Any):
-        from aas_editor.ui.reference_picker import ReferencePickerDialog
+        from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
         dialog = ReferencePickerDialog(
             _objects("mine"),
@@ -48,7 +48,7 @@ class TestDialog:
     def test_the_dialog_can_start_on_the_filter_of_concept_descriptions(
         self, qtbot
     ) -> None:
-        from aas_editor.ui.reference_picker import ReferencePickerDialog
+        from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
         mixed = (*_objects("mine"), make_submodel("urn:sm", "Sub"))
         dialog = ReferencePickerDialog(
@@ -65,7 +65,7 @@ class TestDialog:
     def test_a_filter_that_the_field_does_not_offer_is_ignored(
         self, qtbot
     ) -> None:
-        from aas_editor.ui.reference_picker import ReferencePickerDialog
+        from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
         dialog = ReferencePickerDialog(
             (*_objects("mine"), make_submodel("urn:sm", "Sub")),
@@ -167,21 +167,27 @@ class TestSemanticIdOfElement:
     def test_the_semantic_id_of_a_submodel_or_element_is_one(
         self, qtbot, owner: type
     ) -> None:
-        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+        from aas_workingbench.ui.reference_fields import (
+            is_semantic_id_of_element,
+        )
 
         assert is_semantic_id_of_element(
             self._form(qtbot, owner, "semantic_id")
         )
 
     def test_the_supplemental_semantic_id_is_one_too(self, qtbot) -> None:
-        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+        from aas_workingbench.ui.reference_fields import (
+            is_semantic_id_of_element,
+        )
 
         assert is_semantic_id_of_element(
             self._form(qtbot, model.Property, "supplemental_semantic_id")
         )
 
     def test_a_form_deeper_in_the_field_is_found(self, qtbot) -> None:
-        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+        from aas_workingbench.ui.reference_fields import (
+            is_semantic_id_of_element,
+        )
 
         assert is_semantic_id_of_element(
             self._form(qtbot, model.Property, "semantic_id", depth=1)
@@ -199,7 +205,9 @@ class TestSemanticIdOfElement:
     def test_other_reference_fields_are_not(
         self, qtbot, owner: type, name: str
     ) -> None:
-        from aas_editor.ui.reference_fields import is_semantic_id_of_element
+        from aas_workingbench.ui.reference_fields import (
+            is_semantic_id_of_element,
+        )
 
         assert not is_semantic_id_of_element(self._form(qtbot, owner, name))
 
@@ -207,7 +215,7 @@ class TestSemanticIdOfElement:
 @pytest.fixture
 def two_packages(lab_class, monkeypatch: pytest.MonkeyPatch):
     """A lab with an element, and a second open package with a description."""
-    from aas_editor.ui.reference_picker import ReferencePickerDialog
+    from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
     class Two:
         def __init__(self) -> None:

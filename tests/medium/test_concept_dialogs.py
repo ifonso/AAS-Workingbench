@@ -5,36 +5,36 @@ import pytest
 from pytestqt.qtbot import QtBot
 from tests.factories import make_external_reference
 
-from aas_editor.application.operations.data_specs import ImportPlan
-from aas_editor.application.operations.data_specs import plan_fix_keys
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
-from aas_editor.domain.data_specifications import Iec61360Draft
-from aas_editor.domain.data_specifications import build_content
+from aas_workingbench.application.operations.data_specs import ImportPlan
+from aas_workingbench.application.operations.data_specs import plan_fix_keys
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.domain.data_specifications import Iec61360Draft
+from aas_workingbench.domain.data_specifications import build_content
 
 
 @pytest.fixture
 def iec(qapp: object):
-    from aas_editor.ui import iec61360_dialog
+    from aas_workingbench.ui import iec61360_dialog
 
     return iec61360_dialog
 
 
 @pytest.fixture
 def pairs_dialog(qapp: object):
-    from aas_editor.ui import value_list_dialog
+    from aas_workingbench.ui import value_list_dialog
 
     return value_list_dialog
 
 
 @pytest.fixture
 def dialogs(qapp: object):
-    from aas_editor.ui import concept_dialogs
+    from aas_workingbench.ui import concept_dialogs
 
     return concept_dialogs
 
 
 def _accept_enabled(dialog) -> bool:
-    from aas_editor.ui.concept_dialogs import accept_button
+    from aas_workingbench.ui.concept_dialogs import accept_button
 
     button = accept_button(dialog.buttons)
     assert button is not None

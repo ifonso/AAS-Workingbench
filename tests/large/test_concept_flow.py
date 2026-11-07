@@ -34,10 +34,10 @@ def editor(
     qapp: object, qtbot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> Iterator[SimpleNamespace]:
     """The main window with a copy of the package, and the concept actions."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui import concept_dialogs
-    from aas_editor.ui import reference_dialogs
-    from aas_editor.ui.concept_actions import register_concept_actions
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui import concept_dialogs
+    from aas_workingbench.ui import reference_dialogs
+    from aas_workingbench.ui.concept_actions import register_concept_actions
 
     register_concept_actions()
     # A window with changes asks whether to save when it closes, and waits.
@@ -85,7 +85,7 @@ def editor(
 
 
 def _find(view, parent: QModelIndex, name: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     for row in range(proxy.rowCount(parent)):
@@ -115,7 +115,7 @@ def _act(view, action_id: str) -> bool:
 
 
 def _concept_rows(view) -> list[Any]:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     proxy = view.model()
     node = _concepts_node(view)
@@ -126,7 +126,7 @@ def _concept_rows(view) -> list[Any]:
 
 
 def _select_concept(view, concept: model.ConceptDescription) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     proxy = view.model()
     node = _concepts_node(view)
@@ -139,7 +139,7 @@ def _select_concept(view, concept: model.ConceptDescription) -> None:
 
 
 def _reload(package, directory: Path) -> str:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     path = directory / "concept_flow_saved.aasx"
     package.write(path)
@@ -149,12 +149,12 @@ def _reload(package, directory: Path) -> str:
 def test_a_session_with_concept_descriptions_undoes_to_the_start_and_saves_as_shown(
     editor,
 ) -> None:
-    from aas_editor.domain.concept_order import ConceptOrder
-    from aas_editor.domain.data_specifications import TemplateMatch
-    from aas_editor.domain.data_specifications import match_template
-    from aas_editor.ui import concept_actions
-    from aas_editor.ui.iec61360_dialog import Iec61360Dialog
-    from aas_editor.ui.value_list_dialog import ValueListImportDialog
+    from aas_workingbench.domain.concept_order import ConceptOrder
+    from aas_workingbench.domain.data_specifications import TemplateMatch
+    from aas_workingbench.domain.data_specifications import match_template
+    from aas_workingbench.ui import concept_actions
+    from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
+    from aas_workingbench.ui.value_list_dialog import ValueListImportDialog
 
     view, package, stack = editor.view, editor.package, editor.stack
     original = snapshot(package.objStore)

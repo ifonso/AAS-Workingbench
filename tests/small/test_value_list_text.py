@@ -6,10 +6,10 @@ import time
 from basyx.aas import model
 import pytest
 
-from aas_editor.domain.value_list_text import MAX_CHARS
-from aas_editor.domain.value_list_text import MAX_PAIRS
-from aas_editor.domain.value_list_text import NO_VALUE_ID
-from aas_editor.domain.value_list_text import parse_value_pairs
+from aas_workingbench.domain.value_list_text import MAX_CHARS
+from aas_workingbench.domain.value_list_text import MAX_PAIRS
+from aas_workingbench.domain.value_list_text import NO_VALUE_ID
+from aas_workingbench.domain.value_list_text import parse_value_pairs
 
 
 def _keys(pair: model.ValueReferencePair) -> list[tuple[str, str]]:

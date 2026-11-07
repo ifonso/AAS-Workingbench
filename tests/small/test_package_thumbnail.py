@@ -2,12 +2,12 @@
 
 import pytest
 
-from aas_editor.application import supplementary_files as files
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.domain.parts import Thumbnail
-from aas_editor.domain.parts import ThumbnailError
-from aas_editor.domain.parts import new_thumbnail
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.domain.parts import Thumbnail
+from aas_workingbench.domain.parts import ThumbnailError
+from aas_workingbench.domain.parts import new_thumbnail
 
 
 class _Package:

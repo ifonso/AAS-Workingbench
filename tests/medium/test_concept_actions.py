@@ -18,10 +18,10 @@ from tests.factories import make_property
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
-from aas_editor.domain.data_specifications import TemplateMatch
-from aas_editor.domain.data_specifications import match_template
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.domain.data_specifications import TemplateMatch
+from aas_workingbench.domain.data_specifications import match_template
 
 CONCEPTS = "concept_descriptions"
 SUBMODEL = ("submodels", "Submodel")
@@ -64,11 +64,11 @@ def _concept_ids(store: Any) -> list[str]:
 @pytest.fixture
 def concepts(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """Packages with objects, and ways to select, act and look at the result."""
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.ui import concept_dialogs
-    from aas_editor.ui import reference_dialogs
-    from aas_editor.ui.concept_actions import register_concept_actions
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.ui import concept_dialogs
+    from aas_workingbench.ui import reference_dialogs
+    from aas_workingbench.ui.concept_actions import register_concept_actions
 
     register_concept_actions()
 
@@ -574,7 +574,7 @@ class TestDeleteInvalid:
         return lab
 
     def _answer_usages(self, lab, remove: bool | None) -> list[Any]:
-        from aas_editor.ui import reference_dialogs
+        from aas_workingbench.ui import reference_dialogs
 
         plans: list[Any] = []
 
@@ -686,7 +686,7 @@ class TestRecords:
         return lab
 
     def _fill(self, lab, name: str = "Maximum speed") -> None:
-        from aas_editor.ui.iec61360_dialog import Iec61360Dialog
+        from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
 
         def fill(dialog: Any) -> None:
             dialog.preferred_name.set_rows([("en", name)])
@@ -699,7 +699,7 @@ class TestRecords:
     def test_the_dialog_starts_with_the_idshort_as_the_name(
         self, concepts
     ) -> None:
-        from aas_editor.ui.iec61360_dialog import Iec61360Dialog
+        from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
 
         lab = self._lab(concepts)
         starts: list[Any] = []
@@ -760,7 +760,7 @@ class TestRecords:
     def test_editing_changes_the_content_and_undo_gives_the_old_back(
         self, concepts
     ) -> None:
-        from aas_editor.ui.iec61360_dialog import Iec61360Dialog
+        from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
 
         lab = self._lab(concepts)
         self._fill(lab)
@@ -796,7 +796,7 @@ class TestRecords:
         assert lab.saved() == done
 
     def test_editing_keeps_an_older_spelling_of_the_key(self, concepts) -> None:
-        from aas_editor.ui.iec61360_dialog import Iec61360Dialog
+        from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
 
         older = (
             "http://admin-shell.io/DataSpecificationTemplates/"
@@ -936,7 +936,7 @@ class TestImportValueList:
         return lab
 
     def _accept(self, lab) -> None:
-        from aas_editor.ui.value_list_dialog import ValueListImportDialog
+        from aas_workingbench.ui.value_list_dialog import ValueListImportDialog
 
         lab.monkeypatch.setattr(
             ValueListImportDialog, "exec", lambda dialog: dialog.accept()
@@ -1037,7 +1037,7 @@ class TestOrder:
         return lab
 
     def _choose(self, lab, order) -> None:
-        from aas_editor.ui import concept_actions
+        from aas_workingbench.ui import concept_actions
 
         lab.monkeypatch.setattr(
             concept_actions,
@@ -1047,7 +1047,7 @@ class TestOrder:
         lab.act("concepts.order")
 
     def _objects(self, lab) -> list[str]:
-        from aas_editor.settings.app_settings import OBJECT_ROLE
+        from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
         proxy = lab.view.model()
         parent = lab.shown.index(CONCEPTS)
@@ -1071,7 +1071,7 @@ class TestOrder:
         ]
 
     def test_idshort_lists_unnamed_descriptions_last(self, concepts) -> None:
-        from aas_editor.domain.concept_order import ConceptOrder
+        from aas_workingbench.domain.concept_order import ConceptOrder
 
         lab = self._lab(concepts)
 
@@ -1086,7 +1086,7 @@ class TestOrder:
         ]
 
     def test_id_lists_by_the_id(self, concepts) -> None:
-        from aas_editor.domain.concept_order import ConceptOrder
+        from aas_workingbench.domain.concept_order import ConceptOrder
 
         lab = self._lab(concepts)
 
@@ -1103,7 +1103,7 @@ class TestOrder:
     def test_first_use_lists_the_used_descriptions_first(
         self, concepts
     ) -> None:
-        from aas_editor.domain.concept_order import ConceptOrder
+        from aas_workingbench.domain.concept_order import ConceptOrder
 
         lab = self._lab(concepts)
 
@@ -1115,7 +1115,7 @@ class TestOrder:
     def test_the_order_changes_the_view_and_never_the_package(
         self, concepts
     ) -> None:
-        from aas_editor.domain.concept_order import ConceptOrder
+        from aas_workingbench.domain.concept_order import ConceptOrder
 
         lab = self._lab(concepts)
         before = snapshot(lab.store)
@@ -1135,7 +1135,7 @@ class TestOrder:
         assert lab.enabled("concepts.order")
 
     def test_a_cancelled_choice_keeps_the_order(self, concepts) -> None:
-        from aas_editor.domain.concept_order import ConceptOrder
+        from aas_workingbench.domain.concept_order import ConceptOrder
 
         lab = self._lab(concepts)
         self._choose(lab, ConceptOrder.ID)

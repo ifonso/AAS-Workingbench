@@ -20,23 +20,23 @@ from PyQt6.QtWidgets import QToolButton
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.domain.design_tokens import DARK
-from aas_editor.domain.design_tokens import FONT_FAMILY
-from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.domain.design_tokens import TYPE_RAMP
-from aas_editor.settings import icons
-from aas_editor.ui.theme import THEME_DARK
-from aas_editor.ui.theme import THEME_LIGHT
-from aas_editor.ui.theme import theme_manager
-from aas_editor.ui.theme.fonts import apply_application_font
-from aas_editor.ui.theme.fonts import application_font
-from aas_editor.ui.theme.fonts import FONT_FILES
-from aas_editor.ui.theme.fonts import FONTS_FOLDER
-from aas_editor.ui.theme.fonts import install_fonts
-from aas_editor.ui.theme.icons import IconRole
-from aas_editor.ui.theme.icons import svg_icon
-from aas_editor.ui.theme.icons import tabler_icon
-from aas_editor.ui.theme.icons import TABLER_FOLDER
+from aas_workingbench.domain.design_tokens import DARK
+from aas_workingbench.domain.design_tokens import FONT_FAMILY
+from aas_workingbench.domain.design_tokens import LIGHT
+from aas_workingbench.domain.design_tokens import TYPE_RAMP
+from aas_workingbench.settings import icons
+from aas_workingbench.ui.theme import THEME_DARK
+from aas_workingbench.ui.theme import THEME_LIGHT
+from aas_workingbench.ui.theme import theme_manager
+from aas_workingbench.ui.theme.fonts import apply_application_font
+from aas_workingbench.ui.theme.fonts import application_font
+from aas_workingbench.ui.theme.fonts import FONT_FILES
+from aas_workingbench.ui.theme.fonts import FONTS_FOLDER
+from aas_workingbench.ui.theme.fonts import install_fonts
+from aas_workingbench.ui.theme.icons import IconRole
+from aas_workingbench.ui.theme.icons import svg_icon
+from aas_workingbench.ui.theme.icons import tabler_icon
+from aas_workingbench.ui.theme.icons import TABLER_FOLDER
 
 BIG = QSize(96, 96)
 
@@ -278,7 +278,7 @@ def test_a_widget_without_a_font_of_its_own_gets_the_font_of_the_application(
 def test_the_font_of_the_rows_is_regular_and_not_thin() -> None:
     # Qt 6 reads the 40 that Qt 5 meant as Normal as a weight below Thin, and
     # Inter has a Thin style, so every row would draw hairline thin.
-    from aas_editor.settings.app_settings import DEFAULT_FONT
+    from aas_workingbench.settings.app_settings import DEFAULT_FONT
 
     assert DEFAULT_FONT.weight() == QFont.Weight.Normal
     assert DEFAULT_FONT.family() == FONT_FAMILY
@@ -287,8 +287,8 @@ def test_the_font_of_the_rows_is_regular_and_not_thin() -> None:
 def test_the_font_does_not_change_the_zoom_of_a_tree(
     views, qtbot: QtBot
 ) -> None:
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.settings.app_settings import DEFAULT_FONT
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.settings.app_settings import DEFAULT_FONT
 
     zoomed = DetailedInfoTable.currFont.pointSize()
     try:
@@ -302,7 +302,7 @@ def test_the_font_does_not_change_the_zoom_of_a_tree(
 def test_zooming_a_tree_changes_the_size_and_keeps_the_family(
     views, qtbot: QtBot, qapp: QApplication
 ) -> None:
-    from aas_editor.models import DetailedInfoTable
+    from aas_workingbench.models import DetailedInfoTable
     from tests.factories import make_property
     from tests.factories import make_submodel
 

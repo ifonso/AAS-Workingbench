@@ -8,7 +8,7 @@ from pytestqt.qtbot import QtBot
 
 def _proposed_id(qtbot: QtBot, cls: type) -> str:
     """The id that the add dialog for a class offers to the user."""
-    from aas_editor import dialogs
+    from aas_workingbench import dialogs
 
     parent = QWidget()
     qtbot.addWidget(parent)

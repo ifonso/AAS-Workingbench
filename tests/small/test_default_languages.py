@@ -2,10 +2,10 @@
 
 import pytest
 
-from aas_editor.domain.default_languages import DefaultLanguagesError
-from aas_editor.domain.default_languages import default_languages
-from aas_editor.domain.default_languages import first_default_language
-from aas_editor.domain.default_languages import parse_default_languages
+from aas_workingbench.domain.default_languages import DefaultLanguagesError
+from aas_workingbench.domain.default_languages import default_languages
+from aas_workingbench.domain.default_languages import first_default_language
+from aas_workingbench.domain.default_languages import parse_default_languages
 
 
 def test_the_tags_are_read_in_the_order_given() -> None:

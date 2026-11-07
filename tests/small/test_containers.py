@@ -7,7 +7,7 @@ from tests.factories import make_property
 from tests.factories import make_reference_to
 from tests.factories import make_submodel
 
-from aas_editor.domain import containers
+from aas_workingbench.domain import containers
 
 
 def _ids(namespace_set: model.NamespaceSet[model.SubmodelElement]) -> list[str]:

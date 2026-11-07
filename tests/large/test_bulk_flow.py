@@ -39,16 +39,16 @@ def editor(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Iterator[SimpleNamespace]:
     """The main window with a copy of the package, and the bulk actions."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui import bulk_dialogs
-    from aas_editor.ui import preset_actions
-    from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
-    from aas_editor.ui.bulk_dialogs import RemoveExtensionsDialog
-    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
-    from aas_editor.ui.concept_actions import register_concept_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.preset_actions import register_preset_actions
-    from aas_editor.ui.preset_dialogs import PresetDialog
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui import bulk_dialogs
+    from aas_workingbench.ui import preset_actions
+    from aas_workingbench.ui.bulk_dialogs import ChangeAttributeDialog
+    from aas_workingbench.ui.bulk_dialogs import RemoveExtensionsDialog
+    from aas_workingbench.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_workingbench.ui.concept_actions import register_concept_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.preset_actions import register_preset_actions
+    from aas_workingbench.ui.preset_dialogs import PresetDialog
 
     register_move_actions()
     register_concept_actions()
@@ -101,7 +101,7 @@ def editor(
 
 
 def _find(view, parent: QModelIndex, name: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     for row in range(proxy.rowCount(parent)):
@@ -119,7 +119,7 @@ def _path(view, *names: str) -> QModelIndex:
 
 
 def _rows(view, *names: str) -> list[str]:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     parent = _path(view, *names)
@@ -147,7 +147,7 @@ def _act(view, action_id: str) -> bool:
 
 
 def _reloaded(editor, name: str) -> model.Submodel:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     path = editor.dir / name
     editor.package.write(path)
@@ -260,7 +260,7 @@ def test_bulk_edits_agree_in_tree_objects_and_file_and_undo_to_the_start(
 
     # 5. The assign action of the concept description work package takes the
     # whole selection: one description becomes the semantic id of two elements.
-    from aas_editor.ui import concept_dialogs
+    from aas_workingbench.ui import concept_dialogs
 
     def concepts() -> list[model.ConceptDescription]:
         return sorted(
@@ -329,7 +329,7 @@ def test_bulk_edits_agree_in_tree_objects_and_file_and_undo_to_the_start(
 
 
 def _reloaded_store(editor, name: str):
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     path = editor.dir / name
     editor.package.write(path)

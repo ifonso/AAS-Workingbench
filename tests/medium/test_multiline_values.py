@@ -16,7 +16,7 @@ TWO_LINES = "first line\nsecond line"
 
 @pytest.fixture
 def edit(qapp: object) -> Any:
-    from aas_editor.ui.value_editor import ValueEdit
+    from aas_workingbench.ui.value_editor import ValueEdit
 
     def make(value_type: Any = datatypes.String) -> ValueEdit:
         return ValueEdit(value_type)
@@ -174,7 +174,7 @@ def test_a_new_multi_language_property_takes_a_text_of_several_lines(
 def test_the_text_of_a_language_is_a_box_and_its_language_a_line(
     lab_class: Any,
 ) -> None:
-    from aas_editor.ui.value_editor import MultiLineTextEdit
+    from aas_workingbench.ui.value_editor import MultiLineTextEdit
     from PyQt6.QtWidgets import QLineEdit
 
     lab = lab_class()
@@ -216,8 +216,8 @@ def test_an_existing_multi_language_text_keeps_its_line_breaks_in_the_dialog(
 def test_one_language_entry_is_edited_in_a_box_of_several_lines(
     monkeypatch: pytest.MonkeyPatch, lab_class: Any
 ) -> None:
-    from aas_editor.dialogs import EditObjDialog
-    from aas_editor.ui.value_editor import MultiLineTextEdit
+    from aas_workingbench.dialogs import EditObjDialog
+    from aas_workingbench.ui.value_editor import MultiLineTextEdit
 
     lab = lab_class(make_multi_language_property(ELEMENT_ID, {"en": "old"}))
     attrs = lab.attrs()

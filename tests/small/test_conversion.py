@@ -19,10 +19,10 @@ from tests.factories import make_operation
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.domain.conversion import plan_conversion
-from aas_editor.domain.conversion import refusal_for
-from aas_editor.domain.conversion import targets_for
-from aas_editor.domain.replacement import ConversionRefused
+from aas_workingbench.domain.conversion import plan_conversion
+from aas_workingbench.domain.conversion import refusal_for
+from aas_workingbench.domain.conversion import targets_for
+from aas_workingbench.domain.replacement import ConversionRefused
 
 STRING = model.datatypes.String
 INT = model.datatypes.Int

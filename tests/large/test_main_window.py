@@ -37,11 +37,11 @@ class TestUi(TestCase):
     def setUp(self) -> None:
         self.app = QApplication.instance() or QApplication(sys.argv)
 
-        # Imported here because aas_editor.dialogs reads the primary screen at
+        # Imported here because aas_workingbench.dialogs reads the primary screen at
         # import time, which fails until a QApplication exists.
         global NAME_ROLE
-        from aas_editor.editorApp import EditorApp
-        from aas_editor.settings.app_settings import NAME_ROLE
+        from aas_workingbench.editorApp import EditorApp
+        from aas_workingbench.settings.app_settings import NAME_ROLE
 
         self.window = EditorApp(fileToOpen=str(AASX_FILE))
         self.window.show()

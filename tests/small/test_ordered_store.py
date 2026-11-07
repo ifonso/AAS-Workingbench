@@ -3,7 +3,7 @@
 from basyx.aas import model
 import pytest
 
-from aas_editor.domain.ordered_store import OrderedIdentifiableStore
+from aas_workingbench.domain.ordered_store import OrderedIdentifiableStore
 
 
 def _concept(id_: str) -> model.ConceptDescription:

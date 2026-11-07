@@ -40,7 +40,7 @@ def large(
 
 def _element(window: uw.UsageWindow, name: str) -> Any:
     """The row of the Property of a name, below the submodels."""
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     window.view.expandAll()
     return next(
@@ -179,7 +179,7 @@ def test_ctrl_f_in_the_tab_searches_the_attributes_of_that_tab(
 def test_ctrl_k_finds_an_element_by_its_name_and_selects_it(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
-    from aas_editor.application.command_palette import EntryKind
+    from aas_workingbench.application.command_palette import EntryKind
 
     large.view.collapseAll()
     large.view.setFocus()
@@ -218,7 +218,7 @@ def test_ctrl_k_runs_a_command_that_the_edit_menu_has(
 def test_a_command_that_cannot_run_in_the_palette_says_why(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     large.view.setCurrentIndex(_element(large, "ManufacturerName"))
     edit_mode().set_editing(False)
@@ -325,7 +325,7 @@ def test_back_and_forward_follow_the_rows_that_were_opened(
 def test_push_and_pop_location_come_back_to_the_row(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.application.locations import default_stack
+    from aas_workingbench.application.locations import default_stack
 
     default_stack().clear()
     start = _element(large, "ManufacturerName")
@@ -376,7 +376,7 @@ def test_jump_to_a_target_that_is_not_in_the_package_says_what_to_do(
 
 
 def _first_submodel_row(window: uw.UsageWindow) -> Any:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     window.view.expandAll()
     return next(
@@ -411,7 +411,7 @@ def test_f6_and_ctrl_1_and_ctrl_2_move_between_the_panes_of_a_large_package(
 
 
 def _findings(window: uw.UsageWindow) -> list[Any]:
-    from aas_editor.application.validation import stepping_findings
+    from aas_workingbench.application.validation import stepping_findings
 
     return list(
         stepping_findings(window.window.validationController.dock.report)
@@ -431,7 +431,7 @@ def test_f8_goes_to_the_finding_and_the_status_bar_says_what_it_is(
 
 
 def _warnings_in(dock: Any) -> int:
-    from aas_editor.domain.validation import Severity
+    from aas_workingbench.domain.validation import Severity
 
     return sum(
         1
@@ -459,7 +459,7 @@ def test_the_dock_lists_the_finding_and_a_double_click_goes_to_its_element(
 def test_the_filters_of_the_dock_hide_rows_and_f8_clears_them(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
-    from aas_editor.domain.validation import Severity
+    from aas_workingbench.domain.validation import Severity
 
     controller = large.window.validationController
     controller.show_dock()

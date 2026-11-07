@@ -19,10 +19,10 @@ from PyQt6.QtWidgets import QWidget
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.ui.command_bar import COMMANDS
-from aas_editor.ui.command_bar import CommandSpec
-from aas_editor.ui.command_bar import FocusedViewActions
-from aas_editor.ui.command_bar import MirroredAction
+from aas_workingbench.ui.command_bar import COMMANDS
+from aas_workingbench.ui.command_bar import CommandSpec
+from aas_workingbench.ui.command_bar import FocusedViewActions
+from aas_workingbench.ui.command_bar import MirroredAction
 
 
 class FakeView(QTreeView):

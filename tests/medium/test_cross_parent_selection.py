@@ -31,9 +31,9 @@ def _ids(container: object) -> list[str | None]:
 @pytest.fixture
 def crossing(views, monkeypatch: pytest.MonkeyPatch):
     """A package of three submodels and ways to act on a selection."""
-    from aas_editor.ui import reference_dialogs
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui import reference_dialogs
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     register_move_actions()
     register_paste_actions()
@@ -252,7 +252,7 @@ def test_a_selection_in_one_package_is_not_refused_when_another_is_open(
 def test_a_saved_package_has_none_of_the_deleted_rows(
     crossing, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     crossing.select((*SUB1, "A1"), (*SUB2, "B2"))
     crossing.view.onDelClear()
@@ -267,7 +267,7 @@ def test_a_saved_package_has_none_of_the_deleted_rows(
 def test_the_buttons_of_the_selection_panel_act_on_every_parent(
     crossing, qtbot
 ) -> None:
-    from aas_editor.ui.selection_panel import SelectionPanel
+    from aas_workingbench.ui.selection_panel import SelectionPanel
 
     panel = SelectionPanel(crossing.view)
     qtbot.addWidget(panel)

@@ -25,7 +25,7 @@ def settings(
     qapp: object, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> Iterator[Callable[..., None]]:
     """Gives the application an empty settings file, and a way to set a value."""
-    from aas_editor.settings import app_settings
+    from aas_workingbench.settings import app_settings
 
     own = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
     monkeypatch.setattr(app_settings, "SETTINGS", own)
@@ -39,8 +39,8 @@ def settings(
 def test_a_new_shell_dialog_follows_the_templates_of_the_settings(
     settings: Callable[..., None],
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
-    from aas_editor.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.settings.app_settings import AppSettings
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
 
     settings(AppSettings.ID_TEMPLATE_AAS, "urn:x:DDDD")
     settings(AppSettings.ID_TEMPLATE_ASSET, "urn:asset:XXXX")
@@ -58,7 +58,7 @@ def test_a_new_shell_dialog_follows_the_templates_of_the_settings(
 def test_without_templates_a_new_shell_gets_uuid_urns(
     settings: Callable[..., None],
 ) -> None:
-    from aas_editor.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
 
     dialog = CreateShellDialog([])
 
@@ -69,8 +69,8 @@ def test_without_templates_a_new_shell_gets_uuid_urns(
 def test_a_template_that_cannot_make_ids_gives_uuid_urns(
     settings: Callable[..., None],
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
-    from aas_editor.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.settings.app_settings import AppSettings
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
 
     settings(AppSettings.ID_TEMPLATE_AAS, "urn:x:fixed")
 
@@ -80,8 +80,8 @@ def test_a_template_that_cannot_make_ids_gives_uuid_urns(
 def test_a_submodel_takes_the_template_of_its_kind(
     settings: Callable[..., None],
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.settings.app_settings import AppSettings
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     settings(AppSettings.ID_TEMPLATE_SUBMODEL_INSTANCE, "urn:inst:DDDD")
     settings(AppSettings.ID_TEMPLATE_SUBMODEL_TEMPLATE, "urn:tmpl:DDDD")
@@ -104,8 +104,8 @@ def test_a_submodel_takes_the_template_of_its_kind(
 def test_an_id_the_user_typed_stays_when_the_kind_changes(
     settings: Callable[..., None],
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.settings.app_settings import AppSettings
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     settings(AppSettings.ID_TEMPLATE_SUBMODEL_TEMPLATE, "urn:tmpl:DDDD")
     dialog = CreateSubmodelDialog([], [])
@@ -121,8 +121,8 @@ def test_an_id_the_user_typed_stays_when_the_kind_changes(
 def test_generate_in_the_rename_dialog_follows_the_template_and_renames(
     views, settings: Callable[..., None], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
-    from aas_editor.ui.reference_actions import register_reference_actions
+    from aas_workingbench.settings.app_settings import AppSettings
+    from aas_workingbench.ui.reference_actions import register_reference_actions
 
     register_reference_actions()
     settings(AppSettings.ID_TEMPLATE_SUBMODEL_INSTANCE, "urn:x:DDDD")
@@ -155,8 +155,8 @@ def test_generate_in_the_rename_dialog_follows_the_template_and_renames(
 def test_the_generic_dialog_of_a_concept_description_follows_its_template(
     settings: Callable[..., None],
 ) -> None:
-    from aas_editor.settings.app_settings import AppSettings
-    from aas_editor.settings.defaults import GENERATED_DEFAULTS
+    from aas_workingbench.settings.app_settings import AppSettings
+    from aas_workingbench.settings.defaults import GENERATED_DEFAULTS
 
     settings(AppSettings.ID_TEMPLATE_CONCEPT_DESCRIPTION, "urn:cd:DDDDD")
 
@@ -169,8 +169,8 @@ class TestSettingsDialog:
     def test_the_default_languages_and_the_templates_are_saved(
         self, settings: Callable[..., None]
     ) -> None:
-        from aas_editor.settings.app_settings import AppSettings
-        from aas_editor.widgets.settingWidgets import SettingsDialog
+        from aas_workingbench.settings.app_settings import AppSettings
+        from aas_workingbench.widgets.settingWidgets import SettingsDialog
 
         dialog = SettingsDialog()
         boxes = {
@@ -183,7 +183,7 @@ class TestSettingsDialog:
 
         dialog.accept()
 
-        from aas_editor.ui.user_defaults import default_languages
+        from aas_workingbench.ui.user_defaults import default_languages
 
         assert default_languages() == ("en", "de")
         assert AppSettings.ID_TEMPLATE_AAS.value() == "urn:x:DDDD"
@@ -191,8 +191,8 @@ class TestSettingsDialog:
     def test_a_text_that_cannot_be_used_keeps_the_dialog_open_with_its_reason(
         self, settings: Callable[..., None]
     ) -> None:
-        from aas_editor.settings.app_settings import AppSettings
-        from aas_editor.widgets.settingWidgets import SettingsDialog
+        from aas_workingbench.settings.app_settings import AppSettings
+        from aas_workingbench.widgets.settingWidgets import SettingsDialog
 
         dialog = SettingsDialog()
         dialog.show()
@@ -216,7 +216,7 @@ class TestSettingsDialog:
 class TestDefaultLanguages:
     @pytest.fixture
     def languages(self, settings: Callable[..., None]) -> Callable[[str], None]:
-        from aas_editor.settings.app_settings import AppSettings
+        from aas_workingbench.settings.app_settings import AppSettings
 
         return lambda text: settings(AppSettings.DEFAULT_LANGUAGES, text)
 
@@ -322,7 +322,7 @@ class TestDefaultLanguages:
     def test_a_new_row_takes_the_first_default_language_not_used_yet(
         self, qapp: object, languages
     ) -> None:
-        from aas_editor.widgets.groupBoxes import LangStringSetGroupBox
+        from aas_workingbench.widgets.groupBoxes import LangStringSetGroupBox
 
         languages("en,de")
         box = LangStringSetGroupBox(model.MultiLanguageTextType, optional=True)
@@ -336,7 +336,7 @@ class TestDefaultLanguages:
     def test_the_concept_dialog_adds_rows_in_the_default_languages(
         self, qapp: object, languages
     ) -> None:
-        from aas_editor.ui.iec61360_dialog import LanguageRows
+        from aas_workingbench.ui.iec61360_dialog import LanguageRows
 
         languages("de,en")
         rows = LanguageRows(18)

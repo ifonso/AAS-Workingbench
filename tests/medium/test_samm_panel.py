@@ -9,9 +9,9 @@ from tests.factories import make_concept_description
 from tests.factories import make_samm_concept
 from tests.factories import make_store
 
-from aas_editor.settings.app_settings import NAME_ROLE
-from aas_editor.domain.validation import HINT_RULES
-from aas_editor.domain.validation import validate
+from aas_workingbench.settings.app_settings import NAME_ROLE
+from aas_workingbench.domain.validation import HINT_RULES
+from aas_workingbench.domain.validation import validate
 
 
 def _attribute_names(views, id_short: str, concept: model.ConceptDescription):

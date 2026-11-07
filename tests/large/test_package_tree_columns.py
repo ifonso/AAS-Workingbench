@@ -17,8 +17,8 @@ ENOUGH_FOR_A_NESTED_NAME = 300
 def test_first_run_leaves_room_for_the_names_of_nested_elements(
     qapp: object, qtbot, monkeypatch, tmp_path: Path
 ) -> None:
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.settings.app_settings import Setting
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.settings.app_settings import Setting
 
     read_setting = Setting.value
     monkeypatch.setattr(

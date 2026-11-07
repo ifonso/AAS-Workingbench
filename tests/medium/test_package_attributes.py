@@ -13,9 +13,9 @@ INTERNALS = {
 def test_the_tab_of_a_package_shows_its_facts_and_not_its_internals(
     qapp,
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.settings import package_settings  # noqa: F401
-    from aas_editor.utils.util import getAttrs4detailInfo
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import package_settings  # noqa: F401
+    from aas_workingbench.utils.util import getAttrs4detailInfo
 
     shown = set(getAttrs4detailInfo(Package()))
 
@@ -28,8 +28,8 @@ def test_the_core_properties_show_their_fields_and_not_the_class_tables(
 ) -> None:
     from pyecma376_2 import OPCCoreProperties
 
-    from aas_editor.settings import package_settings  # noqa: F401
-    from aas_editor.utils.util import getAttrs4detailInfo
+    from aas_workingbench.settings import package_settings  # noqa: F401
+    from aas_workingbench.utils.util import getAttrs4detailInfo
 
     shown = set(getAttrs4detailInfo(OPCCoreProperties()))
 

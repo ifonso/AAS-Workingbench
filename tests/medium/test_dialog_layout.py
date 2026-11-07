@@ -15,8 +15,8 @@ from tests.factories import make_submodel
 def test_the_save_warning_is_wide_enough_for_a_validation_message(
     qapp, qtbot
 ) -> None:
-    from aas_editor.application.save import SaveIssue
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.application.save import SaveIssue
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     message = (
         "RelationshipElement 'Q' of Submodel 'MotorData': The idShort 'Q' "
@@ -40,7 +40,7 @@ def test_the_save_warning_is_wide_enough_for_a_validation_message(
 def test_the_element_column_of_the_pattern_dialog_shows_a_name(
     qapp, qtbot
 ) -> None:
-    from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
+    from aas_workingbench.ui.bulk_dialogs import ChangeAttributeDialog
 
     props = [make_property("RatedPower"), make_property("Speed")]
     dialog = ChangeAttributeDialog([make_submodel(elements=props)], props)
@@ -56,7 +56,7 @@ def test_the_element_column_of_the_pattern_dialog_shows_a_name(
 def test_a_long_reference_in_a_table_wraps_instead_of_ending_in_dots(
     qapp, qtbot
 ) -> None:
-    from aas_editor.ui.reference_dialogs import ReferenceTable
+    from aas_workingbench.ui.reference_dialogs import ReferenceTable
 
     table = ReferenceTable(["Where", "Reference"])
     qtbot.addWidget(table)
@@ -77,7 +77,7 @@ def test_a_tall_form_gets_the_width_of_its_scroll_bar(
 ) -> None:
     from PyQt6.QtWidgets import QWidget
 
-    from aas_editor.dialogs import EditDialog
+    from aas_workingbench.dialogs import EditDialog
 
     # A screen that is not tall enough for the form, as a laptop is not.
     monkeypatch.setattr(EditDialog, "MAX_HEIGHT", 400)
@@ -100,8 +100,8 @@ def test_the_reference_picker_shows_its_kind_and_the_types_in_full(
 ) -> None:
     from basyx.aas import model
 
-    from aas_editor.domain.reference_picker import rule_for_hint
-    from aas_editor.ui.reference_picker import ReferencePickerDialog
+    from aas_workingbench.domain.reference_picker import rule_for_hint
+    from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
     submodel = make_submodel(
         elements=[make_annotated_relationship("AnnotatedRelationshipElement")]
@@ -130,8 +130,8 @@ def test_the_reference_picker_shows_its_kind_and_the_types_in_full(
 @pytest.fixture
 def light_theme(qapp) -> Iterator[None]:
     """Puts the light theme on, and gives the platform look back."""
-    from aas_editor.ui.theme import THEME_LIGHT
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.ui.theme import THEME_LIGHT
+    from aas_workingbench.ui.theme import theme_manager
 
     theme_manager().apply(THEME_LIGHT)
     yield
@@ -149,8 +149,8 @@ def _default_buttons(dialog) -> list[str]:
 
 
 def _rename_dialog():
-    from aas_editor.application.operations.rename import RenameError
-    from aas_editor.ui.reference_dialogs import RenameDialog
+    from aas_workingbench.application.operations.rename import RenameError
+    from aas_workingbench.ui.reference_dialogs import RenameDialog
 
     def refuse(text: str):
         raise RenameError("Not now")
@@ -163,7 +163,7 @@ def _rename_dialog():
 def test_a_dialog_has_12_pixels_of_padding_and_8_between_its_parts(
     qapp, qtbot
 ) -> None:
-    from aas_editor.ui.paste_dialogs import PasteTextDialog
+    from aas_workingbench.ui.paste_dialogs import PasteTextDialog
 
     dialog = PasteTextDialog([("below", "Below the selected row")])
     qtbot.addWidget(dialog)
@@ -193,7 +193,7 @@ def test_enter_presses_cancel_in_a_dialog_with_a_safe_default_even_when_a_helper
 
 
 def test_enter_presses_ok_in_a_dialog_that_asks_for_input(qapp, qtbot) -> None:
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     dialog = CreateSubmodelDialog([], [])
     qtbot.addWidget(dialog)
@@ -207,7 +207,7 @@ def test_enter_presses_ok_in_a_dialog_that_asks_for_input(qapp, qtbot) -> None:
 def test_a_dialog_that_asks_for_input_opens_in_its_first_field(
     qapp, qtbot
 ) -> None:
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     dialog = CreateSubmodelDialog([], [])
     qtbot.addWidget(dialog)
@@ -222,7 +222,7 @@ def test_a_dialog_that_asks_for_input_opens_in_its_first_field(
 def test_a_form_opens_in_its_first_field_not_on_ok(qapp, qtbot) -> None:
     from basyx.aas import model
 
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
 
     dialog = EditObjDialog(model.Qualifier, None, rmDefParams=False)
     qtbot.addWidget(dialog)
@@ -246,8 +246,8 @@ def _pixel_inside(button, dialog, qtbot):
 def test_the_accept_button_is_filled_with_the_accent(
     qapp, qtbot, light_theme
 ) -> None:
-    from aas_editor.domain.design_tokens import LIGHT
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.domain.design_tokens import LIGHT
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     dialog = CreateSubmodelDialog([], [])
     qtbot.addWidget(dialog)
@@ -261,7 +261,7 @@ def test_the_accept_button_is_filled_with_the_accent(
 def test_a_safe_default_has_an_accent_outline_and_no_fill(
     qapp, qtbot, light_theme
 ) -> None:
-    from aas_editor.domain.design_tokens import LIGHT
+    from aas_workingbench.domain.design_tokens import LIGHT
 
     dialog = _rename_dialog()
     qtbot.addWidget(dialog)
@@ -289,7 +289,7 @@ def test_a_safe_default_has_an_accent_outline_and_no_fill(
 
 
 def test_a_helper_button_has_no_accent(qapp, qtbot, light_theme) -> None:
-    from aas_editor.domain.design_tokens import LIGHT
+    from aas_workingbench.domain.design_tokens import LIGHT
 
     dialog = _rename_dialog()
     qtbot.addWidget(dialog)
@@ -305,9 +305,9 @@ def test_a_helper_button_has_no_accent(qapp, qtbot, light_theme) -> None:
 def test_the_button_of_a_deletion_is_not_filled(
     qapp, qtbot, light_theme
 ) -> None:
-    from aas_editor.application.operations.delete import plan_delete
-    from aas_editor.domain.design_tokens import LIGHT
-    from aas_editor.ui.reference_dialogs import DeleteDialog
+    from aas_workingbench.application.operations.delete import plan_delete
+    from aas_workingbench.domain.design_tokens import LIGHT
+    from aas_workingbench.ui.reference_dialogs import DeleteDialog
 
     prop = make_property("Speed")
     submodel = make_submodel(elements=[prop])
@@ -327,10 +327,10 @@ def test_the_button_of_a_deletion_is_not_filled(
 def test_a_problem_label_follows_a_switch_of_theme(
     qapp, qtbot, light_theme
 ) -> None:
-    from aas_editor.domain.design_tokens import DARK
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
-    from aas_editor.ui.theme import THEME_DARK
-    from aas_editor.ui.theme import theme_manager
+    from aas_workingbench.domain.design_tokens import DARK
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.theme import THEME_DARK
+    from aas_workingbench.ui.theme import theme_manager
 
     dialog = CreateSubmodelDialog([], [])
     qtbot.addWidget(dialog)

@@ -12,8 +12,8 @@ from tests.factories import make_property
 from tests.factories import make_submodel
 from tests.medium.forms import answering
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.domain.clipboard_json import dump_objects
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.domain.clipboard_json import dump_objects
 
 SUBMODEL = ("submodels", "Submodel")
 
@@ -25,11 +25,11 @@ def _ids(container: object) -> list[str | None]:
 @pytest.fixture
 def pasting(views, monkeypatch: pytest.MonkeyPatch):
     """Packages with a submodel, and ways to copy and paste in the tree."""
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.ui import paste_dialogs
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.ui import paste_dialogs
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     register_move_actions()
     register_paste_actions()
@@ -389,7 +389,7 @@ class TestPasteFromText:
 
     @pytest.fixture
     def typed(self, monkeypatch: pytest.MonkeyPatch):
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.ui import paste_dialogs
 
         answer: dict[str, object] = {"value": None, "places": None}
 
@@ -487,7 +487,7 @@ class TestPasteFromText:
 def test_the_existing_paste_into_a_submodel_gives_the_copy_a_free_name(
     pasting,
 ) -> None:
-    from aas_editor.dialogs import EditObjDialog
+    from aas_workingbench.dialogs import EditObjDialog
 
     lab = pasting(make_property("P"))
     lab.select(lab.element_path("P"))
@@ -536,7 +536,7 @@ class TestBetweenPackages:
     def test_asking_to_copy_adds_the_concept_description(
         self, pasting, monkeypatch
     ) -> None:
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.ui import paste_dialogs
 
         monkeypatch.setattr(paste_dialogs, "ask_copy_concepts", lambda *a: True)
         lab, other, target = self._two_packages(pasting, self._concept())
@@ -552,7 +552,7 @@ class TestBetweenPackages:
     def test_several_copied_elements_bring_their_concept_descriptions(
         self, pasting, monkeypatch
     ) -> None:
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.ui import paste_dialogs
 
         monkeypatch.setattr(paste_dialogs, "ask_copy_concepts", lambda *a: True)
         lab, other, target = self._two_packages(pasting, self._concept())
@@ -568,7 +568,7 @@ class TestBetweenPackages:
     def test_declining_pastes_the_element_alone(
         self, pasting, monkeypatch
     ) -> None:
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.ui import paste_dialogs
 
         monkeypatch.setattr(
             paste_dialogs, "ask_copy_concepts", lambda *a: False
@@ -581,7 +581,7 @@ class TestBetweenPackages:
         assert list(other.concept_descriptions) == []
 
     def test_cancelling_pastes_nothing(self, pasting, monkeypatch) -> None:
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.ui import paste_dialogs
 
         monkeypatch.setattr(paste_dialogs, "ask_copy_concepts", lambda *a: None)
         lab, other, target = self._two_packages(pasting, self._concept())
@@ -594,7 +594,7 @@ class TestBetweenPackages:
     def test_an_identical_description_is_reused_without_a_question(
         self, pasting, monkeypatch
     ) -> None:
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.ui import paste_dialogs
 
         def fail(*args: object) -> bool:
             raise AssertionError("Nothing should be asked")
@@ -612,8 +612,10 @@ class TestBetweenPackages:
     def test_a_different_description_asks_and_can_be_added_as_new(
         self, pasting, monkeypatch
     ) -> None:
-        from aas_editor.application.operations.companions import ConceptChoice
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.application.operations.companions import (
+            ConceptChoice,
+        )
+        from aas_workingbench.ui import paste_dialogs
 
         monkeypatch.setattr(paste_dialogs, "ask_copy_concepts", lambda *a: True)
         monkeypatch.setattr(
@@ -638,8 +640,10 @@ class TestBetweenPackages:
     def test_a_different_description_can_stay_as_the_target_has_it(
         self, pasting, monkeypatch
     ) -> None:
-        from aas_editor.application.operations.companions import ConceptChoice
-        from aas_editor.ui import paste_dialogs
+        from aas_workingbench.application.operations.companions import (
+            ConceptChoice,
+        )
+        from aas_workingbench.ui import paste_dialogs
 
         monkeypatch.setattr(paste_dialogs, "ask_copy_concepts", lambda *a: True)
         monkeypatch.setattr(
@@ -661,7 +665,7 @@ class TestBetweenPackages:
 def test_copying_several_elements_puts_their_json_on_the_clipboard(
     pasting,
 ) -> None:
-    from aas_editor.domain.clipboard_json import load_objects
+    from aas_workingbench.domain.clipboard_json import load_objects
 
     lab = pasting(*(make_property(n) for n in "ABC"))
     lab.select(lab.element_path("A"), lab.element_path("B"))

@@ -5,10 +5,10 @@ import pytest
 from tests.factories import make_external_reference
 from tests.factories import make_store
 
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
-from aas_editor.domain.validation import ALL_RULES
-from aas_editor.domain.validation import Severity
-from aas_editor.domain.validation import validate
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.domain.validation import ALL_RULES
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.domain.validation import validate
 
 T = model.DataTypeIEC61360
 

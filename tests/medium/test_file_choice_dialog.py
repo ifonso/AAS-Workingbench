@@ -8,8 +8,8 @@ which becomes the value of the element (tested in `test_package_files_ui`).
 
 from pytestqt.qtbot import QtBot
 
-from aas_editor.application.supplementary_files import StoredFileInfo
-from aas_editor.ui.file_dialogs import FileChoiceDialog
+from aas_workingbench.application.supplementary_files import StoredFileInfo
+from aas_workingbench.ui.file_dialogs import FileChoiceDialog
 
 
 def _infos() -> list[StoredFileInfo]:

@@ -8,12 +8,12 @@ from PyQt6.QtWidgets import QFileDialog
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.domain.blob_content import MAX_SHOWN_BYTES
-from aas_editor.domain.value_types import InvalidValueError
-from aas_editor.ui.value_editor import BinaryEdit
-from aas_editor.ui.value_editor import ValueEdit
-from aas_editor.ui.value_editor import ValueEditDialog
-from aas_editor.ui.value_editor import ValueTypeBox
+from aas_workingbench.domain.blob_content import MAX_SHOWN_BYTES
+from aas_workingbench.domain.value_types import InvalidValueError
+from aas_workingbench.ui.value_editor import BinaryEdit
+from aas_workingbench.ui.value_editor import ValueEdit
+from aas_workingbench.ui.value_editor import ValueEditDialog
+from aas_workingbench.ui.value_editor import ValueTypeBox
 
 
 @pytest.fixture

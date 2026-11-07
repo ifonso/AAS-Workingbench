@@ -5,10 +5,10 @@ from tests.factories import make_operation
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.domain.selection import MULTIPLE_HEADER
-from aas_editor.domain.selection import has_mixed_variable_directions
-from aas_editor.domain.selection import summarize
-from aas_editor.domain.selection import variable_direction
+from aas_workingbench.domain.selection import MULTIPLE_HEADER
+from aas_workingbench.domain.selection import has_mixed_variable_directions
+from aas_workingbench.domain.selection import summarize
+from aas_workingbench.domain.selection import variable_direction
 
 
 def _operation():

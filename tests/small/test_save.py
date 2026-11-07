@@ -13,18 +13,18 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.package_factories import make_annotated_relationship
 
-from aas_editor.application.save import PackageFormat
-from aas_editor.application.save import SaveCheck
-from aas_editor.application.save import SaveOptions
-from aas_editor.application.save import SaveStatus
-from aas_editor.application.save import check_save
-from aas_editor.application.save import package_format
-from aas_editor.application.save import save
-from aas_editor.domain.load_report import LoadReport
-from aas_editor.domain.load_report import RawRecord
-from aas_editor.domain.load_report import Severity
-from aas_editor.domain.load_report import build_report
-from aas_editor.domain.parts import Thumbnail
+from aas_workingbench.application.save import PackageFormat
+from aas_workingbench.application.save import SaveCheck
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.application.save import SaveStatus
+from aas_workingbench.application.save import check_save
+from aas_workingbench.application.save import package_format
+from aas_workingbench.application.save import save
+from aas_workingbench.domain.load_report import LoadReport
+from aas_workingbench.domain.load_report import RawRecord
+from aas_workingbench.domain.load_report import Severity
+from aas_workingbench.domain.load_report import build_report
+from aas_workingbench.domain.parts import Thumbnail
 
 OPTIONS = SaveOptions()
 DOCUMENT = "/aasx/files/document.pdf"

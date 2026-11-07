@@ -29,8 +29,8 @@ def tabs(views: Any, qtbot: Any, monkeypatch: pytest.MonkeyPatch):
     """A tab widget over a package with a File element and a Property."""
     from PyQt6.QtWidgets import QWidget
 
-    import aas_editor.widgets.tab as tab_module
-    from aas_editor.widgets.tab import TabWidget
+    import aas_workingbench.widgets.tab as tab_module
+    from aas_workingbench.widgets.tab import TabWidget
 
     class PreviewStandIn(QWidget):
         """Takes the place of the web view, whose renderer does not stop

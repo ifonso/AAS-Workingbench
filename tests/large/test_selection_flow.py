@@ -26,10 +26,10 @@ PACKAGE = TEST_DATA_DIR / "IDTA 02002-1-0_Template_ContactInformation.aasx"
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path) -> Iterator[SimpleNamespace]:
     """The main window with a copy of the package, and the actions."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
 
     register_move_actions()
     register_bulk_edit_actions()
@@ -54,7 +54,7 @@ def editor(qapp: object, qtbot, tmp_path: Path) -> Iterator[SimpleNamespace]:
 
 def _properties(view) -> list[QModelIndex]:
     """Three Property rows that share a parent."""
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     found: dict[QModelIndex, list[QModelIndex]] = {}
     pending = [QModelIndex()]
@@ -83,7 +83,7 @@ def _select(view, *indexes: QModelIndex) -> None:
 
 def _holder(index: QModelIndex) -> model.SubmodelElementCollection:
     """The collection that holds the row. An index does not outlive a move."""
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     obj = index.data(OBJECT_ROLE)
     return obj.parent

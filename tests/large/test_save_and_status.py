@@ -21,8 +21,8 @@ PACKAGE = "IDTA 02023 _Template_CarbonFootprint.aasx"
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
     """The main window with one package, copied so a save cannot touch data."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui.save_warnings import IssuesDialog
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui.save_warnings import IssuesDialog
 
     # A save that warns would wait for a person. Here the answer is yes.
     monkeypatch.setattr(IssuesDialog, "exec", lambda dialog: dialog.accept())

@@ -30,7 +30,7 @@ def _package(views, tmp_path: Path):
 def test_the_tree_lists_both_objects_and_the_element_below_one(
     views, tmp_path: Path
 ) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     shown, _, shell, submodel = _package(views, tmp_path)
 
@@ -57,7 +57,7 @@ def test_the_tree_lists_both_objects_and_the_element_below_one(
 def test_both_objects_are_saved_and_read_again_without_an_id_short(
     views, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     _, package, _, _ = _package(views, tmp_path)
     path = tmp_path / "no-id-short.aasx"

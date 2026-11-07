@@ -12,20 +12,20 @@ from tests.reference_factories import MAIN_ID
 from tests.reference_factories import make_linked
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import Change
-from aas_editor.application.changes import ChangeKind
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.rename import DuplicateIdError
-from aas_editor.application.operations.rename import InvalidIdError
-from aas_editor.application.operations.rename import InvalidIdShortError
-from aas_editor.application.operations.rename import RenameCommand
-from aas_editor.application.operations.rename import RenameError
-from aas_editor.application.operations.rename import ReplaceIdentifiable
-from aas_editor.application.operations.rename import plan_rename_id
-from aas_editor.application.operations.rename import plan_rename_id_short
-from aas_editor.application.operations.rename import suggest_id_short
-from aas_editor.domain.references import ReferenceIndex
+from aas_workingbench.application.changes import Change
+from aas_workingbench.application.changes import ChangeKind
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.rename import DuplicateIdError
+from aas_workingbench.application.operations.rename import InvalidIdError
+from aas_workingbench.application.operations.rename import InvalidIdShortError
+from aas_workingbench.application.operations.rename import RenameCommand
+from aas_workingbench.application.operations.rename import RenameError
+from aas_workingbench.application.operations.rename import ReplaceIdentifiable
+from aas_workingbench.application.operations.rename import plan_rename_id
+from aas_workingbench.application.operations.rename import plan_rename_id_short
+from aas_workingbench.application.operations.rename import suggest_id_short
+from aas_workingbench.domain.references import ReferenceIndex
 
 
 @pytest.fixture

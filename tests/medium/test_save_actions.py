@@ -38,11 +38,11 @@ def test_save_is_ctrl_s_and_save_all_is_ctrl_shift_s(views: Any) -> None:
 
 
 def test_no_registered_action_uses_the_keys_of_save(views: Any) -> None:
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     # The application registers these before its first view.
     register_move_actions()
@@ -153,7 +153,7 @@ def test_closing_a_package_with_changes_lowers_the_number(
 
 
 def test_a_package_that_opens_with_changes_is_counted(views: Any) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     shown = views()
     updated: list[int] = []
@@ -175,7 +175,7 @@ def tab_of_second(two_packages: Any, qtbot: Any) -> Any:
     """
     from PyQt6.QtWidgets import QApplication
 
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.widgets.tab import TabWidget
 
     shown = two_packages
     shown.view.setCurrentIndex(shown.index("submodels", package=0))

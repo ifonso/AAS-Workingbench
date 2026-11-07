@@ -74,12 +74,12 @@ Layered packages are `strict`, so anything there is an error.
 
 ## Settings file
 
-`src/aas_editor/settings/settings.ini` is tracked by Git, and the application rewrites it whenever it runs.
+`src/aas_workingbench/settings/settings.ini` is tracked by Git, and the application rewrites it whenever it runs.
 Do not commit those changes.
 To discard them, run:
 
 ```sh
-git checkout -- src/aas_editor/settings/settings.ini
+git checkout -- src/aas_workingbench/settings/settings.ini
 ```
 
 ## Merging from upstream

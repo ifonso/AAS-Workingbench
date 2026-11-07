@@ -14,11 +14,11 @@ from tests.factories import make_property
 from tests.factories import make_submodel
 from tests.medium.forms import Form
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import SetAttribute
-from aas_editor.application.hints import hints_mode
-from aas_editor.application.validation import hints_for
-from aas_editor.application.validation import validate_package
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.application.hints import hints_mode
+from aas_workingbench.application.validation import hints_for
+from aas_workingbench.application.validation import validate_package
 
 CATEGORY_HINT = (
     "Hint: The specification has deprecated categories, so a new model "
@@ -28,7 +28,7 @@ CATEGORY_HINT = (
 
 @pytest.fixture
 def bar(qapp: object, qtbot: QtBot):
-    from aas_editor.ui.hints_bar import HintsBar
+    from aas_workingbench.ui.hints_bar import HintsBar
 
     widget = HintsBar()
     qtbot.addWidget(widget)
@@ -203,9 +203,9 @@ def test_bar_lists_a_few_hints_and_counts_the_rest(bar, shown_package) -> None:
 
 
 def _line_with_hint(text: str, owner: str, param: str):
-    from aas_editor.ui.inline_hints import InlineHint
-    from aas_editor.ui.inline_hints import attach_inline_hint
-    from aas_editor.widgets.editWidgets import StandardInputWidget
+    from aas_workingbench.ui.inline_hints import InlineHint
+    from aas_workingbench.ui.inline_hints import attach_inline_hint
+    from aas_workingbench.widgets.editWidgets import StandardInputWidget
 
     parent = QWidget()
     widget = StandardInputWidget(str, parent, text)
@@ -297,7 +297,7 @@ def test_inline_hint_follows_hints_mode(qapp: object, qtbot: QtBot) -> None:
 def test_the_add_dialog_hints_and_still_accepts_what_the_hint_complains_about(
     lab,
 ) -> None:
-    from aas_editor.ui.inline_hints import InlineHint
+    from aas_workingbench.ui.inline_hints import InlineHint
 
     seen: list[str] = []
 
@@ -326,7 +326,7 @@ def _attribute_names(model_support, tab) -> list[str]:
 
 
 def test_read_mode_shows_no_row_for_a_null_attribute(model_support) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     pack = model_support.pack_table(
         make_submodel(elements=[make_property("Pump")])
@@ -345,7 +345,7 @@ def test_read_mode_shows_no_row_for_a_null_attribute(model_support) -> None:
 def test_read_mode_keeps_the_attributes_that_have_a_value(
     model_support,
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     element = make_property("Pump", "on")
     element.category = "PARAMETER"
@@ -359,7 +359,7 @@ def test_read_mode_keeps_the_attributes_that_have_a_value(
 
 
 def test_edit_mode_brings_the_null_rows_back(model_support) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     pack = model_support.pack_table(
         make_submodel(elements=[make_property("Pump")])
@@ -375,7 +375,7 @@ def test_edit_mode_brings_the_null_rows_back(model_support) -> None:
 def test_a_tab_that_opens_in_read_mode_hides_the_null_rows(
     model_support,
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     pack = model_support.pack_table(
         make_submodel(elements=[make_property("Pump")])
@@ -388,7 +388,7 @@ def test_a_tab_that_opens_in_read_mode_hides_the_null_rows(
 
 
 def test_read_mode_hides_a_null_row_of_a_nested_object(model_support) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     element = make_property("Pump")
     element.qualifier.add(

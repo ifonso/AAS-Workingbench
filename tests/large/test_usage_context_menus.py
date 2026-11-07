@@ -51,7 +51,7 @@ def large(
 
 
 def _first_of(window: uw.UsageWindow, kind: str) -> Any:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     window.view.expandAll()
     return next(
@@ -95,7 +95,7 @@ def test_a_package_cannot_be_copied_or_cut_like_an_element(
 def test_a_package_row_in_read_mode_is_not_copied_either(
     large: uw.UsageWindow,
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     large.view.setCurrentIndex(large.view.model().index(0, 0))
 

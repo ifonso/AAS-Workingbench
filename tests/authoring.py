@@ -26,21 +26,27 @@ from PyQt6.QtWidgets import QInputDialog
 
 def register_every_action() -> None:
     """Registers the actions that `__main__.py` registers, in its order."""
-    from aas_editor.ui.blob_actions import register_blob_actions
-    from aas_editor.ui.bulk_actions import register_bulk_actions
-    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
-    from aas_editor.ui.concept_actions import register_concept_actions
-    from aas_editor.ui.conversion_actions import register_conversion_actions
-    from aas_editor.ui.create_actions import register_create_actions
-    from aas_editor.ui.file_actions import register_file_actions
-    from aas_editor.ui.load_report_actions import register_load_report_actions
-    from aas_editor.ui.location_actions import register_location_actions
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
-    from aas_editor.ui.preset_actions import register_preset_actions
-    from aas_editor.ui.reference_actions import register_reference_actions
-    from aas_editor.ui.reference_jump import register_jump_actions
-    from aas_editor.ui.shell_copy_actions import register_shell_copy_actions
+    from aas_workingbench.ui.blob_actions import register_blob_actions
+    from aas_workingbench.ui.bulk_actions import register_bulk_actions
+    from aas_workingbench.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_workingbench.ui.concept_actions import register_concept_actions
+    from aas_workingbench.ui.conversion_actions import (
+        register_conversion_actions,
+    )
+    from aas_workingbench.ui.create_actions import register_create_actions
+    from aas_workingbench.ui.file_actions import register_file_actions
+    from aas_workingbench.ui.load_report_actions import (
+        register_load_report_actions,
+    )
+    from aas_workingbench.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui.preset_actions import register_preset_actions
+    from aas_workingbench.ui.reference_actions import register_reference_actions
+    from aas_workingbench.ui.reference_jump import register_jump_actions
+    from aas_workingbench.ui.shell_copy_actions import (
+        register_shell_copy_actions,
+    )
 
     register_blob_actions()
     register_file_actions()
@@ -147,7 +153,7 @@ class Author:
         """
         from PyQt6.QtWidgets import QMessageBox
 
-        from aas_editor.widgets.messsageBoxes import ErrorMessageBox
+        from aas_workingbench.widgets.messsageBoxes import ErrorMessageBox
 
         def record(box: Any) -> int:
             text = box.text()
@@ -310,7 +316,7 @@ class Author:
         self.view.expandAll()
 
     def find(self, parent: QModelIndex, name: str) -> QModelIndex:
-        from aas_editor.settings.app_settings import NAME_ROLE
+        from aas_workingbench.settings.app_settings import NAME_ROLE
 
         proxy = self.view.model()
         self.view.expand(parent)
@@ -328,7 +334,7 @@ class Author:
         return index
 
     def names(self, *names: str) -> list[str]:
-        from aas_editor.settings.app_settings import NAME_ROLE
+        from aas_workingbench.settings.app_settings import NAME_ROLE
 
         proxy = self.view.model()
         parent = self.path(*names)
@@ -416,7 +422,7 @@ class Author:
         """
         from tests.medium.forms import Form
 
-        from aas_editor.dialogs import EditObjDialog
+        from aas_workingbench.dialogs import EditObjDialog
 
         def script(dialog: Any) -> None:
             form = Form(dialog)
@@ -470,7 +476,7 @@ class Author:
 
     def attribute_cell(self, attrs: Any, name: str) -> QModelIndex:
         """Finds the value cell of an attribute row in the tree of a tab."""
-        from aas_editor.settings.app_settings import NAME_ROLE
+        from aas_workingbench.settings.app_settings import NAME_ROLE
 
         proxy = attrs.model()
         for row in range(proxy.rowCount()):
@@ -498,7 +504,7 @@ class Author:
         self, tab: Any, name: str, script: Callable[[Any], None]
     ) -> Answer:
         """Double clicks an attribute whose editor is a dialog, and fills it."""
-        from aas_editor.dialogs import EditObjDialog
+        from aas_workingbench.dialogs import EditObjDialog
 
         attrs = tab.attrsTreeView
         with self.answering(EditObjDialog, script) as answer:

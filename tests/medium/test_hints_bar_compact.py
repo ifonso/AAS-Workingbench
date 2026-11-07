@@ -2,10 +2,10 @@
 
 from basyx.aas import model
 
-from aas_editor.domain.validation import Finding
-from aas_editor.domain.validation import Severity
-from aas_editor.ui.hints_bar import hint_details
-from aas_editor.ui.hints_bar import hint_lines
+from aas_workingbench.domain.validation import Finding
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.ui.hints_bar import hint_details
+from aas_workingbench.ui.hints_bar import hint_lines
 
 
 def _finding(rule_id: str, severity: Severity) -> Finding:

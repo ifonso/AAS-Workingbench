@@ -12,17 +12,17 @@ from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.domain.reference_picker import ANYTHING
-from aas_editor.domain.reference_picker import ReferenceState
-from aas_editor.domain.reference_picker import ReferenceTargetError
-from aas_editor.domain.reference_picker import candidates
-from aas_editor.domain.reference_picker import class_for_key_type
-from aas_editor.domain.reference_picker import explain
-from aas_editor.domain.reference_picker import key_type_of
-from aas_editor.domain.reference_picker import reference_to
-from aas_editor.domain.reference_picker import rule_for_hint
-from aas_editor.domain.reference_picker import status_of
-from aas_editor.domain.references import ReferenceIndex
+from aas_workingbench.domain.reference_picker import ANYTHING
+from aas_workingbench.domain.reference_picker import ReferenceState
+from aas_workingbench.domain.reference_picker import ReferenceTargetError
+from aas_workingbench.domain.reference_picker import candidates
+from aas_workingbench.domain.reference_picker import class_for_key_type
+from aas_workingbench.domain.reference_picker import explain
+from aas_workingbench.domain.reference_picker import key_type_of
+from aas_workingbench.domain.reference_picker import reference_to
+from aas_workingbench.domain.reference_picker import rule_for_hint
+from aas_workingbench.domain.reference_picker import status_of
+from aas_workingbench.domain.references import ReferenceIndex
 
 K = model.KeyTypes
 

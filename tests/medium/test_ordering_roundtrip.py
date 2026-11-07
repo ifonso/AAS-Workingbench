@@ -11,8 +11,8 @@ from basyx.aas.adapter.xml import read_aas_xml_file
 from basyx.aas.adapter.xml import write_aas_xml_file
 import pytest
 
-from aas_editor.domain.ordering import move_to
-from aas_editor.domain.ordering import set_id_short
+from aas_workingbench.domain.ordering import move_to
+from aas_workingbench.domain.ordering import set_id_short
 from tests.factories import make_annotated_relationship
 from tests.factories import make_collection
 from tests.factories import make_entity

@@ -4,11 +4,11 @@ from basyx.aas import model
 import pytest
 from tests.factories import make_property
 
-from aas_editor.domain.ids import fix_id_short
-from aas_editor.domain.ids import id_short_prefix
-from aas_editor.domain.ids import is_valid_id_short
-from aas_editor.domain.ids import new_identifier
-from aas_editor.domain.ids import unique_id_short
+from aas_workingbench.domain.ids import fix_id_short
+from aas_workingbench.domain.ids import id_short_prefix
+from aas_workingbench.domain.ids import is_valid_id_short
+from aas_workingbench.domain.ids import new_identifier
+from aas_workingbench.domain.ids import unique_id_short
 
 
 def _six_digits() -> str:

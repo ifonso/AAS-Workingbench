@@ -33,14 +33,16 @@ def texts(model_support):
             return index
 
         def replace(self, row: QModelIndex, language: str, text: str) -> bool:
-            from aas_editor.additional.classes import DictItem
+            from aas_workingbench.additional.classes import DictItem
 
             return self.details.setData(
                 row, DictItem(language, text), Qt.ItemDataRole.EditRole
             )
 
         def message(self, row: QModelIndex) -> str:
-            from aas_editor.settings.app_settings import DATA_CHANGE_FAILED_ROLE
+            from aas_workingbench.settings.app_settings import (
+                DATA_CHANGE_FAILED_ROLE,
+            )
 
             return self.details.data(row, DATA_CHANGE_FAILED_ROLE)
 

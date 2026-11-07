@@ -7,13 +7,13 @@ from tests.factories import make_list
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.bulk_move import bulk_move_commands
-from aas_editor.application.operations.bulk_move import can_bulk_move
-from aas_editor.application.operations.bulk_move import plan_bulk_move
-from aas_editor.application.operations.move import MoveKind
-from aas_editor.domain.references import ReferenceIndex
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.bulk_move import bulk_move_commands
+from aas_workingbench.application.operations.bulk_move import can_bulk_move
+from aas_workingbench.application.operations.bulk_move import plan_bulk_move
+from aas_workingbench.application.operations.move import MoveKind
+from aas_workingbench.domain.references import ReferenceIndex
 
 
 def _names(container: object) -> list[str]:

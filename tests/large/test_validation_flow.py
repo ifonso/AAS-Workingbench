@@ -26,11 +26,11 @@ SUBMODEL = ("submodels", "CarbonFootprint")
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
     """The main window with the template, copied so that a save is harmless."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     asked: list[object] = []
     monkeypatch.setattr(
-        "aas_editor.treeviews.treeview_pack.confirm_save",
+        "aas_workingbench.treeviews.treeview_pack.confirm_save",
         lambda check, parent=None, extra=None: asked.append(check) or True,
     )
     source = tmp_path / PACKAGE
@@ -54,7 +54,7 @@ def editor(qapp: object, qtbot, tmp_path: Path, monkeypatch):
 
 
 def _index(view, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     # By the name that the editor finds a row by. The text of the tree is the
     # AAS word, such as `Submodels`.
@@ -94,8 +94,8 @@ def test_dock_save_gate_and_marker_work_on_a_real_package(
 ) -> None:
     from PyQt6.QtGui import QColor
 
-    from aas_editor.domain.design_tokens import LIGHT
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.domain.design_tokens import LIGHT
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     editor.dock.show()
     qtbot.waitUntil(editor.dock.isVisible, timeout=2000)
@@ -154,7 +154,7 @@ def test_dock_save_gate_and_marker_work_on_a_real_package(
 def test_closing_the_package_clears_the_dock(
     editor, qtbot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.widgets.tab import TabWidget
 
     # Tab widgets of windows that earlier tests closed stay in this list.
     monkeypatch.setattr(
@@ -177,7 +177,7 @@ def test_closing_the_package_clears_the_dock(
 def test_read_mode_hides_the_null_rows_of_a_tab_and_edit_mode_shows_them(
     editor,
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     (submodel,) = list(editor.package.submodels)
     first = next(iter(submodel.submodel_element))

@@ -52,7 +52,7 @@ def session(
 ):
     """A folder for the recovery files, and a way to start and crash a window."""
     recovery = tmp_path / "recovery"
-    from aas_editor.settings import app_settings
+    from aas_workingbench.settings import app_settings
 
     monkeypatch.setattr(app_settings, "recovery_dir", lambda: recovery)
     old = tmp_path / "old-recovery"
@@ -158,7 +158,7 @@ def test_yes_restores_the_unsaved_change_and_leaves_the_file_alone(
 def test_saving_the_restored_package_writes_the_change_and_clears_the_recovery(
     session, requester
 ) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     _crash_with_change(session, requester, THREAD_SYSTEM, "other")
     second = _restart(session)
@@ -192,7 +192,7 @@ def test_no_opens_the_saved_version_and_throws_the_recovery_away(
 
 
 def test_a_package_with_a_stored_file_comes_back_with_its_file(session) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     pump = write_pump_package(session.tmp_path / "pump.aasx")
     _crash_with_change(session, pump, PUMP_NAME, "motor")

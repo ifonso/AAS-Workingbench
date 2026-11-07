@@ -6,7 +6,7 @@ from basyx.aas import model
 from PyQt6.QtWidgets import QLabel
 from tests.medium.forms import Form
 
-from aas_editor.application.hints import hints_mode
+from aas_workingbench.application.hints import hints_mode
 
 NOTICE = (
     "Enter the global asset id of the asset that this self-managed entity "
@@ -98,8 +98,8 @@ def test_hints_mode_off_hides_the_notice(lab) -> None:
 def test_a_blank_name_of_an_extension_shows_the_hint_in_its_form(
     qapp: object,
 ) -> None:
-    from aas_editor.ui.inline_hints import InlineHint
-    from aas_editor.widgets.groupBoxes import ObjGroupBox
+    from aas_workingbench.ui.inline_hints import InlineHint
+    from aas_workingbench.widgets.groupBoxes import ObjGroupBox
 
     box = ObjGroupBox(model.Extension, rmDefParams=True)
     field = box.paramWidgets["name"].widget

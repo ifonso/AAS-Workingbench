@@ -3,19 +3,19 @@
 from basyx.aas import model
 import pytest
 
-from aas_editor.domain.data_specifications import DATA_TYPE_GROUPS
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
-from aas_editor.domain.data_specifications import DraftError
-from aas_editor.domain.data_specifications import Iec61360Draft
-from aas_editor.domain.data_specifications import TemplateMatch
-from aas_editor.domain.data_specifications import advisories_of
-from aas_editor.domain.data_specifications import build_content
-from aas_editor.domain.data_specifications import build_record
-from aas_editor.domain.data_specifications import check_draft
-from aas_editor.domain.data_specifications import draft_of
-from aas_editor.domain.data_specifications import empty_attributes
-from aas_editor.domain.data_specifications import match_template
-from aas_editor.domain.data_specifications import template_reference
+from aas_workingbench.domain.data_specifications import DATA_TYPE_GROUPS
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.domain.data_specifications import DraftError
+from aas_workingbench.domain.data_specifications import Iec61360Draft
+from aas_workingbench.domain.data_specifications import TemplateMatch
+from aas_workingbench.domain.data_specifications import advisories_of
+from aas_workingbench.domain.data_specifications import build_content
+from aas_workingbench.domain.data_specifications import build_record
+from aas_workingbench.domain.data_specifications import check_draft
+from aas_workingbench.domain.data_specifications import draft_of
+from aas_workingbench.domain.data_specifications import empty_attributes
+from aas_workingbench.domain.data_specifications import match_template
+from aas_workingbench.domain.data_specifications import template_reference
 
 
 def _external(value: str) -> model.ExternalReference:

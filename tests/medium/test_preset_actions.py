@@ -13,9 +13,9 @@ from tests.factories import make_shell
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.domain.member_json import MemberKind
-from aas_editor.domain.presets import FILE_NAMES
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.domain.member_json import MemberKind
+from aas_workingbench.domain.presets import FILE_NAMES
 
 SUBMODEL = ("submodels", "Submodel")
 CARDINALITY = "Submodel templates | Cardinality = One"
@@ -24,11 +24,11 @@ CARDINALITY = "Submodel templates | Cardinality = One"
 @pytest.fixture
 def presets(views, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """A package that the preset and clipboard actions work on."""
-    from aas_editor.package import Package
-    from aas_editor.ui import bulk_dialogs
-    from aas_editor.ui import preset_actions
-    from aas_editor.ui.preset_actions import register_preset_actions
-    from aas_editor.ui.preset_dialogs import PresetDialog
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui import bulk_dialogs
+    from aas_workingbench.ui import preset_actions
+    from aas_workingbench.ui.preset_actions import register_preset_actions
+    from aas_workingbench.ui.preset_dialogs import PresetDialog
 
     register_preset_actions()
     user_dir = tmp_path / "user-presets"
@@ -377,7 +377,7 @@ def test_the_add_button_waits_for_the_value(presets, monkeypatch) -> None:
     lab.shown.select(lab.shown.index("shells", "Shell"))
     seen: dict[str, bool] = {}
 
-    from aas_editor.ui.preset_dialogs import PresetDialog
+    from aas_workingbench.ui.preset_dialogs import PresetDialog
 
     def fake_exec(dialog: PresetDialog) -> int:
         dialog.choose("Catena-X BPN")
@@ -546,8 +546,8 @@ def test_in_a_tab_the_row_of_the_asset_information_takes_a_specific_asset_id(
 ) -> None:
     from PyQt6.QtCore import QItemSelectionModel
 
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.ui.preset_dialogs import PresetDialog
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.ui.preset_dialogs import PresetDialog
 
     information = model.AssetInformation(model.AssetKind.INSTANCE, "urn:asset")
     shell = model.AssetAdministrationShell(

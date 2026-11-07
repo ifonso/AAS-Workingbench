@@ -4,16 +4,16 @@ from basyx.aas import model
 import pytest
 from tests.factories import make_property
 
-from aas_editor.application.validation import FindingCounts
-from aas_editor.application.validation import count_findings
-from aas_editor.application.validation import count_text
-from aas_editor.application.validation import finding_key
-from aas_editor.application.validation import step_finding
-from aas_editor.application.validation import stepping_findings
-from aas_editor.domain.validation import Finding
-from aas_editor.domain.validation import Severity
-from aas_editor.domain.validation import ValidationReport
-from aas_editor.domain.validation.rules.hints import KEY_WHITESPACE
+from aas_workingbench.application.validation import FindingCounts
+from aas_workingbench.application.validation import count_findings
+from aas_workingbench.application.validation import count_text
+from aas_workingbench.application.validation import finding_key
+from aas_workingbench.application.validation import step_finding
+from aas_workingbench.application.validation import stepping_findings
+from aas_workingbench.domain.validation import Finding
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.domain.validation import ValidationReport
+from aas_workingbench.domain.validation.rules.hints import KEY_WHITESPACE
 
 
 def _finding(severity: Severity, name: str = "A") -> Finding:

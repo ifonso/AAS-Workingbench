@@ -7,13 +7,15 @@ from tests.factories import make_property
 from tests.factories import make_store
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.companions import ConceptChoice
-from aas_editor.application.operations.companions import concept_commands
-from aas_editor.application.operations.companions import gather_companions
-from aas_editor.application.operations.companions import plan_concepts
-from aas_editor.application.operations.companions import retarget_semantic_ids
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.companions import ConceptChoice
+from aas_workingbench.application.operations.companions import concept_commands
+from aas_workingbench.application.operations.companions import gather_companions
+from aas_workingbench.application.operations.companions import plan_concepts
+from aas_workingbench.application.operations.companions import (
+    retarget_semantic_ids,
+)
 
 
 def _concept(id_: str, short: str, category: str | None = None):

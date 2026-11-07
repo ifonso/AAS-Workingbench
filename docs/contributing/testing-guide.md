@@ -46,7 +46,7 @@ A test outside these directories fails collection.
 | Large | `tests/large/` | The full application, including WebEngine | External network, unless a test states why | About 5% |
 
 The target shares describe where we want to get to.
-Today the suite leans on medium tests, because reading `aas_editor` settings requires a `QApplication`.
+Today the suite leans on medium tests, because reading `aas_workingbench` settings requires a `QApplication`.
 Separating the domain from Qt, as described in the [architecture guide](../software/architecture.md), is what makes more small tests possible.
 
 ## Layout
@@ -60,7 +60,7 @@ tests/
 └── large/
 ```
 
-Name files after the module under test, such as `test_package.py` for `aas_editor/package.py`.
+Name files after the module under test, such as `test_package.py` for `aas_workingbench/package.py`.
 
 ## Principles
 
@@ -118,7 +118,7 @@ Use real BaSyx objects, which are cheap to create.
 
 ## Testing Qt code
 
-- Request the `qapp` fixture in every test that imports `aas_editor` settings.
+- Request the `qapp` fixture in every test that imports `aas_workingbench` settings.
 - Put logic in plain classes and test it without widgets whenever possible.
 - Use [pytest-qt](https://pytest-qt.readthedocs.io/)'s `qtbot` for widgets:
 
@@ -145,7 +145,7 @@ These checks matter most for parity work:
 
 - **Round trips:** read, write, and read again for AASX, JSON, and XML, and compare the content.
 - **Round-trip corpus:** `tests/medium/test_roundtrip_corpus.py` saves every package in `tests/data/` and compares the BaSyx objects and the file parts.
-  It also covers the AASX templates in `src/aas_editor/submodel_templates`: a sample of about every eighth template by default, always including the templates that point to a file missing in the package.
+  It also covers the AASX templates in `src/aas_workingbench/submodel_templates`: a sample of about every eighth template by default, always including the templates that point to a file missing in the package.
   Set `AAS_CORPUS_TEMPLATES=all` to run all 132. The default run covers 31 templates in about 7 seconds, and all 132 take about 22 seconds.
   To add packages outside the repository, set `AAS_CORPUS_ROOT` to the folder that contains `Requester_screwing.aasx` and `package-explorer/src`.
   Without it, the local mode is skipped. Packages that the SDK cannot read, such as metamodel V2 files, are skipped with the reason.

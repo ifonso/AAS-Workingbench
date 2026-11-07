@@ -10,14 +10,14 @@ from tests.reference_factories import Linked
 from tests.reference_factories import make_linked
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.delete import DeletePlan
-from aas_editor.application.operations.delete import DeletePrompt
-from aas_editor.application.operations.delete import delete_commands
-from aas_editor.application.operations.delete import plan_delete
-from aas_editor.application.operations.delete import prompt_for
-from aas_editor.domain.references import ReferenceIndex
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.delete import DeletePlan
+from aas_workingbench.application.operations.delete import DeletePrompt
+from aas_workingbench.application.operations.delete import delete_commands
+from aas_workingbench.application.operations.delete import plan_delete
+from aas_workingbench.application.operations.delete import prompt_for
+from aas_workingbench.domain.references import ReferenceIndex
 
 
 @pytest.fixture

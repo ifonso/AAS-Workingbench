@@ -6,8 +6,8 @@ from tests.factories import make_collection
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.application.locations import default_stack
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.application.locations import default_stack
 
 SUBMODEL = ("submodels", "Submodel")
 
@@ -15,9 +15,9 @@ SUBMODEL = ("submodels", "Submodel")
 @pytest.fixture
 def places(views):
     """A package with a collection, and the two actions."""
-    from aas_editor.ui.location_actions import POP_ID
-    from aas_editor.ui.location_actions import PUSH_ID
-    from aas_editor.ui.location_actions import register_location_actions
+    from aas_workingbench.ui.location_actions import POP_ID
+    from aas_workingbench.ui.location_actions import PUSH_ID
+    from aas_workingbench.ui.location_actions import register_location_actions
 
     register_location_actions()
     default_stack().clear()
@@ -146,9 +146,9 @@ def test_push_is_not_offered_for_a_row_that_names_no_object(places) -> None:
 
 
 def test_the_shortcuts_collide_with_no_other_shortcut(places) -> None:
-    from aas_editor.settings import shortcuts
-    from aas_editor.ui.location_actions import POP_KEY
-    from aas_editor.ui.location_actions import PUSH_KEY
+    from aas_workingbench.settings import shortcuts
+    from aas_workingbench.ui.location_actions import POP_KEY
+    from aas_workingbench.ui.location_actions import PUSH_KEY
 
     taken: list[QKeySequence] = []
     for name in dir(shortcuts):

@@ -14,13 +14,15 @@ from tests.factories import make_submodel
 @pytest.fixture
 def edit_support(qapp: object):
     """Imports the models once the QApplication exists."""
-    from aas_editor.models import DetailedInfoTable
-    from aas_editor.models import PackTreeViewItem
-    from aas_editor.models import PacksTable
-    from aas_editor.package import Package
-    from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
-    from aas_editor.settings.app_settings import DEFAULT_COLUMNS_IN_PACKS_TABLE
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.models import DetailedInfoTable
+    from aas_workingbench.models import PackTreeViewItem
+    from aas_workingbench.models import PacksTable
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE,
+    )
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     class Support:
         name_role = NAME_ROLE
@@ -99,7 +101,7 @@ def test_edit_clears_optional_value_when_value_is_none(edit_support) -> None:
 def test_clear_row_clears_optional_value_when_default_is_none(
     edit_support,
 ) -> None:
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
     shell = make_shell(id_short="Shell")
     shell.category = "Parameter"

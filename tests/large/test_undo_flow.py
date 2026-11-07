@@ -31,7 +31,7 @@ PACKAGES = [
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path, request):
     """The main window with one package, copied so a save cannot touch data."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     source = tmp_path / request.param
     shutil.copy(TEST_DATA_DIR / request.param, source)
@@ -55,7 +55,7 @@ def editor(qapp: object, qtbot, tmp_path: Path, request):
 
 
 def _index(view, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     index = proxy.index(0, 0)
@@ -101,11 +101,11 @@ def _attrs_row(attrs_view, name: str) -> QModelIndex:
 def test_undoing_all_edits_gives_back_the_package_as_it_was_read(
     editor, qtbot
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.settings import NOT_GIVEN
-    from aas_editor.settings.app_settings import ADD_ITEM_ROLE
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings import NOT_GIVEN
+    from aas_workingbench.settings.app_settings import ADD_ITEM_ROLE
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     view, package, stack = editor.view, editor.package, editor.stack
     original = snapshot(package.objStore)
@@ -210,7 +210,7 @@ def test_undoing_all_edits_gives_back_the_package_as_it_was_read(
 def test_save_then_undo_makes_the_package_changed_and_save_again_writes_it(
     editor, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     view, package = editor.view, editor.package
     (submodel,) = list(package.submodels)
@@ -241,8 +241,8 @@ def test_save_then_undo_makes_the_package_changed_and_save_again_writes_it(
 
 @pytest.mark.parametrize("editor", PACKAGES[:1], indirect=True)
 def test_the_view_menu_switches_between_edit_and_read_mode(editor) -> None:
-    from aas_editor.application.editing import edit_mode
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.application.editing import edit_mode
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
     window, view, package = editor.window, editor.view, editor.package
     (submodel,) = list(package.submodels)

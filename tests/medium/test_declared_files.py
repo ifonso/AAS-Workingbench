@@ -19,13 +19,13 @@ import pyecma376_2
 from pyecma376_2.package_model import normalize_part_name
 import pytest
 
-from aas_editor.application.save import SaveOptions
-from aas_editor.application.save import check_save
-from aas_editor.domain.load_report import Outcome
-from aas_editor.domain.load_report import Scope
-from aas_editor.infrastructure.package_io import PackageParts
-from aas_editor.infrastructure.package_io import read_package
-from aas_editor.infrastructure.package_io import write_package
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.application.save import check_save
+from aas_workingbench.domain.load_report import Outcome
+from aas_workingbench.domain.load_report import Scope
+from aas_workingbench.infrastructure.package_io import PackageParts
+from aas_workingbench.infrastructure.package_io import read_package
+from aas_workingbench.infrastructure.package_io import write_package
 from tests.factories import make_asset_information
 from tests.factories import make_file_element
 from tests.factories import make_property
@@ -289,7 +289,7 @@ def test_read_reports_a_declared_file_whose_name_the_package_cannot_write(
 TECHNICAL_DATA = (
     Path(__file__).parents[2]
     / "src"
-    / "aas_editor"
+    / "aas_workingbench"
     / "submodel_templates"
     / "Technical_Data"
     / "2"
@@ -302,7 +302,7 @@ TECHNICAL_DATA = (
 def test_the_technical_data_template_lists_and_keeps_its_six_images(
     qapp: object, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     declared = _declared_parts(TECHNICAL_DATA)
     assert len(declared) == 6
@@ -349,7 +349,7 @@ def test_save_keeps_a_file_that_nothing_refers_to_after_the_element_was_removed(
 def test_save_writes_each_part_once_when_a_declared_file_is_the_thumbnail(
     tmp_path: Path,
 ) -> None:
-    from aas_editor.domain.parts import Thumbnail
+    from aas_workingbench.domain.parts import Thumbnail
 
     parts = read_package(_technical_data(tmp_path))
     parts.thumbnail = Thumbnail(FIRST, "image/png", FIRST_BYTES)

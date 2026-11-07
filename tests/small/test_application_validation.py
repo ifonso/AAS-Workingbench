@@ -16,13 +16,13 @@ from tests.factories import make_submodel
 from tests.factories import make_valid_environment
 from tests.validation_factories import store_with
 
-from aas_editor.application.save import SaveOptions
-from aas_editor.application.save import check_save
-from aas_editor.application.validation import save_check_for
-from aas_editor.application.validation import validate_package
-from aas_editor.domain.load_report import LoadReport
-from aas_editor.domain.parts import CoreProperties
-from aas_editor.domain.parts import Thumbnail
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.application.save import check_save
+from aas_workingbench.application.validation import save_check_for
+from aas_workingbench.application.validation import validate_package
+from aas_workingbench.domain.load_report import LoadReport
+from aas_workingbench.domain.parts import CoreProperties
+from aas_workingbench.domain.parts import Thumbnail
 
 DOCUMENT = "/aasx/files/document.pdf"
 

@@ -66,7 +66,7 @@ def _warning(editor) -> object:
 def test_saving_as_json_warns_about_the_files_and_the_package_data(
     editor,
 ) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     target = editor.tmp_path / "pump.json"
 
@@ -87,7 +87,7 @@ def test_saving_as_json_warns_about_the_files_and_the_package_data(
 
 
 def test_saving_as_xml_warns_and_keeps_every_object(editor) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     target = editor.tmp_path / "pump.xml"
 
@@ -118,7 +118,7 @@ def test_declining_the_warning_writes_nothing_and_keeps_the_package(
 def test_json_and_xml_go_back_to_aasx_with_the_objects_and_without_the_files(
     editor, qtbot
 ) -> None:
-    from aas_editor.infrastructure.package_io import read_package
+    from aas_workingbench.infrastructure.package_io import read_package
 
     original = _dump(read_package(editor.source).objects)
     _save_as(editor, editor.tmp_path / "pump.json")
@@ -135,8 +135,8 @@ def test_json_and_xml_go_back_to_aasx_with_the_objects_and_without_the_files(
 def test_an_aasx_with_json_inside_keeps_everything_and_opens_again(
     editor,
 ) -> None:
-    from aas_editor.infrastructure.package_io import read_package
-    from aas_editor.settings.app_settings import AppSettings
+    from aas_workingbench.infrastructure.package_io import read_package
+    from aas_workingbench.settings.app_settings import AppSettings
 
     AppSettings.WRITE_JSON_IN_AASX.setValue(True)
     target = editor.tmp_path / "with_json.aasx"
@@ -168,7 +168,7 @@ def test_the_save_in_menu_offers_the_three_formats(editor) -> None:
 def test_saving_an_aasx_keeps_a_file_that_nothing_refers_to(
     editor, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import file_dialogs
+    from aas_workingbench.ui import file_dialogs
 
     spare = editor.tmp_path / "spare.txt"
     spare.write_text("nothing refers to me")

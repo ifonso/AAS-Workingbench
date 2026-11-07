@@ -19,11 +19,11 @@ import zipfile
 from basyx.aas import model
 from lxml import etree
 
-from aas_editor.domain.load_report import LoadIssue
-from aas_editor.domain.load_report import LoadReport
-from aas_editor.domain.load_report import Outcome
-from aas_editor.domain.load_report import Scope
-from aas_editor.domain.walking import descendants
+from aas_workingbench.domain.load_report import LoadIssue
+from aas_workingbench.domain.load_report import LoadReport
+from aas_workingbench.domain.load_report import Outcome
+from aas_workingbench.domain.load_report import Scope
+from aas_workingbench.domain.walking import descendants
 
 from tests.medium.failsafe_causes import TEMPLATES_DIR
 

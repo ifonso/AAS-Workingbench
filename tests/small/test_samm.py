@@ -7,11 +7,11 @@ from tests.factories import make_external_reference
 from tests.factories import make_samm_concept
 from tests.factories import samm_type_urn
 
-from aas_editor.domain.samm import attribute_order
-from aas_editor.domain.samm import is_samm
-from aas_editor.domain.samm import samm_element_of
-from aas_editor.domain.samm import samm_elements_of
-from aas_editor.domain.samm import samm_links
+from aas_workingbench.domain.samm import attribute_order
+from aas_workingbench.domain.samm import is_samm
+from aas_workingbench.domain.samm import samm_element_of
+from aas_workingbench.domain.samm import samm_elements_of
+from aas_workingbench.domain.samm import samm_links
 
 
 class TestRecognition:

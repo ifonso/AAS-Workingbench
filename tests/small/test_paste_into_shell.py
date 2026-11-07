@@ -15,11 +15,11 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.paste import PasteError
-from aas_editor.application.operations.paste import plan_paste_into_shell
-from aas_editor.application.operations.paste import shell_paste_commands
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.paste import PasteError
+from aas_workingbench.application.operations.paste import plan_paste_into_shell
+from aas_workingbench.application.operations.paste import shell_paste_commands
 
 
 class _Owner:

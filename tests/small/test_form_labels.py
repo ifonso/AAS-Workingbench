@@ -3,9 +3,9 @@
 from basyx.aas import model
 import pytest
 
-from aas_editor.additional.classes import DictItem
-from aas_editor.domain.form_labels import entry_title
-from aas_editor.domain.form_labels import field_label
+from aas_workingbench.additional.classes import DictItem
+from aas_workingbench.domain.form_labels import entry_title
+from aas_workingbench.domain.form_labels import field_label
 
 
 @pytest.mark.parametrize(

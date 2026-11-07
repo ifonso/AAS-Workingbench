@@ -14,7 +14,7 @@ from tests.factories import make_external_reference
 from tests.medium.concept_lab import build_lab_class
 from tests.serialization import snapshot
 
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 
 CONCEPTS = "concept_descriptions"
 
@@ -55,7 +55,7 @@ def _content(lab: Any) -> model.DataSpecificationIEC61360:
 
 
 def _edit(lab: Any, fill: Any) -> None:
-    from aas_editor.ui.iec61360_dialog import Iec61360Dialog
+    from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
 
     lab.select((CONCEPTS, "Colour"))
     lab.fill(Iec61360Dialog, fill)
@@ -63,7 +63,7 @@ def _edit(lab: Any, fill: Any) -> None:
 
 
 def _saved_content(lab: Any, tmp_path: Path) -> model.DataSpecificationIEC61360:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     path = tmp_path / "again.aasx"
     lab.package.write(path)
@@ -78,8 +78,8 @@ class TestValueList:
     def test_the_dialog_lists_the_pairs_and_offers_to_remove_them(
         self, lab
     ) -> None:
-        from aas_editor.ui.iec61360_dialog import Iec61360Dialog
-        from aas_editor.domain.data_specifications import draft_of
+        from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
+        from aas_workingbench.domain.data_specifications import draft_of
 
         lab = lab(_concept(value_list=_pairs("Red", "Blue")))
         dialog = Iec61360Dialog(draft_of(_content(lab)))
@@ -127,8 +127,8 @@ class TestValueList:
         assert [p.value for p in _content(lab).value_list or ()] == ["Red"]
 
     def test_the_buttons_do_the_same_as_the_methods(self, lab) -> None:
-        from aas_editor.ui.iec61360_dialog import Iec61360Dialog
-        from aas_editor.domain.data_specifications import draft_of
+        from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
+        from aas_workingbench.domain.data_specifications import draft_of
 
         lab = lab(_concept(value_list=_pairs("Red", "Blue")))
         dialog = Iec61360Dialog(draft_of(_content(lab)))
@@ -154,8 +154,8 @@ class TestValueList:
     def test_without_a_value_list_the_remove_buttons_are_hidden(
         self, lab
     ) -> None:
-        from aas_editor.ui.iec61360_dialog import Iec61360Dialog
-        from aas_editor.domain.data_specifications import draft_of
+        from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
+        from aas_workingbench.domain.data_specifications import draft_of
 
         lab = lab(_concept())
         dialog = Iec61360Dialog(draft_of(_content(lab)))

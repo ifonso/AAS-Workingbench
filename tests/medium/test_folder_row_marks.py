@@ -13,12 +13,12 @@ from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import AddMember
-from aas_editor.application.edits import RemoveMember
-from aas_editor.application.edits import SetAttribute
-from aas_editor.settings.app_settings import CHANGE_MARK_ROLE
-from aas_editor.settings.app_settings import MARK_CHANGED
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import AddMember
+from aas_workingbench.application.edits import RemoveMember
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.settings.app_settings import CHANGE_MARK_ROLE
+from aas_workingbench.settings.app_settings import MARK_CHANGED
 
 SHELLS = "shells"
 SUBMODELS = "submodels"

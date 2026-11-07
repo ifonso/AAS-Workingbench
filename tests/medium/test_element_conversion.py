@@ -21,7 +21,7 @@ from tests.medium.conftest import ELEMENT_PATH
 from tests.medium.conftest import SUBMODEL_PATH
 from tests.serialization import snapshot
 
-from aas_editor.domain.replacement import ReplacementPlan
+from aas_workingbench.domain.replacement import ReplacementPlan
 
 CONVERT = "conversion.convert"
 STRING = model.datatypes.String
@@ -124,7 +124,7 @@ class Conversions:
     """Runs the action on the element of a lab, with the dialogs stubbed."""
 
     def __init__(self, lab: Any, monkeypatch: pytest.MonkeyPatch) -> None:
-        from aas_editor.ui import replacement_dialogs
+        from aas_workingbench.ui import replacement_dialogs
 
         self.lab = lab
         self.asked: list[ReplacementPlan] = []
@@ -155,7 +155,7 @@ class Conversions:
         monkeypatch.setattr(
             replacement_dialogs, "ask_use_file_content", use_content
         )
-        from aas_editor.ui import reference_dialogs
+        from aas_workingbench.ui import reference_dialogs
 
         monkeypatch.setattr(
             reference_dialogs,
@@ -174,7 +174,9 @@ class Conversions:
 
 @pytest.fixture
 def registered(qapp: object) -> None:
-    from aas_editor.ui.conversion_actions import register_conversion_actions
+    from aas_workingbench.ui.conversion_actions import (
+        register_conversion_actions,
+    )
 
     register_conversion_actions()
 
@@ -227,7 +229,7 @@ def test_a_conversion_can_be_undone_redone_saved_and_reloaded(
 def test_the_new_element_is_the_current_row(
     lab_class: Any, registered: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     lab = _lab(lab_class, "Property")
     conversions = Conversions(lab, monkeypatch)
@@ -336,7 +338,7 @@ def test_an_item_of_a_list_cannot_be_converted(
 def test_the_action_is_off_in_read_mode_and_for_what_is_no_element(
     lab_class: Any, registered: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     lab = _lab(lab_class, "Property")
     Conversions(lab, monkeypatch)
@@ -426,7 +428,7 @@ def test_references_into_lost_items_are_shown_before_they_dangle(
     )
     lab.submodel.submodel_element.add(pointer)
     shown_updates: list[Any] = []
-    from aas_editor.ui import replacement_dialogs
+    from aas_workingbench.ui import replacement_dialogs
 
     def confirm(title, intro, plan, updates, accept_text, parent=None) -> bool:
         shown_updates.append(updates)
@@ -449,7 +451,7 @@ def test_the_tab_of_the_old_element_closes_and_other_tabs_stay(
     qtbot: Any,
 ) -> None:
     pytest.importorskip("PyQt6.QtWebEngineWidgets")
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.widgets.tab import TabWidget
 
     lab = _lab(lab_class, "Property")
     conversions = Conversions(lab, monkeypatch)

@@ -1,9 +1,9 @@
 """The font size of the trees moves to the new default exactly once."""
 
-from aas_editor.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
-from aas_editor.application.font_sizes import NO_VERSION
-from aas_editor.application.font_sizes import OLD_DEFAULT_POINT_SIZE
-from aas_editor.application.font_sizes import migrated_font_size
+from aas_workingbench.application.font_sizes import FONT_SIZE_LAYOUT_VERSION
+from aas_workingbench.application.font_sizes import NO_VERSION
+from aas_workingbench.application.font_sizes import OLD_DEFAULT_POINT_SIZE
+from aas_workingbench.application.font_sizes import migrated_font_size
 
 NEW_DEFAULT = 10
 

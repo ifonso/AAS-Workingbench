@@ -8,7 +8,7 @@ from tests.factories import make_property
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.application.editing import edit_mode
+from aas_workingbench.application.editing import edit_mode
 
 ACTION = "create.copy_shell"
 
@@ -16,9 +16,11 @@ ACTION = "create.copy_shell"
 @pytest.fixture
 def copying(views, monkeypatch: pytest.MonkeyPatch):
     """A package with an AAS of two Submodels, and the action."""
-    from aas_editor.ui import create_actions
-    from aas_editor.ui import shell_copy_actions
-    from aas_editor.ui.shell_copy_actions import register_shell_copy_actions
+    from aas_workingbench.ui import create_actions
+    from aas_workingbench.ui import shell_copy_actions
+    from aas_workingbench.ui.shell_copy_actions import (
+        register_shell_copy_actions,
+    )
 
     register_shell_copy_actions()
     problems: list[str] = []
@@ -72,7 +74,7 @@ def copying(views, monkeypatch: pytest.MonkeyPatch):
 def test_the_copy_has_new_ids_and_refers_to_new_submodels(
     copying, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     copying.select("shells", "Pump")
     assert copying.action().isEnabled()
@@ -113,7 +115,7 @@ def test_the_copy_is_one_undo_step(copying) -> None:
 def test_on_the_node_of_the_shells_it_asks_which_to_copy(
     copying, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import shell_copy_actions
+    from aas_workingbench.ui import shell_copy_actions
 
     asked: list[list[str]] = []
 
@@ -135,7 +137,7 @@ def test_on_the_node_of_the_shells_it_asks_which_to_copy(
 def test_cancelling_the_question_copies_nothing(
     copying, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.ui import shell_copy_actions
+    from aas_workingbench.ui import shell_copy_actions
 
     monkeypatch.setattr(shell_copy_actions, "ask_shell", lambda *a: None)
     copying.select("shells")

@@ -10,7 +10,7 @@ def exceptionhook(qapp: object, monkeypatch: pytest.MonkeyPatch):
     # Importing the module installs its hook. The patch restores the previous
     # hook when the test ends.
     monkeypatch.setattr(sys, "excepthook", sys.excepthook)
-    from aas_editor.utils import exceptionhook
+    from aas_workingbench.utils import exceptionhook
 
     monkeypatch.setattr(exceptionhook, "_on_crash_callback", None)
     return exceptionhook

@@ -19,9 +19,9 @@ from tests.factories import make_submodel
 from tests.medium.concept_lab import build_lab_class
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.domain.concept_order import CANNOT_SORT
-from aas_editor.domain.concept_order import ConceptOrder
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.domain.concept_order import CANNOT_SORT
+from aas_workingbench.domain.concept_order import ConceptOrder
 
 
 def _concept(id_: str, id_short: str) -> model.ConceptDescription:

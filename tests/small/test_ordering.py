@@ -13,14 +13,14 @@ from tests.factories import make_operation
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.domain.ordering import OrderRestoreError
-from aas_editor.domain.ordering import insert_at
-from aas_editor.domain.ordering import move_to
-from aas_editor.domain.ordering import reorder
-from aas_editor.domain.ordering import replace_item
-from aas_editor.domain.ordering import restore_order
-from aas_editor.domain.ordering import set_id_short
-from aas_editor.domain.ordering import snapshot_order
+from aas_workingbench.domain.ordering import OrderRestoreError
+from aas_workingbench.domain.ordering import insert_at
+from aas_workingbench.domain.ordering import move_to
+from aas_workingbench.domain.ordering import reorder
+from aas_workingbench.domain.ordering import replace_item
+from aas_workingbench.domain.ordering import restore_order
+from aas_workingbench.domain.ordering import set_id_short
+from aas_workingbench.domain.ordering import snapshot_order
 
 Elements = model.NamespaceSet[Any]
 Builder = Callable[[], Elements]

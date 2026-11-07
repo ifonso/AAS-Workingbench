@@ -15,7 +15,7 @@ from basyx.aas.adapter.aasx import AASXWriter
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 import pyecma376_2
 
-from aas_editor.domain.ordered_store import OrderedIdentifiableStore
+from aas_workingbench.domain.ordered_store import OrderedIdentifiableStore
 
 DEFAULT_SHELL_ID = "urn:uuid:00000000-0000-4000-8000-000000000001"
 DEFAULT_SUBMODEL_ID = "urn:uuid:00000000-0000-4000-8000-000000000002"

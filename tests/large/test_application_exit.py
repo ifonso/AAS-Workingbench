@@ -42,7 +42,7 @@ def report(box):
 QApplication.exec = quit_soon
 QMessageBox.exec = report
 
-from aas_editor.__main__ import main
+from aas_workingbench.__main__ import main
 
 main()
 """

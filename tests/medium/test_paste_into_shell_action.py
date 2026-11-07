@@ -16,7 +16,7 @@ from tests.factories import make_shell
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
+from aas_workingbench.application.editing import edit_mode
 
 INTO = "structure.paste_into"
 
@@ -24,8 +24,8 @@ INTO = "structure.paste_into"
 @pytest.fixture
 def pasting(views, monkeypatch: pytest.MonkeyPatch):
     """Two packages, and ways to copy and paste in the package tree."""
-    from aas_editor.ui import paste_dialogs
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.ui import paste_dialogs
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     register_paste_actions()
     problems: list[str] = []
@@ -71,7 +71,7 @@ def pasting(views, monkeypatch: pytest.MonkeyPatch):
             return enabled
 
         def saved(self, directory: Path) -> Any:
-            from aas_editor.package import Package
+            from aas_workingbench.package import Package
 
             path = directory / "pasted.aasx"
             self.package.write(path)
@@ -216,8 +216,8 @@ def test_the_action_is_off_in_read_mode(pasting) -> None:
 def test_submodel_json_typed_into_the_box_is_added_to_the_shell(
     pasting, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from aas_editor.domain.clipboard_json import dump_objects
-    from aas_editor.ui import paste_dialogs
+    from aas_workingbench.domain.clipboard_json import dump_objects
+    from aas_workingbench.ui import paste_dialogs
 
     lab = pasting()
     typed = make_submodel(id_="urn:sm:typed", id_short="Typed")

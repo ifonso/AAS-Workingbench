@@ -17,12 +17,12 @@ BLOB_PATH = ("submodels", "Submodel", "Blob")
 
 @pytest.fixture
 def registered(qapp: object) -> Iterator[None]:
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.blob_actions import FROM_BASE64_ACTION_ID
-    from aas_editor.ui.blob_actions import LOAD_ACTION_ID
-    from aas_editor.ui.blob_actions import register_blob_actions
-    from aas_editor.ui.blob_actions import SAVE_ACTION_ID
-    from aas_editor.ui.blob_actions import TO_BASE64_ACTION_ID
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.blob_actions import FROM_BASE64_ACTION_ID
+    from aas_workingbench.ui.blob_actions import LOAD_ACTION_ID
+    from aas_workingbench.ui.blob_actions import register_blob_actions
+    from aas_workingbench.ui.blob_actions import SAVE_ACTION_ID
+    from aas_workingbench.ui.blob_actions import TO_BASE64_ACTION_ID
 
     register_blob_actions()
     yield
@@ -44,9 +44,9 @@ def _pick(monkeypatch: pytest.MonkeyPatch, method: str, path: Path) -> None:
 
 
 def test_registering_twice_adds_each_action_once(registered: None) -> None:
-    from aas_editor.ui.actions import default_registry
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.blob_actions import register_blob_actions
+    from aas_workingbench.ui.actions import default_registry
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.blob_actions import register_blob_actions
 
     register_blob_actions()
 
@@ -141,7 +141,7 @@ def test_saving_writes_the_exact_bytes(
 def test_saving_works_in_read_mode_and_loading_does_not(
     views, registered: None
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     shown = views()
     shown.open_package(make_submodel(elements=[make_blob()]))
@@ -234,7 +234,7 @@ def test_text_that_is_no_base64_is_refused_with_a_reason(
 
 
 def test_the_conversions_are_off_in_read_mode(views, registered: None) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     shown = views()
     shown.open_package(make_submodel(elements=[make_blob(value=b"SGVsbG8=")]))

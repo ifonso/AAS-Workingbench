@@ -13,7 +13,7 @@ from tests.factories import make_submodel
 from tests.medium.conftest import ELEMENT_ID
 from tests.serialization import snapshot
 
-from aas_editor.ui.paste_actions import register_paste_actions
+from aas_workingbench.ui.paste_actions import register_paste_actions
 
 # -- AC8 ---------------------------------------------------------------------
 
@@ -75,8 +75,8 @@ def test_a_cut_element_pasted_into_the_input_variables_leaves_its_source(
 def test_a_list_without_order_relevant_in_the_file_shows_the_default(
     views, tmp_path
 ) -> None:
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     document = {
         "submodels": [

@@ -20,8 +20,8 @@ from tests.medium.conftest import ELEMENT_ID
 from tests.medium.forms import answering
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.domain.reference_picker import ReferenceState
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.domain.reference_picker import ReferenceState
 
 K = model.KeyTypes
 
@@ -33,7 +33,7 @@ def _property() -> model.Property:
 @pytest.fixture
 def picking(lab_class, monkeypatch: pytest.MonkeyPatch):
     """A lab with a concept description, and ways to pick in the form."""
-    from aas_editor.ui.reference_picker import ReferencePickerDialog
+    from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
     class Picking:
         def __init__(self, *elements: model.SubmodelElement) -> None:
@@ -146,7 +146,7 @@ class TestPickingATarget:
     ) -> None:
         from PyQt6.QtWidgets import QDialog
 
-        from aas_editor.ui.reference_picker import ReferencePickerDialog
+        from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
         element = _property()
         flow = picking(element)
@@ -167,8 +167,8 @@ class TestPickingATarget:
     def test_a_submodel_reference_of_a_shell_offers_only_submodels(
         self, views, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from aas_editor.dialogs import EditObjDialog
-        from aas_editor.ui.reference_picker import ReferencePickerDialog
+        from aas_workingbench.dialogs import EditObjDialog
+        from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
         first = make_submodel(id_="urn:sm:1", id_short="First")
         second = make_submodel(id_="urn:sm:2", id_short="Second")
@@ -211,7 +211,7 @@ class TestPickingATarget:
 
 
 def _attribute_row(attrs: Any, name: str) -> Any:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = attrs.model()
     for row in range(proxy.rowCount()):
@@ -360,8 +360,8 @@ class TestRefusals:
     def test_a_field_for_external_references_lists_only_ids(
         self, views, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from aas_editor.domain.reference_picker import rule_for_hint
-        from aas_editor.ui.reference_picker import ReferencePickerDialog
+        from aas_workingbench.domain.reference_picker import rule_for_hint
+        from aas_workingbench.ui.reference_picker import ReferencePickerDialog
 
         submodel = make_submodel(elements=[make_property("P")])
         concept = make_concept_description()
@@ -517,11 +517,11 @@ REFERENCE_FIELDS = [
 def test_every_reference_field_gets_the_picker(
     qapp: object, owner: type, attribute: str
 ) -> None:
-    from aas_editor.ui.reference_fields import ReferenceFieldMixin
-    from aas_editor.utils.util import getAttrTypeHint
-    from aas_editor.utils.util import getIterItemTypeHint
-    from aas_editor.utils.util_type import isIterableType
-    from aas_editor.widgets.widgetUtil import InputWidgetUtil
+    from aas_workingbench.ui.reference_fields import ReferenceFieldMixin
+    from aas_workingbench.utils.util import getAttrTypeHint
+    from aas_workingbench.utils.util import getIterItemTypeHint
+    from aas_workingbench.utils.util_type import isIterableType
+    from aas_workingbench.widgets.widgetUtil import InputWidgetUtil
 
     hint = getAttrTypeHint(owner, attribute)
     if isIterableType(hint):
@@ -539,8 +539,8 @@ def test_a_reference_form_shows_one_picker_and_one_status_line(
 ) -> None:
     from PyQt6.QtWidgets import QPushButton
 
-    from aas_editor.ui.reference_fields import CHOOSE_TEXT
-    from aas_editor.widgets.widgetUtil import InputWidgetUtil
+    from aas_workingbench.ui.reference_fields import CHOOSE_TEXT
+    from aas_workingbench.widgets.widgetUtil import InputWidgetUtil
 
     widget = InputWidgetUtil.getInputWidget(model.Reference)
     qtbot.addWidget(widget)
@@ -560,9 +560,9 @@ def test_a_reference_form_shows_one_picker_and_one_status_line(
 def test_editing_a_model_reference_keeps_the_type_its_last_key_names(
     qapp: object, qtbot: Any
 ) -> None:
-    from aas_editor.ui.reference_fields import ReferenceFieldMixin  # noqa: F401
-    from aas_editor.utils.util import getAttrTypeHint
-    from aas_editor.widgets.widgetUtil import InputWidgetUtil
+    from aas_workingbench.ui.reference_fields import ReferenceFieldMixin  # noqa: F401
+    from aas_workingbench.utils.util import getAttrTypeHint
+    from aas_workingbench.widgets.widgetUtil import InputWidgetUtil
 
     # The SDK reads the target type of `observed` as a Referable, which the
     # list of the form does not offer. The form then took its first entry and
@@ -590,8 +590,8 @@ def test_the_package_is_found_through_a_tab_widget_in_the_parents(
     from PyQt6.QtWidgets import QTabWidget
     from PyQt6.QtWidgets import QWidget
 
-    from aas_editor.settings.app_settings import PACKAGE_ROLE
-    from aas_editor.ui.reference_fields import package_of
+    from aas_workingbench.settings.app_settings import PACKAGE_ROLE
+    from aas_workingbench.ui.reference_fields import package_of
 
     package = object()
 

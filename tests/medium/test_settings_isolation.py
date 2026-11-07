@@ -13,7 +13,7 @@ from pytestqt.qtbot import QtBot
 def test_the_recent_files_of_a_test_are_not_kept_where_the_user_keeps_theirs(
     qapp: object,
 ) -> None:
-    from aas_editor.settings.app_settings import recent_settings
+    from aas_workingbench.settings.app_settings import recent_settings
 
     store = recent_settings()
 
@@ -24,7 +24,7 @@ def test_the_recent_files_of_a_test_are_not_kept_where_the_user_keeps_theirs(
 def test_the_settings_of_a_test_are_not_the_settings_file_of_the_program(
     qapp: object,
 ) -> None:
-    from aas_editor.settings import app_settings
+    from aas_workingbench.settings import app_settings
 
     assert Path(app_settings.SETTINGS.fileName()) != app_settings.SETTINGS_FILE
 
@@ -34,8 +34,8 @@ def test_a_recent_file_is_written_to_the_store_of_the_test(
 ) -> None:
     from PyQt6.QtWidgets import QWidget
 
-    from aas_editor.settings.app_settings import recent_settings
-    from aas_editor.treeviews.treeview_pack import PackTreeView
+    from aas_workingbench.settings.app_settings import recent_settings
+    from aas_workingbench.treeviews.treeview_pack import PackTreeView
 
     window = QWidget()
     qtbot.addWidget(window)
@@ -49,6 +49,6 @@ def test_a_recent_file_is_written_to_the_store_of_the_test(
 
 
 def test_each_test_starts_with_no_recent_file(qapp: object) -> None:
-    from aas_editor.settings.app_settings import recent_settings
+    from aas_workingbench.settings.app_settings import recent_settings
 
     assert recent_settings().value("recentFiles") is None

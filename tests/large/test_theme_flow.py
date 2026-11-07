@@ -19,8 +19,8 @@ def open_window(qapp, qtbot, monkeypatch, tmp_path: Path):
     """Opens the main window with the theme that the settings return."""
 
     def open_with(saved_theme: str | None):
-        from aas_editor.editorApp import EditorApp
-        from aas_editor.settings.app_settings import Setting
+        from aas_workingbench.editorApp import EditorApp
+        from aas_workingbench.settings.app_settings import Setting
 
         read_setting = Setting.value
         monkeypatch.setattr(

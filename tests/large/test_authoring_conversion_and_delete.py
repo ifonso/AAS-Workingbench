@@ -27,7 +27,7 @@ pytest.importorskip(
 def test_an_element_is_converted_to_another_kind_with_its_references_and_attributes(
     author: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.replacement_dialogs import ReplacementDialog
+    from aas_workingbench.ui.replacement_dialogs import ReplacementDialog
 
     build_everything(author, tmp_path)
     author.stack.mark_saved()
@@ -63,7 +63,7 @@ def test_an_element_is_converted_to_another_kind_with_its_references_and_attribu
 def test_several_elements_are_renamed_at_once_with_a_pattern(
     author: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
+    from aas_workingbench.ui.bulk_dialogs import ChangeAttributeDialog
 
     build_everything(author, tmp_path)
     author.stack.mark_saved()
@@ -99,7 +99,7 @@ def test_deleting_a_concept_description_removes_the_semantic_ids_that_may_go_and
 ) -> None:
     from tests.authoring_elements import external
 
-    from aas_editor.ui.reference_dialogs import DeleteDialog
+    from aas_workingbench.ui.reference_dialogs import DeleteDialog
 
     build_everything(author, tmp_path)
     answer = author.add_element(
@@ -143,7 +143,7 @@ def test_deleting_a_concept_description_removes_the_semantic_ids_that_may_go_and
 def test_a_submodel_deleted_with_its_reference_left_is_reported_by_validation(
     author: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.reference_dialogs import DeleteDialog
+    from aas_workingbench.ui.reference_dialogs import DeleteDialog
 
     build_everything(author, tmp_path)
     author.stack.mark_saved()
@@ -172,7 +172,7 @@ def test_a_submodel_deleted_with_its_reference_left_is_reported_by_validation(
 def test_an_element_that_an_event_observes_is_deleted_and_the_event_is_reported(
     author: Author, tmp_path: Path
 ) -> None:
-    from aas_editor.ui.reference_dialogs import DeleteDialog
+    from aas_workingbench.ui.reference_dialogs import DeleteDialog
 
     build_everything(author, tmp_path)
     author.stack.mark_saved()

@@ -27,19 +27,19 @@ from tests.factories import make_reference_to
 from tests.factories import make_shell
 from tests.factories import make_submodel
 
-from aas_editor.domain.design_tokens import DARK
-from aas_editor.domain.design_tokens import LIGHT
-from aas_editor.models.item_standard import StandardItem
-from aas_editor.ui.theme import THEME_DARK
-from aas_editor.ui.theme import THEME_LIGHT
-from aas_editor.ui.theme import theme_manager
-from aas_editor.ui.theme.kind_icons import KIND_NAMES
-from aas_editor.ui.theme.kind_icons import KIND_ROLE
-from aas_editor.ui.theme.kind_icons import kind_icon
-from aas_editor.ui.theme.kind_icons import kind_name
-from aas_editor.ui.theme.kind_icons import KINDS_FOLDER
-from aas_editor.ui.theme.icons import icon_color
-from aas_editor.ui.theme.icons import svg_icon
+from aas_workingbench.domain.design_tokens import DARK
+from aas_workingbench.domain.design_tokens import LIGHT
+from aas_workingbench.models.item_standard import StandardItem
+from aas_workingbench.ui.theme import THEME_DARK
+from aas_workingbench.ui.theme import THEME_LIGHT
+from aas_workingbench.ui.theme import theme_manager
+from aas_workingbench.ui.theme.kind_icons import KIND_NAMES
+from aas_workingbench.ui.theme.kind_icons import KIND_ROLE
+from aas_workingbench.ui.theme.kind_icons import kind_icon
+from aas_workingbench.ui.theme.kind_icons import kind_name
+from aas_workingbench.ui.theme.kind_icons import KINDS_FOLDER
+from aas_workingbench.ui.theme.icons import icon_color
+from aas_workingbench.ui.theme.icons import svg_icon
 
 SIZE = 16
 

@@ -11,10 +11,10 @@ Package Explorer is the reference, and the editor is not at parity with it yet: 
 
 The project also plans AI features that make modeling, verification and the use of industry standards easier, and an MCP server.
 None of that exists yet.
-The one LLM feature today is inherited from upstream: a [handover documentation tool](src/aas_editor/tools/handover_doc_llm/README.md) that drafts a Handover Documentation submodel from a PDF through a model provider that you configure.
+The one LLM feature today is inherited from upstream: a [handover documentation tool](src/aas_workingbench/tools/handover_doc_llm/README.md) that drafts a Handover Documentation submodel from a PDF through a model provider that you configure.
 
 Only Windows has been used to run the editor in the current work.
-Continuous integration runs the checks on Ubuntu, and the release workflow builds for Ubuntu and Windows.
+Continuous integration runs the checks on Ubuntu, and the release workflow builds a zip for Windows and an AppImage for Linux.
 Nothing builds for macOS, so macOS is a goal and not a claim.
 
 ## What the editor does
@@ -49,11 +49,11 @@ Install the locked environment and start the editor from source:
 
 ```sh
 uv sync --locked
-uv run python -m aas_editor
+uv run python -m aas_workingbench
 ```
 
-Running the editor rewrites the tracked file `src/aas_editor/settings/settings.ini`.
-Do not commit that change, and discard it with `git checkout -- src/aas_editor/settings/settings.ini`.
+Running the editor rewrites the tracked file `src/aas_workingbench/settings/settings.ini`.
+Do not commit that change, and discard it with `git checkout -- src/aas_workingbench/settings/settings.ini`.
 
 CI checks the code and runs the small and medium tests with these commands:
 
@@ -70,10 +70,11 @@ If GNU Make is installed, `make check` runs the same four commands, and `make` l
 To build a stand-alone executable with PyInstaller:
 
 ```sh
-uv run --group build pyinstaller --noconfirm aas_manager.spec
+uv run --group build pyinstaller --noconfirm aas_workingbench.spec
 ```
 
-The result is the folder `dist/AAS_Manager`, which holds the executable `AAS_Manager` (`AAS_Manager.exe` on Windows).
+The result is the folder `dist/AAS_Workingbench`, which holds the executable `AAS_Workingbench` (`AAS_Workingbench.exe` on Windows).
+[`packaging/README.md`](packaging/README.md) says how to make the release files from it: the Windows zip and the Linux AppImage.
 `make build` runs the same command.
 
 ## Related projects

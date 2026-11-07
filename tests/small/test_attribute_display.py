@@ -6,13 +6,13 @@ from basyx.aas import model
 from basyx.aas.model import datatypes
 import pytest
 
-from aas_editor.additional.classes import DictItem
-from aas_editor.domain.attribute_display import NOT_SET
-from aas_editor.domain.attribute_display import entry_label
-from aas_editor.domain.attribute_display import type_column_text
-from aas_editor.domain.attribute_display import value_text
-from aas_editor.domain.attribute_display import value_type_name
-from aas_editor.domain.attribute_vocabulary import attribute_info
+from aas_workingbench.additional.classes import DictItem
+from aas_workingbench.domain.attribute_display import NOT_SET
+from aas_workingbench.domain.attribute_display import entry_label
+from aas_workingbench.domain.attribute_display import type_column_text
+from aas_workingbench.domain.attribute_display import value_text
+from aas_workingbench.domain.attribute_display import value_type_name
+from aas_workingbench.domain.attribute_vocabulary import attribute_info
 
 
 @pytest.mark.parametrize(

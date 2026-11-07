@@ -12,7 +12,7 @@ from tests.factories import make_property
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
+from aas_workingbench.application.editing import edit_mode
 
 SUBMODEL = ("submodels", "Submodel")
 
@@ -20,13 +20,13 @@ SUBMODEL = ("submodels", "Submodel")
 @pytest.fixture
 def bulk(views, monkeypatch: pytest.MonkeyPatch):
     """A package that the bulk actions work on, and ways to drive them."""
-    from aas_editor.package import Package
-    from aas_editor.settings.app_settings import NAME_ROLE
-    from aas_editor.ui import bulk_dialogs
-    from aas_editor.ui.bulk_dialogs import ChangeAttributeDialog
-    from aas_editor.ui.bulk_dialogs import RemoveExtensionsDialog
-    from aas_editor.ui.bulk_edit_actions import register_bulk_edit_actions
-    from aas_editor.ui.move_actions import register_move_actions
+    from aas_workingbench.package import Package
+    from aas_workingbench.settings.app_settings import NAME_ROLE
+    from aas_workingbench.ui import bulk_dialogs
+    from aas_workingbench.ui.bulk_dialogs import ChangeAttributeDialog
+    from aas_workingbench.ui.bulk_dialogs import RemoveExtensionsDialog
+    from aas_workingbench.ui.bulk_edit_actions import register_bulk_edit_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
 
     register_bulk_edit_actions()
     register_move_actions()
@@ -279,8 +279,8 @@ def test_extensions_with_a_name_are_removed_in_one_step(bulk, tmp_path) -> None:
 
 
 def test_the_removal_is_available_after_an_extension_was_added(bulk) -> None:
-    from aas_editor.application.changes import observer_for
-    from aas_editor.application.edits import AddMember
+    from aas_workingbench.application.changes import observer_for
+    from aas_workingbench.application.edits import AddMember
 
     prop = make_property("A")
     lab = bulk(prop)

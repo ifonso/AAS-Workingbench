@@ -19,7 +19,7 @@ pytest.importorskip(
 @pytest.fixture
 def tabs(views, qtbot: QtBot):
     """A tab widget with a first tab that is empty, like the main window."""
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.widgets.tab import TabWidget
 
     shown = views()
     shown.package = shown.open_package(
@@ -47,7 +47,7 @@ def tabs(views, qtbot: QtBot):
 
         @staticmethod
         def delete(*names: str, package: int = 0) -> None:
-            from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+            from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
             shown.view.model().setData(
                 shown.index(*names, package=package), None, CLEAR_ROW_ROLE
@@ -104,7 +104,7 @@ def test_tab_closes_when_a_container_of_its_object_is_deleted(tabs) -> None:
 def test_tab_in_another_window_closes_when_its_object_is_deleted(
     tabs, qtbot
 ) -> None:
-    from aas_editor.widgets.tab import TabWidget
+    from aas_workingbench.widgets.tab import TabWidget
 
     window = TabWidget(unclosable=True)
     qtbot.addWidget(window)
@@ -121,7 +121,7 @@ def test_tab_in_another_window_closes_when_its_object_is_deleted(
 def test_tab_closes_when_undo_takes_back_the_creation_of_its_object(
     tabs, qtbot
 ) -> None:
-    from aas_editor.settings.app_settings import ADD_ITEM_ROLE
+    from aas_workingbench.settings.app_settings import ADD_ITEM_ROLE
 
     tabs.views.view.model().setData(
         tabs.views.index("submodels", "Submodel", "Collection"),
@@ -152,8 +152,8 @@ def test_last_tab_of_an_unclosable_widget_is_emptied_not_removed(tabs) -> None:
 
 
 def test_tab_closes_when_its_package_is_closed(tabs) -> None:
-    from aas_editor.settings import NOT_GIVEN
-    from aas_editor.settings.app_settings import CLEAR_ROW_ROLE
+    from aas_workingbench.settings import NOT_GIVEN
+    from aas_workingbench.settings.app_settings import CLEAR_ROW_ROLE
 
     tabs.open("submodels", "Submodel", "Collection", "x")
 

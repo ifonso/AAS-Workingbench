@@ -7,13 +7,13 @@ import pytest
 from tests.factories import make_property
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
+from aas_workingbench.application.editing import edit_mode
 
 
 @pytest.fixture
 def moving(lab_class):
     """A property with a description in three languages, shown in a tab."""
-    from aas_editor.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.move_actions import register_move_actions
 
     register_move_actions()
     prop = make_property("Element")

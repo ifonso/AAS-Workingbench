@@ -23,7 +23,7 @@ For example, it does not raise errors for AASd-006, 007, 012, 013, 077, 119, 129
 
 - Target metamodel V3.1.x for v1, and label the application accordingly.
 - Use the BaSyx SDK for all reading, writing, and mutation of AAS content.
-- Write our own validation rules over BaSyx objects, in `aas_editor.domain.validation`.
+- Write our own validation rules over BaSyx objects, in `aas_workingbench.domain.validation`.
 - Keep `aas-test-engines` as an optional tool, clearly labeled V3.0. Do not use it to decide whether a V3.1 file is valid.
 
 ## Consequences

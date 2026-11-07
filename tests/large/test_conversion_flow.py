@@ -29,8 +29,10 @@ METHODS = (*PCF, "PcfCalculationMethods")
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path):
     """The main window with the template, copied so that a save is harmless."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui.conversion_actions import register_conversion_actions
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui.conversion_actions import (
+        register_conversion_actions,
+    )
 
     register_conversion_actions()
     source = tmp_path / PACKAGE
@@ -52,7 +54,7 @@ def editor(qapp: object, qtbot, tmp_path: Path):
 
 
 def _index(view, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     index = proxy.index(0, 0)
@@ -95,10 +97,10 @@ def _footprint(package) -> model.SubmodelElementCollection:
 def test_an_element_is_converted_and_a_list_rebuilt_then_undone_and_saved(
     editor, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from aas_editor.domain.list_settings import ListSettings
-    from aas_editor.domain.list_settings import settings_of
-    from aas_editor.package import Package
-    from aas_editor.ui import replacement_dialogs
+    from aas_workingbench.domain.list_settings import ListSettings
+    from aas_workingbench.domain.list_settings import settings_of
+    from aas_workingbench.package import Package
+    from aas_workingbench.ui import replacement_dialogs
 
     view, package, stack = editor.view, editor.package, editor.stack
     asked: list[list[str]] = []

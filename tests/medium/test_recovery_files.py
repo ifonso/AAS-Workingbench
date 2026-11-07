@@ -14,15 +14,15 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.factories import write_aasx
 
-from aas_editor.application import supplementary_files as files
-from aas_editor.application.changes import observer_for
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.changes import observer_for
 
 DOCUMENT = "/aasx/files/document.pdf"
 DRAFT = "/aasx/files/draft.txt"
 
 
 def _open_package(tmp_path: Path):
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     submodel = make_submodel(
         elements=[make_file_element("Document", DOCUMENT, "application/pdf")]
@@ -36,7 +36,7 @@ def _open_package(tmp_path: Path):
 
 
 def _restore(package, source: Path, tmp_path: Path):
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     recovery = package.write_recovery(tmp_path / "recovery")
     return Package.restore_from_recovery(recovery, source)
@@ -145,7 +145,7 @@ def test_a_restore_without_the_original_says_which_files_are_missing(
     recovery = package.write_recovery(tmp_path / "recovery")
     source.unlink()
 
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     restored = Package.restore_from_recovery(recovery, source)
 
@@ -157,7 +157,7 @@ def test_a_restore_without_the_original_says_which_files_are_missing(
 def test_a_restore_with_the_original_has_no_missing_files(
     qapp: object, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     package, source = _open_package(tmp_path)
     recovery = package.write_recovery(tmp_path / "recovery")
@@ -170,7 +170,7 @@ def test_a_restore_with_the_original_has_no_missing_files(
 def test_a_restore_of_an_aasx_recovery_without_the_original_keeps_its_files(
     qapp: object, tmp_path: Path
 ) -> None:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     package, source = _open_package(tmp_path)
     files.create_text_file(
@@ -246,8 +246,8 @@ def test_a_recovery_that_an_older_version_wrote_is_still_restored(
     import base64
     import json
 
-    from aas_editor.package import EXTRA_FILES_SUFFIX
-    from aas_editor.package import Package
+    from aas_workingbench.package import EXTRA_FILES_SUFFIX
+    from aas_workingbench.package import Package
 
     _, source = _open_package(tmp_path)
     (tmp_path / "recovery").mkdir()
@@ -289,7 +289,7 @@ def test_the_recovery_files_are_deleted_together(
 def test_cleanup_keeps_the_extra_files_of_a_restored_recovery(
     qapp: object, tmp_path: Path
 ) -> None:
-    from aas_editor.utils.recovery import cleanup_recovery_dir
+    from aas_workingbench.utils.recovery import cleanup_recovery_dir
 
     package, _ = _package_that_only_json_can_recover(tmp_path)
     recovery_dir = tmp_path / "recovery"

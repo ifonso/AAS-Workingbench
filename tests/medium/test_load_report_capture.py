@@ -27,9 +27,9 @@ from tests.package_factories import SECOND_PART
 from tests.package_factories import SHARED_ID
 from tests.package_factories import write_package_with_same_id_in_two_parts
 
-from aas_editor.domain.load_report import Outcome
-from aas_editor.domain.load_report import Scope
-from aas_editor.infrastructure.package_io import read_package
+from aas_workingbench.domain.load_report import Outcome
+from aas_workingbench.domain.load_report import Scope
+from aas_workingbench.infrastructure.package_io import read_package
 
 
 def _xml_with_equal_property_names(path: Path) -> Path:

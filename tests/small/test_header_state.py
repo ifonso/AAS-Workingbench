@@ -1,7 +1,7 @@
 """A saved header state is restored only for the layout it was made for."""
 
-from aas_editor.application.header_state import NO_VERSION
-from aas_editor.application.header_state import restorable_state
+from aas_workingbench.application.header_state import NO_VERSION
+from aas_workingbench.application.header_state import restorable_state
 
 STATE = b"columns the user dragged"
 

@@ -28,9 +28,9 @@ def add_item(group: Any) -> Any:
 
 def make_concept(author: Author) -> model.ConceptDescription:
     """Makes an IEC 61360 concept description with a value list."""
-    from aas_editor.dialogs import EditObjDialog
-    from aas_editor.ui.iec61360_dialog import Iec61360Dialog
-    from aas_editor.ui.value_list_dialog import ValueListImportDialog
+    from aas_workingbench.dialogs import EditObjDialog
+    from aas_workingbench.ui.iec61360_dialog import Iec61360Dialog
+    from aas_workingbench.ui.value_list_dialog import ValueListImportDialog
 
     author.select_path("concept_descriptions")
 
@@ -70,8 +70,8 @@ def make_concept(author: Author) -> model.ConceptDescription:
 
 def make_shell(author: Author) -> model.AssetAdministrationShell:
     """Makes an AAS with asset information and two specific asset ids."""
-    from aas_editor.ui.create_dialogs import CreateShellDialog
-    from aas_editor.ui.create_dialogs import SpecificAssetIdDialog
+    from aas_workingbench.ui.create_dialogs import CreateShellDialog
+    from aas_workingbench.ui.create_dialogs import SpecificAssetIdDialog
 
     def fill(dialog: Any) -> None:
         dialog.id_edit.setText(SHELL_ID)
@@ -105,7 +105,7 @@ def make_submodel(
     author: Author, id_short: str, id_: str, kind: model.ModellingKind
 ) -> model.Submodel:
     """Makes a submodel that the shell Pump refers to."""
-    from aas_editor.ui.create_dialogs import CreateSubmodelDialog
+    from aas_workingbench.ui.create_dialogs import CreateSubmodelDialog
 
     def fill(dialog: Any) -> None:
         dialog.kind_box.setCurrentIndex(dialog.kind_box.findData(kind))
@@ -213,7 +213,7 @@ def reopened(author: Author, folder: Path) -> str:
     """Writes the package, reads the file anew, and snapshots what it holds."""
     from tests.serialization import snapshot
 
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     path = folder / "reopened.aasx"
     author.package.write(path)

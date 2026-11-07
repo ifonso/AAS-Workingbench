@@ -10,15 +10,15 @@ import pytest
 from tests.factories import make_property
 from tests.serialization import snapshot
 
-from aas_editor.application.editing import edit_mode
+from aas_workingbench.application.editing import edit_mode
 
 CLIPBOARD_KIND = "ConceptQualifier"
 
 
 @pytest.fixture
 def pasting(lab_class, monkeypatch: pytest.MonkeyPatch):
-    from aas_editor.ui import bulk_dialogs
-    from aas_editor.ui.preset_actions import register_preset_actions
+    from aas_workingbench.ui import bulk_dialogs
+    from aas_workingbench.ui.preset_actions import register_preset_actions
 
     register_preset_actions()
     prop = make_property("Element")

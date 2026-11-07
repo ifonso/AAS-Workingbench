@@ -2,8 +2,8 @@
 
 import pytest
 
-from aas_editor.domain import part_names
-from aas_editor.domain.part_names import InvalidPartNameError
+from aas_workingbench.domain import part_names
+from aas_workingbench.domain.part_names import InvalidPartNameError
 
 
 @pytest.mark.parametrize(

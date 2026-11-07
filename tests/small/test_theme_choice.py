@@ -2,13 +2,13 @@
 
 import pytest
 
-from aas_editor.application.theme_choice import DEFAULT_THEME
-from aas_editor.application.theme_choice import THEME_DARK
-from aas_editor.application.theme_choice import THEME_LABELS
-from aas_editor.application.theme_choice import THEME_LIGHT
-from aas_editor.application.theme_choice import THEME_NATIVE
-from aas_editor.application.theme_choice import THEME_SYSTEM
-from aas_editor.application.theme_choice import theme_from_saved
+from aas_workingbench.application.theme_choice import DEFAULT_THEME
+from aas_workingbench.application.theme_choice import THEME_DARK
+from aas_workingbench.application.theme_choice import THEME_LABELS
+from aas_workingbench.application.theme_choice import THEME_LIGHT
+from aas_workingbench.application.theme_choice import THEME_NATIVE
+from aas_workingbench.application.theme_choice import THEME_SYSTEM
+from aas_workingbench.application.theme_choice import theme_from_saved
 
 
 def test_the_list_reads_follow_system_light_dark_native() -> None:

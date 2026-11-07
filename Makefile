@@ -21,7 +21,7 @@ install:
 	uv sync --locked
 
 run:
-	uv run python -m aas_editor
+	uv run python -m aas_workingbench
 
 format:
 	uv run ruff format
@@ -56,4 +56,4 @@ coverage:
 check: format-check lint typecheck test
 
 build:
-	uv run --group build pyinstaller --noconfirm aas_manager.spec
+	uv run --group build pyinstaller --noconfirm aas_workingbench.spec

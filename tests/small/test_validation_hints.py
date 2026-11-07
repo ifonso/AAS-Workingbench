@@ -13,22 +13,24 @@ from tests.factories import make_store
 from tests.factories import make_valid_environment
 from tests.validation_factories import store_with
 
-from aas_editor.domain.validation import ALL_RULES
-from aas_editor.domain.validation import HINT_RULES
-from aas_editor.domain.validation import RULE_FAILED
-from aas_editor.domain.validation import Finding
-from aas_editor.domain.validation import Rule
-from aas_editor.domain.validation import Severity
-from aas_editor.domain.validation import validate
-from aas_editor.domain.validation.context import ValidationContext
-from aas_editor.domain.validation.field_checks import copy_name_problem
-from aas_editor.domain.validation.field_checks import (
+from aas_workingbench.domain.validation import ALL_RULES
+from aas_workingbench.domain.validation import HINT_RULES
+from aas_workingbench.domain.validation import RULE_FAILED
+from aas_workingbench.domain.validation import Finding
+from aas_workingbench.domain.validation import Rule
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.domain.validation import validate
+from aas_workingbench.domain.validation.context import ValidationContext
+from aas_workingbench.domain.validation.field_checks import copy_name_problem
+from aas_workingbench.domain.validation.field_checks import (
     entity_global_asset_id_problem,
 )
-from aas_editor.domain.validation.field_checks import field_problem
-from aas_editor.domain.validation.field_checks import global_asset_id_problem
-from aas_editor.domain.validation.field_checks import id_short_problem
-from aas_editor.domain.validation.field_checks import key_value_problem
+from aas_workingbench.domain.validation.field_checks import field_problem
+from aas_workingbench.domain.validation.field_checks import (
+    global_asset_id_problem,
+)
+from aas_workingbench.domain.validation.field_checks import id_short_problem
+from aas_workingbench.domain.validation.field_checks import key_value_problem
 
 
 def _hints(objects: model.SetIdentifiableStore) -> dict[str, int]:

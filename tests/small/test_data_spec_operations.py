@@ -6,23 +6,31 @@ from tests.factories import make_external_reference
 from tests.factories import make_store
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.commands import ReadOnlyError
-from aas_editor.application.operations.data_specs import add_record_commands
-from aas_editor.application.operations.data_specs import clear_empty_commands
-from aas_editor.application.operations.data_specs import fix_keys_commands
-from aas_editor.application.operations.data_specs import iec_records
-from aas_editor.application.operations.data_specs import import_commands
-from aas_editor.application.operations.data_specs import plan_fix_keys
-from aas_editor.application.operations.data_specs import plan_value_list_import
-from aas_editor.application.operations.data_specs import set_content_commands
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
-from aas_editor.domain.data_specifications import Iec61360Draft
-from aas_editor.domain.data_specifications import TemplateMatch
-from aas_editor.domain.data_specifications import build_content
-from aas_editor.domain.data_specifications import build_record
-from aas_editor.domain.data_specifications import match_template
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.commands import ReadOnlyError
+from aas_workingbench.application.operations.data_specs import (
+    add_record_commands,
+)
+from aas_workingbench.application.operations.data_specs import (
+    clear_empty_commands,
+)
+from aas_workingbench.application.operations.data_specs import fix_keys_commands
+from aas_workingbench.application.operations.data_specs import iec_records
+from aas_workingbench.application.operations.data_specs import import_commands
+from aas_workingbench.application.operations.data_specs import plan_fix_keys
+from aas_workingbench.application.operations.data_specs import (
+    plan_value_list_import,
+)
+from aas_workingbench.application.operations.data_specs import (
+    set_content_commands,
+)
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.domain.data_specifications import Iec61360Draft
+from aas_workingbench.domain.data_specifications import TemplateMatch
+from aas_workingbench.domain.data_specifications import build_content
+from aas_workingbench.domain.data_specifications import build_record
+from aas_workingbench.domain.data_specifications import match_template
 
 
 @pytest.fixture

@@ -10,21 +10,21 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.commands import ReadOnlyError
-from aas_editor.application.operations.concepts import CreatePlan
-from aas_editor.application.operations.concepts import assign_commands
-from aas_editor.application.operations.concepts import create_commands
-from aas_editor.application.operations.concepts import from_pairs_commands
-from aas_editor.application.operations.concepts import plan_assign
-from aas_editor.application.operations.concepts import plan_create
-from aas_editor.application.operations.concepts import plan_detect
-from aas_editor.application.operations.concepts import plan_from_pairs
-from aas_editor.application.operations.concepts import plan_invalid
-from aas_editor.application.operations.concepts import value_pairs_of
-from aas_editor.domain.concepts import holders_of
-from aas_editor.domain.data_specifications import iec_content_of
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.commands import ReadOnlyError
+from aas_workingbench.application.operations.concepts import CreatePlan
+from aas_workingbench.application.operations.concepts import assign_commands
+from aas_workingbench.application.operations.concepts import create_commands
+from aas_workingbench.application.operations.concepts import from_pairs_commands
+from aas_workingbench.application.operations.concepts import plan_assign
+from aas_workingbench.application.operations.concepts import plan_create
+from aas_workingbench.application.operations.concepts import plan_detect
+from aas_workingbench.application.operations.concepts import plan_from_pairs
+from aas_workingbench.application.operations.concepts import plan_invalid
+from aas_workingbench.application.operations.concepts import value_pairs_of
+from aas_workingbench.domain.concepts import holders_of
+from aas_workingbench.domain.data_specifications import iec_content_of
 
 
 @pytest.fixture

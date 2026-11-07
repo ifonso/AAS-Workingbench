@@ -5,12 +5,12 @@ from basyx.aas.model import datatypes
 import pytest
 from pytestqt.qtbot import QtBot
 
-from aas_editor.domain.value_types import InvalidValueError
+from aas_workingbench.domain.value_types import InvalidValueError
 
 
 @pytest.fixture
 def bytes_edit(qapp: object, qtbot: QtBot):
-    from aas_editor.widgets.editWidgets import BytesEdit
+    from aas_workingbench.widgets.editWidgets import BytesEdit
 
     widget = BytesEdit()
     qtbot.addWidget(widget)
@@ -64,8 +64,8 @@ def test_bytes_edit_refuses_hex_that_is_no_bytes(bytes_edit) -> None:
 def test_the_dialog_for_bytes_uses_the_binary_editor(
     qapp: object, qtbot: QtBot
 ) -> None:
-    from aas_editor.widgets.editWidgets import BytesEdit
-    from aas_editor.widgets.editWidgets import SpecialInputWidget
+    from aas_workingbench.widgets.editWidgets import BytesEdit
+    from aas_workingbench.widgets.editWidgets import SpecialInputWidget
 
     widget = SpecialInputWidget(bytes, objVal=b"hello")
     qtbot.addWidget(widget)
@@ -80,8 +80,8 @@ def test_the_dialog_for_bytes_uses_the_binary_editor(
 def test_the_widget_for_a_value_type_lists_the_xsd_types(
     qapp: object, qtbot: QtBot
 ) -> None:
-    from aas_editor.widgets.editWidgets import ValueTypeInputWidget
-    from aas_editor.widgets.widgetUtil import InputWidgetUtil
+    from aas_workingbench.widgets.editWidgets import ValueTypeInputWidget
+    from aas_workingbench.widgets.widgetUtil import InputWidgetUtil
 
     widget = InputWidgetUtil.getInputWidget(
         base.DataTypeDefXsd, objVal=datatypes.Int

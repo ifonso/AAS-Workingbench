@@ -17,10 +17,10 @@ from tests.factories import make_file_element
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import SetAttribute
-from aas_editor.domain.validation import Severity
-from aas_editor.ui.validation_service import service_for
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.ui.validation_service import service_for
 
 DISPLAY = Qt.ItemDataRole.DisplayRole
 
@@ -36,7 +36,7 @@ def _dangling(name: str, target: str) -> model.ReferenceElement:
 
 @pytest.fixture
 def make_dock(qapp: object, qtbot: QtBot):
-    from aas_editor.ui.validation_dock import ValidationDock
+    from aas_workingbench.ui.validation_dock import ValidationDock
 
     def make() -> ValidationDock:
         dock = ValidationDock()
@@ -345,7 +345,7 @@ def test_double_click_gives_the_finding_of_the_filtered_row(
 @pytest.fixture
 def window(qtbot: QtBot, views):
     """A window with the package tree, and the dock connected to it."""
-    from aas_editor.ui.validation_window import install_validation
+    from aas_workingbench.ui.validation_window import install_validation
 
     shown = views()
     main = QMainWindow()
@@ -366,7 +366,7 @@ def window(qtbot: QtBot, views):
 def test_double_click_selects_the_element_in_the_package_tree(
     window,
 ) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     error = make_property("X", "1")
     package = window.views_.open_package(make_submodel(elements=[error]))
@@ -383,7 +383,7 @@ def test_double_click_selects_the_element_in_the_package_tree(
 def test_double_click_on_a_package_finding_selects_the_package(
     window,
 ) -> None:
-    from aas_editor.settings.app_settings import PACKAGE_ROLE
+    from aas_workingbench.settings.app_settings import PACKAGE_ROLE
 
     submodel = make_submodel(elements=[make_file_element("Manual", "/a/b.pdf")])
     package = window.views_.open_package(submodel)

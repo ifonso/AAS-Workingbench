@@ -11,10 +11,12 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.copy_shell import copy_shell_commands
-from aas_editor.application.operations.copy_shell import plan_copy_shell
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.copy_shell import (
+    copy_shell_commands,
+)
+from aas_workingbench.application.operations.copy_shell import plan_copy_shell
 
 
 class _Owner:

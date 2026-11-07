@@ -11,7 +11,7 @@ from tests.factories import make_submodel
 @pytest.fixture
 def registry(qapp: object) -> Iterator[object]:
     """Gives the default registry back in the state it had."""
-    from aas_editor.ui.actions import default_registry
+    from aas_workingbench.ui.actions import default_registry
 
     registered: list[str] = []
     yield registered
@@ -20,12 +20,12 @@ def registry(qapp: object) -> Iterator[object]:
 
 
 def _register(registry, **overrides):
-    from aas_editor.application.edits import SetAttribute
-    from aas_editor.application.changes import observer_for
-    from aas_editor.settings.app_settings import OBJECT_ROLE
-    from aas_editor.ui.actions import ActionContext
-    from aas_editor.ui.actions import ActionSpec
-    from aas_editor.ui.actions import register_action
+    from aas_workingbench.application.edits import SetAttribute
+    from aas_workingbench.application.changes import observer_for
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.ui.actions import ActionContext
+    from aas_workingbench.ui.actions import ActionSpec
+    from aas_workingbench.ui.actions import register_action
 
     def tag(context: ActionContext) -> None:
         element = context.index.data(OBJECT_ROLE)
@@ -77,7 +77,7 @@ def test_registered_action_is_in_the_context_menu_of_a_detail_view(
 def test_action_for_the_package_tree_is_not_in_a_detail_view(
     views, registry
 ) -> None:
-    from aas_editor.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import ViewKind
 
     _register(registry, views=ViewKind.PACKAGES)
     shown = views()
@@ -125,7 +125,7 @@ def test_action_follows_its_enable_rule(views, registry) -> None:
 def test_action_that_changes_packages_is_disabled_in_read_mode(
     views, registry
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     _register(registry)
     shown = views()
@@ -143,7 +143,7 @@ def test_action_that_changes_packages_is_disabled_in_read_mode(
 def test_action_that_only_reads_stays_enabled_in_read_mode(
     views, registry
 ) -> None:
-    from aas_editor.application.editing import edit_mode
+    from aas_workingbench.application.editing import edit_mode
 
     _register(registry, action_id="test.look", mutates=False)
     shown = views()
@@ -199,8 +199,8 @@ def test_actions_are_grouped_by_the_section_of_their_id(
     _register(registry, action_id="structure.sample", order=500)
     _register(registry, action_id="unknown.sample", order=0)
 
-    from aas_editor.ui.actions import ViewKind
-    from aas_editor.ui.actions import default_registry
+    from aas_workingbench.ui.actions import ViewKind
+    from aas_workingbench.ui.actions import default_registry
 
     views()
 

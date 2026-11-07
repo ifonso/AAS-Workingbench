@@ -63,7 +63,7 @@ def author(
     from tests.authoring import Author
     from tests.authoring import register_every_action
 
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     register_every_action()
     # A window with changes asks whether to save when it closes, and waits.
@@ -75,7 +75,7 @@ def author(
     # A tab of a File or a Blob opens a preview in a Qt WebEngine view. Its
     # renderer crashes the process when it exits, so offscreen the tab keeps
     # the preview closed. The preview is not under test.
-    from aas_editor.widgets.tab import TabWithTreeView
+    from aas_workingbench.widgets.tab import TabWithTreeView
 
     monkeypatch.setattr(
         TabWithTreeView,

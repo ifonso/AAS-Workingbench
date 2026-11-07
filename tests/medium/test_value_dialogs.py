@@ -370,10 +370,10 @@ class TestCells:
     def test_a_cell_of_the_package_tree_takes_text_for_the_type(
         self, lab_class
     ) -> None:
-        from aas_editor.settings.app_settings import (
+        from aas_workingbench.settings.app_settings import (
             DEFAULT_COLUMNS_IN_PACKS_TABLE,
         )
-        from aas_editor.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
+        from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
 
         lab = lab_class(_property(datatypes.Int, 3))
         view = lab.shown.view
@@ -445,7 +445,7 @@ class TestListChildren:
     def test_the_tree_shows_the_type_of_a_child_that_has_no_id_short(
         self, lab_class
     ) -> None:
-        from aas_editor.settings.app_settings import NAME_ROLE
+        from aas_workingbench.settings.app_settings import NAME_ROLE
 
         numbers = model.SubmodelElementList(
             ELEMENT_ID,
@@ -488,7 +488,7 @@ class TestListChildren:
     def test_a_new_list_offers_only_types_that_can_be_made(
         self, qapp, qtbot
     ) -> None:
-        from aas_editor.dialogs import EditObjDialog
+        from aas_workingbench.dialogs import EditObjDialog
 
         with_dialog = EditObjDialog(
             model.SubmodelElement, parent=None, rmDefParams=False

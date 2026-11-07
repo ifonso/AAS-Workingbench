@@ -9,7 +9,7 @@ from basyx.aas.model import (
     Submodel,
 )
 
-from aas_editor.package import Package, StoredFile
+from aas_workingbench.package import Package, StoredFile
 
 
 # ---------------------------------------------------------------------------

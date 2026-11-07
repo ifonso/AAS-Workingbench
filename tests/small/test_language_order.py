@@ -4,15 +4,19 @@ from basyx.aas import model
 import pytest
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.language_order import can_move_languages
-from aas_editor.application.operations.language_order import (
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.language_order import (
+    can_move_languages,
+)
+from aas_workingbench.application.operations.language_order import (
     language_move_command,
 )
-from aas_editor.application.operations.language_order import plan_language_move
-from aas_editor.application.operations.move import MoveKind
-from aas_editor.domain import containers
+from aas_workingbench.application.operations.language_order import (
+    plan_language_move,
+)
+from aas_workingbench.application.operations.move import MoveKind
+from aas_workingbench.domain import containers
 
 
 def _texts() -> model.MultiLanguageTextType:

@@ -17,14 +17,14 @@ from pytestqt.qtbot import QtBot
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import SetAttribute
-from aas_editor.application.hints import hints_mode
-from aas_editor.domain.validation import Severity
-from aas_editor.settings.app_settings import OBJECT_ROLE
-from aas_editor.ui import validation_service
-from aas_editor.ui.validation_service import ValidationService
-from aas_editor.ui.validation_service import service_for
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.application.hints import hints_mode
+from aas_workingbench.domain.validation import Severity
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.ui import validation_service
+from aas_workingbench.ui.validation_service import ValidationService
+from aas_workingbench.ui.validation_service import service_for
 
 
 def _dangling(name: str, target: str) -> model.ReferenceElement:
@@ -39,7 +39,7 @@ def _dangling(name: str, target: str) -> model.ReferenceElement:
 @pytest.fixture
 def window(qtbot: QtBot, views):
     """A window with the package tree and the validation controller."""
-    from aas_editor.ui.validation_window import install_validation
+    from aas_workingbench.ui.validation_window import install_validation
 
     shown = views()
     main = QMainWindow()
@@ -180,7 +180,7 @@ def test_hints_mode_does_not_fail_in_a_window_that_was_deleted(
 ) -> None:
     from PyQt6 import sip
 
-    from aas_editor.ui.validation_window import install_validation
+    from aas_workingbench.ui.validation_window import install_validation
 
     shown = views()
     main = QMainWindow()
@@ -270,7 +270,7 @@ def test_the_wait_after_a_change_grows_with_the_cost_of_a_run(
     seconds: float,
     wait_at_least: int,
 ) -> None:
-    from aas_editor.domain.validation import ValidationReport
+    from aas_workingbench.domain.validation import ValidationReport
 
     def slow(source: object, with_hints: bool = False) -> ValidationReport:
         time.sleep(seconds)
@@ -454,7 +454,7 @@ def test_reveal_knows_a_finding_again_after_a_new_run(window) -> None:
 
 
 def test_reveal_refuses_a_finding_that_is_not_in_the_report(window) -> None:
-    from aas_editor.domain.validation import Finding
+    from aas_workingbench.domain.validation import Finding
 
     _two_problems(window)
     other = make_property("Elsewhere")
@@ -469,7 +469,7 @@ def test_reveal_refuses_a_finding_that_is_not_in_the_report(window) -> None:
 
 @pytest.fixture
 def bar(qapp: object, qtbot: QtBot):
-    from aas_editor.ui.hints_bar import HintsBar
+    from aas_workingbench.ui.hints_bar import HintsBar
 
     widget = HintsBar()
     qtbot.addWidget(widget)
@@ -488,7 +488,7 @@ def test_a_bar_with_an_error_links_to_it(bar, window) -> None:
 def test_a_click_on_the_bar_opens_the_finding_in_the_panel(
     bar, window, qtbot: QtBot
 ) -> None:
-    from aas_editor.ui.hints_bar import finding_links
+    from aas_workingbench.ui.hints_bar import finding_links
 
     error = make_property("X", "1")
     package = window.open(error)
@@ -568,8 +568,8 @@ def test_the_tooltip_of_a_hints_only_bar_has_no_click_to_open(
 
 
 def test_the_line_for_the_rest_does_not_send_users_to_the_panel() -> None:
-    from aas_editor.domain.validation import Finding
-    from aas_editor.ui.hints_bar import hint_lines
+    from aas_workingbench.domain.validation import Finding
+    from aas_workingbench.ui.hints_bar import hint_lines
 
     element = make_property("Pump")
     findings = tuple(
@@ -590,7 +590,7 @@ def test_the_line_for_the_rest_does_not_send_users_to_the_panel() -> None:
 def test_every_header_of_the_panel_fits_in_a_narrow_dock(
     window, qtbot: QtBot
 ) -> None:
-    from aas_editor.ui.validation_dock import COLUMNS
+    from aas_workingbench.ui.validation_dock import COLUMNS
 
     _two_problems(window)
     window.dock.setFloating(True)

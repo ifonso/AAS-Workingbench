@@ -7,13 +7,13 @@ from basyx.aas import model
 import pytest
 from tests.factories import make_external_reference
 
-from aas_editor.domain.member_json import MemberKind
-from aas_editor.domain.presets import MAX_ENTRIES
-from aas_editor.domain.presets import MAX_FILE_CHARS
-from aas_editor.domain.presets import Preset
-from aas_editor.domain.presets import PresetValueError
-from aas_editor.domain.presets import merge_presets
-from aas_editor.domain.presets import parse_presets
+from aas_workingbench.domain.member_json import MemberKind
+from aas_workingbench.domain.presets import MAX_ENTRIES
+from aas_workingbench.domain.presets import MAX_FILE_CHARS
+from aas_workingbench.domain.presets import Preset
+from aas_workingbench.domain.presets import PresetValueError
+from aas_workingbench.domain.presets import merge_presets
+from aas_workingbench.domain.presets import parse_presets
 
 QUALIFIER = {
     "name": "Cardinality = One",

@@ -15,8 +15,8 @@ from tests.factories import make_submodel
 from tests.medium.concept_lab import CONCEPTS
 from tests.medium.concept_lab import build_lab_class
 
-from aas_editor.application.editing import edit_mode
-from aas_editor.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.application.editing import edit_mode
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
 ACTION = "concepts.create_empty"
 SUBMODEL = ("submodels", "Submodel")

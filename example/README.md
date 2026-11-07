@@ -38,11 +38,11 @@ There is no template for capabilities in the bundle, so the capabilities are mod
 Start the editor and open the file from the File menu, or give it on the command line:
 
 ```sh
-uv run python -m aas_editor example/robot_arm_pick_and_place.aasx
+uv run python -m aas_workingbench example/robot_arm_pick_and_place.aasx
 ```
 
-Running the editor rewrites the tracked file `src/aas_editor/settings/settings.ini`.
-Discard that change with `git checkout -- src/aas_editor/settings/settings.ini`.
+Running the editor rewrites the tracked file `src/aas_workingbench/settings/settings.ini`.
+Discard that change with `git checkout -- src/aas_workingbench/settings/settings.ini`.
 
 ## Rebuild it
 

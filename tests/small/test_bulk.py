@@ -9,13 +9,13 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.serialization import snapshot
 
-from aas_editor.application.changes import observer_for
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.operations.bulk import RemovableAttribute
-from aas_editor.application.operations.bulk import available_attributes
-from aas_editor.application.operations.bulk import plan_remove_attributes
-from aas_editor.application.operations.bulk import removal_commands
-from aas_editor.domain.walking import descendants
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.operations.bulk import RemovableAttribute
+from aas_workingbench.application.operations.bulk import available_attributes
+from aas_workingbench.application.operations.bulk import plan_remove_attributes
+from aas_workingbench.application.operations.bulk import removal_commands
+from aas_workingbench.domain.walking import descendants
 
 
 class _Owner:

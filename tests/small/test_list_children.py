@@ -4,7 +4,7 @@ from basyx.aas import model
 from basyx.aas.model import datatypes
 from tests.factories import make_external_reference
 
-from aas_editor.domain.list_children import child_defaults
+from aas_workingbench.domain.list_children import child_defaults
 
 
 def test_child_defaults_follow_the_list_of_properties() -> None:

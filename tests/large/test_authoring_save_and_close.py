@@ -35,7 +35,7 @@ def _add_property(author: Author, name: str) -> None:
 
 
 def _stored(path: Path) -> str:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     return snapshot(Package(path).objStore)
 

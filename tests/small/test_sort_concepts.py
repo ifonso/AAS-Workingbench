@@ -9,17 +9,19 @@ from tests.factories import make_shell
 from tests.factories import make_store
 from tests.factories import make_submodel
 
-from aas_editor.application.changes import ModelChangeObserver
-from aas_editor.application.commands import CommandStack
-from aas_editor.application.edits import AddMember
-from aas_editor.application.edits import RemoveMember
-from aas_editor.application.operations.sort_concepts import NOTHING_TO_SORT
-from aas_editor.application.operations.sort_concepts import SortRefused
-from aas_editor.application.operations.sort_concepts import plan_sort
-from aas_editor.application.operations.sort_concepts import sort_command
-from aas_editor.domain.concept_order import CANNOT_SORT
-from aas_editor.domain.concept_order import ConceptOrder
-from aas_editor.domain.ordered_store import OrderedIdentifiableStore
+from aas_workingbench.application.changes import ModelChangeObserver
+from aas_workingbench.application.commands import CommandStack
+from aas_workingbench.application.edits import AddMember
+from aas_workingbench.application.edits import RemoveMember
+from aas_workingbench.application.operations.sort_concepts import (
+    NOTHING_TO_SORT,
+)
+from aas_workingbench.application.operations.sort_concepts import SortRefused
+from aas_workingbench.application.operations.sort_concepts import plan_sort
+from aas_workingbench.application.operations.sort_concepts import sort_command
+from aas_workingbench.domain.concept_order import CANNOT_SORT
+from aas_workingbench.domain.concept_order import ConceptOrder
+from aas_workingbench.domain.ordered_store import OrderedIdentifiableStore
 
 
 def _store() -> OrderedIdentifiableStore:

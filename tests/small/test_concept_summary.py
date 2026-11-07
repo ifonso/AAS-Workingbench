@@ -5,10 +5,10 @@ from tests.factories import make_concept_description
 from tests.factories import make_external_reference
 from tests.factories import make_samm_concept
 
-from aas_editor.domain.concept_summary import MAX_PAIRS
-from aas_editor.domain.concept_summary import NOT_FOUND
-from aas_editor.domain.concept_summary import summarize
-from aas_editor.domain.data_specifications import IEC_61360_TEMPLATE_KEY
+from aas_workingbench.domain.concept_summary import MAX_PAIRS
+from aas_workingbench.domain.concept_summary import NOT_FOUND
+from aas_workingbench.domain.concept_summary import summarize
+from aas_workingbench.domain.data_specifications import IEC_61360_TEMPLATE_KEY
 
 
 def _record(**kwargs: object) -> model.EmbeddedDataSpecification:

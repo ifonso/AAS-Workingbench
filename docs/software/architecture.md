@@ -7,11 +7,12 @@ This page describes the code as it is today, and the structure that new code sho
 
 ```text
 .
-├── src/aas_editor/        # application package
+├── src/aas_workingbench/        # application package
 ├── tests/                 # tests, organized by size
 ├── docs/                  # this documentation
 ├── aas_test_engines/      # data files bundled into frozen builds
-├── aas_manager.spec       # PyInstaller build definition
+├── aas_workingbench.spec  # PyInstaller build definition
+├── packaging/             # how to build the release files, and the AppImage files
 ├── Makefile               # development tasks
 ├── pyproject.toml         # metadata, dependencies, tool configuration
 ├── uv.lock                # exact dependency versions
@@ -60,7 +61,7 @@ This page describes the code as it is today, and the structure that new code sho
 | `pyproject.toml` is read at runtime for metadata. | A wheel would not run, so frozen builds must bundle this file. |
 | LLM and PDF dependencies are always installed. | Installs and builds are large, even for users who never open the Handover tool. |
 | Introspection logs hundreds of handled tracebacks when opening a package. | Real errors are hard to find in the log. |
-| `aas_editor` is a large module-level dependency web, with circular imports worked around at the end of `package.py`. | Import order is fragile. |
+| `aas_workingbench` is a large module-level dependency web, with circular imports worked around at the end of `package.py`. | Import order is fragile. |
 
 ## New layers in use
 
@@ -142,7 +143,7 @@ These modules exist today. Each layer is created by the first work package that 
 | `domain/presets.py` | `parse_presets` turns the text of a preset file into `Preset`s and `Problem`s without raising, `merge_presets` lets the user's presets replace the shipped ones. |
 | `domain/rename_pattern.py` | The pattern language of bulk changes: `compile_pattern`, `render`, `PatternContext`, and `PatternError` (see [Bulk editing](bulk-editing.md)). |
 | `infrastructure/submodel_templates.py` | Lists the 252 bundled submodel template files without reading them, and reads one when asked, once, in failsafe mode. The menu "Add existing submodel" of the package tree fills the menu of a file when it is first shown, so a window does not read them all at its start. Nothing changes what it read, and a paste copies the submodel. |
-| `infrastructure/preset_files.py` | Reads the shipped files (`aas_editor/presets/`) and the files of the user, and reports each unreadable file as a problem. |
+| `infrastructure/preset_files.py` | Reads the shipped files (`aas_workingbench/presets/`) and the files of the user, and reports each unreadable file as a problem. |
 | `application/operations/bulk_edit.py` | `plan_change_attribute` previews a pattern change of an idShort, description, display name, or value, and `change_commands` builds it. Also `group_extensions` and `remove_extension_commands`. |
 | `application/operations/bulk_move.py` | `plan_bulk_move` moves a selection in each of its containers, with one rewrite of the references through moved list items. |
 | `application/operations/attach.py` | `plan_attach` and `attach_commands` add a member to many owners and skip those that have it. |
@@ -216,10 +217,10 @@ infrastructure ──────┘
 
 | Layer | Package | Holds | May import |
 |---|---|---|---|
-| Domain | `aas_editor/domain/` | AAS rules and validation, without I/O | Standard library, BaSyx |
-| Application | `aas_editor/application/` | Use cases, such as "connect to a repository". Defines interfaces (`typing.Protocol`) for external systems. | Domain |
-| Infrastructure | `aas_editor/infrastructure/` | Implementations of those interfaces: file formats, HTTP clients, credential storage | Application, domain, external libraries |
-| UI | `aas_editor/ui/` | Qt widgets and models that call use cases | Application, domain |
+| Domain | `aas_workingbench/domain/` | AAS rules and validation, without I/O | Standard library, BaSyx |
+| Application | `aas_workingbench/application/` | Use cases, such as "connect to a repository". Defines interfaces (`typing.Protocol`) for external systems. | Domain |
+| Infrastructure | `aas_workingbench/infrastructure/` | Implementations of those interfaces: file formats, HTTP clients, credential storage | Application, domain, external libraries |
+| UI | `aas_workingbench/ui/` | Qt widgets and models that call use cases | Application, domain |
 
 `__main__.py` is the composition root, where implementations are connected to the use cases that need them.
 
@@ -315,11 +316,11 @@ A feature adds an action to the context menu of the tree views, and to the toolb
 Describe the action with an `ActionSpec` and register it when your module is imported:
 
 ```python
-from aas_editor.application.changes import observer_for
-from aas_editor.application.edits import SetAttribute
-from aas_editor.settings.app_settings import OBJECT_ROLE
-from aas_editor.ui.actions import ActionContext, ActionSpec, ViewKind
-from aas_editor.ui.actions import register_action
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.edits import SetAttribute
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
+from aas_workingbench.ui.actions import ActionContext, ActionSpec, ViewKind
+from aas_workingbench.ui.actions import register_action
 
 
 def mark_as_parameter(context: ActionContext) -> None:

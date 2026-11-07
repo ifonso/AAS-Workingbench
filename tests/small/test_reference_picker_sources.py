@@ -5,9 +5,9 @@ from tests.factories import make_concept_description
 from tests.factories import make_property
 from tests.factories import make_submodel
 
-from aas_editor.domain.reference_picker import PickerSource
-from aas_editor.domain.reference_picker import candidates
-from aas_editor.domain.reference_picker import candidates_in
+from aas_workingbench.domain.reference_picker import PickerSource
+from aas_workingbench.domain.reference_picker import candidates
+from aas_workingbench.domain.reference_picker import candidates_in
 
 
 def _sources() -> list[PickerSource]:

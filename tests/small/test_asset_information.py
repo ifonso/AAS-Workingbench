@@ -4,12 +4,12 @@ from basyx.aas import model
 import pytest
 from tests.factories import make_external_reference
 
-from aas_editor.domain.asset_information import ASSET_KINDS
-from aas_editor.domain.asset_information import AssetInformationError
-from aas_editor.domain.asset_information import build_asset_information
-from aas_editor.domain.asset_information import build_specific_asset_id
-from aas_editor.domain.asset_information import check_asset_ids
-from aas_editor.domain.asset_information import new_global_asset_id
+from aas_workingbench.domain.asset_information import ASSET_KINDS
+from aas_workingbench.domain.asset_information import AssetInformationError
+from aas_workingbench.domain.asset_information import build_asset_information
+from aas_workingbench.domain.asset_information import build_specific_asset_id
+from aas_workingbench.domain.asset_information import check_asset_ids
+from aas_workingbench.domain.asset_information import new_global_asset_id
 
 
 class TestSdkFacts:

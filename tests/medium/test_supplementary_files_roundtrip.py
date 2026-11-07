@@ -21,13 +21,13 @@ from tests.factories import make_store
 from tests.factories import make_submodel
 from tests.factories import write_aasx
 
-from aas_editor.application import supplementary_files as files
-from aas_editor.application.changes import observer_for
-from aas_editor.application.save import SaveOptions
-from aas_editor.application.save import SaveStatus
-from aas_editor.application.save import save
-from aas_editor.domain.walking import walk_elements
-from aas_editor.infrastructure.package_io import write_package
+from aas_workingbench.application import supplementary_files as files
+from aas_workingbench.application.changes import observer_for
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.application.save import SaveStatus
+from aas_workingbench.application.save import save
+from aas_workingbench.domain.walking import walk_elements
+from aas_workingbench.infrastructure.package_io import write_package
 
 DOCUMENT = "/aasx/files/document.pdf"
 NOTE = "/aasx/files/note.txt"
@@ -48,7 +48,7 @@ class State:
 
 
 def _state(path: Path) -> State:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     package = Package(path)
     stored = {
@@ -79,7 +79,7 @@ def _state(path: Path) -> State:
 @pytest.fixture
 def package(qapp: object, tmp_path: Path):
     """A package with a document, a note, an annotation file, a thumbnail."""
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     submodel = make_submodel(
         elements=[

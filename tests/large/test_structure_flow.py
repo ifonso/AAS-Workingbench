@@ -28,9 +28,9 @@ PACKAGE = TEST_DATA_DIR / "IDTA 02002-1-0_Template_ContactInformation.aasx"
 @pytest.fixture
 def editor(qapp: object, qtbot, tmp_path: Path) -> Iterator[SimpleNamespace]:
     """The main window with a copy of the package, and the structure actions."""
-    from aas_editor.editorApp import EditorApp
-    from aas_editor.ui.move_actions import register_move_actions
-    from aas_editor.ui.paste_actions import register_paste_actions
+    from aas_workingbench.editorApp import EditorApp
+    from aas_workingbench.ui.move_actions import register_move_actions
+    from aas_workingbench.ui.paste_actions import register_paste_actions
 
     register_move_actions()
     register_paste_actions()
@@ -54,7 +54,7 @@ def editor(qapp: object, qtbot, tmp_path: Path) -> Iterator[SimpleNamespace]:
 
 
 def _rows(view, parent: QModelIndex) -> list[str]:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     return [
@@ -64,7 +64,7 @@ def _rows(view, parent: QModelIndex) -> list[str]:
 
 
 def _find(view, parent: QModelIndex, name: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     for row in range(proxy.rowCount(parent)):
@@ -94,7 +94,7 @@ def _act(view, action_id: str) -> bool:
 def _saved_order(
     package, submodel_id: str, holder: str, directory: Path
 ) -> list[str]:
-    from aas_editor.package import Package
+    from aas_workingbench.package import Package
 
     path = directory / "flow_saved.aasx"
     package.write(path)

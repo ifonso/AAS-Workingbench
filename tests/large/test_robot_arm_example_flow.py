@@ -77,7 +77,7 @@ PICTURES = (
 @pytest.fixture
 def editor(qapp: object, qtbot: Any, tmp_path: Path) -> Iterator[Any]:
     """The main window with a copy of the example, so that nothing is saved."""
-    from aas_editor.editorApp import EditorApp
+    from aas_workingbench.editorApp import EditorApp
 
     source = tmp_path / PACKAGE.name
     shutil.copy(PACKAGE, source)
@@ -110,7 +110,7 @@ def _walk(
 
 
 def _path(view: Any, *names: str) -> QModelIndex:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = view.model()
     index = proxy.index(0, 0)
@@ -185,14 +185,14 @@ def _submodel_of(obj: object) -> str:
 
 
 def _is_concept_group(index: QModelIndex) -> bool:
-    from aas_editor.settings.app_settings import NAME_ROLE
+    from aas_workingbench.settings.app_settings import NAME_ROLE
 
     parent = index.parent()
     return parent.isValid() and parent.data(NAME_ROLE) == "concept_descriptions"
 
 
 def test_every_element_has_a_tab_that_reads_well(editor: Any) -> None:
-    from aas_editor.settings.app_settings import OBJECT_ROLE
+    from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
     problems: list[str] = []
     concepts = 0
@@ -261,7 +261,7 @@ def test_a_duration_reads_as_a_duration(editor: Any) -> None:
 def test_the_hints_are_only_on_what_the_templates_leave_unnamed(
     editor: Any,
 ) -> None:
-    from aas_editor.ui.validation_service import service_for
+    from aas_workingbench.ui.validation_service import service_for
 
     hints = service_for(editor.package).hint_report
     rules = {finding.rule_id for finding in hints.findings}

@@ -10,9 +10,9 @@ import zipfile
 import pytest
 from tests.conftest import TEST_DATA_DIR
 
-from aas_editor.application.save import SaveOptions
-from aas_editor.infrastructure.package_io import read_package
-from aas_editor.infrastructure.package_io import write_package
+from aas_workingbench.application.save import SaveOptions
+from aas_workingbench.infrastructure.package_io import read_package
+from aas_workingbench.infrastructure.package_io import write_package
 
 OLD = b"http://www.admin-shell.io/aasx/relationships/"
 NEW = b"http://admin-shell.io/aasx/relationships/"
