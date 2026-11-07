@@ -12,8 +12,8 @@ The checks follow the editor plan:
   an annotation, which the SDK skips when it writes, and a partial package
   that would overwrite its own source (D6).
 * Content that a save drops is a warning, and the user may save anyway (D7):
-  stored files that nothing refers to, and everything that only an AASX holds
-  when the target is JSON or XML.
+  everything that only an AASX holds when the target is JSON or XML. An AASX
+  save drops no stored file, also when nothing refers to it (ADR 0030).
 """
 
 from collections.abc import Callable
@@ -30,7 +30,6 @@ from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 
 from aas_editor.domain.file_references import file_references
 from aas_editor.domain.file_references import missing_files
-from aas_editor.domain.file_references import unreferenced_files
 from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import Thumbnail
@@ -164,7 +163,7 @@ class SaveIssue:
 
 # Issue codes that the dialogs offer a repair for.
 DANGLING_FILES = "dangling_files"
-UNREFERENCED_FILES = "unreferenced_files"
+FILES_NOT_WRITTEN = "files_not_written"
 LOAD_REPORT = "load_report"
 
 
@@ -282,16 +281,8 @@ def check_save(
                     DANGLING_FILES,
                 )
             )
-        unreferenced = unreferenced_files(references, stored_files)
-        if unreferenced:
-            warnings.append(
-                SaveIssue(
-                    "These files are in the package, but no File element or "
-                    "thumbnail refers to them. They are not saved.",
-                    _listed(unreferenced),
-                    UNREFERENCED_FILES,
-                )
-            )
+        # Every stored file is written, also when nothing refers to it
+        # (ADR 0030), so an AASX save drops no file.
     else:
         if stored_files:
             warnings.append(
@@ -299,6 +290,7 @@ def check_save(
                     f"{target_format.value.upper()} files cannot hold "
                     "supplementary files. These files are not saved.",
                     _listed(stored_files),
+                    FILES_NOT_WRITTEN,
                 )
             )
         dropped = [

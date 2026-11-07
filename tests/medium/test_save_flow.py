@@ -242,41 +242,42 @@ def _package_with_unreferenced_file(tmp_path: Path):
     return package
 
 
-def test_save_asks_before_it_drops_files_that_nothing_refers_to(
+def test_save_asks_before_it_drops_the_files_when_it_writes_json(
     view_support, tmp_path: Path
 ) -> None:
     package = _package_with_unreferenced_file(tmp_path)
     view = view_support.open_package(package)
     view_support.shown_dialogs.accept = False
 
-    saved = view.savePack(package)
+    saved = view.savePack(package, (tmp_path / "files.json").as_posix())
 
     assert saved is False
     assert view_support.shown_dialogs.shown == [
         (
             "Save package",
             [
-                "These files are in the package, but no File element or "
-                "thumbnail refers to them. They are not saved.",
+                "JSON files cannot hold supplementary files. These files "
+                "are not saved.",
                 f"    {DOCUMENT_PART}",
             ],
         )
     ]
 
 
-def test_save_drops_files_when_user_confirms(
+def test_save_to_aasx_keeps_files_that_nothing_refers_to_without_asking(
     view_support, tmp_path: Path
 ) -> None:
     from aas_editor.package import Package
 
     package = _package_with_unreferenced_file(tmp_path)
     view = view_support.open_package(package)
-    view_support.shown_dialogs.accept = True
+    view_support.shown_dialogs.accept = False
 
     saved = view.savePack(package)
 
     assert saved is True
-    assert list(Package(tmp_path / "files.aasx").fileStore) == []
+    assert view_support.shown_dialogs.shown == []
+    assert list(Package(tmp_path / "files.aasx").fileStore) == [DOCUMENT_PART]
 
 
 # ---------------------------------------------------------------------------
@@ -534,18 +535,18 @@ def test_a_refused_save_without_a_file_problem_has_no_repair_button(
     assert buttons == [None]
 
 
-def test_the_warning_about_unreferenced_files_offers_to_show_the_files(
+def test_the_warning_about_files_not_written_offers_to_show_the_files(
     qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from aas_editor.application.save import FILES_NOT_WRITTEN
     from aas_editor.application.save import SaveCheck
     from aas_editor.application.save import SaveIssue
-    from aas_editor.application.save import UNREFERENCED_FILES
     from aas_editor.ui.save_warnings import confirm_save
 
     _answer(monkeypatch, _press_extra)
     shown: list[bool] = []
     check = SaveCheck(
-        warnings=(SaveIssue("Unused.", ("/a.txt",), UNREFERENCED_FILES),)
+        warnings=(SaveIssue("Unused.", ("/a.txt",), FILES_NOT_WRITTEN),)
     )
 
     confirmed = confirm_save(check, None, lambda: shown.append(True))
@@ -580,7 +581,7 @@ def test_saving_a_package_with_a_dangling_file_opens_the_repair_on_request(
     assert source.read_bytes() == before
 
 
-def test_saving_a_package_with_an_unused_file_can_show_the_files_first(
+def test_saving_json_with_files_can_show_the_files_first(
     view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from aas_editor.ui.save_warnings import IssuesDialog
@@ -591,7 +592,7 @@ def test_saving_a_package_with_an_unused_file_can_show_the_files_first(
     view.packageFilesRequested.connect(requested.append)
     monkeypatch.setattr(IssuesDialog, "exec", _press_extra)
 
-    saved = view.savePack(package)
+    saved = view.savePack(package, (tmp_path / "files.json").as_posix())
 
     assert saved is False
     assert requested == [package]

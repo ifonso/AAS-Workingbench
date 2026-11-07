@@ -77,7 +77,9 @@ def file_in_annotation(context: ValidationContext) -> Iterator[Finding]:
 def unreferenced_file(context: ValidationContext) -> Iterator[Finding]:
     """Finds a stored file that no File element or thumbnail refers to.
 
-    A save to AASX drops these files, and warns first (D7).
+    A save to AASX keeps these files (ADR 0030), and a save to JSON or XML
+    warns that it drops all files (D7). The finding makes a leftover visible,
+    such as a file whose element the user removed.
     """
     stored = context.stored_files
     if stored is None:
@@ -90,7 +92,8 @@ def unreferenced_file(context: ValidationContext) -> Iterator[Finding]:
             UNREFERENCED_FILE,
             Severity.WARNING,
             f"The file '{name}' is in the package, but no File element or "
-            "thumbnail refers to it. A save does not keep it",
+            "thumbnail refers to it. A save to AASX keeps it until it is "
+            "removed from the package files",
             name,
         )
 
@@ -117,7 +120,8 @@ RULES = (
     Rule(
         UNREFERENCED_FILE,
         "Stored files are used",
-        "A save to AASX writes only the files that something refers to (D7).",
+        "A file that nothing refers to is kept by a save to AASX (ADR 0030), "
+        "and dropped by a save to JSON or XML (D7).",
         unreferenced_file,
     ),
 )

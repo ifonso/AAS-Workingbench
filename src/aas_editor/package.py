@@ -37,8 +37,6 @@ from aas_editor.application.editing import edit_mode
 from aas_editor.application.edits import link_submodels
 from aas_editor.application.save import SaveOptions
 from aas_editor.application.validation import SaveGate
-from aas_editor.domain.file_references import file_references
-from aas_editor.domain.file_references import unreferenced_files
 from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.ordered_store import OrderedIdentifiableStore
 from aas_editor.infrastructure.package_io import (
@@ -291,19 +289,15 @@ class Package:
     ) -> None:
         """Writes the stored files that the recovery itself does not carry.
 
-        The SDK writes into an AASX only the files that a File element or a
-        thumbnail refers to, so a file that nothing refers to yet would be
-        lost. When no AASX could be written, the files that are new or changed
-        since open are kept here instead. They go to a file of their own, next
-        to the recovery, and are read again by `restore_from_recovery`.
+        An AASX recovery carries every stored file (ADR 0030), so it needs no
+        extras. When no AASX could be written, the files that are new or
+        changed since open are kept here instead. They go to a file of their
+        own, next to the recovery, and are read again by
+        `restore_from_recovery`, which also reads the extras that an earlier
+        version wrote beside an AASX.
         """
         extras_path = recovery_dir / f"{stem}{EXTRA_FILES_SUFFIX}"
-        if wrote_aasx:
-            names = unreferenced_files(
-                file_references(self.objStore), list(self.fileStore)
-            )
-        else:
-            names = self.session_file_names()
+        names = [] if wrote_aasx else self.session_file_names()
         if not names or not self.files_changed():
             extras_path.unlink(missing_ok=True)
             return

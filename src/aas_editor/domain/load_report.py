@@ -333,6 +333,35 @@ def duplicate_in_other_part(
     )
 
 
+def declared_file_not_loaded(name: str, part: str, reason: str) -> LoadIssue:
+    """Describes a file that a package declares and the editor could not load.
+
+    An AASX declares its supplementary files with an `aas-suppl` relationship
+    from the part of an AAS. The editor keeps all of them, so one that it
+    cannot read is told to the user, who would find it missing from the file
+    after a save.
+
+    Args:
+        name: The part name that the relationship points to.
+        part: The AAS part that declares it.
+        reason: Why it was not loaded, in a sentence.
+
+    Returns:
+        The issue.
+    """
+    return LoadIssue(
+        Severity.WARNING,
+        Outcome.LEFT_OUT,
+        Scope.PART,
+        "declared file",
+        name,
+        part,
+        reason,
+        f"{part} declares the file {name} with an aas-suppl relationship. "
+        f"{reason} Found by the editor, not logged by the SDK.",
+    )
+
+
 # The order of `LoadReport.by_weight`: a lost submodel is not to be buried
 # under the texts that follow it.
 _WEIGHT: Final = {

@@ -1,8 +1,9 @@
 """Crash recovery keeps what happened to the supplementary files.
 
-A file that nothing refers to yet is not written by the SDK into an AASX, so
-it needs its own place in the recovery. Removed and renamed files must also
-come back as they were, not as the original file has them.
+A file that nothing refers to yet is written into the AASX of a recovery like
+any other stored file (ADR 0030). Only a package that the SDK cannot write
+needs a `.files.json` beside its JSON recovery. Removed and renamed files must
+also come back as they were, not as the original file has them.
 """
 
 from pathlib import Path
@@ -145,7 +146,26 @@ def test_an_unchanged_package_keeps_the_cheap_json_recovery(
     assert not list((tmp_path / "recovery").glob("*.files.json"))
 
 
-def test_the_recovery_files_are_deleted_together(
+def _package_that_only_json_can_recover(tmp_path: Path):
+    """A package with a new file and a File that has no stored file.
+
+    The SDK cannot write the dangling path, so the recovery is JSON and the new
+    file goes to a `.files.json` beside it.
+    """
+    package, source = _open_package(tmp_path)
+    submodel = next(iter(package.submodels))
+    submodel.submodel_element.add(make_file_element("Dangling", "/gone.pdf"))
+    files.create_text_file(
+        package.commandStack,
+        observer_for(package),
+        package.fileStore,
+        DRAFT,
+        "x",
+    )
+    return package, source
+
+
+def test_an_aasx_recovery_carries_the_files_that_nothing_refers_to(
     qapp: object, tmp_path: Path
 ) -> None:
     package, _ = _open_package(tmp_path)
@@ -156,6 +176,52 @@ def test_the_recovery_files_are_deleted_together(
         DRAFT,
         "x",
     )
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    assert recovery.suffix == ".aasx"
+    assert not list((tmp_path / "recovery").glob("*.files.json"))
+
+
+def test_a_recovery_that_an_older_version_wrote_is_still_restored(
+    qapp: object, tmp_path: Path
+) -> None:
+    # An AASX of the old kind does not hold the file that nothing refers to,
+    # and the `.files.json` beside it does.
+    import base64
+    import json
+
+    from aas_editor.package import EXTRA_FILES_SUFFIX
+    from aas_editor.package import Package
+
+    _, source = _open_package(tmp_path)
+    (tmp_path / "recovery").mkdir()
+    old = tmp_path / "recovery" / "old.aasx"
+    old.write_bytes(source.read_bytes())
+    old.with_name(f"old{EXTRA_FILES_SUFFIX}").write_text(
+        json.dumps(
+            {
+                "files": [
+                    {
+                        "name": DRAFT,
+                        "content_type": "text/plain",
+                        "data": base64.b64encode(b"from before").decode(),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    restored = Package.restore_from_recovery(old, source)
+
+    assert _bytes(restored, DRAFT) == b"from before"
+
+
+def test_the_recovery_files_are_deleted_together(
+    qapp: object, tmp_path: Path
+) -> None:
+    package, _ = _package_that_only_json_can_recover(tmp_path)
     recovery_dir = tmp_path / "recovery"
     package.write_recovery(recovery_dir)
     assert list(recovery_dir.glob("*.files.json"))
@@ -170,14 +236,7 @@ def test_cleanup_keeps_the_extra_files_of_a_restored_recovery(
 ) -> None:
     from aas_editor.utils.recovery import cleanup_recovery_dir
 
-    package, _ = _open_package(tmp_path)
-    files.create_text_file(
-        package.commandStack,
-        observer_for(package),
-        package.fileStore,
-        DRAFT,
-        "x",
-    )
+    package, _ = _package_that_only_json_can_recover(tmp_path)
     recovery_dir = tmp_path / "recovery"
     recovery = package.write_recovery(recovery_dir)
 

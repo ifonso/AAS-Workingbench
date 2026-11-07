@@ -19,10 +19,10 @@ from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
 from aas_editor.application.save import DANGLING_FILES
+from aas_editor.application.save import FILES_NOT_WRITTEN
 from aas_editor.application.save import LOAD_REPORT
 from aas_editor.application.save import SaveCheck
 from aas_editor.application.save import SaveIssue
-from aas_editor.application.save import UNREFERENCED_FILES
 from aas_editor.domain.parts import MissingFile
 from aas_editor.ui.dialog_layout import finish_dialog
 from aas_editor.ui.dialog_layout import make_button_box
@@ -136,15 +136,15 @@ def confirm_save(
         check: The result of the check, with warnings.
         parent: The parent widget.
         show_files: Shows the files of the package. When the warnings are
-            about files that nothing refers to, the dialog offers a button
-            that cancels the save and calls it, so the user can link the
-            files first.
+            about files that the target format cannot hold, the dialog offers
+            a button that cancels the save and calls it, so the user can
+            look at the files first.
 
     Returns:
         True if the user chose to save anyway.
     """
     offer_files = show_files is not None and _has_code(
-        check.warnings, UNREFERENCED_FILES
+        check.warnings, FILES_NOT_WRITTEN
     )
     dialog = IssuesDialog(
         "Save package",

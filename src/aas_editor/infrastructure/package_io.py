@@ -9,6 +9,15 @@ API, and all are isolated here and covered by tests:
   annotations. The reader also notes which part it parses and which objects
   each part holds, because the SDK skips an object whose id an earlier part
   has without a log record.
+* `reader.reader` is also used to read every file that an AAS part declares
+  with an `aas-suppl` relationship. The SDK reads only the files that a File
+  element or the thumbnail names, so the other declared files of a package,
+  such as five of the six images of the Technical Data template, were lost
+  silently. This is a narrow exception to "all AAS content goes through
+  `basyx`" (D3), because a file that a package declares is the user's content
+  and is kept. The write side needs no exception: `AASXWriter` takes
+  `additional_relationships`, and its public `writer` opens the parts, so the
+  files that nothing refers to are written with the same SDK calls (ADR 0030).
 * `_accept_old_relationships` wraps a method of the reader inside the SDK.
   Many AASX files have the `www.` relationship types of the first versions. The
   SDK accepts that for the origin only, and then finds no AAS part in the file.
@@ -42,6 +51,7 @@ from typing import cast
 from basyx.aas import model
 from basyx.aas.adapter.aasx import AASXReader
 from basyx.aas.adapter.aasx import AASXWriter
+from basyx.aas.adapter.aasx import RELATIONSHIP_TYPE_AAS_SUPL
 from basyx.aas.adapter.aasx import AbstractSupplementaryFileContainer
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
 from basyx.aas.adapter.json import AASToJsonEncoder
@@ -61,6 +71,8 @@ from basyx.aas.adapter.xml import (
     write_aas_xml_file,  # pyright: ignore[reportUnknownVariableType]
 )
 from pyecma376_2.package_model import RELATIONSHIP_TYPE_THUMBNAIL
+from pyecma376_2.package_model import OPCRelationship
+from pyecma376_2.package_model import OPCTargetMode
 from pyecma376_2.package_model import normalize_part_name
 
 from aas_editor.application.save import PackageFormat
@@ -74,8 +86,11 @@ from aas_editor.domain.load_report import LoadReport
 from aas_editor.domain.load_report import RawRecord
 from aas_editor.domain.load_report import Severity
 from aas_editor.domain.load_report import build_report
+from aas_editor.domain.load_report import declared_file_not_loaded
 from aas_editor.domain.load_report import duplicate_in_other_part
 from aas_editor.domain.ordered_store import OrderedIdentifiableStore
+from aas_editor.domain.part_names import find_clash
+from aas_editor.domain.part_names import is_valid
 from aas_editor.domain.parts import CoreProperties
 from aas_editor.domain.parts import MissingFile
 from aas_editor.domain.parts import Thumbnail
@@ -243,18 +258,94 @@ class _TolerantReader(AASXReader):
         self.missing_files: list[MissingFile] = []
         self._capture = capture
         self._parts: list[tuple[str, list[model.Identifiable]]] = []
+        self._aas_part_names: list[str] = []
 
     def _parse_aas_part(
         self, part_name: str, **kwargs: Any
     ) -> model.DictIdentifiableStore[model.Identifiable]:
         if self._capture is not None:
             self._capture.part = part_name
+        if part_name not in self._aas_part_names:
+            self._aas_part_names.append(part_name)
         parsed = cast(
             "model.DictIdentifiableStore[model.Identifiable]",
             super()._parse_aas_part(part_name, **kwargs),  # pyright: ignore[reportUnknownMemberType]
         )
         self._parts.append((part_name, list(parsed)))
         return parsed
+
+    def read_declared_files(
+        self, file_store: AbstractSupplementaryFileContainer
+    ) -> list[LoadIssue]:
+        """Loads the files that the AAS parts declare and nothing refers to.
+
+        The SDK stores the files that File elements and the thumbnail name.
+        An AAS part declares its files with `aas-suppl` relationships, and the
+        rest of them are loaded here, with their content types. A file that
+        is stored already, also under a spelling that differs in case, is not
+        read again, and a file that is declared twice or by two parts is
+        loaded once. The old `www.` relationship type counts, because
+        `_accept_old_relationships` has moved it already.
+
+        Args:
+            file_store: The container that `read_into` filled.
+
+        Returns:
+            One issue for each declared file that could not be loaded, because
+            its part is not in the package or its name cannot be kept. Nothing
+            is raised for them.
+        """
+        issues: list[LoadIssue] = []
+        seen: set[str] = set()
+        # The SDK writes the target of a relationship in lower case, and OPC
+        # compares names without case. The file keeps the name of its part.
+        spelled = {
+            normalize_part_name(item): item for item in self.reader.list_items()
+        }
+        for aas_part in self._aas_part_names:
+            related = self.reader.get_related_parts_by_type(aas_part)
+            for declared_name in related.get(RELATIONSHIP_TYPE_AAS_SUPL, ()):
+                name = spelled.get(
+                    normalize_part_name(declared_name), declared_name
+                )
+                if (
+                    name in seen
+                    or find_clash(name, list(file_store)) is not None
+                ):
+                    continue
+                seen.add(name)
+                reason = self._add_declared_file(name, file_store)
+                if reason is not None:
+                    logger.warning(
+                        "Declared file not loaded: %s (declared by %s): %s",
+                        name,
+                        aas_part,
+                        reason,
+                    )
+                    issues.append(
+                        declared_file_not_loaded(name, aas_part, reason)
+                    )
+        return issues
+
+    def _add_declared_file(
+        self, name: str, file_store: AbstractSupplementaryFileContainer
+    ) -> str | None:
+        """Stores one declared part, and says why it could not be stored."""
+        if not is_valid(name):
+            return (
+                "The name is not one that the editor can keep as a file of "
+                "the package, so a save would not write it."
+            )
+        try:
+            with self.reader.open_part(name) as part:
+                content_type = self.reader.get_content_type(name)
+                file_store.add_file(name, part, content_type)
+        except (KeyError, ValueError, OSError) as error:
+            return (
+                "The package declares the file, but it has no such part"
+                f" or cannot read it ({type(error).__name__}: {error})."
+            )
+        return None
 
     def silent_duplicates(self) -> list[LoadIssue]:
         """Finds the objects that the SDK skipped without a log record.
@@ -385,6 +476,7 @@ def read_package(path: Path, failsafe: bool = False) -> PackageParts:
     file_format = package_format(path)
     capture = _SdkLogCapture()
     silent: list[LoadIssue] = []
+    declared: list[LoadIssue] = []
     with capture:
         if file_format is PackageFormat.XML:
             read_aas_xml_file_into(parts.objects, path, failsafe=failsafe)
@@ -400,6 +492,7 @@ def read_package(path: Path, failsafe: bool = False) -> PackageParts:
                 parts.core_properties = _non_empty(reader.get_core_properties())
                 parts.missing_files = tuple(reader.missing_files)
                 silent = reader.silent_duplicates()
+                declared = reader.read_declared_files(parts.files)
     # A strict read raises where a failsafe read skips, so its records are
     # remarks about content that was kept, and the editor does not show them.
     report = build_report(capture.records if failsafe else [])
@@ -408,6 +501,10 @@ def read_package(path: Path, failsafe: bool = False) -> PackageParts:
         # nothing else would say that the package lost an object.
         report = LoadReport((*report.issues, *silent))
         parts.partial = True
+    if declared:
+        # The package is not partial: the part is not in the file, so a save
+        # does not lose anything that the file holds.
+        report = LoadReport((*report.issues, *declared))
     parts.load_report = report
     return parts
 
@@ -463,19 +560,38 @@ def _write_aasx(
     extension = "json" if options.write_json_in_aasx else "xml"
     writer = _ThumbnailLinkingWriter(handle, failsafe=False)
     with writer:
+        # The SDK writes the files that a File element or a shell thumbnail
+        # refers to. The others are the user's content as well (ADR 0030), so
+        # their parts are opened here, and declared through the relationships
+        # that the SDK writes for the AAS part.
+        unreferenced = _unreferenced_names(source)
+        for name in unreferenced:
+            with writer.writer.open_part(
+                name, source.files.get_content_type(name)
+            ) as part:
+                source.files.write_file(name, part)
         writer.write_all_aas_objects(
             f"/aasx/data.{extension}",
             source.objects,
             source.files,
             write_json=options.write_json_in_aasx,
+            additional_relationships=[
+                OPCRelationship(
+                    f"s{number}",
+                    RELATIONSHIP_TYPE_AAS_SUPL,
+                    name,
+                    OPCTargetMode.INTERNAL,
+                )
+                for number, name in enumerate(unreferenced)
+            ],
         )
         thumbnail = source.thumbnail
         if thumbnail is not None:
             if _is_written_as_file(thumbnail.name, source):
-                # The part is the default thumbnail of a shell, or a File, so
-                # the writer has written it. Writing it again adds a second zip
-                # entry with the same name. Only the relationship that marks
-                # it as the package thumbnail is missing.
+                # The part is a stored file, so it has been written. Writing it
+                # again adds a second zip entry with the same name. Only the
+                # relationship that marks it as the package thumbnail is
+                # missing.
                 writer.link_written_thumbnail(thumbnail.name)
             else:
                 writer.write_thumbnail(
@@ -487,14 +603,27 @@ def _write_aasx(
             writer.write_core_properties(source.core_properties)
 
 
-def _is_written_as_file(part_name: str, source: SaveSource) -> bool:
-    """Tells whether the SDK writes a part as a supplementary file."""
-    normalized = normalize_part_name(part_name)
-    return any(
-        normalize_part_name(ref.path) == normalized
+def _unreferenced_names(source: SaveSource) -> list[str]:
+    """Lists the stored files that the SDK writer would not write.
+
+    The writer writes the files that a File element or the default thumbnail
+    of a shell refers to. A File under an annotation is not one of them.
+    """
+    referenced = {
+        ref.path
         for ref in file_references(source.objects)
-        if not ref.in_annotation and ref.path in source.files
-    )
+        if not ref.in_annotation
+    }
+    return [name for name in source.files if name not in referenced]
+
+
+def _is_written_as_file(part_name: str, source: SaveSource) -> bool:
+    """Tells whether a part is written as a stored file.
+
+    Every stored file is written, by the SDK or by `_write_aasx`.
+    """
+    normalized = normalize_part_name(part_name)
+    return any(normalize_part_name(name) == normalized for name in source.files)
 
 
 def _read_thumbnail(reader: AASXReader) -> Thumbnail | None:

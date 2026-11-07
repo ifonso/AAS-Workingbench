@@ -36,6 +36,7 @@ from basyx.aas import model
 from basyx.aas.adapter.aasx import AASXReader
 from basyx.aas.adapter.json import AASToJsonEncoder
 import pyecma376_2
+from pyecma376_2.package_model import normalize_part_name
 import pytest
 
 from aas_editor.application.save import SaveOptions
@@ -354,6 +355,51 @@ def test_roundtrip_keeps_supplementary_files_when_saving(
     after = _files(roundtrip.reloaded)
 
     assert after == before
+
+
+def _declared_parts(path: Path) -> set[str]:
+    """The files that the AAS parts declare with `aas-suppl`, from the zip.
+
+    Read with the OPC reader and not with the SDK reader, which loads only the
+    files that a File element or the thumbnail names. A declaration of a part
+    that is not in the package is left out, because no save can keep it. Names
+    are compared as OPC does, without case, because the SDK writes the target
+    of a relationship in lower case.
+    """
+    with pyecma376_2.ZipPackageReader(path.as_posix()) as reader:
+        origin = next(
+            names[0]
+            for kind, names in reader.get_related_parts_by_type().items()
+            if kind.endswith("/aasx-origin") and names
+        )
+        present = {normalize_part_name(name) for name in reader.list_items()}
+        declared: set[str] = set()
+        for kind, specs in reader.get_related_parts_by_type(origin).items():
+            if not kind.endswith("/aas-spec"):
+                continue
+            for spec in specs:
+                related = reader.get_related_parts_by_type(spec)
+                for related_kind, names in related.items():
+                    if related_kind.endswith("/aas-suppl"):
+                        declared.update(
+                            normalize_part_name(name)
+                            for name in names
+                            if normalize_part_name(name) in present
+                        )
+    return declared
+
+
+def test_roundtrip_keeps_declared_supplementary_parts_when_saving(
+    roundtrip: RoundTrip,
+) -> None:
+    if roundtrip.original_path.suffix != ".aasx":
+        pytest.skip("Only an AASX declares supplementary parts")
+    before = _declared_parts(roundtrip.original_path)
+    after = _declared_parts(roundtrip.saved_path)
+
+    # A save may declare more: the SDK declares a file that a File element or
+    # a shell thumbnail names, also when the original did not.
+    assert before <= after
 
 
 def test_roundtrip_keeps_thumbnail_when_saving(roundtrip: RoundTrip) -> None:

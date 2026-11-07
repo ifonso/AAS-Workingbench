@@ -79,7 +79,7 @@ A control character in the value of a Property (`AASd-130`) does not block: the 
 | `EDT-DANGLING-REFERENCE` | Warning | A model reference with no target in the package | Not the SDK's job. An external reference never counts. |
 | `EDT-MISSING-FILE` | Error, blocks | A File or thumbnail path with no stored file | The writer raises `KeyError` (ADR 0006) |
 | `EDT-FILE-IN-ANNOTATION` | Error, blocks | A File under an annotation | The writer skips annotations (ADR 0006) |
-| `EDT-UNREFERENCED-FILE` | Warning | A stored file that nothing refers to | A save drops it, after a warning (D7) |
+| `EDT-UNREFERENCED-FILE` | Warning | A stored file that nothing refers to | An AASX save keeps it (ADR 0030). A save to JSON or XML drops all files, after a warning (D7) |
 | `EDT-LANGUAGE-TAG` | Error, warning for case | Malformed BCP 47 tags, and tags that differ only in case | The SDK keeps `en` and `EN` as two entries. It refuses a malformed tag when the text is made. |
 
 Language tags are checked for being well-formed, with no registry ([ADR 0008](adr/0008-values-follow-their-type.md)).
