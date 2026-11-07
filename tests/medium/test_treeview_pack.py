@@ -62,18 +62,40 @@ def view_support(qapp: object, qtbot: QtBot, monkeypatch: pytest.MonkeyPatch):
     return Support
 
 
-def test_save_shows_error_and_keeps_running_when_file_cannot_be_written(
-    view_support, tmp_path: Path
+def test_save_says_why_and_keeps_running_when_the_folder_is_gone(
+    view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from PyQt6.QtWidgets import QMessageBox
+
+    said: list[str] = []
+    monkeypatch.setattr(
+        QMessageBox, "exec", lambda box: said.append(box.text()) or 0
+    )
     view, package = view_support.open_view(make_submodel())
     unwritable = tmp_path / "missing folder" / "package.json"
 
     saved = view.savePack(package, unwritable.as_posix())
 
     assert saved is False
+    assert len(said) == 1
+    assert f"The folder {unwritable.parent} does not exist." in said[0]
+    assert "Your changes are still in the editor" in said[0]
+    assert view_support.shown_errors == []
+    assert not unwritable.exists()
+
+
+def test_save_shows_error_and_keeps_running_when_the_file_type_is_wrong(
+    view_support, tmp_path: Path
+) -> None:
+    view, package = view_support.open_view(make_submodel())
+    unwritable = tmp_path / "package.txt"
+
+    saved = view.savePack(package, unwritable.as_posix())
+
+    assert saved is False
     assert len(view_support.shown_errors) == 1
     assert "Package couldn't be saved" in view_support.shown_errors[0]
-    assert "package.json" in view_support.shown_errors[0]
+    assert "package.txt" in view_support.shown_errors[0]
     assert not unwritable.exists()
 
 

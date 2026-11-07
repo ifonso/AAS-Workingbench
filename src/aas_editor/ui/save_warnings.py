@@ -6,12 +6,15 @@ them, and returns the answer of the user.
 
 from collections.abc import Callable
 from collections.abc import Sequence
+import errno
+from pathlib import Path
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog
 from PyQt6.QtWidgets import QDialogButtonBox
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QListWidget
+from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
@@ -222,3 +225,56 @@ def show_missing_files(
         [SaveIssue(f"{len(paths)} missing", tuple(listed))],
         parent=parent,
     ).exec()
+
+
+def explain_save_error(target: Path, error: BaseException) -> str | None:
+    """Says in plain words why a file could not be written, when it is known.
+
+    Args:
+        target: The file that the save wrote to.
+        error: What the write raised.
+
+    Returns:
+        A sentence for the user, or None when the cause is not one of the
+        causes that a person can act on.
+    """
+    unchanged = (
+        "Your changes are still in the editor, and the file on disk is as it "
+        "was."
+    )
+    if isinstance(error, PermissionError):
+        return (
+            f"{target.name} could not be written. It is read-only, or "
+            "another program has it open. Close it there, or choose Save As "
+            f"and give the copy another name. {unchanged}"
+        )
+    if isinstance(error, FileNotFoundError):
+        return (
+            f"The folder {target.parent} does not exist. Choose Save As and "
+            f"pick a folder that does. {unchanged}"
+        )
+    if isinstance(error, OSError) and error.errno == errno.ENOSPC:
+        return (
+            f"There is no space left on the disk of {target.name}. Free some "
+            f"space, or choose Save As and pick another disk. {unchanged}"
+        )
+    return None
+
+
+def show_save_failed(
+    explanation: str, details: str, parent: QWidget | None = None
+) -> None:
+    """Tells the user that a save failed, with the cause in plain words.
+
+    Args:
+        explanation: The sentence of `explain_save_error`.
+        details: The technical text of the error, behind Show Details.
+        parent: The parent widget.
+    """
+    box = QMessageBox(parent)
+    box.setIcon(QMessageBox.Icon.Warning)
+    box.setWindowTitle("Package was not saved")
+    box.setText(explanation)
+    box.setDetailedText(details)
+    box.setStandardButtons(QMessageBox.StandardButton.Ok)
+    box.exec()

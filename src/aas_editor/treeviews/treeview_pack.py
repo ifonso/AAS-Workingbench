@@ -57,6 +57,7 @@ from aas_editor.ui.value_editor import ValueEditDialog, value_dialog_args
 from aas_editor.application.save import SaveStatus, save
 from aas_editor.infrastructure.package_io import write_package
 from aas_editor.infrastructure.submodel_templates import SubmodelTemplates
+from aas_editor.infrastructure.open_problems import OpenProblem, diagnose
 from aas_editor.package import Package, StoredFile
 from aas_editor.settings import (
     FILTER_AAS_FILES,
@@ -112,8 +113,11 @@ from aas_editor.ui.actions import ViewKind
 from aas_editor.application.file_transfer import PackageContent
 from aas_editor.ui.file_controller import FileController, prepare_file_delete
 from aas_editor.ui.load_report_dialog import show_load_report
+from aas_editor.ui.open_warnings import show_open_problem
 from aas_editor.ui.save_warnings import (
     confirm_save,
+    explain_save_error,
+    show_save_failed,
     show_missing_files,
     show_save_refused,
 )
@@ -364,7 +368,9 @@ class PackTreeView(TreeView):
             enabled=True,
         )
 
-        # Recent files actions
+        # Recent files actions. The window sets the separator when it builds
+        # the File menu.
+        self.recentFilesSeparator = None
         self.recentFileActs = []
         for i in range(MAX_RECENT_FILES):
             recentFileAct = QAction(
@@ -939,6 +945,14 @@ class PackTreeView(TreeView):
             try:
                 pack = Package(file, failsafe=False)
             except Exception as e:
+                problem = diagnose(Path(file), e)
+                if problem is not None:
+                    # Reading again without what fails gives nothing useful
+                    # for these, so the person is not asked to go on.
+                    if not isinstance(e, PermissionError):
+                        self.removeFromRecentFiles(file)
+                    show_open_problem(problem, traceback.format_exc(), self)
+                    return None
                 msgBox = QMessageBox()
                 msgBox.setIcon(QMessageBox.Icon.Warning)
                 msgBox.setText(f"Error while reading package:\n{file}")
@@ -958,7 +972,22 @@ class PackTreeView(TreeView):
                 msgBox.setDetailedText(f"{traceback.format_exc()}")
                 ret = msgBox.exec()
                 if ret == QMessageBox.StandardButton.Yes:
-                    pack = Package(file, failsafe=True)
+                    try:
+                        pack = Package(file, failsafe=True)
+                    except Exception as failsafeError:
+                        self.removeFromRecentFiles(file)
+                        show_open_problem(
+                            diagnose(Path(file), failsafeError)
+                            or OpenProblem(
+                                f"{Path(file).name} cannot be opened, not "
+                                "even without the parts that could not be "
+                                "read.",
+                                f"The SDK says: {failsafeError}",
+                            ),
+                            traceback.format_exc(),
+                            self,
+                        )
+                        return None
                 else:
                     return None
             absFile = pack.file.absolute().as_posix()
@@ -1111,9 +1140,14 @@ class PackTreeView(TreeView):
             # Any other failure, such as a full disk or a locked file, must
             # reach the user as an error and not close the application.
             logging.exception("Package couldn't be saved: %s", file)
-            widgets.messsageBoxes.ErrorMessageBox.withTraceback(
-                self, f"Package couldn't be saved: {file or originalFile}: {e}"
-            ).exec()
+            explanation = explain_save_error(Path(file or originalFile), e)
+            if explanation is not None:
+                show_save_failed(explanation, traceback.format_exc(), self)
+            else:
+                widgets.messsageBoxes.ErrorMessageBox.withTraceback(
+                    self,
+                    f"Package couldn't be saved: {file or originalFile}: {e}",
+                ).exec()
         return False
 
     def linkAllSubmodelsToFirstAas(self) -> int:
@@ -1199,7 +1233,7 @@ class PackTreeView(TreeView):
                         | QMessageBox.StandardButton.Cancel
                         | QMessageBox.StandardButton.Discard,
                     )
-                    dialog.setDefaultButton = QMessageBox.StandardButton.Save
+                    dialog.setDefaultButton(QMessageBox.StandardButton.Save)
                     dialog.button(QMessageBox.StandardButton.Save).setText(
                         "&Save&Close"
                     )
@@ -1223,7 +1257,12 @@ class PackTreeView(TreeView):
 
     def closeAllFilesWithDialog(self):
         self.updateWindowModified()
-        if self.isWindowModified():
+        # The flag of this view is never set: `setWindowModified` sets it on
+        # the window. The packages know whether they have unsaved changes.
+        if any(
+            pack.changed
+            for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE)
+        ):
             dialog = QMessageBox(
                 QMessageBox.Icon.NoIcon,
                 f"Close all AAS files",
@@ -1232,7 +1271,7 @@ class PackTreeView(TreeView):
                 | QMessageBox.StandardButton.Cancel
                 | QMessageBox.StandardButton.Discard,
             )
-            dialog.setDefaultButton = QMessageBox.StandardButton.Save
+            dialog.setDefaultButton(QMessageBox.StandardButton.Save)
             dialog.button(QMessageBox.StandardButton.Save).setText(
                 "&Save and Close All"
             )
@@ -1283,6 +1322,8 @@ class PackTreeView(TreeView):
         files.insert(0, file)
         del files[MAX_RECENT_FILES:]
         settings.setValue("recentFiles", files)
+        # The File menu and the start panel show the list as it is now.
+        self.updateRecentFileActs()
 
     def removeFromRecentFiles(self, file: str):
         settings = recent_settings()
@@ -1294,6 +1335,7 @@ class PackTreeView(TreeView):
         except AttributeError:
             files = []
         settings.setValue("recentFiles", files)
+        self.updateRecentFileActs()
 
     def openRecentFile(self, action: QAction, checked: bool = False) -> None:
         """Opens the file that a recent file action shows now."""
@@ -1320,7 +1362,8 @@ class PackTreeView(TreeView):
             self.recentFileActs[i].setData(None)
             self.recentFileActs[i].setVisible(False)
 
-        self.recentFilesSeparator.setVisible(bool(files))
+        if self.recentFilesSeparator is not None:
+            self.recentFilesSeparator.setVisible(bool(files))
 
     def collapse(self, index: QtCore.QModelIndex) -> None:
         newIndex = index.siblingAtColumn(0)
@@ -1368,11 +1411,11 @@ class PackTreeView(TreeView):
                 i += delta
 
     def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls:
+        if event.mimeData().hasUrls():
             event.accept()
 
     def dragMoveEvent(self, event):
-        if event.mimeData().hasUrls:
+        if event.mimeData().hasUrls():
             event.accept()
 
     def dropEvent(self, e: QDropEvent) -> None:
