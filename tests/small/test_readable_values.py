@@ -203,3 +203,22 @@ def test_the_generated_name_of_a_list_item_is_not_shown() -> None:
 
     assert text is not None
     assert "generated_submodel_list_hack" not in text
+
+
+def test_a_duration_reads_as_an_iso_8601_duration() -> None:
+    from dateutil.relativedelta import relativedelta
+
+    assert readable_text(relativedelta(seconds=1)) == "PT1S"
+    assert readable_text(relativedelta(days=2, hours=3)) == "P2DT3H"
+
+
+def test_a_qualifier_with_a_duration_reads_the_duration_and_not_its_repr() -> (
+    None
+):
+    from dateutil.relativedelta import relativedelta
+
+    qualifier = model.Qualifier(
+        "UpdateInterval", relativedelta, relativedelta(seconds=1)
+    )
+
+    assert readable_text(qualifier) == "UpdateInterval: PT1S"

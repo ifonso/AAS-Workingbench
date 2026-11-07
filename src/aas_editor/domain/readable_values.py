@@ -27,6 +27,7 @@ import re
 from typing import cast
 
 from basyx.aas import model
+from basyx.aas.model import datatypes
 from dateutil.relativedelta import relativedelta
 
 from aas_editor.additional.classes import DictItem
@@ -55,6 +56,8 @@ def readable_text(value: object) -> str | None:
         enumerations, texts of languages, and references, which the caller
         shows by their last key.
     """
+    if isinstance(value, relativedelta):
+        return datatypes.xsd_repr(value)
     if is_generated_id_short(value):
         return GENERATED_ID_SHORT_TEXT
     text = value_text(value)
@@ -194,7 +197,10 @@ def _object_text(value: object) -> str | None:
 
 
 def _pair(name: str, value: object) -> str:
-    return name if value is None else f"{name}: {value}"
+    if value is None:
+        return name
+    shown = readable_text(value) if isinstance(value, relativedelta) else value
+    return f"{name}: {shown}"
 
 
 def _asset_information_text(info: model.AssetInformation) -> str:
