@@ -338,7 +338,7 @@ def test_unreferenced_file_is_reported_when_nothing_refers_to_a_stored_file() ->
 
     findings = report.of_rule("EDT-UNREFERENCED-FILE")
     assert len(findings) == 1
-    assert findings[0].severity is Severity.WARNING
+    assert findings[0].severity is Severity.INFO
     assert findings[0].subject == DOCUMENT
     assert findings[0].anchor is None
     assert findings[0].location == "Package"

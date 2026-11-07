@@ -195,7 +195,7 @@ class ValidationStatus(QWidget):
             self._update()
         except RuntimeError:
             # The widget was deleted, and the subscription outlived it.
-            pass
+            self._kinds_subscription.cancel()
 
     def _update(self) -> None:
         if self._service is None:

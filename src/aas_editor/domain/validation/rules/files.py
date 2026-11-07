@@ -90,7 +90,7 @@ def unreferenced_file(context: ValidationContext) -> Iterator[Finding]:
     for name in unreferenced_files(references, stored):
         yield Finding(
             UNREFERENCED_FILE,
-            Severity.WARNING,
+            Severity.INFO,
             f"The file '{name}' is in the package, but no File element or "
             "thumbnail refers to it. A save to AASX keeps it until it is "
             "removed from the package files",
