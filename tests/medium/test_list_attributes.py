@@ -5,6 +5,7 @@ from basyx.aas.model import datatypes
 from PyQt6.QtCore import Qt
 import pytest
 from tests.medium.conftest import ELEMENT_ID
+from tests.medium.conftest import ELEMENT_PATH
 
 
 @pytest.fixture
@@ -68,3 +69,49 @@ def test_a_list_made_without_a_choice_for_the_order_keeps_the_default(
     lab.add(fill)
 
     assert lab.element().order_relevant is True
+
+
+@pytest.mark.parametrize(
+    "child_type",
+    [
+        model.SubmodelElementCollection,
+        model.File,
+        model.MultiLanguageProperty,
+        model.Capability,
+    ],
+)
+def test_a_list_of_items_that_have_no_value_type_takes_a_child_and_fixes_none(
+    lab, child_type: type
+) -> None:
+    def make_list(form) -> None:
+        form.choose_type(model.SubmodelElementList)
+        form.type_text("id_short", ELEMENT_ID)
+        form.choose("type_value_list_element", child_type)
+
+    def add_child(form) -> None:
+        pass
+
+    lab.add(make_list)
+    lab.add(add_child, *ELEMENT_PATH)
+
+    assert lab.shown.shown_errors == []
+    assert lab.element().value_type_list_element is None
+    assert [type(child) for child in lab.element().value] == [child_type]
+
+
+def test_a_list_read_from_a_file_with_a_value_type_but_no_numbers_takes_a_child(
+    lab_class,
+) -> None:
+    from_a_file = model.SubmodelElementList(
+        ELEMENT_ID,
+        type_value_list_element=model.SubmodelElementCollection,
+        value_type_list_element=datatypes.String,
+    )
+    lab = lab_class(from_a_file)
+
+    lab.add(lambda form: None, *ELEMENT_PATH)
+
+    assert lab.shown.shown_errors == []
+    assert [type(child) for child in from_a_file.value] == [
+        model.SubmodelElementCollection
+    ]

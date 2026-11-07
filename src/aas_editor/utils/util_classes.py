@@ -105,7 +105,25 @@ class PreObject:
             if isinstance(key, PreObject):
                 key = key.init()
             kwargs[key] = value
+        self._dropValueTypeOfListWithoutOne(kwargs)
         return kwargs
+
+    def _dropValueTypeOfListWithoutOne(self, kwargs: Dict[str, object]):
+        """Keeps a list of items without a value type from fixing one.
+
+        The form of a SubmodelElementList starts with the value type String.
+        Only a list of Property or Range items has a value type, and one that
+        was set for any other list made the list refuse every child.
+        """
+        from basyx.aas import model
+
+        if self.objType is not model.SubmodelElementList:
+            return
+        if kwargs.get("type_value_list_element") not in (
+            model.Property,
+            model.Range,
+        ):
+            kwargs["value_type_list_element"] = None
 
 
 class ClassesInfo:
