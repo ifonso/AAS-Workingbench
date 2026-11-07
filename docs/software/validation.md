@@ -160,6 +160,7 @@ A template is opened as the editor opens it, so a package that needed the failsa
 | `EDT-DANGLING-REFERENCE` | 569 | 56 |
 | `AASd-002` | 120 | 6 |
 | `EDT-MISSING-FILE` | 60 | 13 |
+| `EDT-UNREFERENCED-FILE` | 61 | 17 |
 | `EDT-VALUE-TYPE` | 1 | 1 |
 | All other rules | 0 | 0 |
 
