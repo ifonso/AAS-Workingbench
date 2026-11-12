@@ -14,8 +14,8 @@ A página *Screens* tem uma ideia por tela, para que nada fique comprimido. Cada
 | 03 | Read / Filter the tree | Filtro "cycle": as correspondências e seus pais |
 | 04 | Read / Search and go to | Paleta Ctrl+K buscando elementos pelo nome |
 | 05 | Start / No package open | Primeira tela: abrir, criar ou reabrir um pacote |
-| 06 | Edit / Overview | Ações de edição e coluna de tipo de volta |
-| 07 | Edit / Change a value | Edição no lugar, valor alterado, pacote não salvo |
+| 06 | Edit / Overview | Ações de edição, atributos não definidos e o tipo no tooltip do nome |
+| 07 | Edit / Change a value | Edição no lugar com o tipo dentro do campo, valor alterado, pacote não salvo |
 | 08 | Edit / Context menu | Menu de contexto da árvore |
 | 09 | Edit / Hints grouped by rule | Os 523 hints reais em 4 grupos |
 | 10 | Edit / Errors and warnings | Findings de erro e aviso (dados de exemplo) |
@@ -52,7 +52,7 @@ Cada item diz onde ele aparece no mockup e a parte do código que mudaria.
 | # | Proposta | No mockup | Código |
 |---|---|---|---|
 | 1.1 | Rótulo em `fg/secondary`, valor em `fg/primary` | Componente `Property row` | stylesheet do detalhe |
-| 1.2 | Sem cabeçalho "Attribute / Value / Type" nem "Package / Type" | Screens | `treeviews/`, detalhe |
+| 1.2 | Sem cabeçalho "Attribute / Value / Type" nem "Package / Type", e sem a coluna Type (ver 3.6) | Screens | `treeviews/`, detalhe |
 | 1.3 | Uma tipografia só: menus, status e breadcrumb em `type/body` (14/20), não em 15 px | O estilo `type/chrome` foi removido | `ui/theme`, fonte da plataforma |
 | 1.4 | Ícone de tipo colorido pela família | Tokens `kind/*`, página Tokens | `domain/design_tokens.py`, `IconRole` |
 
@@ -102,7 +102,7 @@ No código, a mudança fica em `domain/design_tokens.py`, com os dois tokens nov
 | 3.3 | **Vazios recolhidos no Read mode.** Uma linha "Empty attributes 4" lista os nomes e se expande se a pessoa quiser. | `Section/Collapsed` |
 | 3.4 | **Textos multilíngues legíveis.** No lugar de `en="Time that one cyc..."` vem o texto no idioma preferido, com uma etiqueta logo depois dele: o ícone `language` do Tabler e `en +2` (o idioma mostrado e quantos outros existem), dentro da mesma etiqueta cinza. O ícone ainda não está em `icons/tabler`: é do mesmo conjunto (MIT, `@tabler/icons` 3.19.0) e está na página Icons do mockup, ao lado das alternativas `message-language` e `world`. | `Property row`, camada `lang` |
 | 3.5 | **semanticId mostra o nome do conceito como link** ("Target cycle time"), com a IRI em segundo plano. A barra solta "Concept description…" no rodapé deixa de existir. | `Property row`, camada `sub` |
-| 3.6 | **Coluna de tipo só no Edit mode**, em `type/caption` e `fg/muted`. | `Property row`, camada `type` |
+| 3.6 | **Sem coluna de tipo, nem no Edit mode.** Sem cabeçalho, a coluna virava uma lista de nomes técnicos soltos (`xs:double`, `MultiLanguageNameType`, `list of Reference`). O tipo do metamodelo aparece só onde ajuda: dentro do campo enquanto o valor é editado (`2.0 … xs:double`), porque muda o que se digita, e no tooltip do nome do atributo, com uma frase do que ele é. O resto já se vê na linha: o `valueType`, a etiqueta de idiomas e o link de uma referência. | `Property row/Editing`, camada `typeHint`; tela 06 (tooltip) |
 | 3.7 | **Dado de outra origem aparece como etiqueta, com link para a origem.** A unidade de uma Property não é dela: vem da concept description apontada pelo semanticId (IEC 61360, campo `unit`). Por isso ela não fica colada ao valor (`2.0 s`). O valor `2.0` mantém o texto do corpo, e a unidade vira uma etiqueta menor e mais clara (`unit s`), seguida do link "from concept CycleTimeTarget", que abre a concept description. O mesmo vale para qualquer dado herdado do conceito. | `Property row`, camada `unit` |
 
 ### 4. Navegação
