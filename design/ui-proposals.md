@@ -97,8 +97,8 @@ No código, a mudança fica em `domain/design_tokens.py`, com os dois tokens nov
 
 | # | Proposta | No mockup |
 |---|---|---|
-| 3.1 | **Resumo no topo.** O displayName vem em `type/subtitle`, com o idShort, o tipo e o pai embaixo. O valor aparece em destaque (`2.0 s`), com a unidade da concept description. | `Detail tab > Summary` |
-| 3.2 | **Atributos em seções recolhíveis:** Identification, Value e Semantics. No Edit mode há também Advanced. | `Section` |
+| 3.1 | **Um cabeçalho só, que diz qual é o elemento e onde ele está.** O breadcrumb e o resumo viram um bloco: os pais em texto pequeno e clicável, o **idShort como título** (o mesmo nome da árvore e da aba), o tipo como etiqueta e o displayName embaixo em texto secundário, se existir. O cabeçalho não repete dados: o valor, o tipo de dado e a unidade ficam só na seção Value. Uma primeira versão tinha um resumo com o displayName como título e o valor em destaque, e foi descartada porque mostrava o mesmo nome 4 vezes, o valor 2 vezes e dois nomes diferentes para o mesmo elemento. | `Detail tab > Element header` |
+| 3.2 | **Atributos em seções recolhíveis:** Value, Identification e Semantics, nessa ordem, porque o valor é o que se lê numa Property. No Edit mode há também Advanced. | `Section` |
 | 3.3 | **Vazios recolhidos no Read mode.** Uma linha "Empty attributes 4" lista os nomes e se expande se a pessoa quiser. | `Section/Collapsed` |
 | 3.4 | **Textos multilíngues legíveis.** No lugar de `en="Time that one cyc..."` vem o texto no idioma preferido, com um marcador `en +2`. | `Property row`, camada `lang` |
 | 3.5 | **semanticId mostra o nome do conceito como link** ("Target cycle time"), com a IRI em segundo plano. A barra solta "Concept description…" no rodapé deixa de existir. | `Property row`, camada `sub` |
@@ -109,7 +109,7 @@ No código, a mudança fica em `domain/design_tokens.py`, com os dois tokens nov
 | # | Proposta | No mockup |
 |---|---|---|
 | 4.1 | **Busca sempre visível na barra de comandos** ("Search or go to… Ctrl+K"), que abre a paleta de comandos. | `Search box` |
-| 4.2 | **Breadcrumb completo e clicável**, sem `...`, com separadores `›`. | `Breadcrumb` |
+| 4.2 | **Caminho completo e clicável no cabeçalho do elemento**, sem `...`, com separadores `›`. Ele mostra só os pais, porque o nome do elemento é o título logo abaixo. | `Element header > Parents` |
 | 4.3 | **Referências clicáveis.** semanticId e valores do tipo Reference levam ao destino, e o voltar/avançar da barra completa o caminho. | Link no `Property row` |
 | 4.4 | **Read/Edit como controle segmentado** na barra de comandos, no lugar de um texto na barra de status. | `Mode switch` |
 | 4.5 | **No Read mode, adicionar, editar e excluir somem**, em vez de ficarem desabilitados. | `toolbar(read_mode=True)` |
