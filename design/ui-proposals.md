@@ -97,19 +97,20 @@ No código, a mudança fica em `domain/design_tokens.py`, com os dois tokens nov
 
 | # | Proposta | No mockup |
 |---|---|---|
-| 3.1 | **Um cabeçalho só, que diz qual é o elemento e onde ele está.** O breadcrumb e o resumo viram um bloco: os pais em texto pequeno e clicável, o **idShort como título** (o mesmo nome da árvore e da aba), o tipo como etiqueta e o displayName embaixo em texto secundário, se existir. O cabeçalho não repete dados: o valor, o tipo de dado e a unidade ficam só na seção Value. Uma primeira versão tinha um resumo com o displayName como título e o valor em destaque, e foi descartada porque mostrava o mesmo nome 4 vezes, o valor 2 vezes e dois nomes diferentes para o mesmo elemento. | `Detail tab > Element header` |
+| 3.1 | **Cabeçalho em dois níveis separados por um divisor.** Em cima fica uma barra de caminho, que diz onde o elemento está: os pais clicáveis, o elemento atual e, à direita, copiar caminho e buscar. Abaixo dela fica um bloco de título com 20 px de respiro, que diz qual é o elemento: o ícone do tipo, o **idShort como título** (o mesmo nome da árvore e da aba) e o tipo como etiqueta. O displayName e o valor não aparecem no cabeçalho porque já são linhas das seções, e uma linha sem rótulo ali só confundia. Duas versões anteriores foram descartadas: um resumo que repetia o nome 4 vezes e o valor 2 vezes, e um cabeçalho compacto em que caminho, título e displayName ficavam colados, sem hierarquia. | `Detail tab > Element header` |
 | 3.2 | **Atributos em seções recolhíveis:** Value, Identification e Semantics, nessa ordem, porque o valor é o que se lê numa Property. No Edit mode há também Advanced. | `Section` |
 | 3.3 | **Vazios recolhidos no Read mode.** Uma linha "Empty attributes 4" lista os nomes e se expande se a pessoa quiser. | `Section/Collapsed` |
-| 3.4 | **Textos multilíngues legíveis.** No lugar de `en="Time that one cyc..."` vem o texto no idioma preferido, com um marcador `en +2`. | `Property row`, camada `lang` |
+| 3.4 | **Textos multilíngues legíveis.** No lugar de `en="Time that one cyc..."` vem o texto no idioma preferido, com uma etiqueta logo depois dele: o ícone `language` do Tabler e `en +2` (o idioma mostrado e quantos outros existem), dentro da mesma etiqueta cinza. O ícone ainda não está em `icons/tabler`: é do mesmo conjunto (MIT, `@tabler/icons` 3.19.0) e está na página Icons do mockup, ao lado das alternativas `message-language` e `world`. | `Property row`, camada `lang` |
 | 3.5 | **semanticId mostra o nome do conceito como link** ("Target cycle time"), com a IRI em segundo plano. A barra solta "Concept description…" no rodapé deixa de existir. | `Property row`, camada `sub` |
 | 3.6 | **Coluna de tipo só no Edit mode**, em `type/caption` e `fg/muted`. | `Property row`, camada `type` |
+| 3.7 | **Dado de outra origem aparece como etiqueta, com link para a origem.** A unidade de uma Property não é dela: vem da concept description apontada pelo semanticId (IEC 61360, campo `unit`). Por isso ela não fica colada ao valor (`2.0 s`). O valor `2.0` mantém o texto do corpo, e a unidade vira uma etiqueta menor e mais clara (`unit s`), seguida do link "from concept CycleTimeTarget", que abre a concept description. O mesmo vale para qualquer dado herdado do conceito. | `Property row`, camada `unit` |
 
 ### 4. Navegação
 
 | # | Proposta | No mockup |
 |---|---|---|
 | 4.1 | **Busca sempre visível na barra de comandos** ("Search or go to… Ctrl+K"), que abre a paleta de comandos. | `Search box` |
-| 4.2 | **Caminho completo e clicável no cabeçalho do elemento**, sem `...`, com separadores `›`. Ele mostra só os pais, porque o nome do elemento é o título logo abaixo. | `Element header > Parents` |
+| 4.2 | **Caminho completo e clicável na barra de caminho do detalhe**, sem `...`, com separadores `›`. | `Element header > Path bar` |
 | 4.3 | **Referências clicáveis.** semanticId e valores do tipo Reference levam ao destino, e o voltar/avançar da barra completa o caminho. | Link no `Property row` |
 | 4.4 | **Read/Edit como controle segmentado** na barra de comandos, no lugar de um texto na barra de status. | `Mode switch` |
 | 4.5 | **No Read mode, adicionar, editar e excluir somem**, em vez de ficarem desabilitados. | `toolbar(read_mode=True)` |
