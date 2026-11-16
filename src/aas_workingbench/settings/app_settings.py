@@ -229,6 +229,21 @@ def recovery_dir() -> Path:
     return Path(data) / "recovery"
 
 
+def log_dir() -> Path:
+    """Returns the folder of the log file.
+
+    It is the data folder of the user, as for `recovery_dir`.
+
+    Returns:
+        The folder, which may not exist yet.
+    """
+    return Path(
+        QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.AppDataLocation
+        )
+    )
+
+
 # Interval between periodic recovery writes, so a native crash loses at most this
 # window of edits.
 RECOVERY_INTERVAL_MS = 300_000

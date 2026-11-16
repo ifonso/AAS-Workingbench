@@ -18,9 +18,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 from basyx.aas import model
-from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtWidgets import QMessageBox
 
+from aas_workingbench.ui.path_dialogs import get_open_file_name
+from aas_workingbench.ui.path_dialogs import get_save_file_name
 from aas_workingbench.application.changes import observer_for
 from aas_workingbench.application.edits import SetAttribute
 from aas_workingbench.domain import blob_content
@@ -61,9 +62,7 @@ def load_content(context: ActionContext) -> None:
     blob = _blob(context)
     if blob is None or context.package is None or context.stack is None:
         return
-    path, _ = QFileDialog.getOpenFileName(
-        context.view, "Load content into Blob from file"
-    )
+    path = get_open_file_name(context.view, "Load content into Blob from file")
     if not path:
         return
     try:
@@ -87,7 +86,7 @@ def save_content(context: ActionContext) -> None:
     suggested = (blob.id_short or "content") + blob_content.guess_extension(
         blob.content_type
     )
-    path, _ = QFileDialog.getSaveFileName(
+    path = get_save_file_name(
         context.view, "Save content of Blob to file", suggested
     )
     if not path:

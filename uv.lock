@@ -30,7 +30,7 @@ wheels = [
 
 [[package]]
 name = "aas-workingbench"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "aas-test-engines" },

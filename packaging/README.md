@@ -33,7 +33,7 @@ After the PyInstaller build, zip the folder `dist/AAS_Workingbench`, so that the
 
 ```sh
 cd dist
-7z a AAS_Workingbench-0.1.0-windows-x64.zip AAS_Workingbench
+7z a AAS_Workingbench-0.1.1-windows-x64.zip AAS_Workingbench
 ```
 
 The user unzips it anywhere that can be written and starts `AAS_Workingbench\AAS_Workingbench.exe`.
@@ -43,6 +43,7 @@ The program writes `settings.ini` into its own folder, so do not unzip it below 
 
 Build on Linux, x86_64, with the libraries that Qt needs installed, because PyInstaller copies them from the machine into the build.
 On Ubuntu, the list is in the step "Install system libraries" of `.github/workflows/build.yaml`.
+The spec leaves out the GTK platform theme of Qt and the GTK 3 libraries that only it loads (`GTK_ONLY_LIBRARIES` in `aas_workingbench.spec`), because the file dialogs on Linux are the dialogs of Qt ([ADR 0032](../docs/software/adr/0032-file-dialogs-of-qt-on-linux.md)).
 After the PyInstaller build:
 
 ```sh
@@ -61,9 +62,9 @@ The environment variables `DIST_DIR`, `OUTPUT_DIR`, `WORK_DIR`, `VERSION`, and `
 To run it, the user makes the file executable and starts it (`libfuse2` must be installed on the system, or the AppImage must be started with `--appimage-extract-and-run`):
 
 ```sh
-chmod +x AAS_Workingbench-0.1.0-x86_64.AppImage
-./AAS_Workingbench-0.1.0-x86_64.AppImage
-./AAS_Workingbench-0.1.0-x86_64.AppImage path/to/package.aasx
+chmod +x AAS_Workingbench-0.1.1-x86_64.AppImage
+./AAS_Workingbench-0.1.1-x86_64.AppImage
+./AAS_Workingbench-0.1.1-x86_64.AppImage path/to/package.aasx
 ```
 
 ### QtWebEngine in the AppImage

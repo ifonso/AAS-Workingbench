@@ -24,7 +24,6 @@ from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QCompleter
 from PyQt6.QtWidgets import QDialog
 from PyQt6.QtWidgets import QDialogButtonBox
-from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtWidgets import QHBoxLayout
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QLineEdit
@@ -36,6 +35,8 @@ from PyQt6.QtWidgets import QWidget
 from basyx.aas import model
 from basyx.aas.model import datatypes
 
+from aas_workingbench.ui.path_dialogs import get_open_file_name
+from aas_workingbench.ui.path_dialogs import get_save_file_name
 from aas_workingbench.ui.colors import problem_border_style
 from aas_workingbench.ui.colors import style_as_problem
 from aas_workingbench.ui.dialog_layout import finish_dialog
@@ -535,13 +536,11 @@ class BinaryEdit(QWidget):
         self._set_problem(None)
 
     def _ask_open_path(self) -> str:
-        path, _ = QFileDialog.getOpenFileName(self, "Load content from file")
+        path = get_open_file_name(self, "Load content from file")
         return path
 
     def _ask_save_path(self, suggested: str) -> str:
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save content to file", suggested
-        )
+        path = get_save_file_name(self, "Save content to file", suggested)
         return path
 
     def _preferred_mode(self, data: bytes | None) -> str:

@@ -37,7 +37,6 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QMessageBox,
-    QFileDialog,
     QMenu,
     QWidget,
     QApplication,
@@ -50,6 +49,8 @@ from basyx.aas.model import (
     Identifiable,
 )
 
+from aas_workingbench.ui.path_dialogs import get_open_file_name
+from aas_workingbench.ui.path_dialogs import get_save_file_name
 import aas_workingbench.widgets as widgets
 import aas_workingbench.widgets.messsageBoxes
 from aas_workingbench.delegates import EditDelegate
@@ -940,40 +941,34 @@ class PackTreeView(TreeView):
             clipboard = QApplication.clipboard()
             clipboard.setText(idShortPath, QClipboard.Mode.Clipboard)
 
-    def newPackWithDialog(self, filetype=None, filter=FILTER_AAS_FILES):
-        saved = False
+    def newPackWithDialog(
+        self, filetype=None, name_filter=FILTER_AAS_FILES
+    ) -> bool:
+        # The dialog is asked once. A save that fails has said why, and asking
+        # again would repeat a refusal that a new name does not change.
         filetype = self.defaultNewFileType if filetype is None else filetype
-        file = f"new_aas_file.{filetype}"
+        file = get_save_file_name(
+            self,
+            "Create new AAS File",
+            f"new_aas_file.{filetype}",
+            name_filter=name_filter,
+            initial_filter=AAS_FILE_TYPE_FILTERS[filetype],
+        )
+        if not file:
+            return False
+        pack = Package()
+        if not self.savePack(pack, file):
+            return False
+        self.add_pack_to_tree(pack)
+        return True
 
-        while not saved:
-            file, _ = QFileDialog.getSaveFileName(
-                self,
-                "Create new AAS File",
-                file,
-                filter=filter,
-                initialFilter=AAS_FILE_TYPE_FILTERS[filetype],
-            )
-            if file:
-                pack = Package()
-                saved = self.savePack(pack, file)
-                if saved:
-                    self.add_pack_to_tree(pack)
-            else:
-                # cancel pressed
-                return
-
-    def openPackWithDialog(self, filter=FILTER_AAS_FILES):
-        opened = False
-        file = ""
-        while not opened:
-            file, _ = QFileDialog.getOpenFileName(
-                self, "Open AAS file", file, filter=filter
-            )
-            if file:
-                opened = self.openPack(file)
-            else:
-                # cancel pressed
-                return
+    def openPackWithDialog(self, name_filter=FILTER_AAS_FILES) -> bool:
+        file = get_open_file_name(
+            self, "Open AAS file", name_filter=name_filter
+        )
+        if not file:
+            return False
+        return self.openPack(file) is not None
 
     def addFileWithDialog(self, parent: QModelIndex):
         # The name is checked, a taken name is never overwritten, and the add
@@ -1005,7 +1000,7 @@ class PackTreeView(TreeView):
                         self.removeFromRecentFiles(file)
                     show_open_problem(problem, traceback.format_exc(), self)
                     return None
-                msgBox = QMessageBox()
+                msgBox = QMessageBox(self)
                 msgBox.setIcon(QMessageBox.Icon.Warning)
                 msgBox.setText(f"Error while reading package:\n{file}")
                 msgBox.setInformativeText(
@@ -1232,34 +1227,34 @@ class PackTreeView(TreeView):
         self, filetype=None, pack: Package = None
     ) -> bool:
         pack = self.focusedPackage() if pack is None else pack
+        if pack is None:
+            return False
         file = (
             pack.file.as_posix()
             if filetype is None
             else pack.file.with_suffix(f".{filetype}").as_posix()
         )
-        self.savePackAsWithDialog(file, pack)
+        return self.savePackAsWithDialog(file, pack)
 
     def savePackAsWithDialog(
-        self, file=None, pack: Package = None, filter=FILTER_AAS_FILES
+        self, file=None, pack: Package = None, name_filter=FILTER_AAS_FILES
     ) -> bool:
+        """Asks once where to save, and saves there.
+
+        Returns:
+            True if the package was written, False if the user cancelled or
+            the save was refused or failed, which the save has reported.
+        """
         pack = self.focusedPackage() if pack is None else pack
-        saved = False
+        if pack is None:
+            return False
         file = pack.file.as_posix() if file is None else file
-        while not saved:
-            try:
-                file, _ = QFileDialog.getSaveFileName(
-                    self, "Save AAS File", file, filter=filter
-                )
-            except AttributeError as e:
-                widgets.messsageBoxes.ErrorMessageBox.withTraceback(
-                    self, f"No chosen package to save: {e}"
-                ).exec()
-            else:
-                if file:
-                    saved = self.savePack(pack, file)
-                else:
-                    # cancel pressed
-                    return
+        file = get_save_file_name(
+            self, "Save AAS File", file, name_filter=name_filter
+        )
+        if not file:
+            return False
+        return self.savePack(pack, file)
 
     def saveAll(self):
         for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
@@ -1293,6 +1288,7 @@ class PackTreeView(TreeView):
                         standardButtons=QMessageBox.StandardButton.Save
                         | QMessageBox.StandardButton.Cancel
                         | QMessageBox.StandardButton.Discard,
+                        parent=self,
                     )
                     dialog.setDefaultButton(QMessageBox.StandardButton.Save)
                     dialog.button(QMessageBox.StandardButton.Save).setText(
@@ -1331,6 +1327,7 @@ class PackTreeView(TreeView):
                 standardButtons=QMessageBox.StandardButton.Save
                 | QMessageBox.StandardButton.Cancel
                 | QMessageBox.StandardButton.Discard,
+                parent=self,
             )
             dialog.setDefaultButton(QMessageBox.StandardButton.Save)
             dialog.button(QMessageBox.StandardButton.Save).setText(

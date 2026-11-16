@@ -22,7 +22,6 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox,
     QPushButton,
     QVBoxLayout,
-    QFileDialog,
     QLineEdit,
     QComboBox,
     QHBoxLayout,
@@ -44,6 +43,7 @@ from basyx.aas.model import Submodel
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
+from aas_workingbench.ui.path_dialogs import get_open_file_name
 from aas_workingbench.widgets import messsageBoxes
 from aas_workingbench.tools.handover_doc_llm.documentation_generator import (
     json2document,
@@ -511,8 +511,8 @@ class HandoverDocumentationToolDialog(QDialog):
         self.setLayout(layout)
 
     def chooseAndProcessPdf(self):
-        file, _ = QFileDialog.getOpenFileName(
-            self, "Open PDF file", filter="PDF Files (*.pdf)"
+        file = get_open_file_name(
+            self, "Open PDF file", name_filter="PDF Files (*.pdf)"
         )
         if file:
             self.processPdf(file)
