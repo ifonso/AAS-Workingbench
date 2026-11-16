@@ -18,6 +18,7 @@ The checks follow the editor plan:
 
 from collections.abc import Callable
 from collections.abc import Iterable
+from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field
 from enum import Enum
@@ -63,6 +64,28 @@ def package_format(path: Path) -> PackageFormat:
         if suffix == f".{package_format_.value}":
             return package_format_
     raise TypeError("Wrong file type:", path.suffix)
+
+
+def first_package_file(paths: Sequence[str]) -> str | None:
+    """Picks the file to open from several, such as the files of a drop.
+
+    The editor has one package open at a time. The first file with the
+    extension of a package opens; when none has one, the first file is tried,
+    so that the person is told why it does not open.
+
+    Args:
+        paths: The files, in the order they were given.
+
+    Returns:
+        The file to open, or None for no file.
+    """
+    for path in paths:
+        try:
+            package_format(Path(path))
+        except TypeError:
+            continue
+        return path
+    return paths[0] if paths else None
 
 
 @dataclass(frozen=True)

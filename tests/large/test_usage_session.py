@@ -181,7 +181,8 @@ def test_the_settings_dialog_changes_the_row_density_of_the_open_trees(
 
     large.window.settingsDialogAct.trigger()
     QApplication.processEvents()
-    first = large.view.model().index(0, 0)
+    # The first row that the tree shows: the row of the package is not shown.
+    first = large.view.model().index(0, 0, large.view.rootIndex())
 
     assert large.view.visualRect(first).height() == ROW_HEIGHTS[Density.DENSE]
     assert (
@@ -268,7 +269,7 @@ def test_the_look_of_the_window_comes_back_after_a_restart(
     window.validationController.dock.show()
     window.filesDock.show()
     window.setVOrientationAct.trigger()
-    window.resize(1000, 640)
+    window.resize(1000, 720)
     tree_font = PacksTable.currFont.pointSize()
     tab_font = DetailedInfoTable.currFont.pointSize()
     docks = (
@@ -287,7 +288,7 @@ def test_the_look_of_the_window_comes_back_after_a_restart(
     assert second.validationController.dock.isVisible()
     assert second.filesDock.isVisible()
     assert second.selectionDock.isHidden()
-    assert (second.width(), second.height()) == (1000, 640)
+    assert (second.width(), second.height()) == (1000, 720)
     second_header = second.mainTreeView.header()
     assert {
         second_header.model().headerData(i, Qt.Orientation.Horizontal)

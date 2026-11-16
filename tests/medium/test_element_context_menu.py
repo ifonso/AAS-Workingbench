@@ -140,7 +140,9 @@ def test_save_and_close_stay_in_the_file_menu_and_the_toolbar_actions(
     assert view.saveAct.isVisible()
     assert view.saveAsAct.isVisible()
     assert view.closeAct.isVisible()
-    assert view.saveAllAct.isVisible()
+    # One package is open at a time, so Save and Close say it all.
+    assert not view.saveAllAct.isVisible()
+    assert not view.closeAllAct.isVisible()
 
 
 def test_the_long_list_of_existing_submodels_shows_for_the_submodels_node_only(

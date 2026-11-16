@@ -63,11 +63,7 @@ class Ui_MainWindow(object):
         self.treePaneHeader = TreePaneHeader(
             self.mainTreeView,
             ATTRIBUTE_COLUMN,
-            [
-                self.mainTreeView.saveAct,
-                self.mainTreeView.saveAsAct,
-                self.mainTreeView.closeAct,
-            ],
+            self.mainTreeView.openPackageMenu,
             parent=self.mainLayoutWidget,
         )
         self.mainVerticalLayout.addWidget(self.treePaneHeader)

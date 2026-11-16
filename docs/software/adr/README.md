@@ -40,6 +40,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0033](0033-the-detail-reads-in-sections.md) | The detail reads in sections, drawn as bands over the rows of the model, and the type is no column | Accepted |
 | [0034](0034-the-status-bar-counts-the-hints-of-the-package.md) | The status bar counts the hints of the package, in the blue of information. Changes a point of 0031 | Accepted |
 | [0035](0035-kind-icons-are-colored-by-family.md) | The icons of the kinds of elements are colored by family. Changes a point of 0027 | Accepted |
+| [0036](0036-one-package-at-a-time.md) | The editor has one package open at a time, and the package tree starts at its groups | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.

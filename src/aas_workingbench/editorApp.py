@@ -783,7 +783,15 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # Recovery files restored this launch: kept through the sweep below until their
         # first save, so a native crash before that save still has the restored data.
         keptRecoveries = []
-        for file in openedAasFiles:
+        # One package is open at a time. A session of an earlier release may
+        # have left several: the first opens, and the recovery files of the
+        # others are kept, so that no unsaved work is deleted.
+        openedAasFiles = list(openedAasFiles or [])
+        for file in openedAasFiles[1:]:
+            others = recovery_map.get(Path(file).resolve())
+            if others is not None:
+                keptRecoveries.append(others)
+        for file in openedAasFiles[:1]:
             # resolve() to match find_recovery_files()'s resolved keys, so a
             # symlinked or '..'-containing path still lines up with its recovery.
             file_path = Path(file).resolve()

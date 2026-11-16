@@ -261,8 +261,8 @@ def test_validation_finds_no_error_and_its_hints_are_true(
     assert controller.dock.counts_label.text() == "No findings"
     assert controller.dock.visible_findings() == []
     assert (counts.errors, counts.warnings) == (0, 0)
-    # The status bar has no count for the package. The Hints view has it.
-    assert controller.status.hints_button.isHidden()
+    # The status bar counts the hints of the package, as the Hints view does.
+    assert controller.status.hints_button.text() == "202 hints"
     controller.dock.show_hints()
     assert controller.dock.hints_view.shown_count == 202
     assert {

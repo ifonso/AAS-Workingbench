@@ -154,7 +154,7 @@ Todas as propostas, de 1.1 a 5.4, estão no app. Os registros de decisão são o
 
 ### Respostas às perguntas em aberto
 
-- **2.2:** o pacote continua como raiz da árvore, também com um pacote só.
+- **2.2:** o editor passou a ter um pacote aberto por vez ([ADR 0036](../docs/software/adr/0036-one-package-at-a-time.md)), e a árvore começa nos grupos, como no mockup. O nome do pacote e o seu menu ficam no cabeçalho do painel.
 - **3.4:** o idioma preferido é o primeiro dos idiomas padrão de *Settings*; sem texto nele, vale `en`, e depois o primeiro idioma do valor.
 - **3.3:** no Edit mode os vazios ficam nas suas seções. Advanced começa fechada enquanto não tem conteúdo, e aberta quando um qualifier, uma extension ou uma data specification está preenchido.
 - **5.2:** o painel de Validation só abre por um clique na barra de status, pelo menu ou pelo arranjo salvo da última sessão.
@@ -162,7 +162,6 @@ Todas as propostas, de 1.1 a 5.4, estão no app. Os registros de decisão são o
 
 ### Onde o app difere do mockup
 
-- **2.2:** como o pacote continua sendo raiz, os grupos ("Submodels 14") viram títulos em semibold com a contagem, mas o nível de recuo continua.
 - **Tela 02:** ao abrir um pacote, a linha do pacote continua selecionada, porque o salvar, o desfazer e outros fluxos dependem dela. A mensagem "Select an element" aparece quando uma aba fica sem elemento.
 - **Tela 03:** o filtro usa a busca da árvore e abre os ramos com correspondências. Limpar o filtro não fecha de volta os ramos.
 - **5.3:** o seletor "Group by rule" do mockup não entrou, porque só existe um agrupamento. A marcação que desliga um tipo de hint continua no grupo.

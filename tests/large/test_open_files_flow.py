@@ -378,7 +378,7 @@ def _drag(
     QApplication.sendEvent(widget, drop)
 
 
-def test_dropping_files_on_the_start_opens_each_and_refuses_the_wrong_one(
+def test_dropping_files_on_the_start_opens_the_package_among_them(
     editor,
 ) -> None:
     good = editor.tmp_path / "Requester_screwing.aasx"
@@ -389,16 +389,26 @@ def test_dropping_files_on_the_start_opens_each_and_refuses_the_wrong_one(
 
     _drag(editor.window.emptyState, [wrong, good], refused)
 
+    # One package is open at a time: the package of the drop opens.
     assert refused == [False]
     assert [p.name for p in editor.model.openedPacks()] == [
         "Requester_screwing.aasx"
     ]
+
+
+def test_dropping_a_file_that_is_no_package_says_why(editor) -> None:
+    wrong = editor.tmp_path / "notes.txt"
+    wrong.write_text("hello")
+
+    _drag(editor.window.emptyState, [wrong], [])
+
+    assert not editor.model.openedPacks()
     assert (
         "not a file that the editor opens (.txt)" in _refused(editor).texts[0]
     )
 
 
-def test_dropping_a_file_on_the_tree_opens_it_next_to_the_open_package(
+def test_dropping_a_file_on_the_tree_replaces_the_open_package(
     editor,
 ) -> None:
     first = editor.tmp_path / "Requester_screwing.aasx"
@@ -411,10 +421,7 @@ def test_dropping_a_file_on_the_tree_opens_it_next_to_the_open_package(
 
     _drag(editor.view.viewport(), [second])
 
-    assert sorted(p.name for p in editor.model.openedPacks()) == [
-        "Requester_screwing.aasx",
-        "carbon.aasx",
-    ]
+    assert [p.name for p in editor.model.openedPacks()] == ["carbon.aasx"]
 
 
 def test_a_drag_of_text_is_not_accepted_by_the_tree(editor) -> None:

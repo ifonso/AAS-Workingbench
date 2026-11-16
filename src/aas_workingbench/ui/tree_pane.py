@@ -7,22 +7,24 @@ of what can be done with the package, and has a filter that is always there
 parents, opens the branches that hold them, and says how many match, with a
 way to clear it (screen 03 of the mockup).
 
-The header knows no package: the window gives it the name, the actions of the
-menu, and the view whose rows it filters.
+The editor has one package open at a time, and the tree does not show its row,
+so the menu of the header is the context menu of the package. The header knows
+no package: the window gives it the name, the function that opens the menu, and
+the view whose rows it filters.
 """
 
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Sequence
 
 from PyQt6.QtCore import QModelIndex
+from PyQt6.QtCore import QPoint
 from PyQt6.QtCore import QSize
 from PyQt6.QtCore import Qt
 from PyQt6.QtCore import QTimer
-from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QHBoxLayout
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QLineEdit
-from PyQt6.QtWidgets import QMenu
 from PyQt6.QtWidgets import QToolButton
 from PyQt6.QtWidgets import QTreeView
 from PyQt6.QtWidgets import QVBoxLayout
@@ -197,7 +199,7 @@ class TreePaneHeader(QWidget):
         self,
         view: QTreeView,
         column: int,
-        actions: Sequence[QAction],
+        open_menu: Callable[[QPoint], None],
         parent: QWidget | None = None,
     ) -> None:
         """Builds the header of the pane.
@@ -205,8 +207,9 @@ class TreePaneHeader(QWidget):
         Args:
             view: The package tree.
             column: The column whose text the filter matches.
-            actions: What the menu of the package offers, such as Save and
-                Close.
+            open_menu: Shows the menu of the package at a point of the
+                screen. The tree does not show the row of the package, so
+                this is where its menu is.
             parent: The parent widget.
         """
         super().__init__(parent)
@@ -224,11 +227,8 @@ class TreePaneHeader(QWidget):
         self.more.setAutoRaise(True)
         self.more.setToolTip("What can be done with the package")
         self.more.setAccessibleName("Package menu")
-        self.more.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        menu = QMenu(self.more)
-        for action in actions:
-            menu.addAction(action)
-        self.more.setMenu(menu)
+        self._open_menu = open_menu
+        self.more.clicked.connect(self._show_menu)
         self.filter = TreeFilter(view, column, self)
         title = QHBoxLayout()
         title.setContentsMargins(0, 0, 0, 0)
@@ -241,6 +241,10 @@ class TreePaneHeader(QWidget):
         layout.setSpacing(8)
         layout.addLayout(title)
         layout.addWidget(self.filter)
+
+    def _show_menu(self) -> None:
+        bottom_left = self.more.rect().bottomLeft()
+        self._open_menu(self.more.mapToGlobal(bottom_left))
 
     def set_package_name(self, name: str) -> None:
         """Shows the name of the package that the tree is on, or none."""

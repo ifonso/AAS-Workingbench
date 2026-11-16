@@ -70,7 +70,20 @@ class ElementHeader(QWidget):
         layout.addWidget(self.title)
         layout.addWidget(self.badge)
         layout.addStretch(1)
-        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Maximum
+        )
+
+    def minimumSizeHint(self) -> QSize:
+        """Lets a short window take the room around the title first.
+
+        The 20 pixels above and below the title are room to read, not
+        content, so a window that is short of height gives them up before
+        the attributes below shrink.
+        """
+        hint = super().minimumSizeHint()
+        title = max(self.title.sizeHint().height(), ICON_SIZE)
+        return QSize(hint.width(), title + 8)
 
     def set_element(
         self, icon: QIcon | None, title: str, type_text: str

@@ -112,13 +112,16 @@ def test_a_recent_file_that_is_gone_leaves_the_list(start: Start) -> None:
     assert start.recent_texts() == []
 
 
-def test_a_dropped_file_is_opened(start: Start, tmp_path: Path) -> None:
+def test_the_first_dropped_package_is_opened(
+    start: Start, tmp_path: Path
+) -> None:
     # Paths of this system, as a drop gives them, so that the test holds on
     # Windows and on Linux alike.
+    notes = (tmp_path / "notes.txt").as_posix()
     one = (tmp_path / "one.aasx").as_posix()
     two = (tmp_path / "two.json").as_posix()
     mime = QMimeData()
-    mime.setUrls([QUrl.fromLocalFile(one), QUrl.fromLocalFile(two)])
+    mime.setUrls([QUrl.fromLocalFile(p) for p in (notes, one, two)])
     event = QDropEvent(
         QPointF(10, 10),
         Qt.DropAction.CopyAction,
@@ -129,7 +132,8 @@ def test_a_dropped_file_is_opened(start: Start, tmp_path: Path) -> None:
 
     start.widget.dropEvent(event)
 
-    assert [path.replace("\\", "/") for path in start.opened] == [one, two]
+    # One package is open at a time.
+    assert [path.replace("\\", "/") for path in start.opened] == [one]
 
 
 def test_the_start_accepts_drops(start: Start) -> None:

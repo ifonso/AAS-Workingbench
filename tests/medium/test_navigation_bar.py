@@ -26,6 +26,7 @@ from aas_workingbench.ui.tree_pane import match_text
 
 
 _owners: list[Any] = []
+opened_menus: list[Any] = []
 
 
 @pytest.fixture
@@ -48,8 +49,9 @@ def pane(shown, qtbot: QtBot):
 
     owner = QWidget()
     qtbot.addWidget(owner)
-    close = QAction("Close", owner)
-    header = TreePaneHeader(shown.view, ATTRIBUTE_COLUMN, [close], owner)
+    header = TreePaneHeader(
+        shown.view, ATTRIBUTE_COLUMN, opened_menus.append, owner
+    )
     # qtbot keeps no reference, and the header lives as long as its owner.
     _owners.append(owner)
     return header
@@ -108,7 +110,14 @@ def test_the_pane_names_the_package_of_the_tree(shown, pane) -> None:
     pane.set_package_name(name)
 
     assert pane.name.text() == package.name
-    assert pane.more.menu().actions()[0].text() == "Close"
+
+
+def test_the_more_button_opens_the_menu_of_the_package(pane) -> None:
+    opened_menus.clear()
+
+    pane.more.click()
+
+    assert len(opened_menus) == 1
 
 
 def test_a_group_of_the_tree_reads_as_a_title_with_its_count(shown) -> None:

@@ -41,7 +41,7 @@ This page describes the code as it is today, and the structure that new code sho
 
 ### How the editor works
 
-1. `PackTreeView` opens a file as a `Package`, and BaSyx loads its objects into an object store.
+1. `PackTreeView` opens a file as a `Package`, and BaSyx loads its objects into an object store. One package is open at a time: opening or creating one closes the open one first, after asking about its changes (`makeRoomForPackage`), and the tree starts at the groups of the package (`fitRoot`, [ADR 0036](adr/0036-one-package-at-a-time.md)).
 2. `models/` wraps the objects in tree items. Selecting one opens its attributes in a tab, shown by `AttrsTreeView`.
 3. Attributes and editors come from **runtime type introspection**: `utils/util_type.py` and `getAttrTypeHint` read the type hints of BaSyx classes.
    This is why the editor handles new SDK attributes with little code, and also why it relies heavily on SDK internals.

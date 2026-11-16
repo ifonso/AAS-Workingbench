@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import QToolButton
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_workingbench.application.save import first_package_file
 from aas_workingbench.domain.design_tokens import FONT_FAMILY
 from aas_workingbench.domain.design_tokens import TYPE_RAMP
 
@@ -188,12 +189,18 @@ class EmptyState(QWidget):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent | None) -> None:  # noqa: N802
-        """Opens each dropped file."""
+        """Opens one dropped file: one package is open at a time.
+
+        The first package of the drop opens, and a drop of no package tries
+        the first file, which says why it does not open.
+        """
         if event is None or not _has_files(event):
             return
         mime = event.mimeData()
-        for url in [] if mime is None else mime.urls():
-            self._open_file(url.toLocalFile())
+        urls = [] if mime is None else mime.urls()
+        chosen = first_package_file([url.toLocalFile() for url in urls])
+        if chosen is not None:
+            self._open_file(chosen)
         event.acceptProposedAction()
 
 
