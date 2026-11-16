@@ -300,23 +300,23 @@ def test_the_look_of_the_window_comes_back_after_a_restart(
     _choose_theme(second, "Light")
 
 
-def test_the_columns_that_the_user_hid_stay_hidden_after_a_restart(
+def test_the_columns_that_the_user_showed_stay_shown_after_a_restart(
     large: uw.UsageWindow, qtbot: Any
 ) -> None:
     header = large.view.header()
+    # The tree shows the names only by default (proposal 2.1), so the user
+    # shows the type from the menu of the columns.
     column = next(
         action
         for action in header.actions()
-        if action.isCheckable()
-        and action.isChecked()
-        and action.text() != ("Package")
+        if action.isCheckable() and action.text() == "Type"
     )
-    name = column.text()
+    assert not column.isChecked()
 
     column.trigger()
     second = _restart(qtbot, large)
     again = {a.text(): a for a in second.mainTreeView.header().actions()}
 
-    assert not again[name].isChecked()
+    assert again["Type"].isChecked()
     second._recoveryTimer.stop()
     second.close()

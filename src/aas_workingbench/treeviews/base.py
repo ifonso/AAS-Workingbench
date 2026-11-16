@@ -166,6 +166,11 @@ COPIED_AS_JSON = (
 
 
 class HeaderView(QHeaderView):
+    # A header over one column says nothing that the rows do not, so a tree
+    # that sets this shows its header only while it has two columns or more
+    # (proposal 1.2).
+    hidesWhenAlone = False
+
     def __init__(self, orientation, parent: Optional[QWidget] = ...) -> None:
         super(HeaderView, self).__init__(orientation, parent)
         self.setSectionsMovable(True)
@@ -206,7 +211,13 @@ class HeaderView(QHeaderView):
         self.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
         self.currSortSection = -1
         self.updateMenu()
+        self.fitVisibility()
         return result
+
+    def fitVisibility(self) -> None:
+        """Shows the header only while it has more than one column to name."""
+        if self.hidesWhenAlone:
+            self.setVisible(self.count() - self.hiddenSectionCount() > 1)
 
     def updateMenu(self):
         self.updateShowSectionActs()
@@ -271,6 +282,7 @@ class HeaderView(QHeaderView):
 
     def hideSection(self, alogicalIndex: int) -> None:
         super(HeaderView, self).hideSection(alogicalIndex)
+        self.fitVisibility()
         acts = self.actions()
         for act in acts:
             if act.data() == alogicalIndex:
@@ -279,6 +291,7 @@ class HeaderView(QHeaderView):
 
     def showSection(self, alogicalIndex: int) -> None:
         super(HeaderView, self).showSection(alogicalIndex)
+        self.fitVisibility()
         acts = self.actions()
         for act in acts:
             if act.data() == alogicalIndex:

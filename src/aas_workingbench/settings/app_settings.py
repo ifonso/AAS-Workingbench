@@ -105,12 +105,12 @@ VALUE_COLUMN_WIDTH = 200
 # Raise it when the default columns of the attribute tabs change. A saved
 # header state of another version is not restored, so the new default shows
 # once, and what the user changes later is kept (see application/header_state).
-TAB_HEADER_LAYOUT_VERSION = 4
+TAB_HEADER_LAYOUT_VERSION = 5
 # The same for the header of the package tree, and for the sizes of the two
 # zones of the window (the tree and the tabs). Raise each one when its default
 # changes, so that a session of an older release does not hide the new default.
-PACK_TREE_HEADER_LAYOUT_VERSION = 2
-ZONES_LAYOUT_VERSION = 1
+PACK_TREE_HEADER_LAYOUT_VERSION = 3
+ZONES_LAYOUT_VERSION = 2
 # The version of the saved arrangement of the docks and the command bar, which
 # `QMainWindow.saveState` writes into the state. Raise it when a dock is added,
 # removed, or renamed, so that the state of an earlier release is not restored.
@@ -164,6 +164,20 @@ EDIT_TARGET_ROLE = 1220
 # What a row shows of the change marks of its package: `MARK_NEW`, `MARK_CHANGED`,
 # or None. Only the name column has one.
 CHANGE_MARK_ROLE = 1230
+# The section of a row of the detail of an object (domain/attribute_sections),
+# or None for a row that has none, such as an entry of a list.
+SECTION_ROLE = 1240
+# What a value of the detail reads beside it, after proposals 3.4 to 3.7: the
+# badge of the languages of a text (`en +2`), the unit that a concept gives the
+# value with that concept, the second line of a row (the id that a semanticId
+# holds), and the concept description that a row links to.
+LANGUAGE_BADGE_ROLE = 1250
+UNIT_ROLE = 1260
+SUBTEXT_ROLE = 1270
+LINKED_CONCEPT_ROLE = 1280
+# Whether the attribute of a row of the detail holds nothing (None, an empty
+# text or an empty list), which decides where its section starts.
+HOLDS_NOTHING_ROLE = 1290
 MARK_NEW = "new"
 MARK_CHANGED = "changed"
 
@@ -188,7 +202,10 @@ DEFAULT_COLUMNS_IN_PACKS_TABLE = (
     TYPE_COLUMN_NAME,
     TYPEHINT_COLUMN_NAME,
 )
-DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW = (OBJECT_COLUMN_NAME, TYPE_COLUMN_NAME)
+# The icon of a row says its type, which the tooltip of its name tells in
+# words, so the tree shows the names only and the detail gets the room. The
+# type is one click away in View > Columns (proposal 2.1).
+DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW = (OBJECT_COLUMN_NAME,)
 # What the header of the package tree says for the columns that the model names
 # `object`, `object value`, `type`, and `typehint`. The names stay what code and
 # the saved column lists find a column by, and the header and its menu read these.

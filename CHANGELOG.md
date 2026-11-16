@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - A new logo: the shell of an AAS, a light blue lid over two blue walls, with "AAS" in orange, in the style of Fluent icons. It is the icon of the window, of the Windows build and of the AppImage, and the wide version says "AAS Workingbench". The source is in `design/`.
+- The detail of an element reads in sections: Value, Identification, Semantics, and in Edit mode Advanced, in that order, with a band that opens and closes each one. In Read mode the attributes that hold nothing are in a closed section, Empty attributes, which names them. Advanced starts closed while it holds nothing ([ADR 0033](docs/software/adr/0033-the-detail-reads-in-sections.md)).
+- The top of a tab has two levels: a path bar that says where the element is, from its submodel down, with `›` between the parts, and below it the icon, the idShort and the type of the element.
+- A text in several languages reads in the first default language, with a badge such as `en +2`, in place of `en="..."`. The tooltip still has every language.
+- A semanticId reads the name of its concept description as a link, with its id under it, and a value shows the unit that its concept gives, as a badge, with a link to the concept. A click opens the concept in the same tab, and Back returns. The panel of the concept below the attributes is gone.
+- The detail has no header and no Type column. The type of an attribute is in the tooltip of its name, and inside the field while a value is edited (`xs:double`).
+- The names of attributes read in the secondary color, and their values in the primary color.
+- The package tree shows the names only, with the type in the tooltip of a row and in View > Columns, and its header shows only while it has two columns or more. It takes a third of the window, and the detail the rest.
+- A closed row of the package tree shows how many rows are below it, such as `Nameplate 18`.
+- A selected row of a tree is one band from the edge of the view, with the bar at its left edge, and no box around the name.
+- The menu bar, the menus, the status bar and the trees are all in the font of the application at its body size. A switch of theme gave some of them the larger font of the platform.
+- Titles in semibold are drawn in semibold: the bundled Inter is a variable font, and its weights below bold need the axis of the weight.
+- Hints, and findings of the level Info, are blue, the color of information, and no longer the yellow of warnings. Errors are red and warnings yellow, with the icons of their state in the Validation panel.
+- Read mode hides Add, Edit and Delete in the command bar and in the Edit menu, in place of showing them turned off.
+- A tab that shows no element says "Select an element".
+
+### Added
+
+- The Tabler icon `language`, for the badge of the languages of a text.
 
 ## [0.1.1] - 2026-11-16
 

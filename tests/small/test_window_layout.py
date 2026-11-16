@@ -48,10 +48,22 @@ def test_the_tab_of_a_full_hd_first_run_has_room_for_the_preview() -> None:
     assert tabs >= PREVIEW_MIN_TAB_WIDTH
 
 
-def test_the_tree_keeps_what_its_columns_need_in_a_small_window() -> None:
+def test_the_tree_gets_a_third_of_the_window_and_the_detail_the_rest() -> None:
+    left, right = zone_widths(1800)
+
+    assert (left, right) == (600, 1200)
+
+
+def test_the_tree_keeps_what_its_names_need_in_a_small_window() -> None:
+    left, right = zone_widths(900)
+
+    assert left == 320
+    assert left + right == 900
+
+
+def test_the_default_window_splits_without_a_gap() -> None:
     left, right = zone_widths(DEFAULT_SIZE[0])
 
-    assert left == 520
     assert left + right == DEFAULT_SIZE[0]
 
 

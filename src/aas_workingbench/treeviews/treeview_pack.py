@@ -129,6 +129,8 @@ from aas_workingbench import dialogs
 
 
 class PackHeaderView(HeaderView):
+    hidesWhenAlone = True
+
     def __init__(self, orientation, parent: Optional[QWidget] = ...) -> None:
         self.customLists = {}
         super(PackHeaderView, self).__init__(orientation, parent)
@@ -243,6 +245,8 @@ class PackTreeView(TreeView):
     EMPTY_VIEW_MSG = "Drop AAS files here"
     EMPTY_VIEW_ICON = OPEN_DRAG_ICON
     viewKind = ViewKind.PACKAGES
+    # A closed row shows how many rows are below it (proposal 2.3).
+    showsChildCounts = True
     # A dialog asked to show the files of a package.
     packageFilesRequested = pyqtSignal(object)
     # How many open packages hold changes that are not saved. The status bar
@@ -265,7 +269,8 @@ class PackTreeView(TreeView):
         self.recentFilesSeparator = None
         self.setAcceptDrops(True)
         self.setExpandsOnDoubleClick(False)
-        self.setSelectionBehavior(self.SelectionBehavior.SelectItems)
+        # The selection is the whole row, in one band (proposal 2.5).
+        self.setSelectionBehavior(self.SelectionBehavior.SelectRows)
         self.setHeader(PackHeaderView(Qt.Orientation.Horizontal, self))
         # Save means the package of the focused view, so its entry follows
         # the focus and not only the selection.

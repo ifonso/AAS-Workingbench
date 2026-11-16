@@ -37,6 +37,7 @@ ADRs are immutable: to change a decision, add a new ADR that supersedes the old 
 | [0030](0030-declared-files-are-kept.md) | A file that a package declares is the user's content, and a save keeps it. Replaces a point of 0013 | Accepted |
 | [0031](0031-hints-say-where-you-are-and-the-panel-lists-them.md) | The status bar counts the hints of the current object, and the Validation panel lists the hints of the package by kind. Changes a point of 0015 and 0029 | Accepted |
 | [0032](0032-file-dialogs-of-qt-on-linux.md) | The file dialogs on Linux are the dialogs of Qt, and the Linux build carries no GTK | Accepted |
+| [0033](0033-the-detail-reads-in-sections.md) | The detail reads in sections, drawn as bands over the rows of the model, and the type is no column | Accepted |
 
 To add one, copy the structure of an existing ADR, use the next number, and add it to this table.
 Write an ADR for a decision that is expensive to reverse: a new dependency with wide reach, a change to layer boundaries, or a metamodel target.

@@ -89,6 +89,8 @@ from aas_workingbench.settings.icons import (
 )
 from aas_workingbench.domain.design_tokens import CONTROL_HEIGHT
 from aas_workingbench.ui.breadcrumb import Breadcrumb
+from aas_workingbench.ui.element_header import ElementHeader
+from aas_workingbench.ui.empty_state import NothingSelected
 from aas_workingbench.ui.theme.icons import tabler_icon
 from aas_workingbench.settings.shortcuts import SC_BACK, SC_FORWARD
 from aas_workingbench.utils.util_type import getTypeName
@@ -96,8 +98,6 @@ from aas_workingbench.widgets import SearchBar, ToolBar
 from aas_workingbench.utils.util import getTreeItemPath
 from aas_workingbench.models import StandardTable
 from aas_workingbench.widgets import LineEdit
-from aas_workingbench.ui.embedded_concept import EmbeddedConceptPanel
-from aas_workingbench.ui.embedded_concept import open_in_tab
 from aas_workingbench.ui.hints_bar import HintsBar
 
 COMPLETION_ROLE = Qt.ItemDataRole.DisplayRole
@@ -113,6 +113,10 @@ PREVIEW_MIN_TAB_WIDTH = 720
 TAB_MIN_WIDTH = 120
 TAB_MAX_WIDTH = 240
 CASE_SENSITIVITY = Qt.CaseSensitivity.CaseInsensitive
+
+
+# The height of the path bar of a tab, above the header of the element.
+PATH_BAR_HEIGHT = 36
 
 
 class Signal(QObject):
@@ -504,12 +508,13 @@ class TabWithTreeView(QWidget):
         )
         self.showPreviewBtn.clicked.connect(self.openPreview)
         self.showPreviewBtn.hide()
+        # Which element the tab shows: its icon, idShort and type (3.1)
+        self.elementHeader = ElementHeader(self)
+        # What the tab says while it shows nothing (screen 02)
+        self.nothingSelected = NothingSelected(self)
+        self.nothingSelected.hide()
         # Advice about the shown object, while hints mode is on (F-EDT-06)
         self.hintsBar = HintsBar(self)
-        # The concept description of the semantic id, below the attributes
-        self.embeddedConcept = EmbeddedConceptPanel(
-            self, lambda concept: open_in_tab(self, concept)
-        )
         self.initActions()
 
         # Back and forward are on the command bar of the window. A tab in a
@@ -621,9 +626,35 @@ class TabWithTreeView(QWidget):
         """
         self.pathLine.setText(getTreeItemPath(self.packItem))
 
+    def shownPathSegments(self) -> list[tuple[str, QPersistentModelIndex]]:
+        """The segments that the path bar shows: the parents that are objects.
+
+        The package and the group of the tree (`Submodels`) say nothing that
+        the first object does not, so the path starts at a shell, a submodel
+        or a concept description (proposal 4.2). What the tab shows is always
+        the last segment, also when it is the package or a group.
+        """
+        segments = self.pathSegments()
+        if not segments:
+            return segments
+        *parents, last = segments
+        shown = [
+            (name, index)
+            for name, index in parents
+            if self._typeOf(QModelIndex(index)) not in ("", "Package")
+        ]
+        return [*shown, last]
+
+    @staticmethod
+    def _typeOf(index: QModelIndex) -> str:
+        text = index.siblingAtColumn(TYPE_COLUMN).data(
+            Qt.ItemDataRole.DisplayRole
+        )
+        return text if isinstance(text, str) else ""
+
     def openSegment(self, position: int) -> None:
         """Open the object of a segment of the path that the user clicked."""
-        segments = self.pathSegments()
+        segments = self.shownPathSegments()
         if 0 <= position < len(segments) - 1:
             self.openItem(QModelIndex(segments[position][1]))
 
@@ -695,6 +726,12 @@ class TabWithTreeView(QWidget):
     def openEmptyItem(self):
         self._openItem(QModelIndex())
 
+    def _showNothingSelected(self, nothing: bool) -> None:
+        """Shows the message of an empty tab instead of an empty detail."""
+        self.nothingSelected.setVisible(nothing)
+        for part in (self.pathBarWidget, self.elementHeader, self.splitter):
+            part.setVisible(not nothing)
+
     def _openItem(self, packItem: QModelIndex):
         try:
             currTab: TabWithTreeView = self.tabWidget.currentWidget()
@@ -706,13 +743,18 @@ class TabWithTreeView(QWidget):
         self.packItem = QPersistentModelIndex(packItem.siblingAtColumn(0))
 
         self.packItemObj = self.packItem.data(OBJECT_ROLE)
+        self._showNothingSelected(not self.packItem.isValid())
         self._followPackage(self.packItem.data(PACKAGE_ROLE))
         self.hintsBar.set_target(self.package, self.packItemObj)
-        self.embeddedConcept.set_target(self.package, self.packItemObj)
         self.updateMediaWidget()
         self.pathLine.setText(getTreeItemPath(self.packItem))
-        self.breadcrumb.set_path(
-            [name for name, _ in self.pathSegments()], self._typeText()
+        # The path bar says where the element is, and the header below it
+        # which element it is (proposal 3.1).
+        self.breadcrumb.set_path([name for name, _ in self.shownPathSegments()])
+        self.elementHeader.set_element(
+            self.packItem.data(Qt.ItemDataRole.DecorationRole),
+            str(self.packItem.data(Qt.ItemDataRole.DisplayRole) or ""),
+            self._typeText(),
         )
         self.fixTabOrder()
 
@@ -920,7 +962,10 @@ class TabWithTreeView(QWidget):
         self.searchBtn.setAccessibleName("Search in this tab")
         self.searchBtn.clicked.connect(self.searchBar.showFocused)
         toolBarLayout.addWidget(self.searchBtn)
-        toolBarWidget.setFixedHeight(CONTROL_HEIGHT)
+        toolBarWidget.setFixedHeight(PATH_BAR_HEIGHT)
+        toolBarWidget.setObjectName("pathBar")
+        toolBarWidget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        toolBarLayout.setContentsMargins(8, 0, 8, 0)
         self.pathBarWidget = toolBarWidget
 
         treeViewWidget = QWidget()
@@ -928,7 +973,6 @@ class TabWithTreeView(QWidget):
         treeViewLayout.setContentsMargins(0, 0, 0, 0)
         treeViewLayout.addWidget(self.hintsBar)
         treeViewLayout.addWidget(self.attrsTreeView)
-        treeViewLayout.addWidget(self.embeddedConcept)
 
         # The attributes keep a width that they can be read in, and the
         # preview can be dragged shut.
@@ -950,11 +994,13 @@ class TabWithTreeView(QWidget):
         layout = QVBoxLayout(self)
         layout.setObjectName("tabLayout")
         layout.addWidget(toolBarWidget)
+        layout.addWidget(self.elementHeader)
         layout.addWidget(self.searchBar)
         layout.addWidget(self.showPreviewBtn, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(self.splitter)
-        layout.setSpacing(2)
-        layout.setContentsMargins(0, 2, 0, 2)
+        layout.addWidget(self.nothingSelected, 1)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
 
 class TabWidget(QTabWidget):

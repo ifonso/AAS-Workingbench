@@ -436,6 +436,20 @@ QListView::item:hover {
     background-color: $bg_hover;
 }
 
+/* A selected row of a tree is one band in the color of the selection, from
+   the edge of the view, indent and chevron included, with the bar of the
+   delegate at its left edge (proposal 2.5). */
+
+QTreeView {
+    show-decoration-selected: 1;
+}
+
+QTreeView::item:selected,
+QTreeView::branch:selected {
+    background-color: $bg_selected;
+    color: $fg_primary;
+}
+
 /* A header is an item view too, so it would take the box of the rule above.
    Its sections draw the lines that it needs. */
 
@@ -558,6 +572,39 @@ QTreeView::branch:open:has-children {
     padding: 0 1px;
 }
 
+/* The two levels of the header of a tab (proposal 3.1): the path bar, which
+   says where the element is, and below it the block that says which element
+   it is. A line under each separates them from what follows. */
+
+#pathBar {
+    background-color: $bg_content;
+    border-bottom: 1px solid $stroke_subtle;
+}
+
+#elementHeader {
+    background-color: $bg_content;
+    border-bottom: 1px solid $stroke_subtle;
+}
+
+#elementHeaderTitle {
+    color: $fg_primary;
+}
+
+#elementHeaderBadge {
+    color: $fg_secondary;
+    background-color: $bg_content;
+    border: 1px solid $stroke_default;
+    border-radius: ${radius_badge}px;
+    padding: 0 4px;
+}
+
+/* The name of the type inside the field that edits a value (proposal 3.6) */
+
+QLabel#valueTypeInside {
+    color: $fg_muted;
+    background-color: transparent;
+}
+
 #breadcrumbType {
     color: $fg_muted;
     padding-right: 8px;
@@ -648,6 +695,21 @@ QToolButton#validationStatusFindings[state="warning"] {
 
 QLabel#validationNote {
     color: $fg_secondary;
+}
+
+/* The hints above the attributes of a tab. A hint is advice, so the strip is
+   the blue of information, with a line at its left edge so that color is not
+   alone (proposal 1.5). */
+
+QFrame#hintsBar {
+    background-color: $bg_info;
+    border: none;
+    border-left: ${focus_stroke}px solid $status_info;
+}
+
+QFrame#hintsBar QLabel {
+    background-color: transparent;
+    color: $fg_primary;
 }
 
 /* The command palette. Its rows are painted from the tokens, so the sheet has

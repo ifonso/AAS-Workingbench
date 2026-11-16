@@ -19,6 +19,7 @@ from typing import Any
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QResizeEvent
 from PyQt6.QtGui import QShowEvent
 from PyQt6.QtWidgets import QComboBox
 from PyQt6.QtWidgets import QCompleter
@@ -35,6 +36,7 @@ from PyQt6.QtWidgets import QWidget
 from basyx.aas import model
 from basyx.aas.model import datatypes
 
+from aas_workingbench.ui.empty_state import role_font
 from aas_workingbench.ui.path_dialogs import get_open_file_name
 from aas_workingbench.ui.path_dialogs import get_save_file_name
 from aas_workingbench.ui.colors import problem_border_style
@@ -190,6 +192,8 @@ class ValueLineEdit(QLineEdit):
         self._value_type: XsdType = value_type or datatypes.String
         # The text a view put in, so that it can tell whether the user changed it.
         self.initial_text = ""
+        # The name of the type at the right end of the field, when it is shown.
+        self._type_label: QLabel | None = None
         self.textChanged.connect(self._refresh)
         # The red frame has the colour of the theme, so it is made again.
         theme_manager().changed.connect(self._refresh)
@@ -198,6 +202,55 @@ class ValueLineEdit(QLineEdit):
     def value_type(self) -> XsdType:
         """Returns the type that the text must follow."""
         return self._value_type
+
+    def show_type_inside(self, shown: bool) -> None:
+        """Shows the name of the type at the right end of the field.
+
+        A cell of the detail has no column of types, so its editor says the
+        type, such as `xs:double`, while the value is edited (proposal 3.6).
+
+        Args:
+            shown: Whether the name is shown.
+        """
+        if not shown:
+            if self._type_label is not None:
+                self._type_label.hide()
+            self.setTextMargins(0, 0, 0, 0)
+            return
+        if self._type_label is None:
+            self._type_label = QLabel(self)
+            self._type_label.setObjectName("valueTypeInside")
+            self._type_label.setFont(role_font("caption"))
+            self._type_label.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+            )
+        self._type_label.show()
+        self._place_type_label()
+
+    def type_inside(self) -> str:
+        """The name of the type that the field shows inside, or nothing."""
+        label = self._type_label
+        if label is None or label.isHidden():
+            return ""
+        return label.text()
+
+    def _place_type_label(self) -> None:
+        label = self._type_label
+        if label is None or label.isHidden():
+            return
+        label.setText(value_types.type_name(self._value_type))
+        label.adjustSize()
+        gap = 6
+        label.move(
+            self.width() - label.width() - gap,
+            (self.height() - label.height()) // 2,
+        )
+        self.setTextMargins(0, 0, label.width() + gap, 0)
+
+    def resizeEvent(self, a0: QResizeEvent | None) -> None:
+        """Keeps the name of the type at the right end."""
+        super().resizeEvent(a0)
+        self._place_type_label()
 
     def set_value_type(self, value_type: XsdType | None) -> None:
         """Checks the text against another type.
@@ -236,6 +289,7 @@ class ValueLineEdit(QLineEdit):
 
     def _refresh(self, _: str = "") -> None:
         name = value_types.type_name(self._value_type)
+        self._place_type_label()
         example = _EXAMPLES.get(self._value_type)
         self.setPlaceholderText(f"{name}: {example}" if example else name)
         if self._value_type is datatypes.Boolean:

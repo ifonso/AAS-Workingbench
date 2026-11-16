@@ -30,6 +30,8 @@ from aas_workingbench.settings.app_settings import (
     COLUMNS_IN_ATTRIBUTE_TABS,
     PACK_ITEM_ROLE,
     DEFAULT_FONT,
+    LINKED_CONCEPT_ROLE,
+    VALUE_COLUMN,
 )
 
 
@@ -65,3 +67,21 @@ class DetailedInfoTable(StandardTable):
             return QModelIndex(self.packItem)
         else:
             return super(DetailedInfoTable, self).data(index, role)
+
+    def getLinkedItem(self, index: QModelIndex) -> QModelIndex:
+        """Finds the row of the tree that a link of the detail opens.
+
+        A semanticId that names a concept description of the package links
+        to it (proposal 3.5), and so does the unit of a value that the concept
+        gives (proposal 3.7). Other links resolve their reference.
+        """
+        concept = index.siblingAtColumn(VALUE_COLUMN).data(LINKED_CONCEPT_ROLE)
+        if concept is None:
+            return super().getLinkedItem(index)
+        from aas_workingbench.ui.reference_jump import find_row
+
+        tree = QModelIndex(self.packItem).model()
+        if tree is None:
+            return QModelIndex()
+        found = find_row(tree, concept)
+        return found if found is not None else QModelIndex()

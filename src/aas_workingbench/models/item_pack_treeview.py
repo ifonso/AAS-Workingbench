@@ -139,16 +139,21 @@ class PackTreeViewItem(StandardItem):
         return " / ".join(reversed(names))
 
     def _fullNameTooltip(self, column, column_name):
-        """The whole name of a row, which the column may cut, and where it is.
+        """The whole name of a row, which the column may cut, where it is, and
+        its type.
 
         The name is not cut here, and below it comes the path from the package,
-        which the indent of a deep row does not show.
+        which the indent of a deep row does not show. The type column is hidden
+        by default (proposal 2.1), so the type is told here.
         """
         name = self.displayName
         tooltip = name
         path = self.pathText
         if path and path != name:
             tooltip = f"{name}\n{path}"
+        kind = self.typeText
+        if kind:
+            tooltip = f"{tooltip}\n\n{kind}"
         extra = super()._getTooltipRoleData(column, column_name)
         if isinstance(extra, str) and extra and extra != name:
             tooltip = f"{tooltip}\n\n{extra}"

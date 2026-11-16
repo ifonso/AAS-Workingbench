@@ -91,8 +91,10 @@ aas-test-engines (aas_test_engines/ and the installed package)
 
 Tabler Icons (src/aas_workingbench/icons/tabler/)
     Version 3.50.0 of https://github.com/tabler/tabler-icons, the outline
-    style. The 53 SVG files are unmodified copies, and are the icons of
-    actions in the toolbars, menus and trees. MIT License, "Copyright (c)
+    style. 53 of the 54 SVG files are unmodified copies, and are the icons
+    of actions in the toolbars, menus and trees. The file language.svg has
+    the paths of the icon "language" of the same set, without the comment
+    that heads the files of the release. MIT License, "Copyright (c)
     2020-2026 Paweł Kuna". The license text is in the file LICENSE of that
     folder, and is the text of the same release. The editor draws the files
     in a color of the theme, and does not change them.

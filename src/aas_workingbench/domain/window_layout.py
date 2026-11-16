@@ -18,11 +18,13 @@ DEFAULT_SIZE = (1194, 624)
 SCREEN_SHARE = 0.85
 """How much of the room of the screen a first run takes."""
 
-LEFT_SHARE = 0.4
-"""How much of the window the tree of packages gets."""
+LEFT_SHARE = 1 / 3
+"""How much of the window the tree of packages gets. The tree shows the names
+only, and its type column is hidden (proposal 2.1), so the detail of the
+element gets the room."""
 
-LEFT_MIN_WIDTH = 520
-"""What the tree of packages needs for its object and type columns."""
+LEFT_MIN_WIDTH = 320
+"""What the tree of packages needs for the names of nested elements."""
 
 TAB_MIN_WIDTH = 720
 """What a tab needs to show a preview beside its attributes."""
