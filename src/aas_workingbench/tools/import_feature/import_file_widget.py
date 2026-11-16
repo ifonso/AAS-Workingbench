@@ -16,7 +16,6 @@ from PyQt6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QPushButton,
-    QFileDialog,
     QMessageBox,
     QFormLayout,
     QDialog,
@@ -25,6 +24,9 @@ from PyQt6.QtWidgets import (
     QLineEdit,
 )
 
+from aas_workingbench.ui.path_dialogs import get_existing_directory
+from aas_workingbench.ui.path_dialogs import get_open_file_name
+from aas_workingbench.ui.path_dialogs import get_save_file_name
 from aas_workingbench.widgets import messsageBoxes
 from aas_workingbench.tools.import_feature.import_settings import MAPPING_ATTR
 from aas_workingbench.tools.import_feature import (
@@ -141,8 +143,8 @@ class ImportManageWidget(QWidget):
         self.setLayout(toolBarHLayout)
 
     def saveMappingFileDialog(self):
-        file, _ = QFileDialog.getSaveFileName(
-            self, "Save Mapping File", filter=settings.JSON_FILES_FILTER
+        file = get_save_file_name(
+            self, "Save Mapping File", name_filter=settings.JSON_FILES_FILTER
         )
         if file:
             self.saveMappingFile(file)
@@ -441,17 +443,17 @@ class SettingsDialog(QDialog):
         self.formLayout.addRow("Mapping File", hbox)
 
     def chooseImportFile(self):
-        file, _ = QFileDialog.getOpenFileName(
+        file = get_open_file_name(
             self,
             "Choose Import Excel File",
-            filter=f"{EXCEL_FILES};;{settings.ALL_FILES_FILTER}",
+            name_filter=f"{EXCEL_FILES};;{settings.ALL_FILES_FILTER}",
         )
         if file:
             self.importExcelFileLine.setText(file)
 
     def chooseMappingFile(self):
-        file, _ = QFileDialog.getOpenFileName(
-            self, "Choose Mapping File", filter=settings.JSON_FILES_FILTER
+        file = get_open_file_name(
+            self, "Choose Mapping File", name_filter=settings.JSON_FILES_FILTER
         )
         if file:
             self.mappingFileLine.setText(file)
@@ -512,11 +514,11 @@ class ImportSettingsDialog(SettingsDialog):
         self.formLayout.addRow("Base AAS File*", hbox)
 
     def newAasFile(self):
-        file, _ = QFileDialog.getSaveFileName(
+        file = get_save_file_name(
             self,
             "Create new AAS File",
             "new_aas_file.aasx",
-            filter=settings.FILTER_AAS_FILES,
+            name_filter=settings.FILTER_AAS_FILES,
         )
         if file:
             Package().write(file)
@@ -525,8 +527,10 @@ class ImportSettingsDialog(SettingsDialog):
             return
 
     def chooseAasFile(self):
-        file, _ = QFileDialog.getOpenFileName(
-            self, "Choose Import Excel File", filter=settings.FILTER_AAS_FILES
+        file = get_open_file_name(
+            self,
+            "Choose Import Excel File",
+            name_filter=settings.FILTER_AAS_FILES,
         )
         if file:
             self.aasFileLine.setText(file)
@@ -611,6 +615,6 @@ class RunImportDialog(QDialog):
         focus_first_field(self)
 
     def chooseExportFolder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Choose Export Folder")
+        folder = get_existing_directory(self, "Choose Export Folder")
         if folder:
             self.exportFolderLine.setText(folder)

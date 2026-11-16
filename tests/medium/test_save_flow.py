@@ -709,3 +709,84 @@ def test_save_still_works_when_a_rule_raises(
 
     assert saved is True
     assert view_support.shown_dialogs.shown == []
+
+
+# ---------------------------------------------------------------------------
+# Save As and Open ask once
+# ---------------------------------------------------------------------------
+
+
+def _answer_file_dialogs(
+    monkeypatch: pytest.MonkeyPatch, path: Path | None
+) -> list[str]:
+    """Makes the file dialogs answer with a path, and counts how often."""
+    from PyQt6.QtWidgets import QFileDialog
+
+    asked: list[str] = []
+
+    def answer(*args: object, **kwargs: object) -> tuple[str, str]:
+        asked.append("asked")
+        return (str(path) if path is not None else ""), ""
+
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", staticmethod(answer))
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", staticmethod(answer))
+    return asked
+
+
+def test_save_as_asks_once_when_the_save_is_refused(
+    view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_workingbench.package import Package
+
+    source = write_package_with_missing_file(tmp_path / "dangling.aasx")
+    package = Package(source)
+    view = view_support.open_package(package)
+    asked = _answer_file_dialogs(monkeypatch, tmp_path / "copy.aasx")
+
+    saved = view.savePackAsWithDialog(pack=package)
+
+    assert saved is False
+    assert asked == ["asked"]
+
+
+def test_save_as_says_true_when_the_package_is_written(
+    view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_workingbench.package import Package
+
+    package = Package(write_aasx(tmp_path / "source.aasx", make_store()))
+    view = view_support.open_package(package)
+    _answer_file_dialogs(monkeypatch, tmp_path / "copy.aasx")
+
+    saved = view.savePackAsWithDialog(pack=package)
+
+    assert saved is True
+    assert package.file == tmp_path / "copy.aasx"
+
+
+def test_save_as_says_false_when_the_dialog_is_cancelled(
+    view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_workingbench.package import Package
+
+    package = Package(write_aasx(tmp_path / "source.aasx", make_store()))
+    view = view_support.open_package(package)
+    _answer_file_dialogs(monkeypatch, None)
+
+    assert view.savePackAsWithDialog(pack=package) is False
+
+
+def test_open_asks_once_when_the_package_is_open_already(
+    view_support, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_workingbench.package import Package
+
+    source = write_aasx(tmp_path / "source.aasx", make_store())
+    view = view_support.open_package(Package(source))
+    asked = _answer_file_dialogs(monkeypatch, source)
+    monkeypatch.setattr(QMessageBox, "critical", staticmethod(lambda *a: 0))
+
+    opened = view.openPackWithDialog()
+
+    assert opened is False
+    assert asked == ["asked"]
