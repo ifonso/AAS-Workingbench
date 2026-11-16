@@ -199,6 +199,11 @@ def hints_here_text(count: int) -> str:
     return f"{count_text(count, 'hint')} here"
 
 
+def hints_text(count: int) -> str:
+    """Words the count of hints of a package, such as `523 hints`."""
+    return count_text(count, "hint")
+
+
 @dataclass(frozen=True)
 class HintGroup:
     """The hints of one kind in a package.

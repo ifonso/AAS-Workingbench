@@ -490,11 +490,11 @@ def test_creating_the_description_that_the_finding_names_clears_the_finding(
     assert create.isEnabled()
     create.trigger()
     qtbot.waitUntil(
-        lambda: status.findings_button.text() == "0 errors, 0 warnings",
+        lambda: status.findings_button.text() == "No problems",
         timeout=4000,
     )
 
-    assert before == "0 errors, 1 warning"
+    assert before == "1 warning"
     assert large.package.commandStack.can_undo
     large.view.setFocus()
     uw.press(Qt.Key.Key_F8)
@@ -522,7 +522,7 @@ def test_the_package_of_the_owner_opens_clean_and_its_rows_can_be_found(
     bar.showFocused()
     qtbot.keyClicks(bar.searchLine, "Cutting")
 
-    assert status.findings_button.text() == "0 errors, 0 warnings"
+    assert status.findings_button.text() == "No problems"
     assert requester.status == "No errors or warnings"
     assert bar.resultLabel.text() == "1 of 2"
     assert requester.view.currentIndex().data() == "Cutting"

@@ -24,8 +24,8 @@ from PyQt6.QtWidgets import QWidget
 
 from aas_workingbench.application.hints import hint_count_here
 from aas_workingbench.application.hints import hint_kinds
-from aas_workingbench.application.hints import hints_here_text
 from aas_workingbench.application.hints import hints_mode
+from aas_workingbench.application.hints import hints_text
 from aas_workingbench.application.validation import FindingCounts
 from aas_workingbench.application.validation import count_findings
 from aas_workingbench.application.validation import count_text
@@ -42,18 +42,31 @@ FINDINGS_TIP = (
     "next one."
 )
 HINTS_TIP = (
-    "Hints about the object that is current. Hints are advice, not rules. "
-    "Click to list the hints of the whole package in the Validation panel, "
-    "where you can turn a kind off."
+    "Hints of the package. Hints are advice, not rules, and do not stop a "
+    "save. Click to list them by kind in the Validation panel, where you can "
+    "turn a kind off."
 )
+NO_PROBLEMS = "No problems"
+
+# The icon of the counts of errors and warnings, for the worst of them.
+_STATE_ICONS = {
+    "error": ("circle-x", IconRole.ERROR),
+    "warning": ("alert-triangle", IconRole.WARNING),
+    "ok": ("circle-check", IconRole.SUCCESS),
+}
 
 
 def findings_text(counts: FindingCounts) -> str:
-    """Words the errors and warnings, such as `1 error, 2 warnings`."""
-    return (
-        f"{count_text(counts.errors, 'error')}, "
-        f"{count_text(counts.warnings, 'warning')}"
-    )
+    """Words the errors and warnings, such as `1 error, 2 warnings`.
+
+    A package without either reads `No problems` (proposal 5.1).
+    """
+    parts: list[str] = []
+    if counts.errors:
+        parts.append(count_text(counts.errors, "error"))
+    if counts.warnings:
+        parts.append(count_text(counts.warnings, "warning"))
+    return ", ".join(parts) if parts else NO_PROBLEMS
 
 
 def findings_state(counts: FindingCounts) -> str:
@@ -98,6 +111,9 @@ class ValidationStatus(QWidget):
             "validationStatusFindings", "Errors and warnings", FINDINGS_TIP
         )
         self.findings_button.setParent(self)
+        self.findings_button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
         self.findings_button.clicked.connect(self.opened)
         self.hints_button = _make_button(
             "validationStatusHints", "Hints about the current object", HINTS_TIP
@@ -130,6 +146,15 @@ class ValidationStatus(QWidget):
         if service is None:
             return FindingCounts()
         return count_findings(service.report)
+
+    @property
+    def hints_total(self) -> int:
+        """How many hints the package has, apart from the kinds that are
+        turned off. Zero while hints mode is off."""
+        service = self._service
+        if service is None or not hints_mode().is_on:
+            return 0
+        return hint_count_here(service.hint_report.findings)
 
     @property
     def hints_here(self) -> int:
@@ -210,20 +235,28 @@ class ValidationStatus(QWidget):
             self.hide()
             return
         counts = self.counts
+        state = findings_state(counts)
         self.findings_button.setText(findings_text(counts))
-        self.findings_button.setProperty("state", findings_state(counts))
+        self.findings_button.setProperty("state", state)
+        name, role = _STATE_ICONS[state]
+        self.findings_button.setIcon(tabler_icon(name, role))
         style = self.findings_button.style()
         if style is not None:
             style.unpolish(self.findings_button)
             style.polish(self.findings_button)
-        here = self.hints_here
-        self.hints_button.setText(hints_here_text(here))
+        # The hints of the package, which the panel lists by kind. Blue says
+        # that they are advice, so a count that rarely reaches zero is no
+        # alarm (proposals 1.5, 5.1, ADR 0034).
+        total = self.hints_total
+        self.hints_button.setText(hints_text(total))
         self.hints_button.setToolTip(self._hints_tip())
-        self.hints_button.setVisible(here > 0)
+        self.hints_button.setVisible(total > 0)
         self.show()
 
     def _hints_tip(self) -> str:
+        here = count_text(self.hints_here, "hint")
+        tip = f"{HINTS_TIP} {here} about the current object."
         off = len(hint_kinds().off)
         if not off:
-            return HINTS_TIP
-        return f"{HINTS_TIP} {count_text(off, 'kind')} turned off."
+            return tip
+        return f"{tip} {count_text(off, 'kind')} turned off."
