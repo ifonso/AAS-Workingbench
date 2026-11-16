@@ -35,7 +35,6 @@ from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QStackedWidget
-from PyQt6.QtWidgets import QStyle
 from PyQt6.QtWidgets import QTableView
 from PyQt6.QtWidgets import QTabBar
 from PyQt6.QtWidgets import QVBoxLayout
@@ -46,6 +45,8 @@ from aas_workingbench.domain.validation import Finding
 from aas_workingbench.domain.validation import Severity
 from aas_workingbench.domain.validation import ValidationReport
 from aas_workingbench.ui.hints_view import HintsView
+from aas_workingbench.ui.theme.icons import IconRole
+from aas_workingbench.ui.theme.icons import tabler_icon
 from aas_workingbench.ui.validation_service import ValidatedPackage
 from aas_workingbench.ui.validation_service import ValidationService
 from aas_workingbench.ui.validation_service import service_for
@@ -72,10 +73,12 @@ _COUNT_WORDS = {
     Severity.WARNING: ("warning", "warnings"),
     Severity.INFO: ("hint", "hints"),
 }
+# The icon of each severity, a Tabler icon in the color of its state. Info is
+# blue, as hints are, so that yellow means a warning only (proposal 1.5).
 _ICONS = {
-    Severity.ERROR: QStyle.StandardPixmap.SP_MessageBoxCritical,
-    Severity.WARNING: QStyle.StandardPixmap.SP_MessageBoxWarning,
-    Severity.INFO: QStyle.StandardPixmap.SP_MessageBoxInformation,
+    Severity.ERROR: ("circle-x", IconRole.ERROR),
+    Severity.WARNING: ("alert-triangle", IconRole.WARNING),
+    Severity.INFO: ("info-circle", IconRole.INFO),
 }
 
 
@@ -148,10 +151,8 @@ class FindingsModel(QAbstractTableModel):
 
 
 def _icon(severity: Severity) -> QIcon:
-    from PyQt6.QtWidgets import QApplication
-
-    style = QApplication.style()
-    return QIcon() if style is None else style.standardIcon(_ICONS[severity])
+    name, role = _ICONS[severity]
+    return tabler_icon(name, role)
 
 
 class FindingsFilter(QSortFilterProxyModel):

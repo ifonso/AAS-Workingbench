@@ -51,6 +51,7 @@ class IconRole(StrEnum):
     ERROR = "status_error"
     WARNING = "status_warning"
     SUCCESS = "status_success"
+    INFO = "status_info"
 
 
 def icon_color(tokens: ColorTokens, role: IconRole, mode: QIcon.Mode) -> str:

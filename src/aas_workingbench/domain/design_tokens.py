@@ -52,11 +52,14 @@ class ColorTokens:
         link: A link.
         mark_changed: A row that was changed.
         status_error: An error.
-        status_warning: A warning, or text of a hint.
+        status_warning: A warning. Hints are not warnings, see `status_info`.
         status_success: A success.
+        status_info: A hint, and a finding of the level Info. Hints are advice,
+            and a real package has hundreds, so they are blue and not yellow.
         mark_new: A row that was added.
         bg_error: The strip behind an error.
-        bg_warning: The strip behind a hint.
+        bg_warning: The strip behind a warning.
+        bg_info: The strip behind a hint.
         bg_find: A match of the search.
     """
 
@@ -85,9 +88,11 @@ class ColorTokens:
     status_error: str
     status_warning: str
     status_success: str
+    status_info: str
     mark_new: str
     bg_error: str
     bg_warning: str
+    bg_info: str
     bg_find: str
 
     def __post_init__(self) -> None:
@@ -148,9 +153,11 @@ LIGHT: Final = ColorTokens(
     status_error="#b3261e",
     status_warning="#8a5a00",
     status_success="#0e700e",
+    status_info="#0f6cbd",
     mark_new="#0e700e",
     bg_error="#fdf0f0",
     bg_warning="#fff8e6",
+    bg_info="#ebf3fc",
     bg_find="#fef7b2",
 )
 """The light theme, which is the default."""
@@ -181,9 +188,11 @@ DARK: Final = ColorTokens(
     status_error="#ff8a85",
     status_warning="#f2c661",
     status_success="#7dd87d",
+    status_info="#479ef5",
     mark_new="#7dd87d",
     bg_error="#3b1f1f",
     bg_warning="#3a2f12",
+    bg_info="#0e2a47",
     bg_find="#5c4f00",
 )
 """The dark theme."""
@@ -276,7 +285,9 @@ _SURFACES: Final = (
 
 CONTRAST_PAIRS: Final = (
     # Names and values, on every surface and on the strips and the match.
-    *_text("fg_primary", *_SURFACES, "bg_error", "bg_warning", "bg_find"),
+    *_text(
+        "fg_primary", *_SURFACES, "bg_error", "bg_warning", "bg_info", "bg_find"
+    ),
     # Labels, which also color the icons of actions.
     *_text("fg_secondary", *_SURFACES),
     # The Type column and `(not set)`, which are text.
@@ -284,12 +295,15 @@ CONTRAST_PAIRS: Final = (
     # Links and changed rows.
     *_text("link", *_SURFACES[:2], "bg_hover", "bg_selected"),
     *_text("mark_changed", *_SURFACES[:2], "bg_hover", "bg_selected"),
-    # States that are text. Hint text is `status_warning`.
+    # States that are text. Hint text is `status_info`.
     *_text("status_error", "bg_content", "bg_chrome", "bg_error"),
     *_text("status_error", "bg_selected"),
     *_text("status_warning", "bg_content", "bg_chrome", "bg_warning"),
     *_text("status_warning", "bg_selected"),
     *_text("status_success", "bg_content", "bg_chrome", "bg_selected"),
+    # A hint is text on the surfaces and its strip, and an icon in a row that
+    # is selected or under the pointer, where its blue is too light for text.
+    *_text("status_info", "bg_content", "bg_chrome", "bg_sunken", "bg_info"),
     *_text("mark_new", "bg_content", "bg_chrome", "bg_hover", "bg_selected"),
     # Text on the primary button and its hover.
     *_text("accent_on", "accent", "accent_hover"),
@@ -297,6 +311,7 @@ CONTRAST_PAIRS: Final = (
     *_icon("fg_secondary", *_SURFACES),
     *_icon("accent", "bg_content", "bg_chrome", "bg_sunken", "bg_selected"),
     *_icon("accent_hover", "bg_content"),
+    *_icon("status_info", "bg_hover", "bg_selected"),
     *_icon("stroke_strong", "bg_content", "bg_chrome"),
     *_icon("focus", "bg_content", "bg_chrome", "bg_selected"),
     *_icon("focus_on_accent", "accent", "accent_hover"),

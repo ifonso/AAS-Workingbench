@@ -453,3 +453,34 @@ def test_dock_shows_the_remaining_package_when_one_is_closed(window) -> None:
 
     assert window.dock.package is second
     assert len(window.dock.visible_findings()) == 1
+
+
+# ---------------------------------------------------------------------------
+# The colors of the severities
+# ---------------------------------------------------------------------------
+
+
+def _icon_colors(dock, row: int) -> set[str]:
+    from PyQt6.QtCore import QSize
+
+    icon = dock.filter.index(row, 0).data(Qt.ItemDataRole.DecorationRole)
+    image = icon.pixmap(QSize(48, 48), 1.0).toImage()
+    return {
+        image.pixelColor(x, y).name()
+        for x in range(image.width())
+        for y in range(image.height())
+        if image.pixelColor(x, y).alpha() == 255
+    }
+
+
+def test_an_error_and_a_warning_have_the_colors_of_their_state(
+    make_dock, package_with_findings
+) -> None:
+    from aas_workingbench.ui.theme import current_tokens
+
+    dock = make_dock()
+    dock.set_package(package_with_findings.package)
+    tokens = current_tokens()
+
+    assert _icon_colors(dock, 0) == {tokens.status_error}
+    assert _icon_colors(dock, 1) == {tokens.status_warning}

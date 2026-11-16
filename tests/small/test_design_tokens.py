@@ -82,6 +82,7 @@ def test_every_text_and_icon_token_has_a_pair():
         "status_error",
         "status_warning",
         "status_success",
+        "status_info",
         "accent_on",
         "accent",
         "accent_hover",
@@ -118,6 +119,32 @@ def test_text_pairs_ask_4_5_and_icon_pairs_ask_3():
 
 def test_pair_names_the_tokens_it_measures():
     assert CONTRAST_PAIRS[0].name == "fg_primary on bg_content"
+
+
+@pytest.mark.parametrize("tokens", [LIGHT, DARK], ids=lambda t: t.name)
+def test_a_hint_is_the_blue_of_information_and_not_the_yellow_of_a_warning(
+    tokens,
+):
+    assert tokens.status_info not in (tokens.status_warning, tokens.accent_on)
+    assert tokens.bg_info != tokens.bg_warning
+
+
+@pytest.mark.parametrize(
+    ("tokens", "info", "strip"),
+    [(LIGHT, "#0f6cbd", "#ebf3fc"), (DARK, "#479ef5", "#0e2a47")],
+    ids=["light", "dark"],
+)
+def test_the_info_colors_are_those_of_the_proposal(tokens, info, strip):
+    assert tokens.status_info == info
+    assert tokens.bg_info == strip
+
+
+def test_hint_text_is_read_on_its_strip_and_its_icon_on_a_selected_row():
+    names = {pair.name: pair.minimum for pair in CONTRAST_PAIRS}
+
+    assert names["status_info on bg_info"] == TEXT_CONTRAST
+    assert names["fg_primary on bg_info"] == TEXT_CONTRAST
+    assert names["status_info on bg_selected"] == ICON_CONTRAST
 
 
 def test_themes_are_light_and_dark():

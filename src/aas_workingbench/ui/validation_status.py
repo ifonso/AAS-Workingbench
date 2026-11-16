@@ -30,6 +30,8 @@ from aas_workingbench.application.validation import FindingCounts
 from aas_workingbench.application.validation import count_findings
 from aas_workingbench.application.validation import count_text
 from aas_workingbench.application.validation import hints_for
+from aas_workingbench.ui.theme.icons import IconRole
+from aas_workingbench.ui.theme.icons import tabler_icon
 from aas_workingbench.ui.validation_service import ValidatedPackage
 from aas_workingbench.ui.validation_service import ValidationService
 from aas_workingbench.ui.validation_service import service_for
@@ -101,6 +103,12 @@ class ValidationStatus(QWidget):
             "validationStatusHints", "Hints about the current object", HINTS_TIP
         )
         self.hints_button.setParent(self)
+        # Hints are advice, so their sign is the blue of information and not
+        # the yellow of a warning (proposal 1.5).
+        self.hints_button.setIcon(tabler_icon("info-circle", IconRole.INFO))
+        self.hints_button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
         self.hints_button.clicked.connect(self.hints_opened)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
