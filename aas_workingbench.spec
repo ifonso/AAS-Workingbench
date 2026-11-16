@@ -31,6 +31,33 @@ a = Analysis(['src/aas_workingbench/__main__.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False)
+# On Linux the build leaves out the GTK platform theme of Qt and the GTK 3 stack
+# that only it loads. PyInstaller copied them from the build machine, and the
+# file dialog of that GTK, mixed with the GTK modules and settings of the user's
+# system, froze the window on Ubuntu. The file dialogs use the dialog of Qt on
+# Linux (ui/path_dialogs.py, ADR 0032), so nothing else needs them.
+import sys
+
+GTK_ONLY_LIBRARIES = (
+    "libqgtk3.so",
+    "libgtk-3.so", "libgdk-3.so", "libgdk_pixbuf-2.0.so", "libglycin-2.so",
+    "libatk-1.0.so", "libatk-bridge-2.0.so", "libatspi.so",
+    "libpango-1.0.so", "libpangocairo-1.0.so", "libpangoft2-1.0.so",
+    "libcairo.so", "libcairo-gobject.so", "libpixman-1.so",
+    "libharfbuzz.so", "libfribidi.so", "libthai.so", "libdatrie.so",
+    "libepoxy.so", "libcloudproviders.so", "libtinysparql-3.0.so",
+    "libjson-glib-1.0.so",
+)
+
+
+def _is_gtk_only(name):
+    base = name.replace("\\", "/").rsplit("/", 1)[-1]
+    return any(base.startswith(prefix) for prefix in GTK_ONLY_LIBRARIES)
+
+
+if sys.platform.startswith("linux"):
+    a.binaries = [entry for entry in a.binaries if not _is_gtk_only(entry[0])]
+
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 

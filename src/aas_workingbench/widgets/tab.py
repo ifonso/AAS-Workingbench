@@ -64,7 +64,6 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QMessageBox,
     QToolButton,
-    QFileDialog,
     QCompleter,
     QStyledItemDelegate,
     QSizePolicy,
@@ -72,6 +71,7 @@ from PyQt6.QtWidgets import (
 
 from basyx.aas.model import Identifiable, Referable
 
+from aas_workingbench.ui.path_dialogs import get_save_file_name
 from aas_workingbench.application.changes import (
     Change,
     ChangeKind,
@@ -880,29 +880,22 @@ class TabWithTreeView(QWidget):
         self._updatePreviewButton()
 
     def saveMediaAsWithDialog(self, directory="") -> bool:
+        # Asked once: a failed write has shown its error.
         mediaContent = self.packItem.data(MEDIA_CONTENT_ROLE)
-        file = self.packItem.data(NAME_ROLE)
-        saved = False
-        while not saved:
-            try:
-                file, _ = QFileDialog.getSaveFileName(
-                    self, "Save media File", directory + "/" + file.strip("/")
-                )
-            except AttributeError as e:
-                QMessageBox.critical(self, "Error", f"{e}")
-            else:
-                if file:
-                    saved = self.saveMedia(mediaContent, file)
-                else:
-                    # cancel pressed
-                    return
+        name = self.packItem.data(NAME_ROLE)
+        file = get_save_file_name(
+            self, "Save media File", directory + "/" + name.strip("/")
+        )
+        if not file:
+            return False
+        return self.saveMedia(mediaContent, file)
 
     def saveMedia(self, media=None, file: str = None) -> bool:
         try:
             with open(file, "wb") as f:
                 f.write(media.value)
             return True
-        except (TypeError, ValueError) as e:
+        except (OSError, TypeError, ValueError) as e:
             QMessageBox.critical(
                 self, "Error", f"Media couldn't be saved: {file}: {e}"
             )

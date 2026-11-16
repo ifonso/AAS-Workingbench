@@ -9,18 +9,10 @@
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
 import sys
-import logging
 
 from PyQt6 import QtWidgets
 from aas_workingbench.utils import exceptionhook  # noqa: F401
 from PyQt6 import QtWebEngineWidgets
-
-logging.basicConfig(
-    level=logging.INFO,
-    filename="log.log",
-    filemode="w",
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
 
 
 def main():
@@ -42,6 +34,12 @@ def main():
 
     app.setOrganizationName(IAT)
     app.setApplicationName(SETTINGS_APPLICATION_NAME)
+
+    # The log goes to the data folder that these names give.
+    from aas_workingbench.infrastructure.app_log import start_log
+    from aas_workingbench.settings.app_settings import log_dir
+
+    start_log(log_dir())
 
     # Features add their actions before the first view exists.
     from aas_workingbench.ui.blob_actions import register_blob_actions

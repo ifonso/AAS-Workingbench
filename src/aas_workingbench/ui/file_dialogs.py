@@ -14,7 +14,6 @@ from PyQt6.QtGui import QFontDatabase
 from PyQt6.QtWidgets import QAbstractItemView
 from PyQt6.QtWidgets import QDialog
 from PyQt6.QtWidgets import QDialogButtonBox
-from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtWidgets import QInputDialog
 from PyQt6.QtWidgets import QLabel
@@ -28,6 +27,8 @@ from PyQt6.QtWidgets import QTableWidgetItem
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_workingbench.ui.path_dialogs import get_open_file_name
+from aas_workingbench.ui.path_dialogs import get_save_file_name
 from aas_workingbench.application.supplementary_files import StoredFileInfo
 from aas_workingbench.domain.file_references import FileReference
 from aas_workingbench.ui.dialog_layout import finish_dialog
@@ -141,13 +142,13 @@ def ask_text(
 
 def pick_file_to_add(parent: QWidget | None) -> Path | None:
     """Asks for a file on disk to add to the package."""
-    path, _ = QFileDialog.getOpenFileName(parent, "Add file to package")
+    path = get_open_file_name(parent, "Add file to package")
     return Path(path) if path else None
 
 
 def pick_thumbnail_image(parent: QWidget | None) -> Path | None:
     """Asks for the image file that becomes the package thumbnail."""
-    path, _ = QFileDialog.getOpenFileName(
+    path = get_open_file_name(
         parent,
         "Choose package thumbnail",
         "",
@@ -158,9 +159,7 @@ def pick_thumbnail_image(parent: QWidget | None) -> Path | None:
 
 def pick_path_to_save(parent: QWidget | None, suggested: str) -> Path | None:
     """Asks where to write a file that is taken out of the package."""
-    path, _ = QFileDialog.getSaveFileName(
-        parent, "Save package file as", suggested
-    )
+    path = get_save_file_name(parent, "Save package file as", suggested)
     return Path(path) if path else None
 
 

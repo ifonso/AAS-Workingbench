@@ -47,7 +47,9 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         if QtWidgets.QApplication.instance() is None:
             sys.exit(1)
 
-        box = QtWidgets.QMessageBox(None)
+        # On the window in use, so that it shows in front of it and not
+        # anywhere on the screen.
+        box = QtWidgets.QMessageBox(QtWidgets.QApplication.activeWindow())
         box.setIcon(QtWidgets.QMessageBox.Icon.Critical)
         box.setText(f"An Exception was raised. Caught Exception: {exc_value}")
         box.setDetailedText(
