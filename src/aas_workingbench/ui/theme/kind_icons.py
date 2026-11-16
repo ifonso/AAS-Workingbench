@@ -15,6 +15,9 @@ the family of the kind and the letters say the kind:
 | Circle                        | Annotation: qualifier, extension, id, reference, data specification |
 
 The files draw in `currentColor`, so `svg_icon` colors them by token (ADR 0027).
+Each family of the table above has a color of its own, so that the kinds are
+told apart at a glance (proposal 1.4, ADR 0035): structure, container, data,
+behavior and relation. The annotations keep the blue of the application.
 The Type column and the tooltip always state the kind in words.
 """
 
@@ -33,7 +36,42 @@ KINDS_FOLDER = Path(__file__).parents[2] / "icons" / "kinds"
 """Where the SVG files of the kinds are."""
 
 KIND_ROLE = IconRole.ACCENT
-"""The role of a kind icon: the blue of the application."""
+"""The role of a kind icon that has no family of color: the annotations, such
+as a qualifier or a reference, in the blue of the application."""
+
+_FAMILIES: dict[IconRole, tuple[str, ...]] = {
+    IconRole.KIND_STRUCTURE: (
+        "asset_administration_shell",
+        "submodel",
+        "concept_description",
+        "asset_information",
+        "submodel_reference",
+    ),
+    IconRole.KIND_CONTAINER: (
+        "submodel_element_collection",
+        "submodel_element_list",
+        "entity",
+    ),
+    IconRole.KIND_DATA: (
+        "property",
+        "range",
+        "multi_language_property",
+        "file",
+        "blob",
+    ),
+    IconRole.KIND_BEHAVIOR: ("capability", "operation", "basic_event_element"),
+    IconRole.KIND_RELATION: (
+        "relationship_element",
+        "annotated_relationship_element",
+        "reference_element",
+    ),
+}
+
+KIND_ROLES: dict[str, IconRole] = {
+    name: role for role, names in _FAMILIES.items() for name in names
+}
+"""The color of the icon of each kind, by the family of the kind (proposal
+1.4, ADR 0035). A kind that is not here takes `KIND_ROLE`."""
 
 SUBMODEL_REFERENCE = "submodel_reference"
 
@@ -106,7 +144,12 @@ def kind_name(obj: object) -> str | None:
 
 @cache
 def _icon(name: str) -> QIcon:
-    return svg_icon(KINDS_FOLDER / f"{name}.svg", KIND_ROLE)
+    return svg_icon(KINDS_FOLDER / f"{name}.svg", kind_role(name))
+
+
+def kind_role(name: str) -> IconRole:
+    """Gives the color of the icon of a kind, by the stem of its file."""
+    return KIND_ROLES.get(name, KIND_ROLE)
 
 
 def kind_icon(obj: object) -> QIcon | None:

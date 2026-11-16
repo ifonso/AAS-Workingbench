@@ -52,6 +52,11 @@ class IconRole(StrEnum):
     WARNING = "status_warning"
     SUCCESS = "status_success"
     INFO = "status_info"
+    KIND_STRUCTURE = "kind_structure"
+    KIND_CONTAINER = "kind_container"
+    KIND_DATA = "kind_data"
+    KIND_BEHAVIOR = "kind_behavior"
+    KIND_RELATION = "kind_relation"
 
 
 def icon_color(tokens: ColorTokens, role: IconRole, mode: QIcon.Mode) -> str:

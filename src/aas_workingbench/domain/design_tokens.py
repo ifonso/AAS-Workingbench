@@ -61,6 +61,13 @@ class ColorTokens:
         bg_warning: The strip behind a warning.
         bg_info: The strip behind a hint.
         bg_find: A match of the search.
+        kind_structure: The icon of a shell, a submodel, a concept
+            description and their parts (proposal 1.4).
+        kind_container: The icon of a collection, a list and an entity.
+        kind_data: The icon of a property, a range, a multi-language
+            property, a file and a blob.
+        kind_behavior: The icon of a capability, an operation and an event.
+        kind_relation: The icon of a relationship and a reference element.
     """
 
     name: str
@@ -94,6 +101,11 @@ class ColorTokens:
     bg_warning: str
     bg_info: str
     bg_find: str
+    kind_structure: str
+    kind_container: str
+    kind_data: str
+    kind_behavior: str
+    kind_relation: str
 
     def __post_init__(self) -> None:
         """Refuses a value that is not `#rrggbb`, so a typo fails early."""
@@ -159,6 +171,11 @@ LIGHT: Final = ColorTokens(
     bg_warning="#fff8e6",
     bg_info="#ebf3fc",
     bg_find="#fef7b2",
+    kind_structure="#0f6cbd",
+    kind_container="#00727a",
+    kind_data="#6b3fa0",
+    kind_behavior="#a3247c",
+    kind_relation="#4f52b2",
 )
 """The light theme, which is the default."""
 
@@ -194,6 +211,11 @@ DARK: Final = ColorTokens(
     bg_warning="#3a2f12",
     bg_info="#0e2a47",
     bg_find="#5c4f00",
+    kind_structure="#479ef5",
+    kind_container="#4cc2c8",
+    kind_data="#b696e0",
+    kind_behavior="#e58bc9",
+    kind_relation="#9ea2f2",
 )
 """The dark theme."""
 
@@ -312,6 +334,13 @@ CONTRAST_PAIRS: Final = (
     *_icon("accent", "bg_content", "bg_chrome", "bg_sunken", "bg_selected"),
     *_icon("accent_hover", "bg_content"),
     *_icon("status_info", "bg_hover", "bg_selected"),
+    # The icons of the kinds of elements, on every surface of a tree. They
+    # avoid red, orange and green, which say error, warning and success.
+    *_icon("kind_structure", *_SURFACES),
+    *_icon("kind_container", *_SURFACES),
+    *_icon("kind_data", *_SURFACES),
+    *_icon("kind_behavior", *_SURFACES),
+    *_icon("kind_relation", *_SURFACES),
     *_icon("stroke_strong", "bg_content", "bg_chrome"),
     *_icon("focus", "bg_content", "bg_chrome", "bg_selected"),
     *_icon("focus_on_accent", "accent", "accent_hover"),

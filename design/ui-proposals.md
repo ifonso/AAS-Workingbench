@@ -1,7 +1,7 @@
 # Propostas de UI: menos densidade, navegação mais fácil
 
-Status: **proposta**, aplicada no mockup `aas-workingbench-mockup.figcraft` (página *Screens*).
-O app ainda não mudou. A página *Reference (real app)* tem os prints de antes, para comparar.
+Status: **implementada** na branch `feat/ui-design-proposals`, a partir do mockup `aas-workingbench-mockup.figcraft` (página *Screens*).
+A página *Reference (real app)* tem os prints de antes, para comparar. A seção [Estado da implementação](#estado-da-implementação) diz o que entrou, as decisões tomadas para as perguntas em aberto e onde o app difere do mockup.
 
 ## Telas do mockup
 
@@ -147,3 +147,23 @@ São 523 hints: 178 de `EDT-HINT-DESCRIPTION-MISSING`, 143 de `EDT-HINT-DISPLAY-
 
 - **Dados reais do pacote de exemplo:** o idShort, o displayName e a description em 3 idiomas, o valor 2.0 com unidade `s`, a IRI do semanticId, a lista dos 14 submodelos, a contagem de filhos e os hints.
 - **Dados de exemplo, que não existem no pacote:** o valor editado "Target time of one cycle" e os findings AASd-002 e AASd-131 do painel de erros na página *Shell*.
+
+## Estado da implementação
+
+Todas as propostas, de 1.1 a 5.4, estão no app. Os registros de decisão são o [ADR 0033](../docs/software/adr/0033-the-detail-reads-in-sections.md) (detalhe em seções), o [ADR 0034](../docs/software/adr/0034-the-status-bar-counts-the-hints-of-the-package.md) (contagem de hints do pacote) e o [ADR 0035](../docs/software/adr/0035-kind-icons-are-colored-by-family.md) (cores das famílias).
+
+### Respostas às perguntas em aberto
+
+- **2.2:** o pacote continua como raiz da árvore, também com um pacote só.
+- **3.4:** o idioma preferido é o primeiro dos idiomas padrão de *Settings*; sem texto nele, vale `en`, e depois o primeiro idioma do valor.
+- **3.3:** no Edit mode os vazios ficam nas suas seções. Advanced começa fechada enquanto não tem conteúdo, e aberta quando um qualifier, uma extension ou uma data specification está preenchido.
+- **5.2:** o painel de Validation só abre por um clique na barra de status, pelo menu ou pelo arranjo salvo da última sessão.
+- **5.1:** o botão de hints conta os hints do pacote ("523 hints"), e o tooltip diz quantos são do elemento atual (ADR 0034, que muda um ponto do ADR 0031).
+
+### Onde o app difere do mockup
+
+- **2.2:** como o pacote continua sendo raiz, os grupos ("Submodels 14") viram títulos em semibold com a contagem, mas o nível de recuo continua.
+- **Tela 02:** ao abrir um pacote, a linha do pacote continua selecionada, porque o salvar, o desfazer e outros fluxos dependem dela. A mensagem "Select an element" aparece quando uma aba fica sem elemento.
+- **Tela 03:** o filtro usa a busca da árvore e abre os ramos com correspondências. Limpar o filtro não fecha de volta os ramos.
+- **5.3:** o seletor "Group by rule" do mockup não entrou, porque só existe um agrupamento. A marcação que desliga um tipo de hint continua no grupo.
+- **3.5:** o painel "Concept description…" do rodapé saiu da aba. Os dados do conceito ficam a um clique, no link do semanticId e no link da unidade.

@@ -223,3 +223,30 @@ def test_every_kind_has_ink_at_16_pixels_and_no_two_look_alike(
             for y in range(SIZE)
         )
         assert different >= 12, (first, second)
+
+
+@pytest.mark.parametrize("choice", ["light", "dark"])
+def test_the_icon_of_a_property_is_drawn_in_the_color_of_data(
+    qapp: object, choice: str
+) -> None:
+    from PyQt6.QtCore import QSize
+
+    from aas_workingbench.ui.theme import current_tokens
+    from aas_workingbench.ui.theme import theme_manager
+    from aas_workingbench.ui.theme.kind_icons import kind_icon
+
+    theme_manager().apply(choice)
+    try:
+        icon = kind_icon(make_property("Speed"))
+        assert icon is not None
+        image = icon.pixmap(QSize(48, 48), 1.0).toImage()
+        colors = {
+            image.pixelColor(x, y).name()
+            for x in range(image.width())
+            for y in range(image.height())
+            if image.pixelColor(x, y).alpha() == 255
+        }
+
+        assert colors == {current_tokens().kind_data}
+    finally:
+        theme_manager().reset_to_native()

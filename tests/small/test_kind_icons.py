@@ -110,3 +110,45 @@ def test_a_kind_file_is_plain_one_color_vector_art_on_the_grid(
     assert "rgb" not in text
     # No text (so no font is needed), no scripts, no styles, no images.
     assert tags <= {"svg", "path", "rect", "circle"}
+
+
+@pytest.mark.parametrize(
+    ("name", "family"),
+    [
+        ("asset_administration_shell", "kind_structure"),
+        ("submodel", "kind_structure"),
+        ("submodel_element_collection", "kind_container"),
+        ("submodel_element_list", "kind_container"),
+        ("entity", "kind_container"),
+        ("property", "kind_data"),
+        ("range", "kind_data"),
+        ("multi_language_property", "kind_data"),
+        ("file", "kind_data"),
+        ("capability", "kind_behavior"),
+        ("operation", "kind_behavior"),
+        ("basic_event_element", "kind_behavior"),
+        ("relationship_element", "kind_relation"),
+        ("annotated_relationship_element", "kind_relation"),
+    ],
+)
+def test_a_kind_is_colored_by_its_family(name: str, family: str) -> None:
+    from aas_workingbench.ui.theme.kind_icons import kind_role
+
+    assert kind_role(name).value == family
+
+
+def test_an_annotation_keeps_the_blue_of_the_application() -> None:
+    from aas_workingbench.ui.theme.icons import IconRole
+    from aas_workingbench.ui.theme.kind_icons import kind_role
+
+    assert kind_role("qualifier") is IconRole.ACCENT
+
+
+def test_every_color_of_a_family_is_a_token_of_both_themes() -> None:
+    from aas_workingbench.domain.design_tokens import DARK
+    from aas_workingbench.domain.design_tokens import LIGHT
+    from aas_workingbench.ui.theme.kind_icons import KIND_ROLES
+
+    for role in set(KIND_ROLES.values()):
+        assert role.value in LIGHT.color_names()
+        assert role.value in DARK.color_names()
