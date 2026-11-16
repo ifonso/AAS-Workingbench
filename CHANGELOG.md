@@ -22,6 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Hints, and findings of the level Info, are blue, the color of information, and no longer the yellow of warnings. Errors are red and warnings yellow, with the icons of their state in the Validation panel.
 - Read mode hides Add, Edit and Delete in the command bar and in the Edit menu, in place of showing them turned off.
 - A tab that shows no element says "Select an element".
+- The pane of the package tree names its package, with a menu of Save, Save As and Close, and has a filter that is always there. Typing keeps the elements that match and their parents, opens the branches that hold them, and says how many match, with Clear.
+- The groups of the package tree (`Submodels`, `Asset Administration Shells`) read as titles of sections, in semibold with their count.
+- The command bar has a search box, "Search or go to…", which opens the command palette (Ctrl+K), and a switch of Read and Edit mode, which replaces the mode in the status bar.
+- A click on a reference in the detail opens its target in the same tab, so Back and Forward go along the path. A middle click and the context menu still open a new tab.
 
 ### Added
 

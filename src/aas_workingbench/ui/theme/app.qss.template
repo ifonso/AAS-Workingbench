@@ -572,6 +572,77 @@ QTreeView::branch:open:has-children {
     padding: 0 1px;
 }
 
+/* The search box and the switch of the mode at the right end of the command
+   bar (proposals 4.1, 4.4). The box looks like a field and is a button that
+   opens the palette. */
+
+QPushButton#commandSearch {
+    background-color: $bg_content;
+    border: 1px solid $stroke_default;
+    border-radius: ${radius_control}px;
+    min-height: 28px;
+    max-height: 28px;
+    padding: 0;
+    text-align: left;
+}
+
+QPushButton#commandSearch:hover {
+    border-color: $stroke_strong;
+}
+
+QLabel#commandSearchText {
+    color: $fg_muted;
+}
+
+QLabel#commandSearchKey {
+    color: $fg_secondary;
+    border: 1px solid $stroke_default;
+    border-radius: ${radius_badge}px;
+    padding: 0 4px;
+}
+
+QWidget#modeSwitch {
+    background-color: $bg_pressed;
+    border-radius: ${radius_control}px;
+    margin-left: 8px;
+}
+
+QWidget#modeSwitch QToolButton {
+    color: $fg_secondary;
+    border: none;
+    border-radius: ${radius_control}px;
+    padding: 2px 10px;
+}
+
+QWidget#modeSwitch QToolButton:checked {
+    background-color: $bg_content;
+    color: $fg_primary;
+    border: 1px solid $stroke_default;
+}
+
+/* The header of the pane of the package tree: the package and the filter
+   (proposal 2.4) */
+
+#treePaneHeader {
+    background-color: $bg_content;
+    border-bottom: 1px solid $stroke_subtle;
+}
+
+QToolButton#treePaneMore::menu-indicator {
+    image: none;
+    width: 0;
+}
+
+QLabel#treeFilterResult {
+    color: $fg_secondary;
+}
+
+QToolButton#treeFilterClear {
+    color: $link;
+    border: none;
+    padding: 0 2px;
+}
+
 /* The two levels of the header of a tab (proposal 3.1): the path bar, which
    says where the element is, and below it the block that says which element
    it is. A line under each separates them from what follows. */

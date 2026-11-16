@@ -102,27 +102,26 @@ def test_save_is_on_the_bar_and_save_all_is_in_the_file_menu(editor) -> None:
     )
 
 
-def test_the_status_bar_shows_the_mode_and_the_unsaved_packages(
+def test_the_command_bar_shows_the_mode_and_the_status_bar_the_unsaved(
     editor,
 ) -> None:
     window = editor.window
-    saved = (
-        window._modeStatusLabel.text(),
-        window._unsavedStatusLabel.text(),
-    )
+    saved = window._unsavedStatusLabel.text()
+    editing = window.modeSwitch.edit.isChecked()
     editor.package.changed = True
     editor.view.updateWindowModified()
     unsaved = window._unsavedStatusLabel.text()
     window.onEditModeChanged(False)
-    mode = window._modeStatusLabel.text()
+    reading = window.modeSwitch.read.isChecked()
     # pytest-qt closes the window before the fixture ends, and a window with
     # unsaved changes would ask a question.
     editor.package.commandStack.mark_saved()
     editor.view.updateWindowModified()
+    window.onEditModeChanged(True)
 
-    assert saved == ("Edit mode", "All changes saved")
+    assert saved == "All changes saved"
     assert unsaved == "1 package with unsaved changes"
-    assert mode == "Read mode"
+    assert editing and reading
 
 
 def test_find_in_the_tree_opens_the_bar_of_the_tree(editor) -> None:

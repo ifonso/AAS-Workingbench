@@ -42,6 +42,9 @@ from aas_workingbench.domain.window_layout import saved_orientation
 from aas_workingbench.domain.window_layout import window_size
 from aas_workingbench.domain.window_layout import zone_widths
 from aas_workingbench.ui.command_bar import FocusedViewActions
+from aas_workingbench.ui.command_search import ModeSwitch
+from aas_workingbench.ui.command_search import SearchBox
+from aas_workingbench.ui.tree_pane import package_name_of
 from aas_workingbench.ui.package_files import PackageFilesDock
 from aas_workingbench.ui.pane_navigation import PANEL
 from aas_workingbench.ui.pane_navigation import Pane
@@ -127,11 +130,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         self._recoveryStatusLabel.setStyleSheet(problem_style())
         self._recoveryStatusLabel.hide()
         self.statusBar().addPermanentWidget(self._recoveryStatusLabel)
-        # The mode and the unsaved packages are always on show, so the window
-        # tells the state of the work without a menu.
-        self._modeStatusLabel = QLabel()
-        self._modeStatusLabel.setObjectName("modeStatusLabel")
-        self.statusBar().addPermanentWidget(self._modeStatusLabel)
+        # The unsaved packages are always on show, so the window tells the
+        # state of the work without a menu. The mode is the switch of the
+        # command bar (proposal 4.4).
         # The counts of errors, warnings and hints of the current package
         self.statusBar().addPermanentWidget(self.validationController.status)
         self._unsavedStatusLabel = QLabel()
@@ -451,6 +452,19 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         # menu, and a feature that wants a button gives it an icon.
         for action in self.mainTreeView.registeredActions.toolbar_actions:
             self.toolBar.addAction(action)
+        # At the right end: the search, which opens the command palette
+        # (proposal 4.1), and the switch of Read and Edit mode (4.4).
+        spacer = QWidget(self.toolBar)
+        spacer.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
+        self.toolBar.addWidget(spacer)
+        self.commandSearch = SearchBox(self.commandPalette.action, self.toolBar)
+        self.toolBar.addWidget(self.commandSearch)
+        self.modeSwitch = ModeSwitch(
+            self.readModeAct, self.editModeAct, self.toolBar
+        )
+        self.toolBar.addWidget(self.modeSwitch)
 
     @staticmethod
     def iterItems(root):
@@ -591,8 +605,16 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         empty = self.packTreeModel.rowCount() == 0
         self.emptyState.setVisible(empty)
         self.mainTreeView.setVisible(not empty)
+        self.treePaneHeader.setVisible(not empty)
+        self.updateTreePaneName()
         self.emptyDetail.setVisible(empty)
         self.splitterTabWidgets.setVisible(not empty)
+
+    def updateTreePaneName(self, *_):
+        """Shows the package that the tree is on above it."""
+        self.treePaneHeader.set_package_name(
+            package_name_of(self.mainTreeView, self.packTreeModel.openedPacks())
+        )
 
     def onFilesCopied(self, plan):
         """Tell the user what a paste did with the files of the objects"""
@@ -607,6 +629,9 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         )
         self.mainTreeView.selectionModel().currentChanged.connect(
             self.onSelectedPackItemChanged
+        )
+        self.mainTreeView.selectionModel().currentChanged.connect(
+            self.updateTreePaneName
         )
         self.mainTreeView.doubleClicked.connect(self.onDoubleClicked)
         # The Find key searches the tree while the focus is on its side of the
@@ -642,13 +667,6 @@ class EditorApp(QMainWindow, design.Ui_MainWindow):
         """Show the mode in the menu and in the status bar"""
         self.editModeAct.setChecked(editing)
         self.readModeAct.setChecked(not editing)
-        self._modeStatusLabel.setText("Edit mode" if editing else "Read mode")
-        self._modeStatusLabel.setToolTip(
-            "Packages can be changed"
-            if editing
-            else "Packages can only be looked at. Switch to Edit mode in the "
-            "View menu to change them"
-        )
 
     def onUnsavedChanged(self, unsaved: int):
         """Show how many open packages have changes that are not saved"""

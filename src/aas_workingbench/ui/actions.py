@@ -53,7 +53,7 @@ from aas_workingbench.application.commands import Command
 from aas_workingbench.application.commands import CommandStack
 
 
-READ_MODE_REASON = "Read mode is on. Switch to Edit mode in the View menu"
+READ_MODE_REASON = "Read mode is on. Switch to Edit in the command bar"
 
 
 class ViewKind(enum.Flag):

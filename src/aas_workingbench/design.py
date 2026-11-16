@@ -25,6 +25,7 @@ from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE, APP_LOGO
 from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN, AppSettings, \
     DEFAULT_COLUMNS_IN_PACKS_TABLE, WINDOW_TITLE
 from aas_workingbench.ui.empty_state import EmptyState
+from aas_workingbench.ui.tree_pane import TreePaneHeader
 from aas_workingbench.widgets import ToolBar, TabWidget, SearchBar
 from aas_workingbench.treeviews.treeview_pack import PackTreeView
 
@@ -57,6 +58,19 @@ class Ui_MainWindow(object):
                                        parent=self.mainLayoutWidget, closable=True)
         self.searchBarPack.closeBar()
 
+        # The package that the tree is on, its menu, and the filter of the
+        # rows, always on show (proposal 2.4).
+        self.treePaneHeader = TreePaneHeader(
+            self.mainTreeView,
+            ATTRIBUTE_COLUMN,
+            [
+                self.mainTreeView.saveAct,
+                self.mainTreeView.saveAsAct,
+                self.mainTreeView.closeAct,
+            ],
+            parent=self.mainLayoutWidget,
+        )
+        self.mainVerticalLayout.addWidget(self.treePaneHeader)
         self.mainVerticalLayout.addWidget(self.searchBarPack)
         self.mainVerticalLayout.addWidget(self.mainTreeView)
         # Instead of the tree, until a package is open.

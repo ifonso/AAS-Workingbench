@@ -23,6 +23,7 @@ from aas_workingbench.domain.design_tokens import fitting_row_height
 from aas_workingbench.domain.design_tokens import FOCUS_STROKE
 from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 from aas_workingbench.settings.app_settings import CHANGE_MARK_ROLE
+from aas_workingbench.settings.app_settings import GROUP_TITLE_ROLE
 from aas_workingbench.settings.app_settings import MARK_CHANGED
 from aas_workingbench.settings.app_settings import MARK_NEW
 from aas_workingbench.ui.theme import current_tokens
@@ -37,6 +38,9 @@ MARK_DOT_MARGIN = 6
 COUNT_MARGIN = 8
 """The room between the count of a closed row and the right edge of the cell,
 or the dot of a mark, in pixels."""
+
+TITLE_COUNT_GAP = 6
+"""The room between the title of a group of the tree and its count."""
 
 COUNT_GAP = 12
 """The least room between the name of a row and its count, in pixels. A name
@@ -120,7 +124,11 @@ def child_count_text(view: object, index: QModelIndex) -> str:
     if model is None or not model.hasChildren(index):
         return ""
     is_expanded = getattr(view, "isExpanded", None)
-    if is_expanded is None or is_expanded(index):
+    # A group of objects is the title of a section, which always has its
+    # count (proposal 2.2).
+    if not index.data(GROUP_TITLE_ROLE) and (
+        is_expanded is None or is_expanded(index)
+    ):
         return ""
     count = model.rowCount(index)
     return str(count) if count else ""
@@ -147,12 +155,19 @@ def paint_child_count(
         return
     metrics = QFontMetrics(option.font)
     rect: QRect = option.rect
-    right = rect.right() - COUNT_MARGIN
-    if index.data(CHANGE_MARK_ROLE) in (MARK_NEW, MARK_CHANGED):
-        right -= MARK_DOT_MARGIN + MARK_DOT_DIAMETER
-    left = right - metrics.horizontalAdvance(text)
-    if left - COUNT_GAP < name_end:
-        return
+    if index.data(GROUP_TITLE_ROLE):
+        # The count of a section follows its title.
+        left = name_end + TITLE_COUNT_GAP
+        right = left + metrics.horizontalAdvance(text)
+        if right > rect.right():
+            return
+    else:
+        right = rect.right() - COUNT_MARGIN
+        if index.data(CHANGE_MARK_ROLE) in (MARK_NEW, MARK_CHANGED):
+            right -= MARK_DOT_MARGIN + MARK_DOT_DIAMETER
+        left = right - metrics.horizontalAdvance(text)
+        if left - COUNT_GAP < name_end:
+            return
     painter.save()
     try:
         painter.setFont(option.font)

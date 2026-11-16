@@ -127,16 +127,14 @@ class AttrsTreeView(TreeView):
         self.fitColumns()
 
     def _onClicked(self, index: QModelIndex) -> None:
-        """Follows a link that was clicked.
+        """Follows a link that was clicked, in the same tab.
 
-        A concept that a semanticId names opens in the same tab, so that Back
-        returns to the element (proposals 3.5, 4.3). A reference opens a tab.
+        A reference and the concept that a semanticId names open where the
+        element was, so that Back and Forward go along the path that the user
+        took (proposals 3.5, 4.3). A middle click and the context menu still
+        open a new tab.
         """
-        concept = index.siblingAtColumn(VALUE_COLUMN).data(LINKED_CONCEPT_ROLE)
-        if concept is not None:
-            self.openRef(index, newTab=False)
-        else:
-            self.openRef(index)
+        self.openRef(index, newTab=False)
 
     # -- sections ---------------------------------------------------------
 

@@ -21,6 +21,7 @@ from aas_workingbench.application.edits import (
 from aas_workingbench.models import StandardTable, PackTreeViewItem
 from aas_workingbench.package import Package, StoredFile
 from aas_workingbench.settings.app_settings import (
+    GROUP_TITLE_ROLE,
     PACKAGE_ROLE,
     DEFAULT_FONT,
     OPENED_PACKS_ROLE,
@@ -32,6 +33,16 @@ from aas_workingbench.settings.app_settings import (
 )
 from aas_workingbench.utils.util import getAttrTypeHint
 from aas_workingbench.utils.util_classes import ClassesInfo
+
+
+def semibold(font: Any) -> QFont:
+    """Gives a semibold copy of a font, with the axis of the weight set."""
+    strong = QFont(font) if isinstance(font, QFont) else QFont()
+    strong.setWeight(QFont.Weight.DemiBold)
+    strong.setVariableAxis(
+        QFont.Tag("wght"), float(QFont.Weight.DemiBold.value)
+    )
+    return strong
 
 
 class PacksTable(StandardTable):
@@ -57,6 +68,9 @@ class PacksTable(StandardTable):
     def data(self, index: QModelIndex, role: int = ...) -> Any:
         if role == Qt.ItemDataRole.ForegroundRole:
             return self._getFgColor(index)
+        if role == Qt.ItemDataRole.FontRole and index.data(GROUP_TITLE_ROLE):
+            # A group of objects reads as the title of a section (2.2).
+            return semibold(super(PacksTable, self).data(index, role))
         elif role == OPENED_PACKS_ROLE:
             return self.openedPacks()
         elif role == OPENED_FILES_ROLE:

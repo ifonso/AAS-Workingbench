@@ -26,6 +26,7 @@ from aas_workingbench.domain.tree_names import node_name
 from aas_workingbench.domain.tree_names import type_name
 from aas_workingbench.models import StandardItem
 from aas_workingbench.settings.app_settings import (
+    GROUP_TITLE_ROLE,
     PACKAGE_ROLE,
     ATTRIBUTE_COLUMN,
     TYPE_COLUMN,
@@ -103,6 +104,11 @@ class PackTreeViewItem(StandardItem):
     def typeText(self) -> str:
         """What the type column reads: the AAS class, or nothing for a group."""
         return type_name(self.objTypeName, is_node=self.isNode)
+
+    def data(self, role, column=ATTRIBUTE_COLUMN, column_name=""):
+        if role == GROUP_TITLE_ROLE:
+            return column == ATTRIBUTE_COLUMN and self.isNode
+        return super().data(role, column, column_name)
 
     def _getDisplayRoleData(self, column, column_name):
         if column == ATTRIBUTE_COLUMN:

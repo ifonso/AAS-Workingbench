@@ -178,6 +178,9 @@ LINKED_CONCEPT_ROLE = 1280
 # Whether the attribute of a row of the detail holds nothing (None, an empty
 # text or an empty list), which decides where its section starts.
 HOLDS_NOTHING_ROLE = 1290
+# Whether a row of the package tree is a group of objects (`Submodels`), which
+# reads as the title of a section with its count (proposal 2.2).
+GROUP_TITLE_ROLE = 1300
 MARK_NEW = "new"
 MARK_CHANGED = "changed"
 
