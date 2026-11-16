@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- A new logo: the shell of an AAS, a light blue lid over two blue walls, with "AAS" in orange, in the style of Fluent icons. It is the icon of the window, of the Windows build and of the AppImage, and the wide version says "AAS Workingbench". The source is in `design/`.
+
 ## [0.1.0] - Unreleased
 
 The first release of AAS Workingbench, a fork of [AAS Manager](https://github.com/rwth-iat/aas_manager). The entries below describe what it changed since version 0.4.13 of AAS Manager, which stays at the end of this file.

@@ -1,7 +1,8 @@
 """Makes the square PNG icon of the AppImage from the logo of the project.
 
-The logo is 500 by 504 pixels. Desktops expect a square icon, so the logo is
-scaled to fit and centered on a transparent square. It needs PyQt6 only, which
+Desktops expect a square icon, so the logo is scaled to fit and centered on a
+transparent square. The logo is square, 512 by 512 pixels, and a logo of
+another shape still fits. It needs PyQt6 only, which
 the project installs, and no display: images are drawn with `QImage`.
 
 Usage:
