@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-16
+
 ### Fixed
 
 - On Linux, the dialogs of Open, Save As, and every other dialog that asks for a file or folder no longer freeze the application. They showed behind the window, or only after a switch to another application, and then did not respond, so the process had to be killed. They are now the dialogs of Qt on Linux, and the AppImage no longer carries the GTK 3 of the build machine ([ADR 0032](docs/software/adr/0032-file-dialogs-of-qt-on-linux.md)). Windows and macOS keep the dialog of the system, and so do a Flatpak and a Snap.
@@ -13,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The question about a package that does not match the schema, the question about unsaved changes when a package is closed, and the box for an unexpected error belong to the main window, so they show in front of it.
 - The log is written to the data folder of the user, not to `log.log` in the current folder. Started from a launcher, that was the home folder, and in a folder that cannot be written the program did not start.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-11-07
 
 The first release of AAS Workingbench, a fork of [AAS Manager](https://github.com/rwth-iat/aas_manager). The entries below describe what it changed since version 0.4.13 of AAS Manager, which stays at the end of this file.
 
