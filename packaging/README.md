@@ -43,6 +43,7 @@ The program writes `settings.ini` into its own folder, so do not unzip it below 
 
 Build on Linux, x86_64, with the libraries that Qt needs installed, because PyInstaller copies them from the machine into the build.
 On Ubuntu, the list is in the step "Install system libraries" of `.github/workflows/build.yaml`.
+The spec leaves out the GTK platform theme of Qt and the GTK 3 libraries that only it loads (`GTK_ONLY_LIBRARIES` in `aas_workingbench.spec`), because the file dialogs on Linux are the dialogs of Qt ([ADR 0032](../docs/software/adr/0032-file-dialogs-of-qt-on-linux.md)).
 After the PyInstaller build:
 
 ```sh
