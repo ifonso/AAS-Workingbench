@@ -7,7 +7,8 @@
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
-from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QFileDialog
+from PyQt6.QtWidgets import QDialog, QPushButton, QVBoxLayout
+from aas_workingbench.ui.path_dialogs import get_open_file_name
 from aas_workingbench.settings import FILTER_AAS_FILES
 from aas_workingbench.tools.aas_test.file_check import (
     CHECKED_VERSION,
@@ -55,8 +56,8 @@ class AasTestEnginesToolDialog(QDialog):
         self.setLayout(layout)
 
     def chooseAndCheckFile(self):
-        file, _ = QFileDialog.getOpenFileName(
-            self, "Open AAS file", filter=FILTER_AAS_FILES
+        file = get_open_file_name(
+            self, "Open AAS file", name_filter=FILTER_AAS_FILES
         )
         if file:
             self.checkFile(file)
