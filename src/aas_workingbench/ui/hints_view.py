@@ -44,6 +44,7 @@ from aas_workingbench.ui.theme import theme_manager
 from aas_workingbench.ui.theme.icons import IconRole
 from aas_workingbench.ui.theme.icons import tabler_icon
 from aas_workingbench.ui.theme.kind_icons import kind_icon
+from aas_workingbench.ui.tree_pane import add_filter_icon
 
 COLUMNS = ("Kind", "Count")
 KIND_COLUMN, COUNT_COLUMN = range(2)
@@ -93,9 +94,7 @@ class HintsView(QWidget):
         self.filter_field.setObjectName("hintsFilter")
         self.filter_field.setPlaceholderText(FILTER_PLACEHOLDER)
         self.filter_field.setClearButtonEnabled(True)
-        self.filter_field.addAction(
-            tabler_icon("filter"), QLineEdit.ActionPosition.LeadingPosition
-        )
+        add_filter_icon(self.filter_field)
         self.filter_field.setAccessibleName("Filter the hints")
         self.filter_field.textChanged.connect(self._on_filter)
         self.help_label = QLabel(HELP_TEXT, self)

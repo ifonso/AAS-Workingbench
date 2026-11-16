@@ -11,6 +11,7 @@ The header knows no package: the window gives it the name, the actions of the
 menu, and the view whose rows it filters.
 """
 
+from collections.abc import Iterable
 from collections.abc import Sequence
 
 from PyQt6.QtCore import QModelIndex
@@ -54,6 +55,29 @@ def match_text(count: int) -> str:
     return f"{count} elements match, with their parents"
 
 
+def add_filter_icon(field: QLineEdit) -> None:
+    """Puts the filter icon at the start of a field.
+
+    Qt draws the icon as a button inside the field, which a screen reader
+    reaches, so it gets a name and a tooltip too.
+    """
+    action = field.addAction(
+        tabler_icon("filter"), QLineEdit.ActionPosition.LeadingPosition
+    )
+    if action is None:
+        return
+    action.setText("Filter")
+    action.setToolTip(field.placeholderText() or "Filter")
+    for button in field.findChildren(QToolButton):
+        if button.defaultAction() is action:
+            button.setAccessibleName("Filter")
+            button.setToolTip(action.toolTip())
+        elif not button.accessibleName():
+            # The button that empties the field, which Qt adds.
+            button.setAccessibleName("Clear the filter")
+            button.setToolTip("Clear the filter")
+
+
 class TreeFilter(QWidget):
     """A field that filters the rows of a tree as the user types.
 
@@ -82,9 +106,7 @@ class TreeFilter(QWidget):
         self.field.setObjectName("treeFilterField")
         self.field.setPlaceholderText(FILTER_PLACEHOLDER)
         self.field.setClearButtonEnabled(True)
-        self.field.addAction(
-            tabler_icon("filter"), QLineEdit.ActionPosition.LeadingPosition
-        )
+        add_filter_icon(self.field)
         self.field.setAccessibleName("Filter the package tree")
         self.result = QLabel(self)
         self.result.setObjectName("treeFilterResult")
@@ -227,12 +249,13 @@ class TreePaneHeader(QWidget):
         self.more.setEnabled(bool(name))
 
 
-def package_name_of(view: QTreeView, packages: Sequence[object]) -> str:
+def package_name_of(view: QTreeView, packages: Iterable[object]) -> str:
     """Names the package of the pane: of the current row, or the only one.
 
     Args:
         view: The package tree.
-        packages: The open packages.
+        packages: The open packages, in any collection, such as the set
+            that the model of the tree gives.
 
     Returns:
         The name, `2 packages` for several without a current row, or an empty
@@ -240,6 +263,7 @@ def package_name_of(view: QTreeView, packages: Sequence[object]) -> str:
     """
     from aas_workingbench.settings.app_settings import PACKAGE_ROLE
 
+    packages = list(packages)
     current: QModelIndex = view.currentIndex()
     package = current.data(PACKAGE_ROLE) if current.isValid() else None
     if package is None and len(packages) == 1:

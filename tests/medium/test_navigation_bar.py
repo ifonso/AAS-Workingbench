@@ -101,8 +101,10 @@ def test_the_sentence_of_the_matches(count: int, text: str) -> None:
 def test_the_pane_names_the_package_of_the_tree(shown, pane) -> None:
     from aas_workingbench.ui.tree_pane import package_name_of
 
-    (package,) = shown.table.openedPacks()
-    name = package_name_of(shown.view, [package])
+    # The model gives the open packages as a set.
+    packages = shown.table.openedPacks()
+    (package,) = packages
+    name = package_name_of(shown.view, packages)
     pane.set_package_name(name)
 
     assert pane.name.text() == package.name
@@ -227,3 +229,24 @@ def test_a_click_on_a_reference_opens_its_target_in_the_tab(tab) -> None:
     assert current.packItemObj.id_short == "Target"
     current.openPrevItem()
     assert current.packItemObj.id_short == "Link"
+
+
+def test_every_button_of_the_pane_has_a_name(pane) -> None:
+    from PyQt6.QtWidgets import QToolButton
+
+    pane.filter.set_text("Sp")
+
+    for button in pane.findChildren(QToolButton):
+        assert button.accessibleName() or button.text(), button
+
+
+def test_the_icon_and_the_clear_button_of_the_filter_have_their_names(
+    pane,
+) -> None:
+    from PyQt6.QtWidgets import QToolButton
+
+    names = {
+        b.accessibleName() for b in pane.filter.field.findChildren(QToolButton)
+    }
+
+    assert {"Filter", "Clear the filter"} <= names
