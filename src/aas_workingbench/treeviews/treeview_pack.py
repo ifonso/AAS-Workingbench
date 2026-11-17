@@ -90,7 +90,7 @@ from aas_workingbench.settings.app_settings import (
     SUBMODEL_TEMPLATES_FOLDER,
     UPDATE_ROLE,
 )
-from aas_workingbench.settings.shortcuts import SC_OPEN, SC_SAVE, SC_SAVE_ALL
+from aas_workingbench.settings.shortcuts import SC_OPEN, SC_SAVE, SC_SAVE_AS
 from aas_workingbench.settings.icons import (
     NEW_PACK_ICON,
     OPEN_ICON,
@@ -126,9 +126,12 @@ from aas_workingbench.ui.save_warnings import (
     show_save_refused,
 )
 from aas_workingbench import dialogs
+from aas_workingbench.application.save import first_package_file
 
 
 class PackHeaderView(HeaderView):
+    hidesWhenAlone = True
+
     def __init__(self, orientation, parent: Optional[QWidget] = ...) -> None:
         self.customLists = {}
         super(PackHeaderView, self).__init__(orientation, parent)
@@ -243,6 +246,8 @@ class PackTreeView(TreeView):
     EMPTY_VIEW_MSG = "Drop AAS files here"
     EMPTY_VIEW_ICON = OPEN_DRAG_ICON
     viewKind = ViewKind.PACKAGES
+    # A closed row shows how many rows are below it (proposal 2.3).
+    showsChildCounts = True
     # A dialog asked to show the files of a package.
     packageFilesRequested = pyqtSignal(object)
     # How many open packages hold changes that are not saved. The status bar
@@ -265,7 +270,8 @@ class PackTreeView(TreeView):
         self.recentFilesSeparator = None
         self.setAcceptDrops(True)
         self.setExpandsOnDoubleClick(False)
-        self.setSelectionBehavior(self.SelectionBehavior.SelectItems)
+        # The selection is the whole row, in one band (proposal 2.5).
+        self.setSelectionBehavior(self.SelectionBehavior.SelectRows)
         self.setHeader(PackHeaderView(Qt.Orientation.Horizontal, self))
         # Save means the package of the focused view, so its entry follows
         # the focus and not only the selection.
@@ -400,9 +406,14 @@ class PackTreeView(TreeView):
         self.saveAsAct = QAction(
             "Save As...",
             self,
+            shortcut=SC_SAVE_AS,
             statusTip="Save current file as..",
             triggered=lambda: self.savePackAsWithDialog(),
             enabled=False,
+        )
+        self.saveAsAct.setToolTip(
+            "Save As... "
+            f"({SC_SAVE_AS.toString(QKeySequence.SequenceFormat.NativeText)})"
         )
 
         self.saveInActs = []
@@ -426,7 +437,6 @@ class PackTreeView(TreeView):
             SAVE_ALL_ICON,
             "&Save All",
             self,
-            shortcut=SC_SAVE_ALL,
             statusTip="Save every package that has unsaved changes",
             triggered=lambda: self.saveAll(),
             enabled=True,
@@ -457,6 +467,10 @@ class PackTreeView(TreeView):
             triggered=lambda: self.closeAllFilesWithDialog(),
             enabled=False,
         )
+        # One package is open at a time, so Save and Close say it all. The
+        # actions stay, for the code that saves or closes what is open.
+        self.saveAllAct.setVisible(False)
+        self.closeAllAct.setVisible(False)
 
         self.autoScrollToSrcAct = QAction(
             "Autoscroll to source",
@@ -728,7 +742,9 @@ class PackTreeView(TreeView):
         super().updateCopyCutPasteDelActs(index)
         # The package holds the folders, and cannot lose one: Cut and Delete
         # said "could not be deleted" with a Python message, and Cut had copied.
-        if any(self.isFolderRow(i) for i in (index, *self.selectedIndexes())):
+        if any(
+            self.isFolderRow(i) for i in (index, *self.selectionForActions())
+        ):
             self.cutAct.setEnabled(False)
             self.delClearAct.setEnabled(False)
         indexValid = index.isValid()
@@ -830,7 +846,7 @@ class PackTreeView(TreeView):
         return self.focusedPackage() is not None
 
     def isCloseOk(self) -> bool:
-        pack = self.currentIndex().data(PACKAGE_ROLE)
+        pack = self.currentIndex().data(PACKAGE_ROLE) or self.activePackage()
         return True if pack else False
 
     def isSaveAllOk(self) -> bool:
@@ -956,6 +972,10 @@ class PackTreeView(TreeView):
         )
         if not file:
             return False
+        # One package is open at a time: the one that is open closes first,
+        # and the person may save it or keep it.
+        if not self.makeRoomForPackage():
+            return False
         pack = Package()
         if not self.savePack(pack, file):
             return False
@@ -1051,9 +1071,79 @@ class PackTreeView(TreeView):
                 self, f"Package {file} couldn't be opened: {e}"
             ).exec()
         else:
+            # The file is read before the open package closes, so a file that
+            # cannot be read leaves the work as it was.
+            if not self.makeRoomForPackage():
+                return None
             self.add_pack_to_tree(pack)
             return pack
         return None
+
+    def onModelChanged(self, model):
+        super().onModelChanged(model)
+        proxy = self.model()
+        for signal in (
+            proxy.rowsInserted,
+            proxy.rowsRemoved,
+            proxy.modelReset,
+            proxy.layoutChanged,
+        ):
+            signal.connect(self.fitRoot)
+        self.fitRoot()
+
+    def fitRoot(self, *_) -> None:
+        """Starts the tree at the groups of the open package.
+
+        One package is open at a time, so its row would add a level to every
+        row and say what the header of the pane says. The tree starts at its
+        groups (`Submodels`, `Asset Administration Shells`) instead.
+        """
+        model = self.model()
+        if model is None:
+            return
+        if model.rowCount(QModelIndex()) == 1:
+            package = model.index(0, 0, QModelIndex())
+            if self.rootIndex() != package:
+                self.setRootIndex(package)
+        elif self.rootIndex().isValid():
+            self.setRootIndex(QModelIndex())
+
+    def packageIndex(self) -> QModelIndex:
+        """The row of the open package, which the tree does not show."""
+        model = self.model()
+        if model is None or not model.rowCount(QModelIndex()):
+            return QModelIndex()
+        return model.index(0, 0, QModelIndex())
+
+    def openPackageMenu(self, position: QPoint) -> None:
+        """Shows the context menu of the package, whose row is not shown.
+
+        The package becomes the current row, as a right click on its row
+        made it, so its tab and its actions follow.
+
+        Args:
+            position: Where the menu opens, in the coordinates of the screen.
+        """
+        package = self.packageIndex()
+        if not package.isValid():
+            return
+        self.setCurrentIndex(package)
+        self.updateActions(package)
+        self.pasteAct.setEnabled(self.canEdit() and self.isPasteOk(package))
+        self.attrsMenu.exec(position)
+
+    def makeRoomForPackage(self) -> bool:
+        """Closes the open package, so that another one can open.
+
+        The editor has one package open at a time. A package with changes asks
+        whether to save them, discard them, or keep it open.
+
+        Returns:
+            Whether no package is open now.
+        """
+        if not self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
+            return True
+        return self.closeAllFilesWithDialog()
 
     def add_pack_to_tree(self, pack: Package):
         with self.acting("add"):
@@ -1110,9 +1200,6 @@ class PackTreeView(TreeView):
 
         :param unsaved: the number of packages with unsaved changes
         """
-        keys = self.saveAllAct.shortcut().toString(
-            QKeySequence.SequenceFormat.NativeText
-        )
         what = (
             "No package has unsaved changes"
             if unsaved == 0
@@ -1120,7 +1207,7 @@ class PackTreeView(TreeView):
             if unsaved == 1
             else f"Save the {unsaved} packages that have unsaved changes"
         )
-        self.saveAllAct.setToolTip(f"Save All: {what} ({keys})")
+        self.saveAllAct.setToolTip(f"Save All: {what}")
 
     def onRowsInserted(self, parent: QModelIndex, first: int, last: int):
         super().onRowsInserted(parent, first, last)
@@ -1265,7 +1352,9 @@ class PackTreeView(TreeView):
         self.updateWindowModified()
 
     def closeFileWithDialog(self):
-        pack = self.currentIndex().data(PACKAGE_ROLE)
+        # The row of the package is not shown, so the package is the one of
+        # the current row, or the one that is open.
+        pack = self.currentIndex().data(PACKAGE_ROLE) or self.activePackage()
         try:
             (packItem,) = self.model().match(
                 QModelIndex(), OBJECT_ROLE, pack, hits=1
@@ -1312,7 +1401,12 @@ class PackTreeView(TreeView):
                     self, "Error", f"No chosen package to close: {e}"
                 )
 
-    def closeAllFilesWithDialog(self):
+    def closeAllFilesWithDialog(self) -> bool:
+        """Closes the open packages, after asking about their changes.
+
+        Returns:
+            False when the person cancelled, or a save did not happen.
+        """
         self.updateWindowModified()
         # The flag of this view is never set: `setWindowModified` sets it on
         # the window. The packages know whether they have unsaved changes.
@@ -1338,16 +1432,19 @@ class PackTreeView(TreeView):
                 for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
                     # Do not close anything when a save did not happen.
                     if pack.changed and not self.savePack(pack):
-                        return
+                        return False
             elif res == QMessageBox.StandardButton.Cancel:
-                return
+                return False
             elif res == QMessageBox.StandardButton.Discard:
                 # Explicitly discarding all: drop recovery files for unsaved packages
                 # so they are not offered for restore on next launch.
                 for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
                     if pack.changed:
                         pack.delete_recovery(app_settings.recovery_dir())
+            else:
+                return False
         self.closeAllFiles()
+        return True
 
     def closeAllFiles(self):
         for pack in self.model().data(QModelIndex(), OPENED_PACKS_ROLE):
@@ -1483,9 +1580,12 @@ class PackTreeView(TreeView):
             event.accept()
 
     def dropEvent(self, e: QDropEvent) -> None:
-        for url in e.mimeData().urls():
-            file = str(url.toLocalFile())
-            self.openPack(file)
+        # One package is open at a time, so one file of a drop opens.
+        chosen = first_package_file(
+            [str(url.toLocalFile()) for url in e.mimeData().urls()]
+        )
+        if chosen is not None:
+            self.openPack(chosen)
 
     def prepareDelete(self, indexes, confirm):
         # Stored files are no AAS objects, but File elements refer to them.

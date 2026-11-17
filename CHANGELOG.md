@@ -5,6 +5,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- A new logo: the shell of an AAS, a light blue lid over two blue walls, with "AAS" in orange, in the style of Fluent icons. It is the icon of the window, of the Windows build and of the AppImage, and the wide version says "AAS Workingbench". The source is in `design/`.
+- The detail of an element reads in sections: Value, Identification, Semantics, and in Edit mode Advanced, in that order, with a band that opens and closes each one. In Read mode the attributes that hold nothing are in a closed section, Empty attributes, which names them. Advanced starts closed while it holds nothing ([ADR 0033](docs/software/adr/0033-the-detail-reads-in-sections.md)).
+- The top of a tab has two levels: a path bar that says where the element is, from its submodel down, with `›` between the parts, and below it the icon, the idShort and the type of the element.
+- A text in several languages reads in the first default language, with a badge such as `en +2`, in place of `en="..."`. The tooltip still has every language.
+- A semanticId reads the name of its concept description as a link, with its id under it, and a value shows the unit that its concept gives, as a badge, with a link to the concept. A click opens the concept in the same tab, and Back returns. The panel of the concept below the attributes is gone.
+- The detail has no header and no Type column. The type of an attribute is in the tooltip of its name, and inside the field while a value is edited (`xs:double`).
+- The names of attributes read in the secondary color, and their values in the primary color.
+- The package tree shows the names only, with the type in the tooltip of a row and in View > Columns, and its header shows only while it has two columns or more. It takes a third of the window, and the detail the rest.
+- A closed row of the package tree shows how many rows are below it, such as `Nameplate 18`.
+- A selected row of a tree is one band from the edge of the view, with the bar at its left edge, and no box around the name.
+- The menu bar, the menus, the status bar and the trees are all in the font of the application at its body size. A switch of theme gave some of them the larger font of the platform.
+- Titles in semibold are drawn in semibold: the bundled Inter is a variable font, and its weights below bold need the axis of the weight.
+- Hints, and findings of the level Info, are blue, the color of information, and no longer the yellow of warnings. Errors are red and warnings yellow, with the icons of their state in the Validation panel.
+- Read mode hides Add, Edit and Delete in the command bar and in the Edit menu, in place of showing them turned off.
+- A tab that shows no element says "Select an element".
+- The pane of the package tree names its package, with a menu of Save, Save As and Close, and has a filter that is always there. Typing keeps the elements that match and their parents, opens the branches that hold them, and says how many match, with Clear.
+- The editor has one package open at a time. Opening, creating or dropping a package closes the open one, and asks first when it has unsaved changes; Cancel keeps it open ([ADR 0036](docs/software/adr/0036-one-package-at-a-time.md)). A drop opens the first package among the dropped files. Save All and Close All are no longer in the menus.
+- The package tree starts at the groups of the package (`Asset Administration Shells`, `Submodels`), which read as titles of sections, in semibold with their count. The row of the package is gone, and its context menu is the "…" button of the header of the pane.
+- The command bar has a search box, "Search or go to…", which opens the command palette (Ctrl+K), and a switch of Read and Edit mode, which replaces the mode in the status bar.
+- A click on a reference in the detail opens its target in the same tab, so Back and Forward go along the path. A middle click and the context menu still open a new tab.
+- The status bar reads "No problems", or only what there is, such as "1 error" or "1 error, 2 warnings", with the icon of the worst. The hints button counts the hints of the whole package, such as "523 hints", in the blue of information, and its tooltip says how many are about the current object ([ADR 0034](docs/software/adr/0034-the-status-bar-counts-the-hints-of-the-package.md)).
+- The Hints view of the Validation panel has a filter, and its explanation is one line beside it ("Hints are advice, not rules. They do not stop a save."). A kind has the blue icon of information, and lists its first four elements with the icon of their kind, with "Show N more" for the rest. Its columns have no header.
+- The icons of the kinds of elements are colored by family: structure (shells, submodels), containers, data, behavior, and relations, in both themes, each at 3 to 1 or more against every surface ([ADR 0035](docs/software/adr/0035-kind-icons-are-colored-by-family.md)).
+- `Ctrl+Shift+S` is Save As. It was Save All, which left the menus with the second package; Save All now has no key.
+- A package opens several times faster, and "Expand All" and a click on a row of a large package take less time. A row of a list or of a mapping wrote two tracebacks to the log when it was made, and writing them took about three quarters of the time of opening a package. The log of a package that opens well now has none, so an error in it is a real one. The package of the example opens in about 0.3 s where it took 1.5 s, and one with 10,000 elements in about 1.2 s where it took 10 s.
+
+### Fixed
+
+- A long name of a package no longer makes the pane of the package tree, and so the window, wider. The name is cut short with `…`, with the whole name in its tooltip. The tree can be as narrow as before the pane had a header, and the width that it had in the last session comes back.
+- Saving over a read-only file is refused on Linux and macOS, with the message that the file is read-only, as on Windows. The save replaced the file there, because a move over a file needs only the right to write its folder.
+
+### Added
+
+- The Tabler icon `language`, for the badge of the languages of a text.
+
 ## [0.1.1] - 2026-11-16
 
 ### Fixed

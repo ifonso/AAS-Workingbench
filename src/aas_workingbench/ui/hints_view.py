@@ -17,11 +17,13 @@ it can be turned on again, and so does a button that turns every kind on.
 from PyQt6.QtCore import Qt
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QBrush
+from PyQt6.QtGui import QColor
 from PyQt6.QtGui import QPalette
 from PyQt6.QtWidgets import QAbstractItemView
 from PyQt6.QtWidgets import QHBoxLayout
 from PyQt6.QtWidgets import QHeaderView
 from PyQt6.QtWidgets import QLabel
+from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtWidgets import QTreeWidget
 from PyQt6.QtWidgets import QTreeWidgetItem
@@ -37,22 +39,32 @@ from aas_workingbench.application.validation import count_text
 from aas_workingbench.domain.validation import Finding
 from aas_workingbench.domain.validation import ValidationReport
 from aas_workingbench.ui.hint_kinds_setting import save_hint_kinds
+from aas_workingbench.ui.theme import current_tokens
 from aas_workingbench.ui.theme import theme_manager
+from aas_workingbench.ui.theme.icons import IconRole
+from aas_workingbench.ui.theme.icons import tabler_icon
+from aas_workingbench.ui.theme.kind_icons import kind_icon
+from aas_workingbench.ui.tree_pane import add_filter_icon
 
 COLUMNS = ("Kind", "Count")
 KIND_COLUMN, COUNT_COLUMN = range(2)
-HELP_TEXT = (
-    "Hints are advice, not rules. Tick a kind to show its hints in the status "
-    "bar and above the tabs. Untick one that this package leaves out on "
-    "purpose, such as the descriptions of a template. The choice is kept for "
-    "every package."
+HELP_TEXT = "Hints are advice, not rules. They do not stop a save."
+"""The one line beside the filter that says what a hint is (proposal 5.4)."""
+HELP_TIP = (
+    "Tick a kind to count its hints in the status bar and show them above the "
+    "tabs. Untick one that this package leaves out on purpose, such as the "
+    "descriptions of a template. The choice is kept for every package."
 )
+FIRST_ELEMENTS = 4
+"""How many elements a kind lists when it opens, before "Show N more"."""
+FILTER_PLACEHOLDER = "Filter hints"
 MODE_OFF_TEXT = (
     "Hints mode is off, so the status bar and the tabs show no hints. Switch "
     "it on in the View menu."
 )
 _GROUP_ROLE = Qt.ItemDataRole.UserRole
 _FINDING_ROLE = Qt.ItemDataRole.UserRole + 1
+_MORE_ROLE = Qt.ItemDataRole.UserRole + 2
 
 
 class HintsView(QWidget):
@@ -76,10 +88,18 @@ class HintsView(QWidget):
         self.setObjectName("hintsView")
         self._groups: tuple[HintGroup, ...] = ()
         self._has_package = False
+        self._filter = ""
         self.summary_label = QLabel(self)
+        self.filter_field = QLineEdit(self)
+        self.filter_field.setObjectName("hintsFilter")
+        self.filter_field.setPlaceholderText(FILTER_PLACEHOLDER)
+        self.filter_field.setClearButtonEnabled(True)
+        add_filter_icon(self.filter_field)
+        self.filter_field.setAccessibleName("Filter the hints")
+        self.filter_field.textChanged.connect(self._on_filter)
         self.help_label = QLabel(HELP_TEXT, self)
         self.help_label.setObjectName("validationNote")
-        self.help_label.setWordWrap(True)
+        self.help_label.setToolTip(HELP_TIP)
         self.mode_label = QLabel(MODE_OFF_TEXT, self)
         self.mode_label.setObjectName("validationNote")
         self.mode_label.setWordWrap(True)
@@ -88,6 +108,8 @@ class HintsView(QWidget):
         self.tree.setObjectName("hintsTree")
         self.tree.setAccessibleName("Hints by kind")
         self.tree.setHeaderLabels(COLUMNS)
+        # The kinds say what they are, so the columns need no header (1.2).
+        self.tree.setHeaderHidden(True)
         self.tree.setUniformRowHeights(True)
         self.tree.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tree.setSelectionBehavior(
@@ -105,6 +127,8 @@ class HintsView(QWidget):
         self.tree.itemExpanded.connect(self._fill)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.tree.itemActivated.connect(self._on_activated)
+        # "Show N more" is a link, which one click follows.
+        self.tree.itemClicked.connect(self._on_clicked)
 
         self.kinds_label = QLabel(self)
         self.kinds_label.setObjectName("validationNote")
@@ -114,10 +138,13 @@ class HintsView(QWidget):
         footer.addWidget(self.kinds_label, 1)
         footer.addWidget(self.turn_on_button)
 
+        filters = QHBoxLayout()
+        filters.addWidget(self.filter_field, 1)
+        filters.addWidget(self.help_label)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.summary_label)
-        layout.addWidget(self.help_label)
+        layout.addLayout(filters)
         layout.addWidget(self.mode_label)
         layout.addWidget(self.tree, 1)
         layout.addLayout(footer)
@@ -133,6 +160,15 @@ class HintsView(QWidget):
     def groups(self) -> tuple[HintGroup, ...]:
         """The kinds that the report has hints of, the largest first."""
         return self._groups
+
+    @property
+    def shown_groups(self) -> tuple[HintGroup, ...]:
+        """The kinds that the filter keeps, each with the hints it keeps."""
+        return tuple(
+            kept
+            for group in self._groups
+            if (kept := _filtered(group, self._filter)) is not None
+        )
 
     @property
     def shown_count(self) -> int:
@@ -181,9 +217,11 @@ class HintsView(QWidget):
         position = 0 if scroll is None else scroll.value()
         self.tree.blockSignals(True)
         self.tree.clear()
-        for group in self.groups:
+        for group in self.shown_groups:
             item = QTreeWidgetItem(self.tree)
             item.setData(KIND_COLUMN, _GROUP_ROLE, group)
+            # A hint is advice, in the blue of information (proposal 1.5).
+            item.setIcon(KIND_COLUMN, tabler_icon("info-circle", IconRole.INFO))
             item.setChildIndicatorPolicy(
                 QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator
             )
@@ -198,6 +236,9 @@ class HintsView(QWidget):
         for row in range(self.tree.topLevelItemCount()):
             item = self.tree.topLevelItem(row)
             if item is not None and _group_of(item).rule_id in expanded:
+                item.setExpanded(True)
+            elif item is not None and self._filter:
+                # A filter shows what it found without another click.
                 item.setExpanded(True)
         if scroll is not None:
             scroll.setValue(position)
@@ -251,17 +292,53 @@ class HintsView(QWidget):
         self.counted.emit(self.shown_count)
 
     def _fill(self, item: QTreeWidgetItem) -> None:
-        """Adds the elements of a kind when its row opens for the first time."""
+        """Adds the first elements of a kind when its row opens for the first
+        time, and a row that shows the rest (proposal 5.3)."""
         if item.parent() is not None or item.childCount():
             return
-        for finding in _group_of(item).findings:
-            child = QTreeWidgetItem(item)
-            child.setText(KIND_COLUMN, f"{finding.location}: {finding.message}")
-            child.setToolTip(
-                KIND_COLUMN, f"{finding.rule_id}: {finding.message}"
+        findings = _group_of(item).findings
+        for finding in findings[:FIRST_ELEMENTS]:
+            self._add_element(item, finding)
+        rest = len(findings) - FIRST_ELEMENTS
+        if rest > 0:
+            more = QTreeWidgetItem(item)
+            more.setText(KIND_COLUMN, f"Show {rest} more")
+            more.setData(KIND_COLUMN, _MORE_ROLE, True)
+            more.setForeground(
+                KIND_COLUMN, QBrush(QColor(current_tokens().link))
             )
-            child.setData(KIND_COLUMN, _FINDING_ROLE, finding)
-            child.setFirstColumnSpanned(True)
+            more.setFirstColumnSpanned(True)
+
+    def show_more(self, item: QTreeWidgetItem) -> None:
+        """Lists the rest of the elements of a kind, in place of its "Show N
+        more" row."""
+        group_item = item.parent()
+        if group_item is None or not item.data(KIND_COLUMN, _MORE_ROLE):
+            return
+        group_item.removeChild(item)
+        shown = group_item.childCount()
+        for finding in _group_of(group_item).findings[shown:]:
+            self._add_element(group_item, finding)
+
+    @staticmethod
+    def _add_element(parent: QTreeWidgetItem, finding: Finding) -> None:
+        child = QTreeWidgetItem(parent)
+        child.setText(KIND_COLUMN, f"{finding.location}: {finding.message}")
+        child.setToolTip(KIND_COLUMN, f"{finding.rule_id}: {finding.message}")
+        child.setData(KIND_COLUMN, _FINDING_ROLE, finding)
+        icon = kind_icon(finding.anchor)
+        if icon is not None:
+            child.setIcon(KIND_COLUMN, icon)
+        child.setFirstColumnSpanned(True)
+
+    def _on_clicked(self, item: QTreeWidgetItem, column: int) -> None:
+        del column
+        if item.data(KIND_COLUMN, _MORE_ROLE):
+            self.show_more(item)
+
+    def _on_filter(self, text: str) -> None:
+        self._filter = text.strip()
+        self._show()
 
     def _on_item_changed(self, item: QTreeWidgetItem, column: int) -> None:
         if column != KIND_COLUMN or item.parent() is not None:
@@ -272,6 +349,9 @@ class HintsView(QWidget):
 
     def _on_activated(self, item: QTreeWidgetItem, column: int) -> None:
         del column
+        if item.data(KIND_COLUMN, _MORE_ROLE):
+            self.show_more(item)
+            return
         finding = item.data(KIND_COLUMN, _FINDING_ROLE)
         if isinstance(finding, Finding):
             self.finding_activated.emit(finding)
@@ -312,3 +392,26 @@ def _group_of(item: QTreeWidgetItem) -> HintGroup:
 
 def _is_off(group: HintGroup) -> bool:
     return hint_kinds().is_off(group.rule_id)
+
+
+def _filtered(group: HintGroup, text: str) -> HintGroup | None:
+    """Keeps the hints of a kind that a text of the filter names.
+
+    A text that names the kind, by its words or its rule, keeps all of its
+    hints. Otherwise a hint stays when its place or its message has the text.
+    The match ignores case.
+
+    Returns:
+        The kind with the hints that it keeps, or None for none.
+    """
+    if not text:
+        return group
+    wanted = text.lower()
+    if wanted in group.name.lower() or wanted in group.rule_id.lower():
+        return group
+    kept = tuple(
+        f
+        for f in group.findings
+        if wanted in f.location.lower() or wanted in f.message.lower()
+    )
+    return HintGroup(group.rule_id, kept) if kept else None

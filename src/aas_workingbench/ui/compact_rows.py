@@ -23,6 +23,7 @@ from aas_workingbench.domain.design_tokens import fitting_row_height
 from aas_workingbench.domain.design_tokens import FOCUS_STROKE
 from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 from aas_workingbench.settings.app_settings import CHANGE_MARK_ROLE
+from aas_workingbench.settings.app_settings import GROUP_TITLE_ROLE
 from aas_workingbench.settings.app_settings import MARK_CHANGED
 from aas_workingbench.settings.app_settings import MARK_NEW
 from aas_workingbench.ui.theme import current_tokens
@@ -33,6 +34,17 @@ MARK_DOT_DIAMETER = 6
 
 MARK_DOT_MARGIN = 6
 """The room between the dot and the right edge of the cell, in pixels."""
+
+COUNT_MARGIN = 8
+"""The room between the count of a closed row and the right edge of the cell,
+or the dot of a mark, in pixels."""
+
+TITLE_COUNT_GAP = 6
+"""The room between the title of a group of the tree and its count."""
+
+COUNT_GAP = 12
+"""The least room between the name of a row and its count, in pixels. A name
+that would come closer hides the count, so the two never touch."""
 
 
 def row_size_hint(font: QFont) -> QSize:
@@ -85,5 +97,85 @@ def paint_row_signs(
             )
             radius = MARK_DOT_DIAMETER / 2
             painter.drawEllipse(center, radius, radius)
+    finally:
+        painter.restore()
+
+
+def child_count_text(view: object, index: QModelIndex) -> str:
+    """Gives the count that a closed row of a tree shows, such as `18`.
+
+    A closed row hides what is below it, so its count says how much is there
+    without opening it (proposal 2.3). An open row shows its rows, and a row
+    without rows has nothing to count.
+
+    Args:
+        view: The tree that draws the row. Only a view whose
+            `showsChildCounts` is true shows counts.
+        index: The cell. Only the name column has a count.
+
+    Returns:
+        The count as text, or an empty string for no count.
+    """
+    if index.column() != ATTRIBUTE_COLUMN or not getattr(
+        view, "showsChildCounts", False
+    ):
+        return ""
+    model = index.model()
+    if model is None or not model.hasChildren(index):
+        return ""
+    is_expanded = getattr(view, "isExpanded", None)
+    # A group of objects is the title of a section, which always has its
+    # count (proposal 2.2).
+    if not index.data(GROUP_TITLE_ROLE) and (
+        is_expanded is None or is_expanded(index)
+    ):
+        return ""
+    count = model.rowCount(index)
+    return str(count) if count else ""
+
+
+def paint_child_count(
+    painter: QPainter,
+    option: QStyleOptionViewItem,
+    index: QModelIndex,
+    text: str,
+    name_end: int,
+) -> None:
+    """Paints the count of a closed row at the right edge of its name cell.
+
+    Args:
+        painter: The painter of the view.
+        option: What the delegate was asked to paint.
+        index: The cell, which tells whether a dot of a mark is there too.
+        text: What `child_count_text` gave.
+        name_end: Where the text of the name ends, in the coordinates of the
+            view. The count is left out when it would touch the name.
+    """
+    if not text:
+        return
+    metrics = QFontMetrics(option.font)
+    rect: QRect = option.rect
+    if index.data(GROUP_TITLE_ROLE):
+        # The count of a section follows its title.
+        left = name_end + TITLE_COUNT_GAP
+        right = left + metrics.horizontalAdvance(text)
+        if right > rect.right():
+            return
+    else:
+        right = rect.right() - COUNT_MARGIN
+        if index.data(CHANGE_MARK_ROLE) in (MARK_NEW, MARK_CHANGED):
+            right -= MARK_DOT_MARGIN + MARK_DOT_DIAMETER
+        left = right - metrics.horizontalAdvance(text)
+        if left - COUNT_GAP < name_end:
+            return
+    painter.save()
+    try:
+        painter.setFont(option.font)
+        painter.setPen(QColor(current_tokens().fg_muted))
+        painter.drawText(
+            QRect(left, rect.top(), right - left + 1, rect.height()),
+            int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter),
+            text,
+        )
     finally:
         painter.restore()

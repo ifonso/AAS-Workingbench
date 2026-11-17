@@ -91,8 +91,10 @@ aas-test-engines (aas_test_engines/ and the installed package)
 
 Tabler Icons (src/aas_workingbench/icons/tabler/)
     Version 3.50.0 of https://github.com/tabler/tabler-icons, the outline
-    style. The 53 SVG files are unmodified copies, and are the icons of
-    actions in the toolbars, menus and trees. MIT License, "Copyright (c)
+    style. 53 of the 54 SVG files are unmodified copies, and are the icons
+    of actions in the toolbars, menus and trees. The file language.svg has
+    the paths of the icon "language" of the same set, without the comment
+    that heads the files of the release. MIT License, "Copyright (c)
     2020-2026 Paweł Kuna". The license text is in the file LICENSE of that
     folder, and is the text of the same release. The editor draws the files
     in a color of the theme, and does not change them.
@@ -169,13 +171,25 @@ Fluent 2 color values (src/aas_workingbench/domain/design_tokens.py)
     Fluent is used only to say what the colors follow, and the project is not
     affiliated with or endorsed by Microsoft.
 
-Logos (src/aas_workingbench/icons/logo.*, full_logo.*, full_logo3.svg)
-    Part of the AAS Manager code base. Their origin and license are not
-    recorded in the repository. They are the only files of icons.
+Logos (src/aas_workingbench/icons/logo.*, full_logo.*)
+    The logo of AAS Workingbench and its wide version with the name are the
+    own work of this project, drawn for it in 2026, and are under its license,
+    the GNU General Public License, version 3. The shape follows the usual
+    picture of an Asset Administration Shell, a lid over two walls of
+    different lengths. The source is design/aas-workingbench-logo.vectorcraft.
+    The letters "AAS" and "Workingbench" are set in Adwaita Sans ExtraBold
+    (adwaita-fonts 51.0, "Copyright (c) 2016, The Inter Project Authors",
+    "Copyright (c) 2015-2025, Renzhi Li", "Copyright (c) 2025, Jamie
+    Gravendeel"; SIL Open Font License, Version 1.1) and are written as paths,
+    so no font is needed and none is embedded or shipped.
+
+Logo of AAS Manager (src/aas_workingbench/icons/full_logo3.svg)
+    Part of the AAS Manager code base. Its origin and license are not recorded
+    in the repository.
 
 Of unrecorded origin
-    Still of unrecorded origin: the logos above, and the schema file in
-    aas_test_engines/ (see above).
+    Still of unrecorded origin: the logo of AAS Manager above, and the
+    schema file in aas_test_engines/ (see above).
     Of unrecorded origin, and removed from the repository: the old icons of
     actions, whose names matched the Material Design Icons set, and the
     style sheets grey.qss and default.qss of the old themes with their

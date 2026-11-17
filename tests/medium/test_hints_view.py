@@ -108,7 +108,7 @@ def _group_rows(window) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-def test_the_status_bar_counts_the_hints_of_the_selected_element(
+def test_the_status_bar_counts_the_hints_of_the_whole_package(
     window,
 ) -> None:
     plain = make_property("Plain")
@@ -117,24 +117,33 @@ def test_the_status_bar_counts_the_hints_of_the_selected_element(
     window.open(plain, deprecated)
 
     window.select_element(plain)
-    plain_text = window.status.hints_button.text()
+    plain_text, plain_here = (
+        window.status.hints_button.text(),
+        window.status.hints_here,
+    )
     window.select_element(deprecated)
-    old_text = window.status.hints_button.text()
+    old_text, old_here = (
+        window.status.hints_button.text(),
+        window.status.hints_here,
+    )
 
-    assert (plain_text, old_text) == ("2 hints here", "3 hints here")
+    # Two of the submodel, two of Plain and three of Old (proposal 5.1).
+    assert (plain_text, old_text) == ("7 hints", "7 hints")
+    assert (plain_here, old_here) == (2, 3)
 
 
-def test_the_status_bar_says_one_hint_in_the_singular(window) -> None:
-    element = _described(make_property("Pump"))
-    element.category = "PARAMETER"
+def test_the_tooltip_tells_the_hints_of_the_current_object(window) -> None:
+    element = make_property("Plain")
     window.open(element)
 
     window.select_element(element)
 
-    assert window.status.hints_button.text() == "1 hint here"
+    assert "2 hints about the current object" in (
+        window.status.hints_button.toolTip()
+    )
 
 
-def test_the_status_bar_says_nothing_for_an_object_without_hints(
+def test_an_object_without_hints_still_shows_the_hints_of_the_package(
     window,
 ) -> None:
     element = _described(make_property("Pump"))
@@ -142,24 +151,8 @@ def test_the_status_bar_says_nothing_for_an_object_without_hints(
 
     window.select_element(element)
 
-    assert window.status.hints_button.isHidden()
     assert window.status.hints_here == 0
-
-
-def test_the_status_bar_follows_the_selection_back_to_an_object_with_hints(
-    window,
-) -> None:
-    clean = _described(make_property("Clean"))
-    plain = make_property("Plain")
-    window.open(clean, plain)
-    window.select_element(plain)
-    assert not window.status.hints_button.isHidden()
-
-    window.select_element(clean)
-    assert window.status.hints_button.isHidden()
-    window.select_element(plain)
-
-    assert window.status.hints_button.text() == "2 hints here"
+    assert window.status.hints_button.text() == "2 hints"
 
 
 def test_the_status_bar_counts_the_hints_of_the_submodel_for_the_submodel(
@@ -169,16 +162,17 @@ def test_the_status_bar_counts_the_hints_of_the_submodel_for_the_submodel(
 
     window.select("submodels", "Submodel")
 
-    assert window.status.hints_button.text() == "2 hints here"
+    assert window.status.hints_here == 2
+    assert window.status.hints_button.text() == "4 hints"
 
 
-def test_the_status_bar_counts_an_edit_of_the_current_object(
+def test_the_status_bar_counts_an_edit_of_the_package(
     window, qtbot: QtBot
 ) -> None:
     element = make_property("Plain")
     package = window.open(element)
     window.select_element(element)
-    assert window.status.hints_button.text() == "2 hints here"
+    assert window.status.hints_button.text() == "4 hints"
 
     from aas_workingbench.application.changes import observer_for
     from aas_workingbench.application.edits import SetAttribute
@@ -188,7 +182,7 @@ def test_the_status_bar_counts_an_edit_of_the_current_object(
     )
 
     qtbot.waitUntil(
-        lambda: window.status.hints_button.text() == "3 hints here",
+        lambda: window.status.hints_button.text() == "5 hints",
         timeout=2000,
     )
 
@@ -445,7 +439,7 @@ def _untick(window, rule_id: str) -> None:
     item.setCheckState(0, Qt.CheckState.Unchecked)
 
 
-def test_a_kind_that_is_off_is_left_out_of_the_hints_here(window) -> None:
+def test_a_kind_that_is_off_is_left_out_of_the_count(window) -> None:
     element = make_property("Plain")
     window.open(element)
     window.select_element(element)
@@ -453,7 +447,8 @@ def test_a_kind_that_is_off_is_left_out_of_the_hints_here(window) -> None:
 
     _untick(window, hint_rules.DESCRIPTION_MISSING)
 
-    assert window.status.hints_button.text() == "1 hint here"
+    assert window.status.hints_button.text() == "2 hints"
+    assert window.status.hints_here == 1
 
 
 def test_every_kind_off_leaves_nothing_here(window) -> None:
@@ -557,7 +552,7 @@ def test_a_kind_that_is_off_stays_off_across_a_restart(
     second.select_element(element)
 
     assert hint_kinds().off == frozenset({hint_rules.DESCRIPTION_MISSING})
-    assert second.status.hints_button.text() == "1 hint here"
+    assert second.status.hints_button.text() == "2 hints"
     second.dock.show_hints()
     item = second.dock.hints_view.group_item(hint_rules.DESCRIPTION_MISSING)
     assert item is not None
@@ -686,3 +681,96 @@ def test_the_new_views_name_no_color_of_their_own() -> None:
         source = Path(module.__file__).read_text(encoding="utf-8")
         assert not re.search(r"#[0-9a-fA-F]{6}\b|QColor\(\"", source)
         assert "setStyleSheet" not in source
+
+
+# ---------------------------------------------------------------------------
+# A kind lists its first elements, and the filter (proposals 5.3, 5.4)
+# ---------------------------------------------------------------------------
+
+
+def _many(window, count: int):
+    elements = [make_property(f"Element{n}") for n in range(count)]
+    window.open(*elements)
+    window.dock.show_hints()
+    return window.dock.hints_view
+
+
+def test_a_kind_lists_its_first_four_elements_and_a_link_to_the_rest(
+    window,
+) -> None:
+    from aas_workingbench.ui.hints_view import FIRST_ELEMENTS
+
+    view = _many(window, 6)
+    group = view.group_item(hint_rules.DESCRIPTION_MISSING)
+    assert group is not None
+
+    group.setExpanded(True)
+
+    # Seven: the six elements and their submodel.
+    assert group.childCount() == FIRST_ELEMENTS + 1
+    assert group.child(FIRST_ELEMENTS).text(0) == "Show 3 more"
+
+
+def test_show_more_lists_the_rest_of_the_elements(window) -> None:
+    view = _many(window, 6)
+    group = view.group_item(hint_rules.DESCRIPTION_MISSING)
+    assert group is not None
+    group.setExpanded(True)
+
+    view.tree.itemClicked.emit(group.child(group.childCount() - 1), 0)
+
+    assert group.childCount() == 7
+    assert not any("Show" in group.child(n).text(0) for n in range(7))
+
+
+def test_the_filter_keeps_the_elements_that_it_names(window) -> None:
+    view = _many(window, 6)
+
+    view.filter_field.setText("Element3")
+
+    groups = {g.rule_id: len(g.findings) for g in view.shown_groups}
+    assert groups == {
+        hint_rules.DESCRIPTION_MISSING: 1,
+        hint_rules.DISPLAY_NAME_MISSING: 1,
+    }
+    group = view.group_item(hint_rules.DESCRIPTION_MISSING)
+    assert group is not None and group.isExpanded()
+
+
+def test_the_filter_keeps_a_whole_kind_that_it_names(window) -> None:
+    view = _many(window, 2)
+
+    view.filter_field.setText("display name")
+
+    assert [g.rule_id for g in view.shown_groups] == [
+        hint_rules.DISPLAY_NAME_MISSING
+    ]
+
+
+def test_the_explanation_is_one_short_line_beside_the_filter(window) -> None:
+    from aas_workingbench.ui.hints_view import HELP_TEXT
+
+    view = window.dock.hints_view
+
+    assert view.help_label.text() == HELP_TEXT
+    assert HELP_TEXT == "Hints are advice, not rules. They do not stop a save."
+    assert "untick" in view.help_label.toolTip().lower()
+    assert view.tree.isHeaderHidden()
+
+
+def test_a_kind_has_the_blue_icon_of_information(window) -> None:
+    from aas_workingbench.ui.theme import current_tokens
+
+    view = _many(window, 1)
+    group = view.group_item(hint_rules.DESCRIPTION_MISSING)
+    assert group is not None
+
+    image = group.icon(0).pixmap(48, 48).toImage()
+    colors = {
+        image.pixelColor(x, y).name()
+        for x in range(image.width())
+        for y in range(image.height())
+        if image.pixelColor(x, y).alpha() == 255
+    }
+
+    assert colors == {current_tokens().status_info}

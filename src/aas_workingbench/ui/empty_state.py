@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import QToolButton
 from PyQt6.QtWidgets import QVBoxLayout
 from PyQt6.QtWidgets import QWidget
 
+from aas_workingbench.application.save import first_package_file
 from aas_workingbench.domain.design_tokens import FONT_FAMILY
 from aas_workingbench.domain.design_tokens import TYPE_RAMP
 
@@ -48,6 +49,9 @@ def role_font(role: str) -> QFont:
     font = QFont(FONT_FAMILY)
     font.setPixelSize(style.size)
     font.setWeight(QFont.Weight(style.weight))
+    # The bundled Inter is a variable font. Qt draws a weight below Bold from
+    # it as Regular unless the axis of the weight is set too.
+    font.setVariableAxis(QFont.Tag("wght"), float(style.weight))
     return font
 
 
@@ -185,10 +189,61 @@ class EmptyState(QWidget):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent | None) -> None:  # noqa: N802
-        """Opens each dropped file."""
+        """Opens one dropped file: one package is open at a time.
+
+        The first package of the drop opens, and a drop of no package tries
+        the first file, which says why it does not open.
+        """
         if event is None or not _has_files(event):
             return
         mime = event.mimeData()
-        for url in [] if mime is None else mime.urls():
-            self._open_file(url.toLocalFile())
+        urls = [] if mime is None else mime.urls()
+        chosen = first_package_file([url.toLocalFile() for url in urls])
+        if chosen is not None:
+            self._open_file(chosen)
         event.acceptProposedAction()
+
+
+NOTHING_SELECTED_TITLE = "Select an element"
+NOTHING_SELECTED_HINT = (
+    "Its attributes show here. Ctrl+K finds an element by name."
+)
+
+
+class NothingSelected(QWidget):
+    """What the detail shows while it has no element to show (screen 02).
+
+    A tab that shows nothing used to be an empty grid, which says neither
+    what goes there nor how to get something there.
+    """
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        """Builds the message.
+
+        Args:
+            parent: The parent widget.
+        """
+        super().__init__(parent)
+        self.setObjectName("nothingSelected")
+        self.setBackgroundRole(QPalette.ColorRole.Base)
+        self.setAutoFillBackground(True)
+        from aas_workingbench.ui.theme.icons import tabler_icon
+
+        icon = QLabel(self)
+        icon.setPixmap(tabler_icon("info-circle").pixmap(16, 16))
+        icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title = QLabel(NOTHING_SELECTED_TITLE, self)
+        self.title.setObjectName("nothingSelectedTitle")
+        self.title.setFont(role_font("body_strong"))
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.hint = QLabel(NOTHING_SELECTED_HINT, self)
+        self.hint.setObjectName("emptyHint")
+        self.hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.hint.setWordWrap(True)
+        layout = QVBoxLayout(self)
+        layout.addStretch(1)
+        layout.addWidget(icon)
+        layout.addSpacing(4)
+        layout.addWidget(self.title)
+        layout.addWidget(self.hint)
+        layout.addStretch(1)

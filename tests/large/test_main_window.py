@@ -10,6 +10,7 @@
 
 import sys
 from pathlib import Path
+from typing import Any
 from unittest import TestCase
 
 import pytest
@@ -18,8 +19,11 @@ pytest.importorskip(
     "PyQt6.QtWebEngineWidgets", reason="PyQt6.QtWebEngineWidgets not available"
 )
 
+from PyQt6.QtCore import QEventLoop
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
+
+from aas_workingbench.settings.app_settings import OBJECT_ROLE
 
 NAME_ROLE = None
 
@@ -28,6 +32,7 @@ AASX_FILE = Path(__file__).parents[1] / "data" / "TestPackage.aasx"
 # How long a walk through the rows may take before it counts as stuck.
 WATCHDOG_MS = 300_000
 WATCHDOG_EXIT_CODE = 2
+FAILED_STEP_EXIT_CODE = 3
 
 
 # The session QApplication outlives every test. When each test created and
@@ -56,6 +61,10 @@ class TestUi(TestCase):
 
         self.timer = QTimer()
         self.timer.setInterval(0)
+        # The walk runs in a loop of its own. Ending the loop of the
+        # application emits `aboutToQuit`, which shuts QtWebEngine down, and
+        # the next test that ended it crashed the process in that signal.
+        self.loop = QEventLoop()
 
     def tearDown(self) -> None:
         self.timer.stop()
@@ -71,7 +80,7 @@ class TestUi(TestCase):
             except (StopIteration, TypeError):
                 self._nextItemInLeftTree()
         except StopIteration:
-            self.app.exit(0)
+            self.loop.exit(0)
             print("Test is completed")
 
     def testLinks(self):
@@ -84,16 +93,24 @@ class TestUi(TestCase):
         try:
             try:
                 if self.window.mainTabWidget.currentIndex() == 1:
-                    # Tab of link item is opened
-                    self.assertTrue(self.packTreeView.currentIndex().isValid())
-                    self.assertNotEqual(
-                        self.currIterPackIndex.data(NAME_ROLE),
-                        self.packTreeView.currentIndex().data(NAME_ROLE),
+                    # Tab of link item is opened, and the tree follows it.
+                    # Two items can have the same name, such as a submodel and
+                    # the concept description of its semanticId, so the
+                    # objects are compared and not the names.
+                    current = self.packTreeView.currentIndex()
+                    linkTab: Any = self.window.mainTabWidget.widget(1)
+                    self.assertTrue(current.isValid())
+                    self.assertIs(
+                        current.data(OBJECT_ROLE),
+                        linkTab.packItem.data(OBJECT_ROLE),
                     )
+                    self.assertIsNot(current.data(OBJECT_ROLE), self.linkSource)
                     self.window.mainTabWidget.removeTab(1)
                     return
                 elif self.attrsTreeView.openInNewTabAct.isEnabled():
-                    self.currIterPackIndex = self.packTreeView.currentIndex()
+                    self.linkSource = self.packTreeView.currentIndex().data(
+                        OBJECT_ROLE
+                    )
                     # Open link item in new tab
                     self.attrsTreeView.openInNewTabAct.trigger()
                     self._nextItemInRightTree()
@@ -105,7 +122,7 @@ class TestUi(TestCase):
                 print(e)
                 self._nextItemInLeftTree()
         except StopIteration:
-            self.app.exit(0)
+            self.loop.exit(0)
             print("Test is completed")
 
     def testEditCreate(self):
@@ -130,27 +147,42 @@ class TestUi(TestCase):
                 print(e)
                 self._nextItemInLeftTree()
         except StopIteration:
-            self.app.exit(0)
+            self.loop.exit(0)
             print("Test is completed")
 
     def _startTest(self, testFunc):
-        self.timer.timeout.connect(testFunc)
+        failures: list[BaseException] = []
+
+        def step():
+            # A step that fails would fail again on every tick of the timer,
+            # and pytest-qt keeps each exception with its traceback: the
+            # memory grew by hundreds of megabytes a second until the machine
+            # had none left. The first failure ends the walk instead.
+            try:
+                testFunc()
+            except BaseException as error:
+                failures.append(error)
+                self.timer.stop()
+                self.loop.exit(FAILED_STEP_EXIT_CODE)
+
+        self.timer.timeout.connect(step)
         self.timer.start()
-        # An exception in a step does not end the event loop: pytest-qt records
-        # it and the timer fires again, so a step that fails on every row would
-        # run for ever. The watchdog ends the loop with a failure instead. The
-        # slowest of the three runs takes about a minute.
+        # A walk that never ends fails when the watchdog fires. The slowest of
+        # the three runs takes about a minute.
         watchdog = QTimer()
         watchdog.setSingleShot(True)
-        watchdog.timeout.connect(lambda: self.app.exit(WATCHDOG_EXIT_CODE))
+        watchdog.timeout.connect(lambda: self.loop.exit(WATCHDOG_EXIT_CODE))
         watchdog.start(WATCHDOG_MS)
         try:
-            self.assertEqual(self.app.exec(), 0)
+            exitCode = self.loop.exec()
         finally:
             # A timer that keeps firing would run the test step again later,
             # against a window that is already closed.
             self.timer.stop()
             watchdog.stop()
+        if failures:
+            raise failures[0]
+        self.assertEqual(exitCode, 0)
 
     def _nextItemInLeftTree(self):
         pack_index = next(self.itemsGenerator)

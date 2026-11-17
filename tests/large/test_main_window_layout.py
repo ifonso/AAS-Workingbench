@@ -438,9 +438,21 @@ def test_the_breadcrumb_opens_the_object_of_a_segment(window: Any) -> None:
     view = window.mainTreeView
     view.expandAll()
     model = view.model()
+
+    def depth(index: QModelIndex) -> int:
+        return 0 if not index.isValid() else 1 + depth(index.parent())
+
+    # The deepest row, whose path from its submodel has three parts or more:
+    # the path leaves out the package and the group of the tree.
     deepest = model.index(0, 0)
-    while model.rowCount(deepest):
-        deepest = model.index(0, 0, deepest)
+    queue = [QModelIndex()]
+    while queue:
+        parent = queue.pop()
+        for row in range(model.rowCount(parent)):
+            child = model.index(row, 0, parent)
+            if depth(child) > depth(deepest):
+                deepest = child
+            queue.append(child)
     tab = window.mainTabWidget.currentWidget()
     tab.openItem(deepest)
     names = tab.breadcrumb.names

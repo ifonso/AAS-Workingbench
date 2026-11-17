@@ -39,6 +39,7 @@ from dataclasses import field
 import io
 import json
 import logging
+import errno
 import os
 from pathlib import Path
 import tempfile
@@ -650,7 +651,18 @@ def _non_empty(properties: CoreProperties) -> CoreProperties | None:
 
 @contextmanager
 def _replacing(target: Path) -> Generator[BinaryIO]:
-    """Yields a temporary file that replaces the target when the block ends."""
+    """Yields a temporary file that replaces the target when the block ends.
+
+    Raises:
+        PermissionError: If the target exists and may not be written. A move
+            over a read-only file works on Linux and macOS, where it needs only
+            the right to write the folder, so the editor asks first and treats
+            a read-only file as Windows does.
+    """
+    if target.exists() and not os.access(target, os.W_OK):
+        raise PermissionError(
+            errno.EACCES, "The file is read-only", str(target)
+        )
     descriptor, name = tempfile.mkstemp(
         dir=target.parent, prefix=f".{target.name}.", suffix=".tmp"
     )

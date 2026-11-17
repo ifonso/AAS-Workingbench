@@ -113,18 +113,20 @@ def test_the_value_type_reads_as_an_xsd_type(tab: Any) -> None:
     assert value == "xs:double"
 
 
-def test_the_rows_keep_the_order_of_the_attributes(tab: Any) -> None:
+def test_the_rows_come_in_sections_with_the_value_first(tab: Any) -> None:
     from aas_workingbench.settings.app_settings import NAME_ROLE
 
     proxy = tab.model()
     names = [proxy.index(row, 0).data(NAME_ROLE) for row in range(5)]
 
+    # Value, then Identification (proposal 3.2). Inside a section the order of
+    # the SDK stays, except that the description follows the display name.
     assert names == [
-        "id_short",
-        "category",
         "value",
         "value_type",
-        "description",
+        "value_id",
+        "id_short",
+        "category",
     ]
 
 

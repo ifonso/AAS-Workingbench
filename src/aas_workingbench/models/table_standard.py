@@ -161,7 +161,7 @@ class StandardTable(QAbstractItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
         parentObj = self.objByIndex(parent)
-        return self.createIndex(row, column, parentObj.children()[row])
+        return self.createIndex(row, column, parentObj.rows()[row])
 
     def parent(self, child: QModelIndex) -> QModelIndex:
         if not child.isValid():
@@ -178,14 +178,14 @@ class StandardTable(QAbstractItemModel):
             return QModelIndex()
 
         grandParentObj = parentObj.parent()
-        row = grandParentObj.children().index(parentObj)
+        row = grandParentObj.rowOf(parentObj)
         return self.createIndex(row, 0, parentObj)
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         # Only the first column of an item has children (Qt model contract).
         if parent.isValid() and parent.column() > 0:
             return 0
-        return len(self.objByIndex(parent).children())
+        return len(self.objByIndex(parent).rows())
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._columns)
@@ -231,7 +231,7 @@ class StandardTable(QAbstractItemModel):
                 childIndex = self.index(row, 0, parent)
                 yield childIndex
                 child = self.objByIndex(childIndex)
-                if child.children():
+                if child.rows():
                     yield from recurse(childIndex)
 
         yield from recurse(parent)
@@ -638,7 +638,7 @@ class StandardTable(QAbstractItemModel):
         if getattr(item, "isNode", False) and item.obj is store:
             return any(
                 marks.is_changed(child.obj) or marks.is_new(child.obj)
-                for child in item.children()
+                for child in item.rows()
             ) or any(
                 item.acceptsChild(obj) for obj in marks.removed_from(store)
             )
@@ -907,7 +907,7 @@ class StandardTable(QAbstractItemModel):
 
     def _syncValueRows(self, item: StandardItem, command: SetValueType):
         """Show the values that a change of the value type converted"""
-        for sibling in item.parent().children():
+        for sibling in item.parent().rows():
             if sibling.objName in command.value_names:
                 sibling.obj = getattr(command.owner, sibling.objName)
                 self._emitRowChanged(self._indexOf(sibling))
@@ -950,8 +950,8 @@ class StandardTable(QAbstractItemModel):
         parentItem = self.objByIndex(parent)
 
         self.beginRemoveRows(parent, row, row + count - 1)
-        for n in range(count):
-            child = parentItem.children()[row]
+        # Read once: each row that leaves makes Qt list the children again.
+        for child in parentItem.rows()[row : row + count]:
             child.setParent(None)
             # child.deleteLater()
         self.endRemoveRows()
@@ -982,7 +982,7 @@ class StandardTable(QAbstractItemModel):
                 pass
 
         for currRow in range(row + count - 1, row - 1, -1):
-            child = parentItem.children()[currRow]
+            child = parentItem.rows()[currRow]
             if isinstance(parentObj, AbstractSupplementaryFileContainer):
                 # A stored file is removed from the container of the package.
                 self._run(
@@ -1185,7 +1185,7 @@ class StandardTable(QAbstractItemModel):
 
     @staticmethod
     def _childShowing(item: StandardItem, obj):
-        for child in item.children():
+        for child in item.rows():
             if child.obj is obj:
                 return child
         return None
@@ -1196,7 +1196,7 @@ class StandardTable(QAbstractItemModel):
         while stack:
             item = stack.pop()
             yield item
-            stack.extend(reversed(item.children()))
+            stack.extend(reversed(item.rows()))
 
     def _indexOf(self, item: StandardItem):
         """Return the index of the item, None if it is not in the model"""

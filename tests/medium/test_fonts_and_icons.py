@@ -275,6 +275,24 @@ def test_a_widget_without_a_font_of_its_own_gets_the_font_of_the_application(
     assert QFontInfo(button.font()).pixelSize() == TYPE_RAMP["body"].size
 
 
+@pytest.mark.parametrize(
+    "widget_class", ["QMenuBar", "QMenu", "QStatusBar", "QTreeView"]
+)
+def test_a_switch_of_style_keeps_the_bars_on_the_font_of_the_application(
+    qapp: QApplication, widget_class: str
+) -> None:
+    # A new style gives the fonts of the platform back to some classes of
+    # widgets, and the menus and the status bar read larger than the rest.
+    apply_application_font(qapp)
+    qapp.setFont(QFont("Sans", 20), widget_class)
+    theme_manager().apply(THEME_LIGHT)
+
+    font = QFontInfo(qapp.font(widget_class))
+
+    assert font.family() == FONT_FAMILY
+    assert font.pixelSize() == TYPE_RAMP["body"].size
+
+
 def test_the_font_of_the_rows_is_regular_and_not_thin() -> None:
     # Qt 6 reads the 40 that Qt 5 meant as Normal as a weight below Thin, and
     # Inter has a Thin style, so every row would draw hairline thin.
@@ -327,3 +345,15 @@ def test_the_shared_qapp_has_inter_registered_for_every_test(
     # Run this test alone: nothing else has called `install_fonts` then.
     assert FONT_FAMILY in QFontDatabase.families()
     assert QFontInfo(QFont(FONT_FAMILY)).family() == FONT_FAMILY
+
+
+@pytest.mark.parametrize("role", ["body_strong", "subtitle", "title"])
+def test_a_strong_role_of_the_type_ramp_sets_the_axis_of_the_weight(
+    qapp: QApplication, role: str
+) -> None:
+    from aas_workingbench.ui.empty_state import role_font
+
+    # Inter is a variable font, and its weights below Bold need the axis.
+    font = role_font(role)
+
+    assert font.variableAxisValue(QFont.Tag("wght")) == TYPE_RAMP[role].weight

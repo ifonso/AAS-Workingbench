@@ -11,6 +11,7 @@ from aas_workingbench.application.hints import hint_kind_name
 from aas_workingbench.application.hints import hint_kind_tip
 from aas_workingbench.application.hints import hints_here_text
 from aas_workingbench.application.hints import hints_shown
+from aas_workingbench.application.hints import hints_text
 from aas_workingbench.domain.validation import HINT_RULES
 from aas_workingbench.domain.validation import Finding
 from aas_workingbench.domain.validation import Severity
@@ -158,3 +159,8 @@ def test_kinds_with_the_same_count_are_ordered_by_name() -> None:
 
 def test_a_report_without_hints_has_no_group() -> None:
     assert group_hints(ValidationReport()) == ()
+
+
+def test_the_hints_of_a_package_are_counted_in_words() -> None:
+    assert hints_text(1) == "1 hint"
+    assert hints_text(523) == "523 hints"

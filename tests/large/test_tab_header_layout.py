@@ -184,18 +184,19 @@ def test_columns_that_nobody_sized_are_fitted_again(
     _close(window)
 
 
-def test_closing_writes_that_the_user_dragged_a_column(
+def test_a_tab_without_a_header_writes_that_no_column_was_sized(
     qapp: object, qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 
     written: dict[str, Any] = {}
     window = _window(qtbot, monkeypatch, {}, written)
+    # The view fits its columns itself: without a header no person sizes one.
     _header(window).resizeSection(ATTRIBUTE_COLUMN, DRAGGED_WIDTH)
 
     _close(window)
 
-    assert written["tabTreeViewColumnsSized"] is True
+    assert written["tabTreeViewColumnsSized"] is False
 
 
 def test_closing_writes_that_nobody_dragged_a_column(
@@ -212,7 +213,12 @@ def test_closing_writes_that_nobody_dragged_a_column(
 def _pack_state_with_a_dragged_object_column(
     qtbot: Any, monkeypatch: pytest.MonkeyPatch
 ) -> bytes:
+    from aas_workingbench.settings.app_settings import TYPE_COLUMN
+
     window = _window(qtbot, monkeypatch, {})
+    # The tree shows the names only by default, and a single column takes the
+    # width of the tree. A user who shows the type can size the names.
+    window.mainTreeView.header().showSection(TYPE_COLUMN)
     window.mainTreeView.header().resizeSection(0, DRAGGED_WIDTH)
     state = bytes(window.mainTreeView.header().saveState())
     _close(window)
@@ -286,9 +292,9 @@ def test_the_zones_of_an_earlier_layout_get_the_default_widths(
         },
     )
 
-    # The saved sizes gave the tree a tenth. The default gives it a share that
-    # the tab can still bear, which a small window may reduce.
-    assert _left_share(window) > 0.4
+    # The saved sizes gave the tree a tenth. The default gives it a third,
+    # because it shows the names only and the detail needs the room.
+    assert _left_share(window) > 0.3
     _close(window)
 
 

@@ -59,6 +59,7 @@ from aas_workingbench.ui import reference_dialogs
 from aas_workingbench.ui.actions import ActionContext
 from aas_workingbench.ui.actions import ActionSpec
 from aas_workingbench.ui.actions import ViewKind
+from aas_workingbench.ui.actions import default_registry
 from aas_workingbench.ui.actions import register_action
 from aas_workingbench.ui.delete_flow import DeleteCancelled
 from aas_workingbench.ui.delete_flow import prepare_delete
@@ -70,17 +71,19 @@ from aas_workingbench.ui.value_list_dialog import ask_value_list
 TITLE = concept_dialogs.TITLE
 ORDER_TITLE = "Order concept descriptions"
 
-_registered = False
-
 
 def register_concept_actions() -> None:
-    """Adds the actions of this module to the registry, once."""
-    global _registered  # noqa: PLW0603
-    if _registered:
-        return
-    _registered = True
+    """Adds the actions of this module to the registry, once.
+
+    The registry says what is there, so actions that a test took out again
+    come back with the next call.
+    """
+    registered = {
+        spec.action_id for spec in default_registry().specs_for(ViewKind.ANY)
+    }
     for spec in _SPECS:
-        register_action(spec)
+        if spec.action_id not in registered:
+            register_action(spec)
 
 
 # What the context holds

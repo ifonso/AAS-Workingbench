@@ -8,7 +8,10 @@ swaps the segments for the field with its completer, and Enter, Escape, or
 leaving the field swaps them back.
 
 When the path is too long for the room, the first segments are folded into a
-button with a menu, and the last ones, which tell where the user is, stay.
+button with a menu, and the last ones, which tell where the user is, stay. The
+segments are separated by `›` (proposal 4.2). The type is not part of the path:
+the header of the element below the path says it (proposal 3.1), and the
+breadcrumb shows a type only when it is given one.
 """
 
 from collections.abc import Callable
@@ -29,7 +32,7 @@ from PyQt6.QtWidgets import QStackedLayout
 from PyQt6.QtWidgets import QToolButton
 from PyQt6.QtWidgets import QWidget
 
-SEPARATOR = "/"
+SEPARATOR = "›"
 FOLDED_TEXT = "…"
 
 
@@ -142,6 +145,7 @@ class Breadcrumb(QWidget):
         self._names = list(names)
         self._type.setText(type_text)
         self._type.setToolTip(type_text)
+        self._type.setVisible(bool(type_text))
         for widget in (*self._buttons, *self._separators):
             self._row.removeWidget(widget)
             widget.hide()
@@ -215,7 +219,8 @@ class Breadcrumb(QWidget):
         """Hides the first segments until the last ones and the type fit."""
         for widget in (*self._buttons, *self._separators):
             widget.show()
-        room = self.width() - self._type.sizeHint().width() - 16
+        type_width = self._type.sizeHint().width() if self._type.text() else 0
+        room = self.width() - type_width - 16
         if not self._buttons or room <= 0:
             self._folded.hide()
             return

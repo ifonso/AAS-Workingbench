@@ -150,7 +150,8 @@ def test_a_row_of_the_attributes_is_as_high_as_the_density(
     attrs.show()
     qtbot.waitExposed(attrs)
 
-    row = attrs.visualRect(attrs.model().index(0, 0)).height()
+    # The first row of a section has the band of the section above it.
+    row = attrs.visualRect(attrs.model().index(1, 0)).height()
 
     assert row == ROW_HEIGHTS[Density.COMPACT]
 
@@ -333,3 +334,112 @@ def test_a_match_of_the_search_has_the_find_color(
 
     brush = shown.view.itemDelegate().bgColor(match)
     assert brush.color() == QColor(tokens.bg_find)
+
+
+@pytest.mark.parametrize(("theme", "tokens"), THEMES, ids=THEME_IDS)
+def test_a_selected_row_is_one_band_from_the_edge_of_the_view(
+    views, qtbot: QtBot, theme: str, tokens: ColorTokens
+) -> None:
+    shown, _ = _package_tree(views, qtbot, make_property("Speed"))
+    theme_manager().apply(theme)
+    selected = shown.index(*SUBMODEL, "Speed")
+
+    # As a click does: the view selects the row that becomes current.
+    shown.view.setCurrentIndex(selected)
+    qtbot.wait(20)
+    image = shown.view.viewport().grab().toImage()
+
+    rect = shown.view.visualRect(selected)
+    # In the indent, left of the name, and at the right end of the row.
+    y = rect.top() + 2
+    for x in (8, rect.left() - 4, shown.view.viewport().width() - 4):
+        assert image.pixelColor(x, y) == QColor(tokens.bg_selected), x
+
+
+def _count_of(shown: Any, *path: str) -> str:
+    from aas_workingbench.ui.compact_rows import child_count_text
+
+    return child_count_text(shown.view, shown.index(*path))
+
+
+def test_a_closed_row_tells_how_many_rows_are_below_it(
+    views, qtbot: QtBot
+) -> None:
+    shown, _ = _package_tree(
+        views, qtbot, make_property("Speed"), make_property("Other")
+    )
+
+    shown.view.collapse(shown.index(*SUBMODEL))
+
+    assert _count_of(shown, *SUBMODEL) == "2"
+
+
+def test_an_open_row_and_a_row_without_rows_have_no_count(
+    views, qtbot: QtBot
+) -> None:
+    shown, _ = _package_tree(views, qtbot, make_property("Speed"))
+
+    shown.view.expand(shown.index(*SUBMODEL))
+
+    assert _count_of(shown, *SUBMODEL) == ""
+    assert _count_of(shown, *SUBMODEL, "Speed") == ""
+
+
+def test_the_count_of_a_closed_row_is_drawn_at_the_right_edge(
+    views, qtbot: QtBot
+) -> None:
+    shown, _ = _package_tree(
+        views, qtbot, make_property("Speed"), make_property("Other")
+    )
+    index = shown.index(*SUBMODEL)
+    shown.view.collapse(index)
+    qtbot.wait(20)
+    image = shown.view.viewport().grab().toImage()
+    rect = shown.view.visualRect(index)
+
+    # The digit is drawn with soft edges, so its pixels are near the color.
+    drawn = [
+        image.pixelColor(x, y)
+        for x in range(rect.right() - 24, rect.right())
+        for y in range(rect.top(), rect.bottom())
+    ]
+    assert any(color.lightness() < 160 for color in drawn)
+
+
+def test_the_name_of_an_attribute_is_drawn_as_a_label(
+    views, qtbot: QtBot
+) -> None:
+    # The value is the word of its label, so both cells draw the same letters
+    # and only the color differs.
+    shown, _ = _package_tree(
+        views, qtbot, make_property("Speed", value="value")
+    )
+    attrs = shown.attrs_view(*SUBMODEL, "Speed")
+    attrs.resize(600, 300)
+    attrs.show()
+    qtbot.waitExposed(attrs)
+    proxy = attrs.model()
+    row = next(
+        row
+        for row in range(proxy.rowCount())
+        if proxy.index(row, 0).data(Qt.ItemDataRole.DisplayRole) == "value"
+    )
+    image = attrs.viewport().grab().toImage()
+
+    def darkest(index: QModelIndex) -> int:
+        rect = attrs.visualRect(index)
+        return min(
+            image.pixelColor(x, y).lightness()
+            for x in range(rect.left(), rect.right())
+            for y in range(rect.top(), rect.bottom())
+        )
+
+    # The letters are drawn with soft edges, and a platform that smooths
+    # them by subpixel has no pixel of the exact color: the darkest pixel of
+    # a cell is near its color, and nearer the thicker the letter is. The
+    # two colors are 30 apart, and one color in both cells gives 0.
+    label = QColor(LIGHT.fg_secondary).lightness()
+    name_cell = darkest(proxy.index(row, 0))
+    value_cell = darkest(proxy.index(row, 1))
+    assert abs(name_cell - label) <= 14
+    assert name_cell - value_cell >= 15

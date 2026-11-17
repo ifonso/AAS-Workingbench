@@ -46,11 +46,10 @@ from aas_workingbench.ui import reference_dialogs
 from aas_workingbench.ui.actions import ActionContext
 from aas_workingbench.ui.actions import ActionSpec
 from aas_workingbench.ui.actions import ViewKind
+from aas_workingbench.ui.actions import default_registry
 from aas_workingbench.ui.actions import register_action
 from aas_workingbench.ui.user_defaults import id_generator
 from aas_workingbench.ui.user_defaults import id_kind_of
-
-_registered = False
 
 
 class EditCancelled(Exception):  # noqa: N818
@@ -64,13 +63,17 @@ class _Package(Protocol):
 
 
 def register_reference_actions() -> None:
-    """Adds the actions of this module to the registry, once."""
-    global _registered  # noqa: PLW0603
-    if _registered:
-        return
-    _registered = True
+    """Adds the actions of this module to the registry, once.
+
+    The registry says what is there, so actions that a test took out again
+    come back with the next call.
+    """
+    registered = {
+        spec.action_id for spec in default_registry().specs_for(ViewKind.ANY)
+    }
     for spec in _SPECS:
-        register_action(spec)
+        if spec.action_id not in registered:
+            register_action(spec)
 
 
 def rename_command(

@@ -59,6 +59,11 @@ class StandardItem(QObject):
     supportsIncrementalRows = False
     # Whether the rows are read again when the object of the item changes.
     repopulatesOnChange = False
+    # The rows below the item, and the row of each. Qt keeps the children, and
+    # `children()` makes a new list at each call, which a model asks for at
+    # every index, so the list is kept until a child comes or goes.
+    _rows = None
+    _rowNumbers = None
 
     def __init__(self, obj, name=None, parent=None, new=True, typehint=None):
         super().__init__(parent)
@@ -147,8 +152,10 @@ class StandardItem(QObject):
     def updateTypehintName(self):
         try:
             self.typehintName = getTypeHintName(self.typehint)
-        except TypeError as e:
-            logging.exception(e)
+        except TypeError:
+            # An item with no type hint is common, such as the root of a
+            # model, and every one of them is asked. It is no error.
+            logging.debug("No name for the type hint", exc_info=True)
             self.typehintName = str(self.typehint)
 
     def updateIcon(self):
@@ -336,9 +343,44 @@ class StandardItem(QObject):
         value = self.obj.value
         return isinstance(value, str) and value.startswith(("http", "www."))
 
+    def childEvent(self, a0):
+        # Qt tells the parent at once when a child comes or goes, also when
+        # the child is deleted, so the kept rows never differ from its list.
+        self._rows = None
+        self._rowNumbers = None
+        super().childEvent(a0)
+
+    def rows(self) -> tuple:
+        """Return the items below this one, in the order of the rows.
+
+        The same as `children()`, without making a list at every call.
+        """
+        rows = self._rows
+        if rows is None:
+            rows = self._rows = tuple(self.children())
+        return rows
+
+    def rowOf(self, child) -> int:
+        """Return the row of an item below this one.
+
+        :raise ValueError: if the item is not below this one
+        """
+        numbers = self._rowNumbers
+        if numbers is None:
+            numbers = self._rowNumbers = {
+                id(item): row for row, item in enumerate(self.rows())
+            }
+        try:
+            return numbers[id(child)]
+        except KeyError:
+            raise ValueError(f"{child} is not a row of {self}") from None
+
     def row(self):
-        if self.parent():
-            return self.parent().children().index(self)
+        parent = self.parent()
+        if isinstance(parent, StandardItem):
+            return parent.rowOf(self)
+        elif parent:
+            return parent.children().index(self)
         else:
             return 0
 
@@ -352,7 +394,12 @@ class StandardItem(QObject):
             )
             return attrTypehint
         except KeyError:
-            logging.exception("Typehint could not be gotten")
+            # The item of a list or of a mapping is named by its position or
+            # its idShort, which is no attribute of the container. This is so
+            # for most rows of a package, and the type comes from the
+            # container below. A traceback for each took most of the time of
+            # opening a package.
+            logging.debug("No type hint by the name", exc_info=True)
 
         if isIterable(self.parentObj):
             attrTypehint = ClassesInfo.addType(type(self.parentObj))
@@ -361,7 +408,7 @@ class StandardItem(QObject):
                 try:
                     attrTypehint = getIterItemTypeHint(parentTypehint)
                 except KeyError:
-                    logging.exception("Typehint could not be gotten")
+                    logging.debug("No type hint of the items", exc_info=True)
         return attrTypehint
 
     def getMediaContent(self):

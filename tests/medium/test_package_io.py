@@ -392,3 +392,26 @@ def test_sdk_get_thumbnail_returns_only_bytes(tmp_path: Path) -> None:
         thumbnail = reader.get_thumbnail()
 
     assert isinstance(thumbnail, bytes)
+
+
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="root writes a read-only file",
+)
+def test_a_read_only_file_is_not_replaced(tmp_path: Path) -> None:
+    import stat
+
+    path = tmp_path / "locked.json"
+    write_package(path, _parts_with(make_property("Name")), OPTIONS)
+    before = path.read_bytes()
+    path.chmod(stat.S_IREAD)
+
+    try:
+        with pytest.raises(PermissionError):
+            write_package(path, _parts_with(make_property("Other")), OPTIONS)
+    finally:
+        path.chmod(stat.S_IWRITE | stat.S_IREAD)
+
+    # A move over the file works on Linux, so the editor asks first.
+    assert path.read_bytes() == before
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["locked.json"]

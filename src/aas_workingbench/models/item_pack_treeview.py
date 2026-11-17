@@ -26,6 +26,7 @@ from aas_workingbench.domain.tree_names import node_name
 from aas_workingbench.domain.tree_names import type_name
 from aas_workingbench.models import StandardItem
 from aas_workingbench.settings.app_settings import (
+    GROUP_TITLE_ROLE,
     PACKAGE_ROLE,
     ATTRIBUTE_COLUMN,
     TYPE_COLUMN,
@@ -104,6 +105,11 @@ class PackTreeViewItem(StandardItem):
         """What the type column reads: the AAS class, or nothing for a group."""
         return type_name(self.objTypeName, is_node=self.isNode)
 
+    def data(self, role, column=ATTRIBUTE_COLUMN, column_name=""):
+        if role == GROUP_TITLE_ROLE:
+            return column == ATTRIBUTE_COLUMN and self.isNode
+        return super().data(role, column, column_name)
+
     def _getDisplayRoleData(self, column, column_name):
         if column == ATTRIBUTE_COLUMN:
             return getLimitStr(self.displayName)
@@ -112,7 +118,7 @@ class PackTreeViewItem(StandardItem):
         if column == VALUE_COLUMN and self.isNode:
             # The object of the row is the store that holds every kind of
             # object of the package. The rows below tell what the group has.
-            return count_text([child.obj for child in self.children()])
+            return count_text([child.obj for child in self.rows()])
         return super()._getDisplayRoleData(column, column_name)
 
     def _getTooltipRoleData(self, column, column_name):
@@ -139,16 +145,21 @@ class PackTreeViewItem(StandardItem):
         return " / ".join(reversed(names))
 
     def _fullNameTooltip(self, column, column_name):
-        """The whole name of a row, which the column may cut, and where it is.
+        """The whole name of a row, which the column may cut, where it is, and
+        its type.
 
         The name is not cut here, and below it comes the path from the package,
-        which the indent of a deep row does not show.
+        which the indent of a deep row does not show. The type column is hidden
+        by default (proposal 2.1), so the type is told here.
         """
         name = self.displayName
         tooltip = name
         path = self.pathText
         if path and path != name:
             tooltip = f"{name}\n{path}"
+        kind = self.typeText
+        if kind:
+            tooltip = f"{tooltip}\n\n{kind}"
         extra = super()._getTooltipRoleData(column, column_name)
         if isinstance(extra, str) and extra and extra != name:
             tooltip = f"{tooltip}\n\n{extra}"

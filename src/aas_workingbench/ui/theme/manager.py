@@ -14,6 +14,7 @@ from typing import Final
 from PyQt6.QtCore import QObject
 from PyQt6.QtCore import Qt
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QFont
 from PyQt6.QtGui import QPalette
 from PyQt6.QtGui import QStyleHints
 from PyQt6.QtWidgets import QApplication
@@ -142,6 +143,7 @@ class ThemeManager(QObject):
 
     def _put_native(self) -> None:
         self._applying = True
+        font = QFont(self._app.font())
         try:
             self._set_scheme(Qt.ColorScheme.Unknown)
             self._set_base_style(self._native_style)
@@ -150,18 +152,21 @@ class ThemeManager(QObject):
             # Native draws what the system draws, so code that colors by
             # token follows the system's scheme.
             self._tokens = self._system_tokens()
+            self._keep_application_font(font)
         finally:
             self._applying = False
         self.changed.emit()
 
     def _apply_fluent(self) -> None:
         self._applying = True
+        font = QFont(self._app.font())
         try:
             tokens = self._resolve_tokens()
             self._tokens = tokens
             self._set_base_style(_STYLE)
             self._app.setPalette(build_palette(tokens))
             self._app.setStyleSheet(build_stylesheet(tokens, self._density))
+            self._keep_application_font(font)
         finally:
             self._applying = False
         self.changed.emit()
@@ -170,6 +175,19 @@ class ThemeManager(QObject):
         if name.lower() != self._base_style.lower():
             self._app.setStyle(name)
             self._base_style = name
+
+    def _keep_application_font(self, font: QFont) -> None:
+        """Puts every class of widget back on the font of the application.
+
+        A new style hands the fonts of the platform back to the menu bar, the
+        menus, the status bar, and the views, which then read larger than the
+        rest. Setting the font of the application again drops those, so all
+        text is on the one font of the type ramp (proposal 1.3).
+
+        Args:
+            font: The font that the application had before the theme.
+        """
+        self._app.setFont(font)
 
     def _resolve_tokens(self) -> ColorTokens:
         """Picks the tokens, and tells Qt which scheme native parts draw in."""

@@ -387,3 +387,18 @@ def test_save_passes_options_to_writer() -> None:
     save(FakeSource(), Path("out.aasx"), options, writer, lambda _: True)
 
     assert received == [options]
+
+
+def test_the_first_package_of_several_files_is_the_one_to_open() -> None:
+    from aas_workingbench.application.save import first_package_file
+
+    chosen = first_package_file(["notes.txt", "pump.aasx", "carbon.json"])
+
+    assert chosen == "pump.aasx"
+
+
+def test_without_a_package_the_first_file_is_tried_to_say_why() -> None:
+    from aas_workingbench.application.save import first_package_file
+
+    assert first_package_file(["notes.txt", "photo.png"]) == "notes.txt"
+    assert first_package_file([]) is None

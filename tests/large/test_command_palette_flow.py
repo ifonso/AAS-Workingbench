@@ -105,12 +105,14 @@ def test_the_commands_of_the_menus_and_the_tree_are_listed(editor) -> None:
     titles = {entry.title for entry in editor.controller.commands()}
 
     assert {
-        "Save All",
+        "Save As...",
         "Copy",
         "Paste",
         "Delete/clear",
         "Next finding",
     } <= titles
+    # One package is open at a time, so Save All is not offered (ADR 0036).
+    assert "Save All" not in titles
 
 
 def test_picking_an_element_selects_it_in_the_tree(editor) -> None:

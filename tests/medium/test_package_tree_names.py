@@ -155,3 +155,40 @@ def test_the_tab_of_a_group_is_titled_as_the_tree_names_it(
     tab_widget.openItemInNewTab(shown.index("concept_descriptions"))
 
     assert tab_widget.tabText(tab_widget.count() - 1) == "Concept Descriptions"
+
+
+def test_the_tooltip_of_an_element_tells_its_type(shown: Any) -> None:
+    index = shown.index("submodels", "Submodel", "Speed")
+
+    tip = index.data(Qt.ItemDataRole.ToolTipRole)
+
+    assert tip.splitlines()[0] == "Speed"
+    assert "Property" in tip.splitlines()
+
+
+def test_the_tree_shows_the_names_only_by_default() -> None:
+    from aas_workingbench.settings.app_settings import (
+        DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW,
+        OBJECT_COLUMN_NAME,
+    )
+
+    assert DEFAULT_COLUMNS_IN_PACKS_TABLE_TO_SHOW == (OBJECT_COLUMN_NAME,)
+
+
+def test_a_header_over_the_names_alone_is_hidden(shown: Any) -> None:
+    header = shown.view.header()
+
+    header.hideAllSections()
+
+    assert header.isHidden()
+
+
+def test_a_second_column_brings_the_header_back(shown: Any) -> None:
+    from aas_workingbench.settings.app_settings import TYPE_COLUMN
+
+    header = shown.view.header()
+    header.hideAllSections()
+
+    header.showSection(TYPE_COLUMN)
+
+    assert not header.isHidden()

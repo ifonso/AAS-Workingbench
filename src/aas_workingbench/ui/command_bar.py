@@ -217,6 +217,11 @@ EDITING_KEYS = frozenset(
     }
 )
 
+# The entries that only edit. Read mode is for reading, so they are not shown
+# at all there, rather than shown and turned off (proposal 4.5). Undo and redo
+# stay, turned off, because they say that the history is still there.
+HIDDEN_IN_READ_MODE = frozenset({"add", "edit", "delete"})
+
 
 class MirroredAction(QAction):
     """An action that runs another action, and looks like it.
@@ -273,6 +278,9 @@ class MirroredAction(QAction):
             source = self._source = None
         enabled = source is not None and source.isEnabled()
         self.setEnabled(enabled)
+        self.setVisible(
+            edit_mode().is_editing or self.spec.key not in HIDDEN_IN_READ_MODE
+        )
         keys = source.shortcuts() if source is not None else []
         self.setShortcuts(keys)
         hint = (

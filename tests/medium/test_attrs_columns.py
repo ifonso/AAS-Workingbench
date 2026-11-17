@@ -65,20 +65,28 @@ def test_the_common_names_are_whole_in_a_tab_of_a_usual_width(
 
     from aas_workingbench.models import DetailedInfoTable
     from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
-    from aas_workingbench.settings.app_settings import TYPE_COLUMN
     from aas_workingbench.settings.app_settings import WIDEST_ATTRIBUTE_NAME
-    from aas_workingbench.settings.app_settings import WIDEST_TYPE_NAME
 
     attrs = _shown_attrs(views, qtbot, 1500)
     bold = QFont(DetailedInfoTable.currFont)
     bold.setBold(True)
     name = QFontMetrics(bold).horizontalAdvance(WIDEST_ATTRIBUTE_NAME)
-    kind = QFontMetrics(DetailedInfoTable.currFont).horizontalAdvance(
-        WIDEST_TYPE_NAME
-    )
 
     assert attrs.columnWidth(ATTRIBUTE_COLUMN) > name
-    assert attrs.columnWidth(TYPE_COLUMN) > kind
+
+
+def test_the_type_of_an_attribute_is_no_column(views, qtbot) -> None:
+    from aas_workingbench.settings.app_settings import TYPE_COLUMN
+
+    attrs = _shown_attrs(views, qtbot)
+
+    assert attrs.header().isSectionHidden(TYPE_COLUMN)
+
+
+def test_a_tab_has_no_header_over_the_name_and_the_value(views, qtbot) -> None:
+    attrs = _shown_attrs(views, qtbot)
+
+    assert attrs.header().isHidden()
 
 
 def test_a_narrow_tab_leaves_the_value_most_of_its_width(views, qtbot) -> None:
@@ -94,16 +102,19 @@ def test_a_narrow_tab_leaves_the_value_most_of_its_width(views, qtbot) -> None:
     assert attrs.columnWidth(TYPE_COLUMN) <= width * TYPE_MAX_SHARE
 
 
-def test_a_column_that_the_user_sized_is_not_fitted_again(views, qtbot) -> None:
+def test_the_name_keeps_fitting_the_room_when_the_tab_is_resized(
+    views, qtbot
+) -> None:
+    from aas_workingbench.settings.app_settings import ATTR_MAX_SHARE
     from aas_workingbench.settings.app_settings import ATTRIBUTE_COLUMN
 
     attrs = _shown_attrs(views, qtbot, 900)
 
-    attrs.header().resizeSection(ATTRIBUTE_COLUMN, 123)
-    attrs.parentWidget().resize(950, 400)
+    attrs.parentWidget().resize(300, 400)
     qtbot.wait(20)
 
-    assert attrs.columnWidth(ATTRIBUTE_COLUMN) == 123
+    width = attrs.viewport().width()
+    assert attrs.columnWidth(ATTRIBUTE_COLUMN) <= width * ATTR_MAX_SHARE
 
 
 def test_the_value_takes_the_room_that_the_window_gives(views, qtbot) -> None:

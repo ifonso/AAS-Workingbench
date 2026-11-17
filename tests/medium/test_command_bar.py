@@ -195,3 +195,53 @@ def test_the_bar_returns_to_the_tree_when_the_view_is_hidden(
     parts.actions.refresh()
 
     assert parts.actions.actions["undo"].source is parts.tree.undoAct
+
+
+@pytest.fixture
+def read_mode() -> Iterator[None]:
+    """Turns Read mode on, and Edit mode on again after the test."""
+    from aas_workingbench.application.editing import edit_mode
+
+    edit_mode().set_editing(False)
+    yield
+    edit_mode().set_editing(True)
+
+
+@pytest.mark.parametrize("key", ["add", "edit", "delete"])
+def test_read_mode_hides_what_only_edits(
+    qapp: object, qtbot: QtBot, read_mode: None, key: str
+) -> None:
+    view = FakeView()
+    qtbot.addWidget(view)
+
+    mirror = MirroredAction(_spec(key), view)
+
+    assert not mirror.isVisible()
+
+
+def test_read_mode_keeps_undo_shown_and_turned_off(
+    qapp: object, qtbot: QtBot, read_mode: None
+) -> None:
+    view = FakeView()
+    qtbot.addWidget(view)
+
+    mirror = MirroredAction(_spec("undo"), view)
+
+    assert mirror.isVisible()
+    assert not mirror.isEnabled()
+
+
+def test_edit_mode_shows_add_edit_and_delete_again(
+    qapp: object, qtbot: QtBot, read_mode: None
+) -> None:
+    from aas_workingbench.application.editing import edit_mode
+
+    view = FakeView()
+    qtbot.addWidget(view)
+    mirrors = [
+        MirroredAction(_spec(k), view) for k in ("add", "edit", "delete")
+    ]
+
+    edit_mode().set_editing(True)
+
+    assert all(mirror.isVisible() for mirror in mirrors)

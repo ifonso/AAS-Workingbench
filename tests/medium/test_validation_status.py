@@ -100,20 +100,29 @@ def test_the_counts_follow_an_edit_while_the_panel_is_hidden(
 ) -> None:
     error = make_property("X", "1")
     package = window.open(error)
-    assert window.status.findings_button.text() == "1 error, 0 warnings"
+    assert window.status.findings_button.text() == "1 error"
 
     _rename(package, error, "Fixed")
 
     qtbot.waitUntil(
-        lambda: window.status.findings_button.text() == "0 errors, 0 warnings",
+        lambda: window.status.findings_button.text() == "No problems",
         timeout=2000,
     )
+
+
+def test_a_package_without_errors_or_warnings_has_no_problems(
+    window,
+) -> None:
+    window.open(make_property("Fine", "x" * 3))
+
+    assert window.status.findings_button.text() == "No problems"
+    assert window.status.findings_button.property("state") == "ok"
 
 
 def test_one_error_is_not_plural(window) -> None:
     window.open(make_property("X", "1"))
 
-    assert window.status.findings_button.text().startswith("1 error,")
+    assert window.status.findings_button.text() == "1 error"
 
 
 def test_hints_are_counted_apart_from_the_findings(window) -> None:
@@ -125,18 +134,18 @@ def test_hints_are_counted_apart_from_the_findings(window) -> None:
     counts = window.status.counts
 
     assert (counts.errors, counts.warnings) == (0, 0)
-    assert window.status.hints_button.text() == "3 hints here"
-    assert "hint" not in window.status.findings_button.text()
+    # Three of the property, and two of the submodel (proposal 5.1).
+    assert window.status.hints_button.text() == "5 hints"
+    assert window.status.findings_button.text() == "No problems"
 
 
-def test_the_status_bar_has_no_count_for_the_whole_package(window) -> None:
+def test_the_status_bar_counts_the_hints_of_the_whole_package(window) -> None:
     window.open(make_property("Pump"))
 
-    # The submodel and the property each lack a display name and a description,
-    # but the package row is current, so there is nothing to say "here".
-    assert window.status.hints_button.isHidden()
-    assert "hints" not in window.status.findings_button.text()
-    assert window.dock.hints_view.shown_count == 4
+    # The submodel and the property each lack a display name and a
+    # description, and the count is of the package, whatever row is current.
+    assert window.status.hints_button.text() == "4 hints"
+    assert window.status.hints_total == window.dock.hints_view.shown_count
 
 
 def test_the_counts_say_which_kind_a_hint_is(window) -> None:
@@ -146,7 +155,8 @@ def test_the_counts_say_which_kind_a_hint_is(window) -> None:
     hints_tip = window.status.hints_button.toolTip()
 
     assert "Validation panel" in findings_tip
-    assert "not rules" in hints_tip and "whole package" in hints_tip
+    assert "not rules" in hints_tip and "Hints of the package" in hints_tip
+    assert "about the current object" in hints_tip
 
 
 def test_hints_are_left_out_while_hints_mode_is_off(window) -> None:
@@ -215,7 +225,7 @@ def test_the_counts_follow_the_package_of_the_current_row(window) -> None:
     window.views_.select(window.views_.index(package=1))
     second = window.status.findings_button.text()
 
-    assert (first, second) == ("1 error, 0 warnings", "0 errors, 1 warning")
+    assert (first, second) == ("1 error", "1 warning")
 
 
 def test_the_state_of_the_counts_is_the_worst_finding(window) -> None:
