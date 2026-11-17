@@ -409,7 +409,11 @@ def test_the_count_of_a_closed_row_is_drawn_at_the_right_edge(
 def test_the_name_of_an_attribute_is_drawn_as_a_label(
     views, qtbot: QtBot
 ) -> None:
-    shown, _ = _package_tree(views, qtbot, make_property("Speed", value="1"))
+    # The value is the word of its label, so both cells draw the same letters
+    # and only the color differs.
+    shown, _ = _package_tree(
+        views, qtbot, make_property("Speed", value="value")
+    )
     attrs = shown.attrs_view(*SUBMODEL, "Speed")
     attrs.resize(600, 300)
     attrs.show()
@@ -431,9 +435,11 @@ def test_the_name_of_an_attribute_is_drawn_as_a_label(
         )
 
     # The letters are drawn with soft edges, and a platform that smooths
-    # them by subpixel has no pixel of the exact color, so the darkest pixel
-    # of a cell is near its color. The two colors are 30 apart.
+    # them by subpixel has no pixel of the exact color: the darkest pixel of
+    # a cell is near its color, and nearer the thicker the letter is. The
+    # two colors are 30 apart, and one color in both cells gives 0.
     label = QColor(LIGHT.fg_secondary).lightness()
-    value = QColor(LIGHT.fg_primary).lightness()
-    assert abs(darkest(proxy.index(row, 0)) - label) <= 14
-    assert abs(darkest(proxy.index(row, 1)) - value) <= 14
+    name_cell = darkest(proxy.index(row, 0))
+    value_cell = darkest(proxy.index(row, 1))
+    assert abs(name_cell - label) <= 14
+    assert name_cell - value_cell >= 15
