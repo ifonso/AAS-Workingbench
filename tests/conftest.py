@@ -1,5 +1,6 @@
 """Shared fixtures and test-size classification for the whole test suite."""
 
+from collections.abc import Callable
 from collections.abc import Iterator
 import contextlib
 import os
@@ -50,6 +51,42 @@ def stub_modal_dialogs(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             dialog_class, "exec", lambda self: QDialog.DialogCode.Rejected
         )
+    # The static boxes run the `exec` of C++, which the patch above does not
+    # reach. A window with changes asks with one when it closes, so a test that
+    # failed with the package changed hung in its teardown for good.
+    button = QMessageBox.StandardButton
+    for kind, shown in (
+        ("critical", button.Ok),
+        ("information", button.Ok),
+        ("question", button.Yes | button.No),
+        ("warning", button.Ok),
+    ):
+        monkeypatch.setattr(QMessageBox, kind, _escape_answer(shown))
+
+
+def _escape_answer(
+    shown: QMessageBox.StandardButton,
+) -> Callable[..., QMessageBox.StandardButton]:
+    """Returns a static message box that answers as the Escape key would.
+
+    Escape gives Cancel when the box has it, and No when it has No but no
+    Cancel. A box with neither is closed with its Ok.
+
+    Args:
+        shown: The buttons of the box when the caller names none.
+    """
+    button = QMessageBox.StandardButton
+
+    def answer(*args: object, **kwargs: object) -> QMessageBox.StandardButton:
+        buttons = kwargs.get("buttons", args[3] if len(args) > 3 else shown)
+        if not isinstance(buttons, button):
+            buttons = shown
+        for escape in (button.Cancel, button.No):
+            if buttons & escape:
+                return escape
+        return button.Ok
+
+    return staticmethod(answer)
 
 
 @pytest.fixture(autouse=True)

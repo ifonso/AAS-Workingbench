@@ -101,6 +101,8 @@ aas_workingbench = ["**/*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--strict-markers", "--strict-config", "-ra"]
+# A test that sticks prints where, instead of waiting without a word.
+faulthandler_timeout = 600
 qt_api = "pyqt6"
 # Lets tests import shared helpers as `tests.factories`.
 pythonpath = ["."]

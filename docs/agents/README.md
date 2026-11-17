@@ -95,6 +95,8 @@ Test behavior through public APIs, and do not put logic in tests.
 | Windows paths longer than 260 characters in `submodel_templates` | Keep `core.longpaths` enabled. |
 | Large tests are slow and need WebEngine | Run them when a change affects the main window flow, and all of them after merging parallel work, because they caught what the fast tests did not. They are not in CI. |
 | A large test passes alone and fails in the whole suite | Earlier large tests rewrite `settings.ini`. A test must set every setting that it depends on. |
+| A test run takes all the memory, and the process and the agent session die | A step that a timer repeats and that fails raises again on every tick, and pytest-qt keeps each traceback. Stop the loop at the first failure, as `tests/large/test_main_window.py` does. On Linux, run the tests in a scope with a limit: `systemd-run --user --scope -p MemoryMax=10G -p MemorySwapMax=0 uv run pytest ...` (see the [testing guide](../contributing/testing-guide.md)). |
+| A large test ends with a segmentation fault in `aboutToQuit` | Something ended the loop of the application, and QtWebEngine shut down. Run a loop of the test with `QEventLoop` instead of `QApplication.exec` and `exit`. |
 | A test that selects a stored file in the package tree passes, and the process then ends with an access violation and no summary | It is the QtWebEngine preview in a test process. Replace the web view with a stand-in. The real application has not done this in the runs so far. |
 | Parallel branches conflict in `CHANGELOG.md`, the ADR table, `feature-parity.md`, and the audit counts | Keep both sides. ADR numbers can clash, so renumber at the merge. The audit counts are recomputed from its rows. |
 
