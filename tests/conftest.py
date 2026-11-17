@@ -10,8 +10,15 @@ import sys
 
 import pytest
 
-# Must be set before Qt loads so tests never need a real display.
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+# Must be set before Qt loads so tests never need a real display. A desktop
+# session often sets the platform for every program (`wayland;xcb`), and the
+# tests would then open real windows, so it is set and not only defaulted.
+os.environ["QT_QPA_PLATFORM"] = "offscreen"
+# The platform theme of the desktop (`gtk3`, `kde`, ...) changes what the tests
+# read: the texts of standard buttons get mnemonics (`&OK`), the keys of
+# standard actions follow the desktop (no Ctrl+Y for Redo), and the color
+# scheme follows the system. The tests run on the theme of Qt itself.
+os.environ.pop("QT_QPA_PLATFORMTHEME", None)
 
 # QtWebEngine must be imported before any QApplication exists, or importing the
 # widgets and tree views later fails. Without it, only those tests are skipped.
