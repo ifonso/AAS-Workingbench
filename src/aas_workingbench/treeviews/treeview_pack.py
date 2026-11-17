@@ -742,7 +742,9 @@ class PackTreeView(TreeView):
         super().updateCopyCutPasteDelActs(index)
         # The package holds the folders, and cannot lose one: Cut and Delete
         # said "could not be deleted" with a Python message, and Cut had copied.
-        if any(self.isFolderRow(i) for i in (index, *self.selectedIndexes())):
+        if any(
+            self.isFolderRow(i) for i in (index, *self.selectionForActions())
+        ):
             self.cutAct.setEnabled(False)
             self.delClearAct.setEnabled(False)
         indexValid = index.isValid()

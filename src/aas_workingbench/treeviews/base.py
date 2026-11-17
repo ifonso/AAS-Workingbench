@@ -398,6 +398,9 @@ class BasicTreeView(QTreeView):
     ctrlWheelScrolled = pyqtSignal(int)
     modelChanged = pyqtSignal(["QAbstractItemModel"])
 
+    # The selected cells that `updateActions` read, while it runs.
+    _selectionOfPass = None
+
     def __init__(
         self,
         parent=None,
@@ -554,7 +557,7 @@ class TreeView(BasicTreeView):
         return ActionContext(
             view=self,
             index=self.currentIndex(),
-            selection=tuple(self.selectedIndexes()),
+            selection=tuple(self.selectionForActions()),
             package=self.activePackage(),
             stack=stack,
         )
@@ -1018,18 +1021,34 @@ class TreeView(BasicTreeView):
                 self.setCurrentIndex(parent)
 
     def updateActions(self, index: QModelIndex):
-        if self.canEdit():
-            self.updateCopyCutPasteDelActs(index)
-            self.updateEditActs(index)
-            self.updateAddActs(index)
-        else:
-            self.disableAllEditingActs()
-            # Copy changes nothing, so Read mode, which is for looking at a
-            # package, keeps it for any row, and not for what the view had
-            # when it was last in Edit mode.
-            self.copyAct.setEnabled(self.canCopySelection(index))
-        self.updateUndoRedoActs()
-        self.registeredActions.update()
+        # The checks below each ask for the selected cells, and the view asks
+        # the model about every cell to answer, so it is asked once. Nothing
+        # here changes the selection.
+        self._selectionOfPass = self.selectedIndexes()
+        try:
+            if self.canEdit():
+                self.updateCopyCutPasteDelActs(index)
+                self.updateEditActs(index)
+                self.updateAddActs(index)
+            else:
+                self.disableAllEditingActs()
+                # Copy changes nothing, so Read mode, which is for looking at
+                # a package, keeps it for any row, and not for what the view
+                # had when it was last in Edit mode.
+                self.copyAct.setEnabled(self.canCopySelection(index))
+            self.updateUndoRedoActs()
+            self.registeredActions.update()
+        finally:
+            self._selectionOfPass = None
+
+    def selectionForActions(self) -> List[QModelIndex]:
+        """Return the selected cells, as the checks of the actions read them.
+
+        While `updateActions` runs, this is the list that it read at its
+        start. At any other time the view is asked.
+        """
+        kept = self._selectionOfPass
+        return self.selectedIndexes() if kept is None else kept
 
     def disableAllEditingActs(self):
         for act in self.editingActions:
@@ -1042,7 +1061,7 @@ class TreeView(BasicTreeView):
     def canCopySelection(self, index: QModelIndex) -> bool:
         """Tell whether the current row and every selected row can be copied"""
         return self.canCopy(index) and all(
-            self.canCopy(selected) for selected in self.selectedIndexes()
+            self.canCopy(selected) for selected in self.selectionForActions()
         )
 
     def updateCopyCutPasteDelActs(self, index: QModelIndex):
@@ -1062,7 +1081,7 @@ class TreeView(BasicTreeView):
         # Every selected row counts, also those in another parent.
         return has_mixed_variable_directions(
             index.data(OBJECT_ROLE)
-            for index in self.selectedIndexes()
+            for index in self.selectionForActions()
             if index.isValid()
         )
 

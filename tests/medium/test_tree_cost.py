@@ -146,3 +146,47 @@ def test_an_item_that_is_no_row_of_another_has_no_row_there(
 
     with pytest.raises(ValueError):
         package_item.rowOf(root)
+
+
+def test_the_actions_read_the_selection_once_for_a_row(
+    views: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aas_workingbench.treeviews.treeview_pack import PackTreeView
+
+    shown = views()
+    shown.open_package(make_submodel(elements=[make_property("A")]))
+    index = shown.index(*SUBMODEL_PATH, "A")
+    shown.select(index)
+    reads: list[int] = []
+    read = PackTreeView.selectedIndexes
+
+    def counted(view: Any) -> list[QModelIndex]:
+        reads.append(1)
+        return read(view)
+
+    monkeypatch.setattr(PackTreeView, "selectedIndexes", counted)
+
+    shown.view.updateActions(index)
+
+    assert len(reads) == 1
+
+
+def test_an_action_gets_the_rows_that_are_selected_when_it_is_asked(
+    views: Any,
+) -> None:
+    shown = views()
+    shown.open_package(
+        make_submodel(elements=[make_property("A"), make_property("B")])
+    )
+    first = shown.index(*SUBMODEL_PATH, "A")
+    second = shown.index(*SUBMODEL_PATH, "B")
+
+    shown.select(first)
+    selected_first = shown.view.actionContext().selection
+    shown.select(second)
+    selected_second = shown.view.actionContext().selection
+
+    assert first in selected_first
+    assert second not in selected_first
+    assert second in selected_second
+    assert first not in selected_second
