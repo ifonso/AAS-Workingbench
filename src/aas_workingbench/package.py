@@ -20,6 +20,7 @@ from typing import Union, Iterable, Optional
 import mimetypes
 
 from basyx.aas.adapter.aasx import DictSupplementaryFileContainer
+from basyx.aas.adapter.json import AASToJsonEncoder
 from basyx.aas.adapter.json import write_aas_json_file
 from basyx.aas.model import (
     AssetAdministrationShell,
@@ -53,6 +54,18 @@ from aas_workingbench.settings.app_settings import AppSettings
 
 # The end of the name of the file that keeps stored files next to a recovery.
 EXTRA_FILES_SUFFIX = ".files.json"
+
+
+class _OneShotJsonEncoder(AASToJsonEncoder):
+    """Encodes the whole text at once, which the encoder written in C does.
+
+    `json.dump` asks for the text in pieces, and the pieces come from the
+    encoder written in Python, which takes twice as long for the same text.
+    The recovery file is written while the user works, so it uses this one.
+    """
+
+    def iterencode(self, o, _one_shot=False):
+        return super().iterencode(o, _one_shot=True)
 
 
 class Package:
@@ -333,7 +346,9 @@ class Package:
         # recovery file with a truncated one.
         try:
             with open(tmp_path, "w", encoding="utf-8") as f:
-                write_aas_json_file(f, self.objStore)
+                write_aas_json_file(
+                    f, self.objStore, encoder=_OneShotJsonEncoder
+                )
         except Exception:
             tmp_path.unlink(missing_ok=True)
             raise

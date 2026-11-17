@@ -6,10 +6,12 @@ and writing them took most of the time of opening a package. The rows below an
 item are kept by the item, and the actions read the selection once.
 """
 
+import io
 import logging
 from typing import Any
 
 from basyx.aas import model
+from basyx.aas.adapter.json import write_aas_json_file
 from PyQt6.QtCore import QModelIndex
 import pytest
 from tests.factories import make_collection
@@ -190,3 +192,24 @@ def test_an_action_gets_the_rows_that_are_selected_when_it_is_asked(
     assert second not in selected_first
     assert second in selected_second
     assert first not in selected_second
+
+
+def test_the_recovery_file_has_the_text_that_the_sdk_writes(
+    qapp: object, tmp_path: Any
+) -> None:
+    from tests.factories import make_store
+    from tests.factories import write_aasx
+
+    from aas_workingbench.package import Package
+
+    source = write_aasx(
+        tmp_path / "source.aasx",
+        make_store(_submodel_with_every_kind_of_row()),
+    )
+    package = Package(source)
+    expected = io.StringIO()
+    write_aas_json_file(expected, package.objStore)
+
+    recovery = package.write_recovery(tmp_path / "recovery")
+
+    assert recovery.read_text(encoding="utf-8") == expected.getvalue()
