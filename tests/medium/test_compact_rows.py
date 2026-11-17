@@ -422,13 +422,18 @@ def test_the_name_of_an_attribute_is_drawn_as_a_label(
     )
     image = attrs.viewport().grab().toImage()
 
-    def colors(index: QModelIndex) -> set[str]:
+    def darkest(index: QModelIndex) -> int:
         rect = attrs.visualRect(index)
-        return {
-            image.pixelColor(x, y).name()
+        return min(
+            image.pixelColor(x, y).lightness()
             for x in range(rect.left(), rect.right())
             for y in range(rect.top(), rect.bottom())
-        }
+        )
 
-    assert LIGHT.fg_secondary in colors(proxy.index(row, 0))
-    assert LIGHT.fg_primary in colors(proxy.index(row, 1))
+    # The letters are drawn with soft edges, and a platform that smooths
+    # them by subpixel has no pixel of the exact color, so the darkest pixel
+    # of a cell is near its color. The two colors are 30 apart.
+    label = QColor(LIGHT.fg_secondary).lightness()
+    value = QColor(LIGHT.fg_primary).lightness()
+    assert abs(darkest(proxy.index(row, 0)) - label) <= 14
+    assert abs(darkest(proxy.index(row, 1)) - value) <= 14
