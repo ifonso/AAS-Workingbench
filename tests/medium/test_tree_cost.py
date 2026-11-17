@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 from basyx.aas import model
+from PyQt6.QtCore import QModelIndex
 import pytest
 from tests.factories import make_collection
 from tests.factories import make_list
@@ -93,3 +94,55 @@ def test_the_item_of_a_mapping_has_the_types_of_the_mapping_asked_last(
 
     assert first == {"key": str, "value": int}
     assert second == {"key": int, "value": bytes}
+
+
+def test_the_rows_are_right_after_rows_left_and_came(
+    model_support: Any,
+) -> None:
+    table = model_support.pack_table(
+        make_submodel(
+            elements=[make_property(name) for name in ("A", "B", "C", "D")]
+        )
+    )
+    parent = model_support.find_path(table, "", *SUBMODEL_PATH)
+    model_support.watch(table)
+
+    table.removeRows(1, 2, parent)
+    after_removal = model_support.names(table, parent)
+    table.update(parent)
+
+    assert after_removal == ["A", "D"]
+    assert model_support.names(table, parent) == ["A", "B", "C", "D"]
+    last = table.index(3, 0, parent)
+    assert table.parent(last) == parent
+    assert model_support.violations() == []
+
+
+def test_a_row_knows_its_place_after_a_row_before_it_left(
+    model_support: Any,
+) -> None:
+    table = model_support.pack_table(
+        make_submodel(
+            elements=[make_property(name) for name in ("A", "B", "C")]
+        )
+    )
+    parent = model_support.find_path(table, "", *SUBMODEL_PATH)
+    last = table.objByIndex(table.index(2, 0, parent))
+    place_before = last.row()
+
+    table.removeRows(0, 1, parent)
+
+    assert place_before == 2
+    assert last.row() == 1
+    assert table.objByIndex(parent).rows()[1] is last
+
+
+def test_an_item_that_is_no_row_of_another_has_no_row_there(
+    model_support: Any,
+) -> None:
+    table = model_support.pack_table(make_submodel())
+    root = table.objByIndex(QModelIndex())
+    package_item = table.objByIndex(table.index(0, 0))
+
+    with pytest.raises(ValueError):
+        package_item.rowOf(root)

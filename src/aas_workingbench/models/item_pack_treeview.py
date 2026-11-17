@@ -118,7 +118,7 @@ class PackTreeViewItem(StandardItem):
         if column == VALUE_COLUMN and self.isNode:
             # The object of the row is the store that holds every kind of
             # object of the package. The rows below tell what the group has.
-            return count_text([child.obj for child in self.children()])
+            return count_text([child.obj for child in self.rows()])
         return super()._getDisplayRoleData(column, column_name)
 
     def _getTooltipRoleData(self, column, column_name):
