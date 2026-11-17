@@ -112,6 +112,18 @@ def test_the_pane_names_the_package_of_the_tree(shown, pane) -> None:
     assert pane.name.text() == package.name
 
 
+def test_a_long_package_name_does_not_widen_the_pane(pane) -> None:
+    name = "IDTA 02023 _Template_CarbonFootprint with a long name.aasx"
+
+    pane.set_package_name(name)
+
+    # The name gives up its width, so the tree can be as narrow as before the
+    # header, and a saved width of the tree comes back.
+    assert pane.minimumSizeHint().width() < 200
+    assert pane.name.text() == name
+    assert pane.name.toolTip() == name
+
+
 def test_the_more_button_opens_the_menu_of_the_package(pane) -> None:
     opened_menus.clear()
 

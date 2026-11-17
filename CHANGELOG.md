@@ -31,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The Hints view of the Validation panel has a filter, and its explanation is one line beside it ("Hints are advice, not rules. They do not stop a save."). A kind has the blue icon of information, and lists its first four elements with the icon of their kind, with "Show N more" for the rest. Its columns have no header.
 - The icons of the kinds of elements are colored by family: structure (shells, submodels), containers, data, behavior, and relations, in both themes, each at 3 to 1 or more against every surface ([ADR 0035](docs/software/adr/0035-kind-icons-are-colored-by-family.md)).
 
+### Fixed
+
+- A long name of a package no longer makes the pane of the package tree, and so the window, wider. The name is cut short with `…`, with the whole name in its tooltip. The tree can be as narrow as before the pane had a header, and the width that it had in the last session comes back.
+
 ### Added
 
 - The Tabler icon `language`, for the badge of the languages of a text.

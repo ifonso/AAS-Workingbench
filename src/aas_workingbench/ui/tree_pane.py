@@ -22,6 +22,8 @@ from PyQt6.QtCore import QPoint
 from PyQt6.QtCore import QSize
 from PyQt6.QtCore import Qt
 from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QPainter
+from PyQt6.QtGui import QPaintEvent
 from PyQt6.QtWidgets import QHBoxLayout
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QLineEdit
@@ -186,6 +188,26 @@ class TreeFilter(QWidget):
         self.clear_button.setVisible(shown)
 
 
+class _ElidedLabel(QLabel):
+    """A label that gives up its width, and cuts its text short with `…`.
+
+    A plain label is as wide as its text at least, so a long name of a
+    package made the pane of the tree, and the window, that wide.
+    """
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802
+        return QSize(0, super().minimumSizeHint().height())
+
+    def paintEvent(self, a0: QPaintEvent | None) -> None:  # noqa: N802
+        room = self.contentsRect()
+        shown = self.fontMetrics().elidedText(
+            self.text(), Qt.TextElideMode.ElideRight, room.width()
+        )
+        painter = QPainter(self)
+        painter.setPen(self.palette().color(self.foregroundRole()))
+        painter.drawText(room, int(self.alignment().value), shown)
+
+
 class TreePaneHeader(QWidget):
     """The name of the package of the tree, its menu, and the filter.
 
@@ -217,7 +239,7 @@ class TreePaneHeader(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         icon = QLabel(self)
         icon.setPixmap(tabler_icon("file").pixmap(QSize(ICON_SIZE, ICON_SIZE)))
-        self.name = QLabel(self)
+        self.name = _ElidedLabel(self)
         self.name.setObjectName("treePaneName")
         self.name.setFont(role_font("body_strong"))
         self.name.setAccessibleName("Package")
