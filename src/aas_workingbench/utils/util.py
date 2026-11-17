@@ -423,7 +423,12 @@ def getAttrTypeHint(objType, attr: str, delOptional: bool = True):
     try:
         typeHint = params.get(attr, params.get(f"{attr}_", None))
         if typeHint is None:
-            func = getattr(objType, attr)
+            # A row of a list or of a mapping asks with its position or its
+            # idShort, which the type of its container does not have. That is
+            # no failure, so it is answered without a traceback in the log.
+            func = getattr(objType, attr, None)
+            if func is None:
+                raise KeyError(attr)
             typehints = typing.get_type_hints(func.fget)
             typeHint = typehints["return"]
     except KeyError:

@@ -60,7 +60,6 @@ This page describes the code as it is today, and the structure that new code sho
 | Application state is in `settings/settings.ini`, which is tracked by Git, inside the package. | Running the app modifies a tracked file, and an installed copy would write inside its own package. |
 | `pyproject.toml` is read at runtime for metadata. | A wheel would not run, so frozen builds must bundle this file. |
 | LLM and PDF dependencies are always installed. | Installs and builds are large, even for users who never open the Handover tool. |
-| Introspection logs hundreds of handled tracebacks when opening a package. | Real errors are hard to find in the log. |
 | `aas_workingbench` is a large module-level dependency web, with circular imports worked around at the end of `package.py`. | Import order is fragile. |
 
 ## New layers in use

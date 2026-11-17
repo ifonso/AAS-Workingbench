@@ -147,8 +147,10 @@ class StandardItem(QObject):
     def updateTypehintName(self):
         try:
             self.typehintName = getTypeHintName(self.typehint)
-        except TypeError as e:
-            logging.exception(e)
+        except TypeError:
+            # An item with no type hint is common, such as the root of a
+            # model, and every one of them is asked. It is no error.
+            logging.debug("No name for the type hint", exc_info=True)
             self.typehintName = str(self.typehint)
 
     def updateIcon(self):
@@ -352,7 +354,12 @@ class StandardItem(QObject):
             )
             return attrTypehint
         except KeyError:
-            logging.exception("Typehint could not be gotten")
+            # The item of a list or of a mapping is named by its position or
+            # its idShort, which is no attribute of the container. This is so
+            # for most rows of a package, and the type comes from the
+            # container below. A traceback for each took most of the time of
+            # opening a package.
+            logging.debug("No type hint by the name", exc_info=True)
 
         if isIterable(self.parentObj):
             attrTypehint = ClassesInfo.addType(type(self.parentObj))
@@ -361,7 +368,7 @@ class StandardItem(QObject):
                 try:
                     attrTypehint = getIterItemTypeHint(parentTypehint)
                 except KeyError:
-                    logging.exception("Typehint could not be gotten")
+                    logging.debug("No type hint of the items", exc_info=True)
         return attrTypehint
 
     def getMediaContent(self):

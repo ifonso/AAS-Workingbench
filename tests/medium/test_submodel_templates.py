@@ -5,6 +5,7 @@ window. The menu "Add existing submodel" lists the files at once, and reads a
 file when the user opens its submenu.
 """
 
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -141,7 +142,7 @@ def view(
     monkeypatch: pytest.MonkeyPatch,
     folder: Path,
     read_count: list[Path],
-) -> Any:
+) -> Iterator[Any]:
     from aas_workingbench.models import PackTreeViewItem
     from aas_workingbench.models import PacksTable
     from aas_workingbench.settings import EXTENDED_COLUMNS_IN_PACK_TABLE
@@ -158,7 +159,10 @@ def view(
     table = PacksTable(columns, PackTreeViewItem(None, None))
     tree = treeview_pack.PackTreeView(window)
     tree.setModelWithProxy(table)
-    return tree
+    # Not returned: pytest-qt holds the window weakly, so the window, and the
+    # view and its menus with it, live only as long as this function does.
+    # Earlier a traceback that the root item logged held it, by accident.
+    yield tree
 
 
 def _submenu(menu: QMenu, title: str) -> QMenu:

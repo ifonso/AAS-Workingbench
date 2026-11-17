@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The Hints view of the Validation panel has a filter, and its explanation is one line beside it ("Hints are advice, not rules. They do not stop a save."). A kind has the blue icon of information, and lists its first four elements with the icon of their kind, with "Show N more" for the rest. Its columns have no header.
 - The icons of the kinds of elements are colored by family: structure (shells, submodels), containers, data, behavior, and relations, in both themes, each at 3 to 1 or more against every surface ([ADR 0035](docs/software/adr/0035-kind-icons-are-colored-by-family.md)).
 - `Ctrl+Shift+S` is Save As. It was Save All, which left the menus with the second package; Save All now has no key.
+- A package opens several times faster, and "Expand All" and a click on a row of a large package take less time. A row of a list or of a mapping wrote two tracebacks to the log when it was made, and writing them took about three quarters of the time of opening a package. The log of a package that opens well now has none, so an error in it is a real one. The package of the example opens in about 0.3 s where it took 1.5 s, and one with 10,000 elements in about 1.2 s where it took 10 s.
 
 ### Fixed
 

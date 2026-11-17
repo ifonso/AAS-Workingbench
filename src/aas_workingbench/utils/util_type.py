@@ -312,8 +312,10 @@ def isoftype(obj, types: Union[type, Tuple[Union[type, tuple], ...]]) -> bool:
     try:
         if issubclass(types, Enum):
             return _isoftype(obj, types)
-    except TypeError as e:
-        logging.exception(e)
+    except TypeError:
+        # A tuple of types or a type hint is no class. Every cell that is
+        # drawn asks with one, so it is not an error.
+        logging.debug("Not a class: %s", types, exc_info=True)
 
     try:
         for tp in types:
