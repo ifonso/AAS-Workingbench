@@ -158,10 +158,9 @@ def test_the_saved_density_is_on_when_the_window_opens(
     qtbot.waitExposed(window)
 
     assert theme_manager().density is Density.DENSE
-    assert (
-        view.visualRect(view.model().index(0, 0)).height()
-        == (ROW_HEIGHTS[Density.DENSE])
-    )
+    # The row of the package is not shown: the tree starts at its groups.
+    first_row = view.model().index(0, 0, view.rootIndex())
+    assert view.visualRect(first_row).height() == ROW_HEIGHTS[Density.DENSE]
     _close(window)
 
 

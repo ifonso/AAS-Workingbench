@@ -53,9 +53,11 @@ def test_the_counts_are_in_the_status_bar_with_the_panel_hidden(editor) -> None:
     assert status.isVisible()
     assert status.counts == counts
     assert counts.findings > 0
-    # The package has hints, and the status bar does not count them: the
-    # package row is current, which has none of its own.
-    assert status.hints_button.isHidden()
+    # The hints button counts the hints of the whole package (ADR 0034).
+    total = _hints_of_the_package(editor)
+    assert total > 0
+    assert status.hints_button.isVisible()
+    assert status.hints_button.text() == f"{total} hints"
 
 
 def test_f8_and_shift_f8_have_one_owner_each_in_the_window(editor) -> None:
@@ -111,6 +113,15 @@ def _hints_of(editor, obj: object) -> int:
     return sum(1 for f in report.findings if is_hint(f) and f.anchor is obj)
 
 
+def _hints_of_the_package(editor) -> int:
+    """How many hints the SDK-level report has about the whole package."""
+    from aas_workingbench.application.validation import is_hint
+    from aas_workingbench.ui.validation_service import service_for
+
+    report = service_for(editor.package).hint_report
+    return sum(1 for f in report.findings if is_hint(f))
+
+
 def _rows_with_and_without_hints(editor) -> tuple[list, list]:
     from tests.usage_open_window import all_rows
 
@@ -126,28 +137,28 @@ def _rows_with_and_without_hints(editor) -> tuple[list, list]:
     return with_hints, without
 
 
-def test_the_status_bar_counts_the_hints_of_the_row_that_is_current(
+def test_the_tooltip_of_the_hints_counts_the_hints_of_the_row_that_is_current(
     editor,
 ) -> None:
     from PyQt6.QtTest import QTest
 
     QTest.qWait(300)
     with_hints, without = _rows_with_and_without_hints(editor)
-    assert with_hints
+    total = f"{_hints_of_the_package(editor)} hints"
+    status = editor.controller.status
+    assert with_hints and without
 
-    for index in with_hints[:5]:
+    # The button keeps the count of the package as rows become current, and
+    # its tooltip says how many are about the row (ADR 0034).
+    for index in with_hints[:5] + without:
         editor.view.setCurrentIndex(index)
         expected = _hints_of(editor, index.data(OBJECT_ROLE))
-        status = editor.controller.status
-        assert (
-            status.hints_button.text()
-            == f"{expected} hint{'' if expected == 1 else 's'} here"
-        )
+        here = f"{expected} hint{'' if expected == 1 else 's'}"
+        assert status.hints_button.text() == total
         assert status.hints_button.isVisible()
-    assert without
-    for index in without:
-        editor.view.setCurrentIndex(index)
-        assert not editor.controller.status.hints_button.isVisible()
+        assert (
+            f"{here} about the current object" in status.hints_button.toolTip()
+        )
 
 
 def test_the_status_bar_follows_the_tab_when_the_tab_has_the_focus(
