@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The status bar reads "No problems", or only what there is, such as "1 error" or "1 error, 2 warnings", with the icon of the worst. The hints button counts the hints of the whole package, such as "523 hints", in the blue of information, and its tooltip says how many are about the current object ([ADR 0034](docs/software/adr/0034-the-status-bar-counts-the-hints-of-the-package.md)).
 - The Hints view of the Validation panel has a filter, and its explanation is one line beside it ("Hints are advice, not rules. They do not stop a save."). A kind has the blue icon of information, and lists its first four elements with the icon of their kind, with "Show N more" for the rest. Its columns have no header.
 - The icons of the kinds of elements are colored by family: structure (shells, submodels), containers, data, behavior, and relations, in both themes, each at 3 to 1 or more against every surface ([ADR 0035](docs/software/adr/0035-kind-icons-are-colored-by-family.md)).
+- `Ctrl+Shift+S` is Save As. It was Save All, which left the menus with the second package; Save All now has no key.
 
 ### Fixed
 

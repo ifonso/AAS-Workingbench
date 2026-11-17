@@ -1,4 +1,4 @@
-"""The keys of Save, Save All and Find, and the status bar, in the real window."""
+"""The keys of Save, Save As and Find, and the status bar, in the real window."""
 
 from pathlib import Path
 import shutil
@@ -66,10 +66,10 @@ def _owners(window, key: str) -> list[object]:
 
 def test_each_save_key_has_one_owner_in_the_window(editor) -> None:
     save = _owners(editor.window, "Ctrl+S")
-    save_all = _owners(editor.window, "Ctrl+Shift+S")
+    save_as = _owners(editor.window, "Ctrl+Shift+S")
 
     assert save == [editor.view.saveAct]
-    assert save_all == [editor.view.saveAllAct]
+    assert save_as == [editor.view.saveAsAct]
 
 
 def test_ctrl_s_saves_the_package(editor) -> None:
@@ -82,11 +82,25 @@ def test_ctrl_s_saves_the_package(editor) -> None:
     assert not editor.package.changed
 
 
-def test_ctrl_shift_s_saves_all_packages(editor) -> None:
+def test_ctrl_shift_s_saves_the_package_as_another_file(
+    editor, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import aas_workingbench.treeviews.treeview_pack as treeview_pack
+
+    target = tmp_path / "copy.aasx"
+    asked = []
+
+    def choose(*args: object, **kwargs: object) -> str:
+        asked.append(args)
+        return target.as_posix()
+
+    monkeypatch.setattr(treeview_pack, "get_save_file_name", choose)
     editor.package.changed = True
 
     QTest.keySequence(editor.view, QKeySequence("Ctrl+Shift+S"))
 
+    assert len(asked) == 1
+    assert target.is_file()
     assert not editor.package.changed
 
 

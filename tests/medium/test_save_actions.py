@@ -1,4 +1,4 @@
-"""Save acts on one package and Save All on every one, and the keys differ."""
+"""Save acts on one package, Save All on every one, and Save As has a key."""
 
 from pathlib import Path
 from typing import Any
@@ -30,11 +30,17 @@ def two_packages(views: Any, tmp_path: Path) -> Any:
     return shown
 
 
-def test_save_is_ctrl_s_and_save_all_is_ctrl_shift_s(views: Any) -> None:
+def test_save_is_ctrl_s_and_save_as_is_ctrl_shift_s(views: Any) -> None:
     view = views().view
 
     assert view.saveAct.shortcut() == QKeySequence("Ctrl+S")
-    assert view.saveAllAct.shortcut() == QKeySequence("Ctrl+Shift+S")
+    assert view.saveAsAct.shortcut() == QKeySequence("Ctrl+Shift+S")
+    assert "Ctrl+Shift+S" in view.saveAsAct.toolTip()
+
+
+def test_save_all_has_no_key(views: Any) -> None:
+    # One package is open at a time, and its key went to Save As (ADR 0036).
+    assert views().view.saveAllAct.shortcut().isEmpty()
 
 
 def test_no_registered_action_uses_the_keys_of_save(views: Any) -> None:
@@ -127,7 +133,7 @@ def test_save_all_says_how_many_packages_it_saves(two_packages: Any) -> None:
 
     tip = two_packages.view.saveAllAct.toolTip()
 
-    assert "2 packages" in tip and "Ctrl+Shift+S" in tip
+    assert "2 packages" in tip
 
 
 def test_the_view_reports_the_number_of_unsaved_packages(

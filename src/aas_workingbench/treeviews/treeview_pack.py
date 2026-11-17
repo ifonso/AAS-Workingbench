@@ -90,7 +90,7 @@ from aas_workingbench.settings.app_settings import (
     SUBMODEL_TEMPLATES_FOLDER,
     UPDATE_ROLE,
 )
-from aas_workingbench.settings.shortcuts import SC_OPEN, SC_SAVE, SC_SAVE_ALL
+from aas_workingbench.settings.shortcuts import SC_OPEN, SC_SAVE, SC_SAVE_AS
 from aas_workingbench.settings.icons import (
     NEW_PACK_ICON,
     OPEN_ICON,
@@ -406,9 +406,14 @@ class PackTreeView(TreeView):
         self.saveAsAct = QAction(
             "Save As...",
             self,
+            shortcut=SC_SAVE_AS,
             statusTip="Save current file as..",
             triggered=lambda: self.savePackAsWithDialog(),
             enabled=False,
+        )
+        self.saveAsAct.setToolTip(
+            "Save As... "
+            f"({SC_SAVE_AS.toString(QKeySequence.SequenceFormat.NativeText)})"
         )
 
         self.saveInActs = []
@@ -432,7 +437,6 @@ class PackTreeView(TreeView):
             SAVE_ALL_ICON,
             "&Save All",
             self,
-            shortcut=SC_SAVE_ALL,
             statusTip="Save every package that has unsaved changes",
             triggered=lambda: self.saveAll(),
             enabled=True,
@@ -1194,9 +1198,6 @@ class PackTreeView(TreeView):
 
         :param unsaved: the number of packages with unsaved changes
         """
-        keys = self.saveAllAct.shortcut().toString(
-            QKeySequence.SequenceFormat.NativeText
-        )
         what = (
             "No package has unsaved changes"
             if unsaved == 0
@@ -1204,7 +1205,7 @@ class PackTreeView(TreeView):
             if unsaved == 1
             else f"Save the {unsaved} packages that have unsaved changes"
         )
-        self.saveAllAct.setToolTip(f"Save All: {what} ({keys})")
+        self.saveAllAct.setToolTip(f"Save All: {what}")
 
     def onRowsInserted(self, parent: QModelIndex, first: int, last: int):
         super().onRowsInserted(parent, first, last)
