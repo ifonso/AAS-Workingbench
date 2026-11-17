@@ -16,6 +16,7 @@
 #
 #  A copy of the GNU General Public License is available at http://www.gnu.org/licenses/
 
+import functools
 import inspect
 import re
 import typing
@@ -199,20 +200,47 @@ def getParamsAndTypehints4init(
     """Return params for init with their type and default values"""
     objType = resolveBaseType(objType)
 
-    g = getfullargspecoftypeinit(objType)
-    paramsAndTypehints = g.annotations.copy()
-    if "return" in paramsAndTypehints:
-        paramsAndTypehints.pop("return")
-    paramsAndTypehints = replaceForwardRefsWithTypes(paramsAndTypehints)
+    paramsAndTypehints, defaults = _initParamsOf(objType)
+    # A caller changes the dict, so each one gets its own.
+    paramsAndTypehints = dict(paramsAndTypehints)
 
     if withDefaults:
-        defaults = g.defaults
         paramsDefaults = _getDefaultValuesOfParams(
             paramsAndTypehints.keys(), defaults
         )
         return paramsAndTypehints, paramsDefaults
 
     return paramsAndTypehints
+
+
+def _initParamsOf(objType: Type) -> tuple[Dict[str, Any], Tuple[Any, ...]]:
+    """Return the params of init with their types, and the default values.
+
+    Every row of a tree asks this for the type of its parent, and reading the
+    signature takes about as long as the rest of making the row, so the answer
+    of a type is kept. The dict that is returned must not be changed.
+    """
+    # The annotations of a DictItem are set anew for each mapping that is
+    # shown, so they are read each time. A type that cannot be a key is too.
+    if objType is aas_workingbench.additional.classes.DictItem:
+        return _readInitParamsOf(objType)
+    try:
+        return _keptInitParamsOf(objType)
+    except TypeError:
+        # Not hashable, or a type with no init, which then raises again.
+        return _readInitParamsOf(objType)
+
+
+def _readInitParamsOf(objType: Type) -> tuple[Dict[str, Any], Tuple[Any, ...]]:
+    g = getfullargspecoftypeinit(objType)
+    paramsAndTypehints = g.annotations.copy()
+    if "return" in paramsAndTypehints:
+        paramsAndTypehints.pop("return")
+    paramsAndTypehints = replaceForwardRefsWithTypes(paramsAndTypehints)
+    return paramsAndTypehints, g.defaults
+
+
+_keptInitParamsOf = functools.lru_cache(maxsize=None)(_readInitParamsOf)
 
 
 def resolveBaseType(objType: Type) -> Type:

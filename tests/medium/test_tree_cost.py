@@ -64,3 +64,32 @@ def test_a_name_that_a_type_does_not_have_is_a_key_error_and_is_not_logged(
         getAttrTypeHint(model.Submodel, "NoSuchAttribute")
 
     assert caplog.records == []
+
+
+def test_the_params_of_a_type_can_be_changed_by_the_one_who_asked(
+    qapp: object,
+) -> None:
+    from aas_workingbench.utils.util import getReqParams4init
+
+    first = getReqParams4init(model.Property, rmDefParams=False)
+    first.clear()
+
+    again = getReqParams4init(model.Property, rmDefParams=False)
+
+    assert "value_type" in again
+
+
+def test_the_item_of_a_mapping_has_the_types_of_the_mapping_asked_last(
+    qapp: object,
+) -> None:
+    from aas_workingbench.additional.classes import DictItem
+    from aas_workingbench.utils.util import getIterItemTypeHint
+    from aas_workingbench.utils.util import getParamsAndTypehints4init
+
+    getIterItemTypeHint(dict[str, int])
+    first = getParamsAndTypehints4init(DictItem, withDefaults=False)
+    getIterItemTypeHint(dict[int, bytes])
+    second = getParamsAndTypehints4init(DictItem, withDefaults=False)
+
+    assert first == {"key": str, "value": int}
+    assert second == {"key": int, "value": bytes}
