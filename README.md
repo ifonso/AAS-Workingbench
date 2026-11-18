@@ -66,34 +66,27 @@ The folder [`example/`](example/README.md) holds a complete, fictional package o
 
 ## How it is built
 
-Two generations of code work together.
-The shell is the window, the trees and the forms that came from AAS Manager, and it makes its rows and editors from the type hints of the BaSyx classes at run time.
-New features go into four layers below it, where the rules of the AAS and the use cases have no PyQt, so they are tested without a window.
+The interface is PyQt6: a main window, tree views with their item models, and forms that are made at run time from the type hints of the BaSyx classes.
+Below it, the use cases and the rules of the AAS are plain Python with no PyQt, so they are tested without a window.
 All access to AAS data goes through the BaSyx SDK.
 
 ```mermaid
 flowchart TB
-    subgraph shell["Shell, from AAS Manager"]
+    subgraph interface["Interface, in PyQt6"]
         window["Main window"]
         views["Trees<br/>and forms"]
-        pack["Open package"]
+        panels["Panels<br/>and dialogs"]
     end
 
-    subgraph layers["Layers, new code"]
-        ui["ui"]
-        app["application"]
-        domain["domain"]
-        infra["infrastructure"]
-    end
-
+    app["Application"]
+    domain["Domain"]
+    infra["Infrastructure"]
     sdk["BaSyx<br/>Python SDK"]
     files[("AASX, JSON<br/>and XML")]
 
-    window --> ui
-    views --> ui
+    window --> app
     views --> app
-    pack --> app
-    ui --> app
+    panels --> app
     app --> domain
     infra --> app
     domain --> sdk
@@ -105,20 +98,19 @@ An arrow reads "uses".
 
 | Part | Where | What it holds |
 |---|---|---|
-| Main window | `editorApp.py`, `design.py` | The window, the menus, the command bar and the panels |
-| Trees and forms | `treeviews/`, `models/`, `widgets/`, `dialogs.py` | The item models, the tree views and the forms made from type hints |
-| Open package | `package.py` | The objects, the files and the thumbnail of the package that is open |
-| `ui` | `ui/` | Panels, dialogs, the registered actions and the theme |
-| `application` | `application/` | Operations, commands and the undo history, the save flow, the change observer |
-| `domain` | `domain/` | The rules of the AAS, validation and references, with no PyQt and no I/O |
-| `infrastructure` | `infrastructure/` | Reads and writes packages through the SDK, and keeps the log |
+| Main window | `editorApp.py`, `design.py` | The window, the menus, the command bar and the docks |
+| Trees and forms | `treeviews/`, `models/`, `widgets/`, `dialogs.py` | The item models, the tree views, and the forms made from type hints |
+| Panels and dialogs | `ui/` | The panels, the dialogs, the registered actions and the theme |
+| Application | `application/` | Operations, commands and the undo history, the save flow, the change observer |
+| Domain | `domain/` | The rules of the AAS, validation and references, with no PyQt and no I/O |
+| Infrastructure | `infrastructure/` | Reads and writes packages through the SDK, and keeps the log |
 
-`domain` and `application` never import PyQt, and a test fails if they do.
+Application and Domain never import PyQt, and a test fails if they do.
 
 An edit does not change an AAS object from a view.
 It is a command on the undo history of its package, and every tab and tree learns of it from one observer.
-A save goes down the layers: `application/save.py` checks the package and warns, and `infrastructure/package_io.py` writes a temporary file and replaces the target.
-The [architecture guide](docs/software/architecture.md) has the modules of each layer and the known problems of the structure, and the [decision records](docs/software/adr/README.md) say why.
+A save goes down the same parts: `application/save.py` checks the package and warns, and `infrastructure/package_io.py` writes a temporary file and replaces the target.
+The [architecture guide](docs/software/architecture.md) has the modules of each part and the known problems of the structure, and the [decision records](docs/software/adr/README.md) say why.
 
 ## Build
 
