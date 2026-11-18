@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - A long name of a package no longer makes the pane of the package tree, and so the window, wider. The name is cut short with `…`, with the whole name in its tooltip. The tree can be as narrow as before the pane had a header, and the width that it had in the last session comes back.
 - Saving over a read-only file is refused on Linux and macOS, with the message that the file is read-only, as on Windows. The save replaced the file there, because a move over a file needs only the right to write its folder.
+- The command palette draws a title whole. Many titles were cut short with `…` though the row had room, such as `Hi…` for `Hints`: the width of a title was rounded down, and the title was then cut to fit it.
 
 ### Added
 
