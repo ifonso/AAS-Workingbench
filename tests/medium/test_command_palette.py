@@ -6,11 +6,14 @@ from PyQt6.QtCore import QStandardPaths
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QImage
 from PyQt6.QtGui import QKeySequence
+from PyQt6.QtGui import QPainter
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtWidgets import QStyleOptionViewItem
 import pytest
 from pytestqt.qtbot import QtBot
 from tests.factories import make_collection
@@ -585,6 +588,42 @@ def test_a_switch_of_theme_changes_what_the_next_opening_paints(
         return color
 
     assert background("light") != background("dark")
+
+
+class _TextRecorder(QPainter):
+    """A painter that keeps the texts that it is asked to draw."""
+
+    def __init__(self, device: QImage) -> None:
+        super().__init__(device)
+        self.texts: list[str] = []
+
+    def drawText(self, *args: object) -> None:  # noqa: N802
+        self.texts.append(str(args[-1]))
+        super().drawText(*args)  # type: ignore[call-overload]
+
+
+def test_a_title_is_drawn_whole_while_its_row_has_room(window) -> None:
+    # The width of each of these in Inter has a fraction below one half, which
+    # a rounded width loses, and the title was then cut to fit it ("Hi…").
+    titles = ["ValidDate", "Hints", "Copy", "Pose", "CycleStates", "Undo"]
+    window.main_.show()
+    window.palette.open_over(
+        window.main_, [PaletteEntry(key=t, title=t) for t in titles], list
+    )
+    results = window.palette.results
+    option = QStyleOptionViewItem()
+    results.initViewItemOption(option)
+    # The painter does not keep its image alive.
+    image = QImage(results.viewport().size(), QImage.Format.Format_ARGB32)
+    painter = _TextRecorder(image)
+
+    for row in range(len(titles)):
+        index = results.model().index(row, 0)
+        option.rect = results.visualRect(index)
+        results.itemDelegate().paint(painter, option, index)
+    painter.end()
+
+    assert painter.texts == titles
 
 
 def test_the_parts_of_the_palette_have_accessible_names(window) -> None:

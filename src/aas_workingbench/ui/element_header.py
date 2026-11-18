@@ -14,6 +14,7 @@ The widget knows no tree: the tab gives it the icon, the name and the type.
 from PyQt6.QtCore import QSize
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QResizeEvent
 from PyQt6.QtWidgets import QHBoxLayout
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtWidgets import QSizePolicy
@@ -24,6 +25,9 @@ from aas_workingbench.ui.empty_state import role_font
 
 HEADER_PADDING = 20
 """The room above and below the title, in pixels (proposal 3.1)."""
+
+LEAST_PADDING = 4
+"""The room above and below the title in a tab that is short of height."""
 
 HEADER_SIDE = 16
 """The room left of the icon and right of the badge, in pixels."""
@@ -74,6 +78,15 @@ class ElementHeader(QWidget):
             QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Maximum
         )
 
+    def sizeHint(self) -> QSize:
+        """Asks for the title with the whole room above and below it.
+
+        The hint does not follow the room that the header has now, so a header
+        that gave its room up gets it back when the tab grows again.
+        """
+        hint = super().sizeHint()
+        return QSize(hint.width(), self._title_height() + 2 * HEADER_PADDING)
+
     def minimumSizeHint(self) -> QSize:
         """Lets a short window take the room around the title first.
 
@@ -82,8 +95,29 @@ class ElementHeader(QWidget):
         the attributes below shrink.
         """
         hint = super().minimumSizeHint()
-        title = max(self.title.sizeHint().height(), ICON_SIZE)
-        return QSize(hint.width(), title + 8)
+        return QSize(hint.width(), self._title_height() + 2 * LEAST_PADDING)
+
+    def resizeEvent(self, a0: QResizeEvent | None) -> None:
+        """Gives the room above and below the title what the height leaves.
+
+        The room was fixed, so a header that the tab made shorter kept its 20
+        pixels on each side and had no height left for the title, which was
+        cut. The room now shrinks with the header, down to `LEAST_PADDING`.
+        """
+        super().resizeEvent(a0)
+        spare = max(0, self.height() - self._title_height())
+        padding = min(HEADER_PADDING, spare // 2)
+        layout = self.layout()
+        if layout is not None and layout.contentsMargins().top() != padding:
+            layout.setContentsMargins(
+                HEADER_SIDE, padding, HEADER_SIDE, padding
+            )
+            # Now, and not at the next turn of the event loop, so that no
+            # frame is drawn with the title in the old room.
+            layout.activate()
+
+    def _title_height(self) -> int:
+        return max(self.title.sizeHint().height(), ICON_SIZE)
 
     def set_element(
         self, icon: QIcon | None, title: str, type_text: str

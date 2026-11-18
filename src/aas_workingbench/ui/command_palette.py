@@ -11,6 +11,7 @@ of the theme in use, and the style sheet has one block for its frame.
 """
 
 from collections.abc import Callable
+import math
 from typing import Any
 from typing import cast
 
@@ -26,7 +27,9 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QAction
 from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QFont
 from PyQt6.QtGui import QFontMetrics
+from PyQt6.QtGui import QFontMetricsF
 from PyQt6.QtGui import QKeyEvent
 from PyQt6.QtGui import QKeySequence
 from PyQt6.QtGui import QPainter
@@ -113,6 +116,23 @@ def _spoken(entry: PaletteEntry) -> str:
     return ", ".join(parts)
 
 
+def _whole_width(font: QFont, text: str) -> int:
+    """Says how many pixels a text needs to be drawn whole.
+
+    The width of a text has a fraction, and `QFontMetrics.horizontalAdvance`
+    rounds it. A width that was rounded down is less than the text needs, and
+    `elidedText` then cuts the text to fit it: "Hints" was drawn as "Hi…".
+
+    Args:
+        font: The font that the text is drawn in.
+        text: The text.
+
+    Returns:
+        The width of the text, rounded up.
+    """
+    return math.ceil(QFontMetricsF(font).horizontalAdvance(text))
+
+
 class _EntryDelegate(QStyledItemDelegate):
     """Paints a row: the title, where it is, and the keys at the right.
 
@@ -144,12 +164,13 @@ class _EntryDelegate(QStyledItemDelegate):
             )
         elif state & QStyle.StateFlag.State_MouseOver:
             painter.fillRect(rect, QColor(tokens.bg_hover))
-        metrics = QFontMetrics(option.font)  # type: ignore[attr-defined]
+        font = option.font  # type: ignore[attr-defined]
+        metrics = QFontMetrics(font)
         left = rect.left() + self.PAD
         right = rect.right() - self.PAD
         keys_width = 0
         if entry.shortcut:
-            keys_width = metrics.horizontalAdvance(entry.shortcut)
+            keys_width = _whole_width(font, entry.shortcut)
             painter.setPen(QColor(tokens.fg_muted))
             painter.drawText(
                 QRect(
@@ -160,7 +181,7 @@ class _EntryDelegate(QStyledItemDelegate):
             )
             keys_width += self.GAP
         title_width = min(
-            metrics.horizontalAdvance(entry.title), (right - left) * 2 // 3
+            _whole_width(font, entry.title), (right - left) * 2 // 3
         )
         painter.setPen(
             QColor(tokens.fg_primary if entry.enabled else tokens.fg_muted)
