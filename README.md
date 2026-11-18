@@ -16,7 +16,7 @@ Open, edit, validate and save AASX, JSON and XML files of metamodel V3.1, with e
 [![python](https://img.shields.io/badge/python-3.11%2B-2b7bff)](pyproject.toml)
 [![AAS metamodel](https://img.shields.io/badge/AAS%20metamodel-V3.1-2b7bff)](https://github.com/admin-shell-io/aas-specs-metamodel)
 
-[Screenshots](#screenshots) · [What it does](#what-the-editor-does) · [How it is built](#how-it-is-built) · [Build](#build) · [Documentation](docs/README.md) · [Contributing](#contributing)
+[What it does](#what-the-editor-does) · [How it is built](#how-it-is-built) · [Build](#build) · [Documentation](docs/README.md) · [Contributing](#contributing)
 
 </div>
 
@@ -34,41 +34,11 @@ The aim is the robustness of [AASX Package Explorer](https://github.com/eclipse-
 - **It does not lose your work.** A save writes a temporary file and then replaces the target, so a failed save leaves the original intact, and crash recovery offers the changed packages at the next start.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/editor-dark.png">
-    <img src="docs/images/editor-light.png" width="920" alt="The main window in Edit mode: the tree of the example package on the left, and the detail of the property CycleTimeTarget in sections on the right">
-  </picture>
+  <img src="docs/images/preview-light.png" width="49%" alt="The main window in the light theme: the tree of the example package on the left, and the detail of the property CycleTimeTarget in sections on the right">
+  <img src="docs/images/preview-dark.png" width="49%" alt="The same window in the dark theme">
 </p>
 
-<p align="center"><sub>The example package of a pick and place robot arm, in Edit mode. The picture follows the theme of your GitHub.</sub></p>
-
-## Screenshots
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/command-palette.png" alt="The command palette with the word serial typed, listing the elements named SerialNumber and where each one is">
-      <p align="center"><b>Command palette.</b> <code>Ctrl+K</code> searches the commands and the elements of the package.</p>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/hints.png" alt="The Validation panel on its Hints view, with 523 hints in 4 kinds and one kind open">
-      <p align="center"><b>Validation and hints.</b> Errors and warnings are checked before a save, and hints are advice, in groups by kind.</p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/package-files.png" alt="The Package files panel, listing the stored files with their media type, their size and the elements that use them">
-      <p align="center"><b>Package files.</b> The files stored in the package, with the elements that use each one.</p>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/read-mode-dark.png" alt="The main window in Read mode and in the dark theme, with the detail of a multi-language property">
-      <p align="center"><b>Read mode, dark theme.</b> Nothing can be changed, and the empty attributes are folded away.</p>
-    </td>
-  </tr>
-</table>
-
-The pictures show the package in [`example/`](example/README.md), on Linux.
-They were drawn without a display (`QT_QPA_PLATFORM=offscreen`), so they show the window without the frame of the desktop.
+<p align="center"><sub>The example package of a pick and place robot arm, in the light and in the dark theme.</sub></p>
 
 ## Purpose
 
@@ -146,27 +116,8 @@ An arrow reads "uses".
 `domain` and `application` never import PyQt, and a test fails if they do.
 
 An edit does not change an AAS object from a view.
-It is a command, and the views learn of it from one observer for each package:
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant View as View (tree, form, dialog)
-    participant Op as Operation
-    participant History as Command history
-    participant Objects as BaSyx objects
-    participant Observer as Change observer
-
-    User->>View: edit, add, delete, paste
-    View->>Op: ask for the change
-    Op-->>View: plan, which is shown or refused
-    Op->>History: commands, and a group is one undo step
-    History->>Objects: apply, and undo or redo later
-    History->>Observer: report what changed
-    Observer-->>View: every tab and tree shows it
-```
-
-A save goes the same way down: `application/save.py` checks the package and warns, and `infrastructure/package_io.py` writes a temporary file and replaces the target.
+It is a command on the undo history of its package, and every tab and tree learns of it from one observer.
+A save goes down the layers: `application/save.py` checks the package and warns, and `infrastructure/package_io.py` writes a temporary file and replaces the target.
 The [architecture guide](docs/software/architecture.md) has the modules of each layer and the known problems of the structure, and the [decision records](docs/software/adr/README.md) say why.
 
 ## Build
