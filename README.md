@@ -103,25 +103,26 @@ All access to AAS data goes through the BaSyx SDK.
 
 ```mermaid
 flowchart TB
-    subgraph shell["Shell: PyQt6, from AAS Manager"]
-        direction LR
-        window["Main window<br/>editorApp.py, design.py"]
-        views["Trees, models and forms<br/>treeviews/, models/, widgets/, dialogs.py"]
-        pack["Open package<br/>package.py"]
+    subgraph shell["Shell, from AAS Manager"]
+        window["Main window"]
+        views["Trees and forms"]
+        pack["Open package"]
     end
 
-    subgraph layers["Layers: new code"]
-        ui["ui<br/>panels, dialogs, registered actions, theme"]
-        app["application<br/>operations, commands and undo, save, change observer"]
-        domain["domain<br/>rules of the AAS, validation, references<br/>no PyQt, no I/O"]
-        infra["infrastructure<br/>reads and writes packages, presets, log"]
+    subgraph layers["Layers, new code"]
+        ui["ui"]
+        app["application"]
+        domain["domain"]
+        infra["infrastructure"]
     end
 
-    sdk["BaSyx Python SDK<br/>metamodel classes, AASX, JSON and XML adapters"]
-    files[("AASX, JSON<br/>and XML files")]
+    sdk["BaSyx Python SDK"]
+    files[("AASX, JSON, XML")]
 
-    shell --> ui
-    shell --> app
+    window --> ui
+    views --> ui
+    views --> app
+    pack --> app
     ui --> app
     app --> domain
     infra --> app
@@ -131,6 +132,17 @@ flowchart TB
 ```
 
 An arrow reads "uses".
+
+| Part | Where | What it holds |
+|---|---|---|
+| Main window | `editorApp.py`, `design.py` | The window, the menus, the command bar and the panels |
+| Trees and forms | `treeviews/`, `models/`, `widgets/`, `dialogs.py` | The item models, the tree views and the forms made from type hints |
+| Open package | `package.py` | The objects, the files and the thumbnail of the package that is open |
+| `ui` | `ui/` | Panels, dialogs, the registered actions and the theme |
+| `application` | `application/` | Operations, commands and the undo history, the save flow, the change observer |
+| `domain` | `domain/` | The rules of the AAS, validation and references, with no PyQt and no I/O |
+| `infrastructure` | `infrastructure/` | Reads and writes packages through the SDK, and keeps the log |
+
 `domain` and `application` never import PyQt, and a test fails if they do.
 
 An edit does not change an AAS object from a view.
