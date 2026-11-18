@@ -105,7 +105,7 @@ All access to AAS data goes through the BaSyx SDK.
 flowchart TB
     subgraph shell["Shell, from AAS Manager"]
         window["Main window"]
-        views["Trees and forms"]
+        views["Trees<br/>and forms"]
         pack["Open package"]
     end
 
@@ -116,8 +116,8 @@ flowchart TB
         infra["infrastructure"]
     end
 
-    sdk["BaSyx Python SDK"]
-    files[("AASX, JSON, XML")]
+    sdk["BaSyx<br/>Python SDK"]
+    files[("AASX, JSON<br/>and XML")]
 
     window --> ui
     views --> ui
