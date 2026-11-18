@@ -1,6 +1,44 @@
+<div align="center">
+
+<img src="design/aas-workingbench-logo.svg" width="112" alt="The logo of AAS Workingbench">
+
 # AAS Workingbench
 
-A desktop editor for AASX files of the Asset Administration Shell, written in Python with PyQt6.
+**A desktop editor for Asset Administration Shell packages.**
+
+(a fork of [rwth-iat/aas_manager](https://github.com/rwth-iat/aas_manager), GPL-3.0)
+
+Open, edit, validate and save AASX, JSON and XML files of metamodel V3.1, with every change one undo away.
+
+[![release](https://img.shields.io/github/v/release/ifonso/AAS-Workingbench?color=2b7bff)](https://github.com/ifonso/AAS-Workingbench/releases)
+[![license](https://img.shields.io/badge/license-GPL--3.0-2b7bff)](LICENSE)
+[![CI](https://github.com/ifonso/AAS-Workingbench/actions/workflows/ci.yaml/badge.svg)](https://github.com/ifonso/AAS-Workingbench/actions/workflows/ci.yaml)
+[![python](https://img.shields.io/badge/python-3.11%2B-2b7bff)](pyproject.toml)
+[![AAS metamodel](https://img.shields.io/badge/AAS%20metamodel-V3.1-2b7bff)](https://github.com/admin-shell-io/aas-specs-metamodel)
+
+[What it does](#what-the-editor-does) · [How it is built](#how-it-is-built) · [Build](#build) · [Documentation](docs/README.md) · [Contributing](#contributing)
+
+</div>
+
+---
+
+AAS Workingbench is a desktop editor for the files of the Asset Administration Shell, written in Python with PyQt6 on the Eclipse BaSyx SDK.
+An edit is a command with a plan and a place in the undo history, and a save checks the package before it writes.
+The aim is the robustness of [AASX Package Explorer](https://github.com/eclipse-aaspe/package-explorer) with a more pleasant interface, and [Purpose](#purpose) says how far that is.
+
+- **Every edit is one undo step.** Edits, adds, deletes, moves and pastes go through one history for each package, and Read mode refuses changes.
+- **It reads like a document.** The detail of an element is in sections (Value, Identification, Semantics), a text in several languages reads in the first of your default languages, and a semanticId shows the name of its concept as a link.
+- **It finds things fast.** `Ctrl+K` searches the commands and the elements, the tree has a filter, and a click on a reference opens its target, with Back and Forward.
+- **It checks what you type and what you save.** Values are checked against their XSD type as you type, validation rules cover constraints of the metamodel that the SDK does not enforce, and hints give advice that never stops a save.
+- **It keeps references and files whole.** A rename updates the references that point at the renamed object, and a panel manages the files stored in a package.
+- **It does not lose your work.** A save writes a temporary file and then replaces the target, so a failed save leaves the original intact, and crash recovery offers the changed packages at the next start.
+
+<p align="center">
+  <img src="docs/images/preview-light.png" width="49%" alt="The main window in the light theme: the tree of the example package on the left, and the detail of the property CycleTimeTarget in sections on the right">
+  <img src="docs/images/preview-dark.png" width="49%" alt="The same window in the dark theme">
+</p>
+
+<p align="center"><sub>The example package of a pick and place robot arm, in the light and in the dark theme.</sub></p>
 
 ## Purpose
 
@@ -13,7 +51,7 @@ The project also plans AI features that make modeling, verification and the use 
 None of that exists yet.
 The one LLM feature today is inherited from upstream: a [handover documentation tool](src/aas_workingbench/tools/handover_doc_llm/README.md) that drafts a Handover Documentation submodel from a PDF through a model provider that you configure.
 
-Only Windows has been used to run the editor in the current work.
+The editor has been run on Windows and on Linux in the current work.
 Continuous integration runs the checks on Ubuntu, and the release workflow builds a zip for Windows and an AppImage for Linux.
 Nothing builds for macOS, so macOS is a goal and not a claim.
 
@@ -25,6 +63,54 @@ Values are checked against their XSD type as you type, renames update the refere
 A set of validation rules covers constraints of the metamodel that the SDK does not enforce.
 The [changelog](CHANGELOG.md) has the full list, including the known limits, and [`docs/`](docs/README.md) has the architecture, decision records and guides.
 The folder [`example/`](example/README.md) holds a complete, fictional package of a pick and place robot arm to open in the editor, with the script that builds it.
+
+## How it is built
+
+The interface is PyQt6: a main window, tree views with their item models, and forms that are made at run time from the type hints of the BaSyx classes.
+Below it, the use cases and the rules of the AAS are plain Python with no PyQt, so they are tested without a window.
+All access to AAS data goes through the BaSyx SDK.
+
+```mermaid
+flowchart TB
+    subgraph interface["Interface, in PyQt6"]
+        window["Main window"]
+        views["Trees<br/>and forms"]
+        panels["Panels<br/>and dialogs"]
+    end
+
+    app["Application"]
+    domain["Domain"]
+    infra["Infrastructure"]
+    sdk["BaSyx<br/>Python SDK"]
+    files[("AASX, JSON<br/>and XML")]
+
+    window --> app
+    views --> app
+    panels --> app
+    app --> domain
+    infra --> app
+    domain --> sdk
+    infra --> sdk
+    sdk --> files
+```
+
+An arrow reads "uses".
+
+| Part | Where | What it holds |
+|---|---|---|
+| Main window | `editorApp.py`, `design.py` | The window, the menus, the command bar and the docks |
+| Trees and forms | `treeviews/`, `models/`, `widgets/`, `dialogs.py` | The item models, the tree views, and the forms made from type hints |
+| Panels and dialogs | `ui/` | The panels, the dialogs, the registered actions and the theme |
+| Application | `application/` | Operations, commands and the undo history, the save flow, the change observer |
+| Domain | `domain/` | The rules of the AAS, validation and references, with no PyQt and no I/O |
+| Infrastructure | `infrastructure/` | Reads and writes packages through the SDK, and keeps the log |
+
+Application and Domain never import PyQt, and a test fails if they do.
+
+An edit does not change an AAS object from a view.
+It is a command on the undo history of its package, and every tab and tree learns of it from one observer.
+A save goes down the same parts: `application/save.py` checks the package and warns, and `infrastructure/package_io.py` writes a temporary file and replaces the target.
+The [architecture guide](docs/software/architecture.md) has the modules of each part and the known problems of the structure, and the [decision records](docs/software/adr/README.md) say why.
 
 ## Build
 
